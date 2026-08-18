@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 import Sidebar from './components/Sidebar'
 import InstructorDashboard from './pages/Dashboard'
 import MyCourses from './pages/MyCourses'
+import LoginPage from './pages/auth/LoginPage'
+import RegisterPage from './pages/auth/RegisterPage'
+import LearningPlanPage from './pages/LearningPlan'
+import ProfilePage from './pages/Profile'
+import SettingsPage from './pages/Settings'
 
 /* ── Mobile Topbar ─────────────────────────────────
    Hanya tampil di bawah breakpoint lg (< 1024px).
@@ -81,20 +87,46 @@ function AppShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+/* ── Protected Route ────────────────────────────── */
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-400 font-medium">Memuat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
 /* ── Router ─────────────────────────────────────── */
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/"             element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard"    element={<AppShell><InstructorDashboard /></AppShell>} />
-        <Route path="/my-courses"   element={<AppShell><MyCourses /></AppShell>} />
-        <Route path="/course-editor" element={<AppShell><PlaceholderPage icon="🚧" title="Course Editor" /></AppShell>} />
-        <Route path="/catalog"      element={<AppShell><PlaceholderPage icon="📦" title="Katalog Kursus" /></AppShell>} />
-        <Route path="/settings"     element={<AppShell><PlaceholderPage icon="⚙️" title="Pengaturan" /></AppShell>} />
-        <Route path="*"             element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login"    element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected routes */}
+          <Route path="/"              element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"     element={<ProtectedRoute><AppShell><InstructorDashboard /></AppShell></ProtectedRoute>} />
+          <Route path="/my-courses"    element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
+          <Route path="/learning-plan" element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
+          <Route path="/profile"       element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
+          <Route path="/settings"      element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
+          <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
