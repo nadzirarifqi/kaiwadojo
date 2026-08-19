@@ -209,15 +209,15 @@ export async function calculateMissionProgress(
     })
   }
 
-  const videoCompleted = actualReplays >= mission.targetReplayCount
-  const quizCompleted  = actualQuizzes >= mission.targetQuizCount
-  const kotobaCompleted = actualKotoba  >= mission.targetKotobaCount
+  const videoCompleted = mission.targetReplayCount === 0 || actualReplays >= mission.targetReplayCount
+  const quizCompleted  = mission.targetQuizCount === 0 || actualQuizzes >= mission.targetQuizCount
+  const kotobaCompleted = mission.targetKotobaCount === 0 || actualKotoba  >= mission.targetKotobaCount
 
   const isFullyCompleted = videoCompleted && quizCompleted && kotobaCompleted
 
-  const videoPct  = Math.min(100, mission.targetReplayCount > 0 ? (actualReplays / mission.targetReplayCount) * 100 : 100)
-  const quizPct   = Math.min(100, mission.targetQuizCount > 0 ? (actualQuizzes / mission.targetQuizCount) * 100 : 100)
-  const kotobaPct = Math.min(100, mission.targetKotobaCount > 0 ? (actualKotoba / mission.targetKotobaCount) * 100 : 100)
+  const videoPct  = mission.targetReplayCount === 0 ? 100 : Math.min(100, (actualReplays / mission.targetReplayCount) * 100)
+  const quizPct   = mission.targetQuizCount === 0 ? 100 : Math.min(100, (actualQuizzes / mission.targetQuizCount) * 100)
+  const kotobaPct = mission.targetKotobaCount === 0 ? 100 : Math.min(100, (actualKotoba / mission.targetKotobaCount) * 100)
 
   const overallPct = Math.round((videoPct + quizPct + kotobaPct) / 3)
 

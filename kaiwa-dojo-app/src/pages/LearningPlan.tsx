@@ -65,11 +65,14 @@ function DailyMissionBuilderModal({
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
   const [selectedBab, setSelectedBab]     = useState<number>(1)
   
+  const [noVideoPlan, setNoVideoPlan] = useState<boolean>(
+    currentMission ? currentMission.targetReplayCount === 0 : false
+  )
   const [selectedVideos, setSelectedVideos] = useState<SelectedVideoItem[]>(
     currentMission?.selectedVideos || []
   )
-  const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission?.targetQuizCount || 1)
-  const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission?.targetKotobaCount || 1)
+  const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission?.targetQuizCount ?? 1)
+  const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission?.targetKotobaCount ?? 1)
 
   const startBab = selectedJilid === 1 ? 1 : 26
 
@@ -83,13 +86,16 @@ function DailyMissionBuilderModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (selectedVideos.length === 0) {
-      alert('Pilihlah minimal 1 video spesifik yang ingin kamu tonton!')
+
+    const finalVideos = noVideoPlan ? [] : selectedVideos
+    if (!noVideoPlan && finalVideos.length === 0 && targetQuiz > 0 && targetKotoba > 0) {
+      alert('Pilihlah minimal 1 video atau centang "Tidak Ada Rencana"!')
       return
     }
+
     onSave({
-      selectedVideos,
-      targetReplayCount: selectedVideos.length * 3,
+      selectedVideos: finalVideos,
+      targetReplayCount: noVideoPlan ? 0 : finalVideos.length * 3,
       targetQuizCount: targetQuiz,
       targetKotobaCount: targetKotoba,
     }, missionDate)
@@ -134,86 +140,112 @@ function DailyMissionBuilderModal({
             />
           </div>
 
-          {/* Step 1: Pilih Video Spesifik */}
+          {/* Step 1: Pilih Video Spesifik / Tidak Ada Rencana */}
           <div>
-            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-2">
-              1. Pilih Video yang Ingin Ditonton *
-            </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              💡 <strong>Aturan Pengulangan:</strong> Setiap 1 video yang dicentang = <strong>3 kali target pengulangan</strong> (misal 2 video = 6 kali pengulangan total).
-            </p>
-
-            {/* Jilid & Bab Selector */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div>
-                <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Jilid Buku</label>
-                <select
-                  value={selectedJilid}
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block">
+                1. Target Video
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={noVideoPlan}
                   onChange={e => {
-                    const j = Number(e.target.value) as 1 | 2
-                    setSelectedJilid(j)
-                    setSelectedBab(j === 1 ? 1 : 26)
+                    setNoVideoPlan(e.target.checked)
+                    if (e.target.checked) setSelectedVideos([])
                   }}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                >
-                  <option value={1}>📘 Jilid 1 (Bab 1 - 25)</option>
-                  <option value={2}>📗 Jilid 2 (Bab 26 - 50)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab</label>
-                <select
-                  value={selectedBab}
-                  onChange={e => setSelectedBab(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                >
-                  {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
-                    <option key={b} value={b}>Bab {b}</option>
-                  ))}
-                </select>
-              </div>
+                  className="size-4 accent-slate-700 cursor-pointer"
+                />
+                <span>🚫 Tidak Ada Rencana</span>
+              </label>
             </div>
 
-            {/* Checkbox List for 3 Videos in Selected Bab */}
-            <div className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-              <span className="text-[0.7rem] font-bold text-slate-400 uppercase">Daftar Video Bab {selectedBab}:</span>
-              {currentBabVideos.map(vItem => {
-                const isChecked = selectedVideos.some(v => v.id === vItem.id)
-                return (
-                  <label
-                    key={vItem.id}
-                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                      isChecked
-                        ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-red-400 font-bold shadow-xs'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleVideoSelection(vItem)}
-                        className="size-4 accent-primary cursor-pointer"
-                      />
-                      <span>🎥 {vItem.title}</span>
-                    </div>
-                    <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      +3 Replays Target
-                    </span>
-                  </label>
-                )
-              })}
-            </div>
-
-            {/* Selected Summary Badge */}
-            {selectedVideos.length > 0 && (
-              <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
-                <span>📹 {selectedVideos.length} Video Dipilih</span>
-                <span className="bg-amber-500 text-white px-2.5 py-1 rounded-lg">
-                  Target = {totalReplayTarget}x Total Pengulangan Video
+            {noVideoPlan ? (
+              <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between">
+                <span>🚫 Video: Tidak ada rencana nonton pada tanggal ini</span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black">
+                  ✅ 100% Selesai
                 </span>
               </div>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                  💡 <strong>Aturan Pengulangan:</strong> Setiap 1 video yang dicentang = <strong>3 kali target pengulangan</strong> (misal 2 video = 6 kali pengulangan total).
+                </p>
+
+                {/* Jilid & Bab Selector */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Jilid Buku</label>
+                    <select
+                      value={selectedJilid}
+                      onChange={e => {
+                        const j = Number(e.target.value) as 1 | 2
+                        setSelectedJilid(j)
+                        setSelectedBab(j === 1 ? 1 : 26)
+                      }}
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    >
+                      <option value={1}>📘 Jilid 1 (Bab 1 - 25)</option>
+                      <option value={2}>📗 Jilid 2 (Bab 26 - 50)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab</label>
+                    <select
+                      value={selectedBab}
+                      onChange={e => setSelectedBab(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    >
+                      {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
+                        <option key={b} value={b}>Bab {b}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Checkbox List for 3 Videos in Selected Bab */}
+                <div className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[0.7rem] font-bold text-slate-400 uppercase">Daftar Video Bab {selectedBab}:</span>
+                  {currentBabVideos.map(vItem => {
+                    const isChecked = selectedVideos.some(v => v.id === vItem.id)
+                    return (
+                      <label
+                        key={vItem.id}
+                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                          isChecked
+                            ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-red-400 font-bold shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleVideoSelection(vItem)}
+                            className="size-4 accent-primary cursor-pointer"
+                          />
+                          <span>🎥 {vItem.title}</span>
+                        </div>
+                        <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          +3 Replays Target
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+
+                {/* Selected Summary Badge */}
+                {selectedVideos.length > 0 && (
+                  <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+                    <span>📹 {selectedVideos.length} Video Dipilih</span>
+                    <span className="bg-amber-500 text-white px-2.5 py-1 rounded-lg">
+                      Target = {totalReplayTarget}x Total Pengulangan Video
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -225,7 +257,9 @@ function DailyMissionBuilderModal({
               </label>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setTargetQuiz(q => Math.max(0, q - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">−</button>
-                <span className="flex-1 text-center text-lg font-black text-indigo-600 dark:text-indigo-400">{targetQuiz} Kuis</span>
+                <span className={`flex-1 text-center text-xs sm:text-sm font-black ${targetQuiz === 0 ? 'text-slate-500 italic' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                  {targetQuiz === 0 ? '🚫 Tidak Ada Rencana (100%)' : `${targetQuiz} Kuis`}
+                </span>
                 <button type="button" onClick={() => setTargetQuiz(q => Math.min(10, q + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">+</button>
               </div>
             </div>
@@ -236,7 +270,9 @@ function DailyMissionBuilderModal({
               </label>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setTargetKotoba(k => Math.max(0, k - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">−</button>
-                <span className="flex-1 text-center text-lg font-black text-amber-600 dark:text-amber-400">{targetKotoba} Setoran</span>
+                <span className={`flex-1 text-center text-xs sm:text-sm font-black ${targetKotoba === 0 ? 'text-slate-500 italic' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {targetKotoba === 0 ? '🚫 Tidak Ada Rencana (100%)' : `${targetKotoba} Setoran`}
+                </span>
                 <button type="button" onClick={() => setTargetKotoba(k => Math.min(10, k + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">+</button>
               </div>
             </div>
