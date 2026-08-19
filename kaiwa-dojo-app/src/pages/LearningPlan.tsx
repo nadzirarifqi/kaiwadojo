@@ -27,6 +27,12 @@ import {
   getWeekRangeId,
   getMonthRangeId,
 } from '../lib/scheduleService'
+import {
+  getChapterSettingsMap,
+  DEFAULT_JILID_1,
+  DEFAULT_JILID_2,
+  type ChapterSetting,
+} from '../lib/chapterService'
 
 
 
@@ -64,6 +70,11 @@ function DailyMissionBuilderModal({
   const [missionDate, setMissionDate]     = useState<string>(targetDate)
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
   const [selectedBab, setSelectedBab]     = useState<number>(1)
+  const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
+
+  useEffect(() => {
+    getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
+  }, [])
   
   const [noVideoPlan, setNoVideoPlan] = useState<boolean>(
     currentMission ? currentMission.targetReplayCount === 0 : false
@@ -101,9 +112,13 @@ function DailyMissionBuilderModal({
     }, missionDate)
   }
 
+  const currentBabSetting = chapterSettingsMap[selectedBab]
+  const rawBabTitle = currentBabSetting?.title || (selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab]?.title : DEFAULT_JILID_2[selectedBab]?.title) || `Bab ${selectedBab}`
+  const upperBabTitle = rawBabTitle.toUpperCase()
+
   const currentBabVideos: SelectedVideoItem[] = [1, 2, 3].map(vNum => ({
     id: `bab_${selectedBab}_video_${vNum}`,
-    title: `Bab ${selectedBab}: Video ${vNum}`,
+    title: `[${upperBabTitle}] Part ${vNum}`,
     jilid: selectedJilid,
     bab: selectedBab,
     videoNum: vNum,

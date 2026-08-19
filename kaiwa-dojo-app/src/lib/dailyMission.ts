@@ -172,6 +172,41 @@ export async function saveDailyMission(
   return mission
 }
 
+export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: string = getTodayDateString()): number {
+  let streak = 0
+  let checkDate = new Date(todayStr)
+
+  const formatDateStr = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  const todayFormatted = formatDateStr(checkDate)
+  let hasToday = streakDatesSet.has(todayFormatted)
+
+  if (!hasToday) {
+    checkDate.setDate(checkDate.getDate() - 1)
+    const yesterdayFormatted = formatDateStr(checkDate)
+    if (!streakDatesSet.has(yesterdayFormatted)) {
+      return 0
+    }
+  }
+
+  while (true) {
+    const dateFormatted = formatDateStr(checkDate)
+    if (streakDatesSet.has(dateFormatted)) {
+      streak++
+      checkDate.setDate(checkDate.getDate() - 1)
+    } else {
+      break
+    }
+  }
+
+  return streak
+}
+
 export async function calculateMissionProgress(
   userId: string,
   mission: DailyMissionData
@@ -223,10 +258,31 @@ export async function calculateMissionProgress(
 
   // Sync streak if fully completed on target date
   if (isFullyCompleted) {
-    await supabase.from('learning_streaks').upsert({
-      student_id: userId,
-      date: dateStr,
-    }, { onConflict: 'student_id,date' })
+    try {
+      const customId = `${userId}_${dateStr}`
+      await supabase.from('learning_streaks').upsert({
+        id: customId,
+        student_id: userId,
+        date: dateStr,
+      }, { onConflict: 'student_id,date' })
+
+      // Calculate streak & update profile streak_days count in DB
+      const { data: streaksData } = await supabase
+        .from('learning_streaks')
+        .select('date')
+        .eq('student_id', userId)
+
+      if (streaksData) {
+        const streakDates = new Set(streaksData.map((s: any) => s.date))
+        const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
+        await supabase
+          .from('profiles')
+          .update({ streak_days: streakCount, last_active_at: new Date().toISOString() })
+          .eq('id', userId)
+      }
+    } catch (e) {
+      console.warn('Learning streak DB upsert note:', e)
+    }
   }
 
   return {

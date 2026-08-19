@@ -6,7 +6,8 @@ import {
   type DailyMissionData,
   type MissionProgress,
   getDailyMission,
-  calculateMissionProgress
+  calculateMissionProgress,
+  calculateStreakFromDates,
 } from '../lib/dailyMission'
 
 import AdaptiveIcon from '../components/AdaptiveIcon'
@@ -286,15 +287,15 @@ export default function Dashboard() {
       const enrolled = enrollData || []
       const completed = enrolled.filter((e: any) => Number(e.progress_pct) === 100)
 
-      // Fetch recent streaks (last 7 days)
+      // Fetch recent streaks and calculate live consecutive streak count
       const { data: streaksData } = await supabase
         .from('learning_streaks')
         .select('date')
         .eq('student_id', user.id)
-        .order('date', { ascending: false })
-        .limit(7)
 
       const streakDates = new Set((streaksData || []).map((s: any) => s.date))
+      const liveStreakCount = calculateStreakFromDates(streakDates)
+
       const today = new Date()
       const history = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today)
@@ -328,7 +329,7 @@ export default function Dashboard() {
         ...prev,
         enrolledCoursesCount: enrolled.length,
         completedCoursesCount: completed.length,
-        streakDays: profile.streak_days || 0,
+        streakDays: liveStreakCount || profile?.streak_days || 0,
       }))
 
       setStreakHistory(history)
