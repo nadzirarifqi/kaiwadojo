@@ -6,6 +6,9 @@ export interface ChapterSetting {
   subtitle: string
   is_hidden: boolean // true = Sembunyikan dari siswa, false = Tampilkan
   has_video?: boolean // true jika video sudah diupload di server
+  duration_s1?: number // Durasi Video 1 (Menit)
+  duration_s2?: number // Durasi Video 2 (Menit)
+  duration_s3?: number // Durasi Video 3 (Menit)
   custom_video_s1?: string
   custom_video_s2?: string
   custom_video_s3?: string
@@ -125,6 +128,9 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
             subtitle: item.subtitle || result[item.bab_number].subtitle,
             is_hidden: typeof item.is_hidden === 'boolean' ? item.is_hidden : result[item.bab_number].is_hidden,
             has_video: typeof item.has_video === 'boolean' ? item.has_video : result[item.bab_number].has_video,
+            duration_s1: typeof item.duration_s1 === 'number' ? item.duration_s1 : result[item.bab_number].duration_s1 ?? 15,
+            duration_s2: typeof item.duration_s2 === 'number' ? item.duration_s2 : result[item.bab_number].duration_s2 ?? 15,
+            duration_s3: typeof item.duration_s3 === 'number' ? item.duration_s3 : result[item.bab_number].duration_s3 ?? 12,
             custom_video_s1: item.custom_video_s1,
             custom_video_s2: item.custom_video_s2,
             custom_video_s3: item.custom_video_s3,
@@ -169,6 +175,9 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
       subtitle: setting.subtitle,
       is_hidden: setting.is_hidden,
       has_video: setting.has_video ?? !setting.is_hidden,
+      duration_s1: setting.duration_s1 ?? 15,
+      duration_s2: setting.duration_s2 ?? 15,
+      duration_s3: setting.duration_s3 ?? 12,
       custom_video_s1: setting.custom_video_s1 || null,
       custom_video_s2: setting.custom_video_s2 || null,
       custom_video_s3: setting.custom_video_s3 || null,

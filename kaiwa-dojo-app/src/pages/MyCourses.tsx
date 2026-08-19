@@ -303,13 +303,18 @@ export default function MyCourses() {
 
         const videoUrl = customVideoOverride || dbLesson?.video_id || hostedUrl
 
+        let customDuration = item.duration
+        if (item.num === 1 && adminSetting?.duration_s1) customDuration = adminSetting.duration_s1
+        if (item.num === 2 && adminSetting?.duration_s2) customDuration = adminSetting.duration_s2
+        if (item.num === 3 && adminSetting?.duration_s3) customDuration = adminSetting.duration_s3
+
         return {
           id: dbLesson?.id || `lesson_bab_${bab}_${item.num}`,
           title: item.title,
           lesson_number: item.num,
           content_type: item.type,
           video_id: videoUrl,
-          duration_minutes: dbLesson?.duration_minutes || item.duration,
+          duration_minutes: dbLesson?.duration_minutes || customDuration,
           is_placeholder: item.type === 'video' ? !videoUrl : false,
           is_completed: isCompleted,
           replay_count: replayCount,

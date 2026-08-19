@@ -399,8 +399,71 @@ export default function CourseEditor() {
                           [babNum]: { ...prev[babNum], subtitle: val },
                         }))
                       }}
-                      placeholder="Contoh: ??????????? (Saya adalah insinyur)"
+                      placeholder="Contoh: わたしはエンジニアです (Saya adalah insinyur)"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Duration Form Fields: Video 1, 2, 3 Durations (Minutes) */}
+                <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                  <div>
+                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      ⏱️ Durasi Video 1 (Menit)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={chap.duration_s1 ?? 15}
+                      onChange={e => {
+                        const val = Number(e.target.value) || 15
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], duration_s1: val },
+                        }))
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      ⏱️ Durasi Video 2 (Menit)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={chap.duration_s2 ?? 15}
+                      onChange={e => {
+                        const val = Number(e.target.value) || 15
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], duration_s2: val },
+                        }))
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      ⏱️ Durasi Video 3 (Menit)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={chap.duration_s3 ?? 12}
+                      onChange={e => {
+                        const val = Number(e.target.value) || 12
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], duration_s3: val },
+                        }))
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
                     />
                   </div>
                 </div>
