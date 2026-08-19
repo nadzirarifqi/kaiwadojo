@@ -405,19 +405,18 @@ export default function CourseEditor() {
                   </div>
                 </div>
 
-                {/* Duration Form Fields: Video 1, 2, 3 Durations (Minutes) */}
-                <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                {/* Duration Form Fields: Video 1, 2, 3 Durations (Minutes.Seconds, e.g. 3.44) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                   <div>
                     <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 1 (Menit)
+                      ⏱️ Durasi Video 1 (Menit.Detik)
                     </label>
                     <input
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={chap.duration_s1 ?? 15}
+                      type="text"
+                      placeholder="Contoh: 3.44"
+                      value={chap.duration_s1 ?? '15.00'}
                       onChange={e => {
-                        const val = Number(e.target.value) || 15
+                        const val = e.target.value
                         setChapterMap(prev => ({
                           ...prev,
                           [babNum]: { ...prev[babNum], duration_s1: val },
@@ -429,15 +428,14 @@ export default function CourseEditor() {
 
                   <div>
                     <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 2 (Menit)
+                      ⏱️ Durasi Video 2 (Menit.Detik)
                     </label>
                     <input
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={chap.duration_s2 ?? 15}
+                      type="text"
+                      placeholder="Contoh: 15.30"
+                      value={chap.duration_s2 ?? '15.00'}
                       onChange={e => {
-                        const val = Number(e.target.value) || 15
+                        const val = e.target.value
                         setChapterMap(prev => ({
                           ...prev,
                           [babNum]: { ...prev[babNum], duration_s2: val },
@@ -449,15 +447,14 @@ export default function CourseEditor() {
 
                   <div>
                     <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 3 (Menit)
+                      ⏱️ Durasi Video 3 (Menit.Detik)
                     </label>
                     <input
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={chap.duration_s3 ?? 12}
+                      type="text"
+                      placeholder="Contoh: 12.00"
+                      value={chap.duration_s3 ?? '12.00'}
                       onChange={e => {
-                        const val = Number(e.target.value) || 12
+                        const val = e.target.value
                         setChapterMap(prev => ({
                           ...prev,
                           [babNum]: { ...prev[babNum], duration_s3: val },

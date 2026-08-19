@@ -17,6 +17,7 @@ interface LessonItem {
   video_id: string | null // MP4 URL or null if placeholder
 
   duration_minutes: number
+  duration_text?: string
   is_placeholder: boolean
   is_completed?: boolean
   replay_count?: number
@@ -288,6 +289,9 @@ export default function MyCourses() {
       const info = titlesMap[bab] || { title: `Bab ${bab}`, subtitle: 'Materi Bahasa Jepang', has_video: false }
       const adminSetting = adminChapterMap[bab]
 
+      const rawBabTitle = adminSetting?.title || info.title
+      const babCleanTitle = rawBabTitle.replace(/^Bab\s+\d+:\s*/i, '')
+
       const lessons: LessonItem[] = CHAPTER_ITEMS_CONFIG.map(item => {
         const lessonCode = `bab_${bab}_item_${item.num}`
         const dbLesson   = realLessonMap.get(lessonCode)
@@ -303,18 +307,28 @@ export default function MyCourses() {
 
         const videoUrl = customVideoOverride || dbLesson?.video_id || hostedUrl
 
-        let customDuration = item.duration
-        if (item.num === 1 && adminSetting?.duration_s1) customDuration = adminSetting.duration_s1
-        if (item.num === 2 && adminSetting?.duration_s2) customDuration = adminSetting.duration_s2
-        if (item.num === 3 && adminSetting?.duration_s3) customDuration = adminSetting.duration_s3
+        // Format Title: [JUDUL BAB] Part 1, Part 2, Part 3
+        let lessonTitle = item.title
+        if (item.num === 1) lessonTitle = `${babCleanTitle} Part 1`
+        if (item.num === 2) lessonTitle = `${babCleanTitle} Part 2`
+        if (item.num === 3) lessonTitle = `${babCleanTitle} Part 3`
+        if (item.num === 4) lessonTitle = `Kuis Evaluasi — ${babCleanTitle}`
+        if (item.num === 5) lessonTitle = `Setoran Kotoba — ${babCleanTitle}`
+
+        // Duration text (e.g. "3.44", "15.30")
+        let durationText = `${item.duration}.00`
+        if (item.num === 1 && adminSetting?.duration_s1) durationText = String(adminSetting.duration_s1)
+        if (item.num === 2 && adminSetting?.duration_s2) durationText = String(adminSetting.duration_s2)
+        if (item.num === 3 && adminSetting?.duration_s3) durationText = String(adminSetting.duration_s3)
 
         return {
           id: dbLesson?.id || `lesson_bab_${bab}_${item.num}`,
-          title: item.title,
+          title: lessonTitle,
           lesson_number: item.num,
           content_type: item.type,
           video_id: videoUrl,
-          duration_minutes: dbLesson?.duration_minutes || customDuration,
+          duration_minutes: Math.ceil(parseFloat(durationText) || item.duration),
+          duration_text: durationText,
           is_placeholder: item.type === 'video' ? !videoUrl : false,
           is_completed: isCompleted,
           replay_count: replayCount,
@@ -768,8 +782,8 @@ export default function MyCourses() {
                             </div>
 
                             {/* Duration Tag */}
-                            <span className="absolute bottom-2 right-2 text-[0.65rem] font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs">
-                              ⏱️ {lesson.duration_minutes}m
+                            <span className="absolute bottom-2 right-2 text-[0.65rem] font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs font-mono">
+                              ⏱️ {lesson.duration_text || `${lesson.duration_minutes}.00`} Min
                             </span>
                           </div>
 
