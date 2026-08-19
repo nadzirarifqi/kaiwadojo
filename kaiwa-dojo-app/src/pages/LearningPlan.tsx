@@ -21,6 +21,7 @@ import {
   cancelClassBooking,
   calculateDateScheduleStatus,
   sortSchedules,
+  RESERVATION_UPDATE_EVENT,
   getWeekRangeId,
   getMonthRangeId,
 } from '../lib/scheduleService'
@@ -537,6 +538,29 @@ export default function LearningPlanPage() {
 
   useEffect(() => {
     reloadSchedules()
+
+    // 1. Instant local window event sync (for same browser / role switcher / multi-tabs)
+    const handleSync = () => reloadSchedules()
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    window.addEventListener('storage', handleSync)
+
+    // 2. Supabase Realtime channel for cross-device sync
+    const channel = supabase
+      .channel('class_reservations_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_reservations' },
+        () => {
+          reloadSchedules()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      window.removeEventListener('storage', handleSync)
+      supabase.removeChannel(channel)
+    }
   }, [selectedDateStr, currentMonthDate])
 
 

@@ -383,6 +383,8 @@ export async function deleteSchedule(scheduleId: string): Promise<void> {
   }
 }
 
+export const RESERVATION_UPDATE_EVENT = 'kaiwa_reservation_updated'
+
 export async function bookClass(
   schedule: ClassSchedule,
   userId: string,
@@ -443,7 +445,6 @@ export async function bookClass(
     }
   }
 
-
   // Create Reservation
   const newReservation: ClassReservation = {
     id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -456,6 +457,9 @@ export async function bookClass(
 
   const updatedReservations = [newReservation, ...reservations]
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedReservations))
+
+  // Dispatch custom window event for instant local tab sync
+  window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: newReservation }))
 
   try {
     await supabase.from('class_reservations').insert(newReservation)
@@ -470,6 +474,9 @@ export async function cancelClassBooking(reservationId: string): Promise<boolean
   const reservations = await fetchReservations()
   const updated = reservations.filter(r => r.id !== reservationId)
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updated))
+
+  // Dispatch custom window event for instant local tab sync
+  window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: reservationId }))
 
   try {
     await supabase.from('class_reservations').delete().eq('id', reservationId)
