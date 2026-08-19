@@ -152,6 +152,8 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
   return result
 }
 
+export const CHAPTER_UPDATE_EVENT = 'kaiwa_chapter_updated'
+
 /* ── Save Chapter Setting to LocalStorage & Supabase DB ── */
 export async function saveChapterSetting(setting: ChapterSetting): Promise<boolean> {
   // 1. Save to LocalStorage immediately
@@ -163,6 +165,9 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
     }
     map[setting.bab_number] = setting
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
+
+    // Dispatch global custom event for instant local tab & role-switcher sync
+    window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail: setting }))
   } catch (e) {
     console.error('LocalStorage save error:', e)
   }

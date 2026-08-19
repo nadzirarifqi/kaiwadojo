@@ -8,6 +8,7 @@ import {
   saveChapterSetting,
   getCourseHeaderSettings,
   saveCourseHeaderSettings,
+  CHAPTER_UPDATE_EVENT,
 } from '../lib/chapterService'
 
 export default function CourseEditor() {
@@ -35,6 +36,15 @@ export default function CourseEditor() {
 
   useEffect(() => {
     loadData()
+
+    const handleSync = () => loadData()
+    window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+    window.addEventListener('storage', handleSync)
+
+    return () => {
+      window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+      window.removeEventListener('storage', handleSync)
+    }
   }, [])
 
   async function loadData() {
