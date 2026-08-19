@@ -1181,12 +1181,14 @@ export default function LearningPlanPage() {
                       }}
                       className={`min-h-[5.5rem] xs:min-h-[6.5rem] sm:min-h-[8.5rem] p-1.5 xs:p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none relative group overflow-hidden ${cellBgStyle} ${topStripStyle}`}
                     >
-                      {/* Past & Present Hanko Stamp Overlay (Cap Hijau = Lulus, Cap Merah = Gagal, Cap Abu-abu = Kosong) */}
-                      <img
-                        src={stampSrc}
-                        alt={stampAlt}
-                        className="absolute top-1 right-1 size-5 xs:size-6 sm:size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
-                      />
+                      {/* Past Hanko Stamp Overlay for Daily Mission (HANYA tanggal sebelum hari ini) */}
+                      {isPast && (
+                        <img
+                          src={stampSrc}
+                          alt={stampAlt}
+                          className="absolute top-1 right-1 size-5 xs:size-6 sm:size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
+                        />
+                      )}
 
                       <div className="flex items-center justify-between relative z-20">
                         <span className={`text-[0.75rem] xs:text-xs sm:text-base font-black ${
