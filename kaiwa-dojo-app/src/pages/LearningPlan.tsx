@@ -672,7 +672,7 @@ export default function LearningPlanPage() {
 
       {/* Comprehensive Quick Feature & Section Guide Banner */}
       <div className="mb-5 bg-gradient-to-r from-sky-500/10 via-emerald-500/10 to-amber-500/10 dark:from-sky-950/40 dark:via-emerald-950/40 dark:to-amber-950/40 p-4 sm:p-5 rounded-3xl border border-sky-200/60 dark:border-sky-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-start gap-3.5 flex-1">
           <div className="size-10 sm:size-12 rounded-2xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-xl shrink-0 shadow-xs">
             💡
           </div>
@@ -686,11 +686,11 @@ export default function LearningPlanPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <span className="text-xs font-black bg-sky-600 text-white px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1">
+        <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+          <span className="text-xs font-black bg-sky-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
             💻 Kelas Online (Batas 1 Sesi/Minggu)
           </span>
-          <span className="text-xs font-black bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1">
+          <span className="text-xs font-black bg-emerald-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
             🏢 Kelas Offline (Batas 1 Sesi/Bulan)
           </span>
         </div>
