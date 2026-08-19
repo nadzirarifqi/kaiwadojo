@@ -27,6 +27,7 @@ interface ChapterItem {
   title: string
   subtitle: string
   is_hidden?: boolean
+  has_video?: boolean
   lessons: LessonItem[]
 }
 
@@ -184,6 +185,26 @@ export default function MyCourses() {
   const [loading, setLoading]             = useState(true)
   const [searchBab, setSearchBab]         = useState('')
 
+  /* ── Load Course Data from Supabase & Subscribe to Realtime Updates ── */
+  useEffect(() => {
+    fetchCourseData()
+
+    const channel = supabase
+      .channel('chapter_settings_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chapter_settings' },
+        () => {
+          fetchCourseData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, profile?.role, selectedJilid])
+
   // Auto-rotate fun fact every 10 seconds
   useEffect(() => {
     const timer = setInterval(() => {
@@ -264,7 +285,7 @@ export default function MyCourses() {
     const generatedChapters: ChapterItem[] = []
 
     for (let bab = startBab; bab <= endBab; bab++) {
-      const info = titlesMap[bab] || { title: `Bab ${bab}`, subtitle: 'Materi Bahasa Jepang' }
+      const info = titlesMap[bab] || { title: `Bab ${bab}`, subtitle: 'Materi Bahasa Jepang', has_video: false }
       const adminSetting = adminChapterMap[bab]
 
       const lessons: LessonItem[] = CHAPTER_ITEMS_CONFIG.map(item => {
@@ -303,7 +324,8 @@ export default function MyCourses() {
         bab_number: bab,
         title: finalTitle,
         subtitle: adminSetting?.subtitle || info.subtitle,
-        is_hidden: adminSetting?.is_hidden || false,
+        is_hidden: adminSetting?.is_hidden ?? false,
+        has_video: adminSetting?.has_video ?? (info as any).has_video ?? false,
         lessons,
       })
     }
@@ -359,24 +381,32 @@ export default function MyCourses() {
 
   async function handleToggleLessonComplete(lesson: LessonItem) {
     if (!user || lesson.is_placeholder) return
-    const nextCompleted = !lesson.is_completed
+    const newStatus = !lesson.is_completed
 
-    const { error } = await supabase.from('lesson_progress').upsert({
+    await supabase.from('lesson_progress').upsert({
       student_id: user.id,
       lesson_id: lesson.id,
-      is_completed: nextCompleted,
+      is_completed: newStatus,
       last_watched_at: new Date().toISOString(),
     }, { onConflict: 'student_id,lesson_id' })
 
-    if (!error) {
-      await supabase.from('learning_streaks').upsert({
-        student_id: user.id,
-        date: new Date().toISOString().split('T')[0],
-      }, { onConflict: 'student_id,date' })
+    setChapters(prev =>
+      prev.map(chap => ({
+        ...chap,
+        lessons: chap.lessons.map(l =>
+          l.id === lesson.id ? { ...l, is_completed: newStatus } : l
+        ),
+      }))
+    )
 
-      fetchCourseData()
-      setActiveLesson(prev => prev ? { ...prev, is_completed: nextCompleted } : null)
+    if (activeLesson?.id === lesson.id) {
+      setActiveLesson(prev => (prev ? { ...prev, is_completed: newStatus } : null))
     }
+
+    await supabase.from('learning_streaks').upsert({
+      student_id: user.id,
+      date: new Date().toISOString().split('T')[0],
+    }, { onConflict: 'student_id,date' })
   }
 
   async function handleIncrementReplay(lesson: LessonItem) {
@@ -404,8 +434,10 @@ export default function MyCourses() {
 
   /* ── Filter Chapters ─────────────────────────────── */
   const filteredChapters = chapters.filter(c => {
-    // If not instructor/admin, hide chapters marked as hidden
-    if (!isInstructor && c.is_hidden) return false
+    // If student: hide if marked hidden OR if no video is available yet
+    if (!isInstructor) {
+      if (c.is_hidden || c.has_video === false) return false
+    }
 
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
