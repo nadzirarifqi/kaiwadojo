@@ -58,7 +58,87 @@ export function getDailyMission(userId: string, targetDate?: string): DailyMissi
   }
 }
 
-export function saveDailyMission(userId: string, data: Omit<DailyMissionData, 'date'>, targetDate?: string): DailyMissionData {
+export async function fetchDailyMission(userId: string, targetDate: string): Promise<DailyMissionData | null> {
+  const local = getDailyMission(userId, targetDate)
+  if (local) return local
+
+  try {
+    const { data, error } = await supabase
+      .from('daily_missions')
+      .select('*')
+      .eq('student_id', userId)
+      .eq('date', targetDate)
+      .maybeSingle()
+
+    if (!error && data) {
+      const mission: DailyMissionData = {
+        date: data.date,
+        selectedVideos: data.selected_videos || [],
+        targetReplayCount: data.target_replay_count || 3,
+        targetQuizCount: data.target_quiz_count || 1,
+        targetKotobaCount: data.target_kotoba_count || 1,
+      }
+      localStorage.setItem(`kaiwa_daily_mission_${userId}_${targetDate}`, JSON.stringify(mission))
+      return mission
+    }
+  } catch (e) {
+    // Ignore DB error
+  }
+
+  return null
+}
+
+export async function fetchAllUserMissions(userId: string): Promise<Map<string, DailyMissionData>> {
+  const missionMap = new Map<string, DailyMissionData>()
+
+  // 1. Load all local missions first
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith(`kaiwa_daily_mission_${userId}_`)) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const parsed: DailyMissionData = JSON.parse(raw)
+          if (parsed.date) missionMap.set(parsed.date, parsed)
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // 2. Load DB missions
+  try {
+    const { data, error } = await supabase
+      .from('daily_missions')
+      .select('*')
+      .eq('student_id', userId)
+
+    if (!error && data && data.length > 0) {
+      data.forEach((row: any) => {
+        const mission: DailyMissionData = {
+          date: row.date,
+          selectedVideos: row.selected_videos || [],
+          targetReplayCount: row.target_replay_count || 3,
+          targetQuizCount: row.target_quiz_count || 1,
+          targetKotobaCount: row.target_kotoba_count || 1,
+        }
+        missionMap.set(row.date, mission)
+        localStorage.setItem(`kaiwa_daily_mission_${userId}_${row.date}`, JSON.stringify(mission))
+      })
+    }
+  } catch (e) {
+    // Ignore DB fallback
+  }
+
+  return missionMap
+}
+
+export async function saveDailyMission(
+  userId: string,
+  data: Omit<DailyMissionData, 'date'>,
+  targetDate?: string
+): Promise<DailyMissionData> {
   const dateStr = targetDate || getTodayDateString()
   const mission: DailyMissionData = {
     ...data,
@@ -66,11 +146,27 @@ export function saveDailyMission(userId: string, data: Omit<DailyMissionData, 'd
     targetReplayCount: data.selectedVideos.length * 3,
   }
   
+  // 1. Save to LocalStorage immediately
   localStorage.setItem(`kaiwa_daily_mission_${userId}_${dateStr}`, JSON.stringify(mission))
-  
-  // Also save to default key if date is today
   if (dateStr === getTodayDateString()) {
     localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
+  }
+
+  // 2. Save to Supabase DB for cross-device persistence
+  try {
+    const customId = `${userId}_${dateStr}`
+    await supabase.from('daily_missions').upsert({
+      id: customId,
+      student_id: userId,
+      date: dateStr,
+      selected_videos: mission.selectedVideos,
+      target_replay_count: mission.targetReplayCount,
+      target_quiz_count: mission.targetQuizCount,
+      target_kotoba_count: mission.targetKotobaCount,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'student_id,date' })
+  } catch (err) {
+    console.warn('Supabase saveDailyMission note:', err)
   }
   
   return mission
@@ -96,7 +192,6 @@ export async function calculateMissionProgress(
     const selectedVideoIds = new Set(mission.selectedVideos.map(v => v.id))
 
     progressData.forEach((p: any) => {
-      // Check if watched on the target date or overall
       const matchVideo = selectedVideoIds.has(p.lesson_id) || selectedVideoIds.has(p.lesson_id?.toLowerCase())
       if (matchVideo) {
         actualReplays += (p.replay_count || 1)
@@ -126,8 +221,8 @@ export async function calculateMissionProgress(
 
   const overallPct = Math.round((videoPct + quizPct + kotobaPct) / 3)
 
-  // Sync streak if fully completed on today's date
-  if (isFullyCompleted && dateStr === getTodayDateString()) {
+  // Sync streak if fully completed on target date
+  if (isFullyCompleted) {
     await supabase.from('learning_streaks').upsert({
       student_id: userId,
       date: dateStr,

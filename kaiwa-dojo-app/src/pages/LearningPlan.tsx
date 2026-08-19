@@ -8,6 +8,8 @@ import {
   getDailyMission,
   saveDailyMission,
   calculateMissionProgress,
+  fetchDailyMission,
+  fetchAllUserMissions,
   getTodayDateString
 } from '../lib/dailyMission'
 
@@ -526,6 +528,9 @@ export default function LearningPlanPage() {
   const [streakSet, setStreakSet] = useState<Set<string>>(new Set())
   const [pastCompletedSet, setPastCompletedSet] = useState<Set<string>>(new Set())
 
+  // User Missions Map
+  const [userMissions, setUserMissions] = useState<Map<string, DailyMissionData>>(new Map())
+
   // Class Schedules & Reservations State for Calendar Visual Indicators
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
@@ -582,33 +587,40 @@ export default function LearningPlanPage() {
     const streakDates = new Set((streaksData || []).map((s: any) => s.date))
     setStreakSet(streakDates)
 
-    // 2. Compute past missions progress for the displayed month
+    // 2. Fetch all missions from Supabase DB + LocalStorage
+    const allMissionsMap = await fetchAllUserMissions(user.id)
+    setUserMissions(allMissionsMap)
+
+    // 3. Compute past missions progress for the displayed month
     const year = currentMonthDate.getFullYear()
     const month = currentMonthDate.getMonth()
     const daysInCurrentMonth = new Date(year, month + 1, 0).getDate()
     const completedSet = new Set<string>()
 
     for (let d = 1; d <= daysInCurrentMonth; d++) {
-      const dObj = new Date(year, month, d)
-      const dStr = dObj.toISOString().split('T')[0]
-      if (dStr < todayStr) {
-        if (streakDates.has(dStr)) {
-          completedSet.add(dStr)
-        } else {
-          const m = getDailyMission(user.id, dStr)
-          if (m) {
-            const prog = await calculateMissionProgress(user.id, m)
-            if (prog.isFullyCompleted) {
-              completedSet.add(dStr)
-            }
+      const formattedMonth = String(month + 1).padStart(2, '0')
+      const formattedDay   = String(d).padStart(2, '0')
+      const dStr = `${year}-${formattedMonth}-${formattedDay}`
+
+      if (streakDates.has(dStr)) {
+        completedSet.add(dStr)
+      } else {
+        const m = allMissionsMap.get(dStr)
+        if (m) {
+          const prog = await calculateMissionProgress(user.id, m)
+          if (prog.isFullyCompleted) {
+            completedSet.add(dStr)
           }
         }
       }
     }
     setPastCompletedSet(completedSet)
 
-    // 3. Load mission for selected date
-    const mission = getDailyMission(user.id, selectedDateStr)
+    // 4. Load mission for selected date
+    let mission = allMissionsMap.get(selectedDateStr) || getDailyMission(user.id, selectedDateStr)
+    if (!mission) {
+      mission = await fetchDailyMission(user.id, selectedDateStr)
+    }
     setSelectedMission(mission)
 
     if (mission) {
@@ -621,13 +633,13 @@ export default function LearningPlanPage() {
 
   async function handleSaveMission(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
     if (!user) return
-    const saved = saveDailyMission(user.id, data, dateStr)
+    const saved = await saveDailyMission(user.id, data, dateStr)
     setSelectedDateStr(dateStr)
     setSelectedMission(saved)
     const prog = await calculateMissionProgress(user.id, saved)
     setMissionProgress(prog)
     setShowMissionModal(false)
-    loadData()
+    await loadData()
   }
 
   /* ── Calendar Grid Calculations ──────────────────── */
@@ -1109,7 +1121,7 @@ export default function LearningPlanPage() {
                   const hasStreak = streakSet.has(dateStr)
                   const isPassed = streakSet.has(dateStr) || pastCompletedSet.has(dateStr)
                   
-                  const dateMission = user ? getDailyMission(user.id, dateStr) : null
+                  const dateMission = (user ? userMissions.get(dateStr) : null) || (user ? getDailyMission(user.id, dateStr) : null)
                   const hasPlan = dateMission !== null
 
                   const activeUserId = profile?.id || user?.id || 'user-demo-active'
@@ -1169,14 +1181,12 @@ export default function LearningPlanPage() {
                       }}
                       className={`min-h-[5.5rem] xs:min-h-[6.5rem] sm:min-h-[8.5rem] p-1.5 xs:p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none relative group overflow-hidden ${cellBgStyle} ${topStripStyle}`}
                     >
-                      {/* Past Hanko Stamp Overlay */}
-                      {isPast && (
-                        <img
-                          src={stampSrc}
-                          alt={stampAlt}
-                          className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 size-5 xs:size-6 sm:size-8 object-contain pointer-events-none opacity-30 dark:opacity-25 rotate-[-12deg] z-0 transition-transform group-hover:scale-110"
-                        />
-                      )}
+                      {/* Past & Present Hanko Stamp Overlay (Cap Hijau = Lulus, Cap Merah = Gagal, Cap Abu-abu = Kosong) */}
+                      <img
+                        src={stampSrc}
+                        alt={stampAlt}
+                        className="absolute top-1 right-1 size-5 xs:size-6 sm:size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
+                      />
 
                       <div className="flex items-center justify-between relative z-20">
                         <span className={`text-[0.75rem] xs:text-xs sm:text-base font-black ${
