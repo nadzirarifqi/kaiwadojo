@@ -10,7 +10,6 @@ export interface InstructorAccount {
   bio?: string
   expertise: string[]
   total_students: number
-  rating_avg: number
   created_at: string
 }
 
@@ -27,7 +26,6 @@ export const INITIAL_INSTRUCTORS: InstructorAccount[] = [
     bio: 'Pengajar Kaiwa Dojo Spesialis Bunpou & Listening N4-N3',
     expertise: ['Bunpou', 'Listening', 'N4'],
     total_students: 120,
-    rating_avg: 4.95,
     created_at: new Date().toISOString(),
   },
   {
@@ -40,7 +38,6 @@ export const INITIAL_INSTRUCTORS: InstructorAccount[] = [
     bio: 'Pengajar Percakapan Alami & JLPT Preparation',
     expertise: ['Kaiwa', 'JLPT N3', 'Shadowing'],
     total_students: 95,
-    rating_avg: 4.90,
     created_at: new Date().toISOString(),
   },
   {
@@ -53,7 +50,6 @@ export const INITIAL_INSTRUCTORS: InstructorAccount[] = [
     bio: 'Pengajar Business Japanese & Keigo Practice',
     expertise: ['Business Japanese', 'Keigo', 'Culture'],
     total_students: 88,
-    rating_avg: 4.98,
     created_at: new Date().toISOString(),
   },
 ]
@@ -76,7 +72,6 @@ export async function fetchInstructors(): Promise<InstructorAccount[]> {
         bio: p.bio,
         expertise: ['Japanese', 'Kaiwa'],
         total_students: 50,
-        rating_avg: 4.9,
         created_at: p.created_at || new Date().toISOString(),
       }))
 
@@ -116,16 +111,13 @@ export async function createInstructorAccount(data: {
     bio: data.bio || 'Pengajar Kaiwa Dojo',
     expertise: data.expertise || ['Kaiwa', 'Japanese'],
     total_students: 0,
-    rating_avg: 5.0,
     created_at: new Date().toISOString(),
   }
 
-  // 1. Save to LocalStorage
   const current = await fetchInstructors()
   const updated = [newInst, ...current]
   localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
 
-  // 2. Insert to Supabase DB profiles
   try {
     await supabase.from('profiles').insert({
       id: newInst.id,
@@ -141,7 +133,6 @@ export async function createInstructorAccount(data: {
       id: newInst.id,
       expertise: newInst.expertise,
       total_students: 0,
-      rating_avg: 5.0,
       verified: true,
     })
   } catch (e) {
@@ -149,4 +140,58 @@ export async function createInstructorAccount(data: {
   }
 
   return newInst
+}
+
+export async function updateInstructorAccount(
+  id: string,
+  data: {
+    full_name: string
+    username: string
+    email: string
+    bio?: string
+    expertise?: string[]
+  }
+): Promise<void> {
+  const current = await fetchInstructors()
+  const updated = current.map(inst => {
+    if (inst.id === id) {
+      return {
+        ...inst,
+        full_name: data.full_name,
+        username: data.username.toLowerCase().trim(),
+        email: data.email.toLowerCase().trim(),
+        bio: data.bio || inst.bio,
+        expertise: data.expertise || inst.expertise,
+      }
+    }
+    return inst
+  })
+  localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
+
+  try {
+    await supabase
+      .from('profiles')
+      .update({
+        full_name: data.full_name,
+        username: data.username.toLowerCase().trim(),
+        email: data.email.toLowerCase().trim(),
+        bio: data.bio,
+      })
+      .eq('id', id)
+  } catch (e) {
+    console.warn('DB updateInstructorAccount note:', e)
+  }
+}
+
+export async function deleteInstructorAccount(id: string): Promise<void> {
+  const current = await fetchInstructors()
+  const updated = current.filter(inst => inst.id !== id)
+  localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
+
+  try {
+    await supabase.from('instructor_profiles').delete().eq('id', id)
+    await supabase.from('profiles').delete().eq('id', id)
+  } catch (e) {
+    console.warn('DB deleteInstructorAccount note:', e)
+  }
 }

@@ -4,7 +4,9 @@ import { useAuth } from '../hooks/useAuth'
 import {
   type InstructorAccount,
   fetchInstructors,
-  createInstructorAccount
+  createInstructorAccount,
+  updateInstructorAccount,
+  deleteInstructorAccount
 } from '../lib/instructorService'
 
 export default function InstructorManager() {
@@ -13,14 +15,20 @@ export default function InstructorManager() {
 
   const [instructors, setInstructors] = useState<InstructorAccount[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Add Modal State
   const [showAddModal, setShowAddModal] = useState(false)
 
-  // New Instructor Form State
+  // Edit Modal State
+  const [editingInst, setEditingInst] = useState<InstructorAccount | null>(null)
+
+  // Form Fields State
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [bio, setBio] = useState('')
   const [expertise, setExpertise] = useState('Bunpou, Kaiwa')
+
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -38,6 +46,24 @@ export default function InstructorManager() {
   function showToastMsg(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(null), 3500)
+  }
+
+  function openAddModal() {
+    setFullName('')
+    setUsername('')
+    setEmail('')
+    setBio('')
+    setExpertise('Bunpou, Kaiwa')
+    setShowAddModal(true)
+  }
+
+  function openEditModal(inst: InstructorAccount) {
+    setEditingInst(inst)
+    setFullName(inst.full_name)
+    setUsername(inst.username)
+    setEmail(inst.email)
+    setBio(inst.bio || '')
+    setExpertise(inst.expertise.join(', '))
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -59,13 +85,40 @@ export default function InstructorManager() {
 
     setSaving(false)
     setShowAddModal(false)
-    setFullName('')
-    setUsername('')
-    setEmail('')
-    setBio('')
-    setExpertise('Bunpou, Kaiwa')
-
     showToastMsg(`Berhasil menambahkan akun Pemateri baru: ${created.full_name}!`)
+    await loadData()
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingInst) return
+    if (!fullName.trim() || !username.trim() || !email.trim()) {
+      alert('Mohon isi nama lengkap, username, dan email pengajar!')
+      return
+    }
+
+    setSaving(true)
+    const expArr = expertise.split(',').map(s => s.trim()).filter(Boolean)
+    await updateInstructorAccount(editingInst.id, {
+      full_name: fullName,
+      username,
+      email,
+      bio,
+      expertise: expArr.length > 0 ? expArr : editingInst.expertise,
+    })
+
+    setSaving(false)
+    setEditingInst(null)
+    showToastMsg(`Berhasil memperbarui data akun Pemateri: ${fullName}!`)
+    await loadData()
+  }
+
+  async function handleDelete(inst: InstructorAccount) {
+    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus akun Pemateri "${inst.full_name}" (@${inst.username})? Action ini tidak dapat dibatalkan.`)
+    if (!confirmDelete) return
+
+    await deleteInstructorAccount(inst.id)
+    showToastMsg(`Akun Pemateri "${inst.full_name}" telah dihapus!`)
     await loadData()
   }
 
@@ -76,7 +129,7 @@ export default function InstructorManager() {
         <div className="text-4xl mb-2">🔒</div>
         <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
         <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
-          Halaman ini khusus diperuntukkan untuk Super Admin (kaiwahiroshima) untuk membuat dan mengelola akun Pemateri.
+          Halaman ini khusus diperuntukkan untuk Super Admin (kaiwahiroshima) untuk membuat, mengedit, dan menghapus akun Pemateri.
         </p>
         <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl border-none cursor-pointer">
           Kembali ke Dashboard
@@ -107,15 +160,15 @@ export default function InstructorManager() {
             </span>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>👨‍🏫 Kelola & Buat Akun Pemateri / Pengajar</span>
+            <span>👨‍🏫 Manajemen Full Kontrol Akun Pemateri</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk mendaftarkan akun Sensei/Pengajar baru. Pengajar yang terdaftar akan dapat mengelola reservasi kelas live online dan offline.
+            Halaman khusus Admin untuk **menambah, mengedit, dan menghapus** akun Pemateri/Pengajar.
           </p>
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
         >
           <span>+ Tambah Akun Pemateri Baru</span>
@@ -148,7 +201,7 @@ export default function InstructorManager() {
                   <th className="pb-3 px-2">Username & Email</th>
                   <th className="pb-3 px-2">Bidang Keahlian</th>
                   <th className="pb-3 px-2">Role Status</th>
-                  <th className="pb-3 px-2 text-right">Rating & Siswa</th>
+                  <th className="pb-3 px-2 text-right">Aksi Admin</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
@@ -186,8 +239,20 @@ export default function InstructorManager() {
                       </span>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="font-extrabold text-amber-600 dark:text-amber-400">⭐ {inst.rating_avg}</div>
-                      <div className="text-[0.68rem] text-slate-400">👥 {inst.total_students} Siswa</div>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEditModal(inst)}
+                          className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(inst)}
+                          className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                        >
+                          🗑️ Hapus
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -283,6 +348,94 @@ export default function InstructorManager() {
                   className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md"
                 >
                   {saving ? 'Menyimpan...' : 'Simpan Pemateri'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Instructor Modal */}
+      {editingInst && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
+            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
+                <h3 className="text-lg font-extrabold">✏️ Edit Akun Pemateri</h3>
+              </div>
+              <button onClick={() => setEditingInst(null)} className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Nama Lengkap Pengajar *</label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Username *</label>
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bio / Deskripsi</label>
+                <input
+                  type="text"
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bidang Keahlian (Pisahkan dengan koma)</label>
+                <input
+                  type="text"
+                  value={expertise}
+                  onChange={e => setExpertise(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingInst(null)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md"
+                >
+                  {saving ? 'Memperbarui...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
