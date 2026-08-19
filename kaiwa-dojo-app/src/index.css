@@ -69,7 +69,12 @@
    ============================================= */
 *, *::before, *::after { box-sizing: border-box; }
 
-html { overflow-x: hidden; }
+html {
+  /* overflow-x:clip doesn't create a new scroll container unlike overflow-x:hidden */
+  overflow-x: clip;
+  /* iOS safe area for notched phones */
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
@@ -96,7 +101,11 @@ h1, h2, h3, h4, h5, h6 { margin: 0; line-height: 1.25; }
 p  { margin: 0; }
 a  { text-decoration: none; color: inherit; }
 img { display: block; }
-button { font-family: inherit; }
+button {
+  font-family: inherit;
+  /* Prevent 300ms tap delay on mobile */
+  touch-action: manipulation;
+}
 
 /* =============================================
    HIGH-CONTRAST DARK MODE OVERRIDES (MIDNIGHT DOJO)
@@ -260,6 +269,23 @@ html.dark nav a:hover {
 }
 
 /* =============================================
+   UTILITY — Mobile / Touch helpers
+   ============================================= */
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* iOS safe-area aware padding for fixed headers/footers */
+.safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-left   { padding-left:   env(safe-area-inset-left, 0px); }
+.safe-right  { padding-right:  env(safe-area-inset-right, 0px); }
+
+/* Prevent text selection during swipe/drag interactions */
+.no-select { user-select: none; -webkit-user-select: none; }
+
+/* =============================================
    UTILITY — Shimmer skeleton
    ============================================= */
 .skeleton {
@@ -284,3 +310,29 @@ html.dark .skeleton {
 
 html.dark ::-webkit-scrollbar-track { background: #0f172a; }
 html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+/* =============================================
+   ANIMATIONS — Additional
+   ============================================= */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease both;
+}
+
+/* Slide down reveal for collapsible panels */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease both;
+}
+
+/* Mobile viewport height fix (accounts for browser chrome) */
+.min-h-dvh { min-height: 100dvh; }
+.h-dvh     { height: 100dvh; }

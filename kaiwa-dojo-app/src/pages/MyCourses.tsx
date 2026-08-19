@@ -7,8 +7,9 @@ interface LessonItem {
   id: string
   title: string
   lesson_number: number // 1 to 5 for videos, 6 for quiz
-  content_type: 'video' | 'artikel' | 'quiz'
+  content_type: 'video' | 'artikel' | 'quiz' | 'kotoba'
   video_id: string | null // MP4 URL or null if placeholder
+
   duration_minutes: number
   is_placeholder: boolean
   is_completed?: boolean
@@ -168,6 +169,8 @@ export default function MyCourses() {
   // Active Lesson / Player state
   const [activeChapter, setActiveChapter] = useState<ChapterItem | null>(null)
   const [activeLesson, setActiveLesson]   = useState<LessonItem | null>(null)
+  // Mobile toggle for lesson list panel
+  const [showLessonList, setShowLessonList] = useState(false)
 
   // Expanded bab accordions
   const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set([1, 26]))
@@ -178,7 +181,8 @@ export default function MyCourses() {
   const [submittingComment, setSubmittingComment] = useState(false)
 
   // Real database lesson map: key = `bab_X_lesson_Y`
-  const [progressMap, setProgressMap] = useState<Map<string, { is_completed: boolean; replay_count: number }>>(new Map())
+  const [_progressMap, setProgressMap] = useState<Map<string, { is_completed: boolean; replay_count: number }>>(new Map())
+
 
   /* ── Load Course Data from Supabase & Merge Placeholders ── */
   useEffect(() => {
@@ -742,10 +746,59 @@ export default function MyCourses() {
             </div>
 
             {/* Modal Body: Left Player & Comments | Right Lessons list */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] overflow-hidden">
+            {/* On mobile: stack with toggle button. On lg+: side-by-side columns */}
+            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
 
               {/* Left Column: Video Player / Kotoba View / Quiz View / Placeholder */}
               <div className="flex flex-col overflow-y-auto p-4 sm:p-6 gap-5">
+
+                {/* Mobile-only: Toggle button for lesson list */}
+                <div className="lg:hidden flex items-center justify-between">
+                  <p className="text-xs text-slate-500 font-semibold">
+                    📚 {activeChapter?.lessons.length || 0} Materi di Bab Ini
+                  </p>
+                  <button
+                    onClick={() => setShowLessonList(prev => !prev)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border-none cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>📋 Daftar Materi</span>
+                    <span>{showLessonList ? '▲' : '▼'}</span>
+                  </button>
+                </div>
+
+                {/* Mobile-only: Collapsible lesson list (shows when toggled) */}
+                {showLessonList && (
+                  <div className="lg:hidden animate-slide-down bg-slate-50 rounded-2xl border border-slate-200 p-3 flex flex-col gap-2">
+                    <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider mb-1">
+                      Materi {activeChapter?.title || 'Bab Ini'}
+                    </h4>
+                    {activeChapter?.lessons.map(l => (
+                      <button
+                        key={l.id}
+                        onClick={() => { setActiveLesson(l); setShowLessonList(false) }}
+                        className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                          activeLesson?.id === l.id
+                            ? 'bg-white border-primary shadow-sm text-primary'
+                            : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <div className="text-xs font-bold truncate">{l.title}</div>
+                          <div className="text-[0.7rem] text-slate-400 mt-0.5">
+                            ⏱️ {l.duration_minutes}m {l.is_placeholder ? '• ⏳ Segera Hadir' : ''}
+                          </div>
+                        </div>
+                        {l.is_completed ? (
+                          <span className="text-xs">✅</span>
+                        ) : l.is_placeholder ? (
+                          <span className="text-[0.65rem] opacity-40">🔒</span>
+                        ) : (
+                          <span className="text-xs opacity-40">▶</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {activeLesson.content_type === 'kotoba' ? (
                   /* 🔤 Setoran Kotoba Interactive Frame */
                   <div className="w-full rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-200 p-6 flex flex-col gap-4 shadow-sm shrink-0">
@@ -984,8 +1037,8 @@ export default function MyCourses() {
                 </div>
               </div>
 
-              {/* Right Column: Playlist of 5 Videos in active Chapter */}
-              <div className="bg-slate-50 border-l border-slate-200 p-4 overflow-y-auto flex flex-col gap-2">
+              {/* Right Column: Playlist of 5 Videos in active Chapter (desktop only) */}
+              <div className="hidden lg:flex bg-slate-50 border-l border-slate-200 p-4 overflow-y-auto flex-col gap-2">
                 <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider px-2 mb-2">
                   Materi {activeChapter?.title || 'Bab Ini'}
                 </h4>

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
-export type UserRole = 'pelajar' | 'pemateri'
+export type UserRole = 'pelajar' | 'pemateri' | 'admin'
 
 export interface Profile {
   id: string
@@ -26,6 +26,22 @@ interface AuthContextValue {
   loading: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  switchRole: (role: UserRole) => void
+}
+
+const DEFAULT_DEMO_PROFILE: Profile = {
+  id: 'user-demo-active',
+  full_name: 'Budi Santoso',
+  username: 'budisantoso',
+  email: 'budi@kaiwadojo.com',
+  phone_number: '08123456789',
+  avatar_url: null,
+  bio: 'Semangat belajar Bahasa Jepang untuk persiapan kerja & magang!',
+  role: 'pelajar',
+  streak_days: 12,
+  last_active_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -35,11 +51,15 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
+  switchRole: () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
+    return savedRole ? { ...DEFAULT_DEMO_PROFILE, role: savedRole } : DEFAULT_DEMO_PROFILE
+  })
   const [loading, setLoading] = useState(true)
 
   async function fetchProfile(userId: string) {
@@ -48,7 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single()
-    if (!error && data) setProfile(data as Profile)
+    if (!error && data) {
+      const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
+      const finalRole = savedRole || (data.role as UserRole) || 'pelajar'
+      setProfile({ ...(data as Profile), role: finalRole })
+    }
   }
 
   async function refreshProfile() {
@@ -57,17 +81,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function switchRole(newRole: UserRole) {
+    localStorage.setItem('kaiwa_active_role', newRole)
+    setProfile(prev => prev ? { ...prev, role: newRole } : { ...DEFAULT_DEMO_PROFILE, role: newRole })
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        // Keep demo profile if no remote session so local preview works
+        const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
+        setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
+      }
       setLoading(false)
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session?.user) fetchProfile(session.user.id)
-      else setProfile(null)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
+        setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
+      }
     })
 
     return () => listener.subscription.unsubscribe()
@@ -75,12 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
-    setProfile(null)
     setSession(null)
+    const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
+    setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile, switchRole }}>
       {children}
     </AuthContext.Provider>
   )

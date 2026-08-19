@@ -15,6 +15,7 @@ export function detectVideoProvider(url: string): { provider: 'direct'; videoId:
 }
 
 // ── Helper: Build direct video URL ─────────────────────────
-export function getEmbedUrl(provider: string, videoId: string): string {
+export function getEmbedUrl(_provider: string, videoId: string): string {
   return videoId
 }
+

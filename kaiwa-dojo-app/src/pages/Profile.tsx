@@ -83,7 +83,9 @@ export default function ProfilePage() {
     if (!user) return
 
     async function loadDatabaseData() {
+      if (!user) return
       setIsLoadingData(true)
+
       try {
         // 1. Fetch Enrollments with Course Details
         const { data: enrollData } = await supabase
@@ -400,7 +402,7 @@ export default function ProfilePage() {
                 Opsi 2: Rekomendasi Avatar Dojo
               </label>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                 {AVATAR_PRESETS.map((preset) => (
                   <button
                     key={preset.id}

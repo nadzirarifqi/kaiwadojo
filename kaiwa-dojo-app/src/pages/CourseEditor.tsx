@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+
 
 interface Course {
   id: string
@@ -33,17 +33,17 @@ interface Lesson {
 }
 
 export default function CourseEditor() {
-  const navigate = useNavigate()
   const { user, profile } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
+
 
   // Form New Course
   const [isCreating, setIsCreating] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDesc, setNewDesc] = useState('')
-  const [newLevel, setNewLevel] = useState<'pemula' | 'menengah' | 'mahir'>('pemula')
+  const [newLevel] = useState<'pemula' | 'menengah' | 'mahir'>('pemula')
   const [newCategory, setNewCategory] = useState('Teknologi')
   const [submitting, setSubmitting] = useState(false)
 
@@ -54,10 +54,11 @@ export default function CourseEditor() {
   // Form New Lesson
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [lessonTitle, setLessonTitle] = useState('')
-  const [lessonType, setLessonType] = useState<'video' | 'artikel'>('video')
+  const [lessonType] = useState<'video' | 'artikel'>('video')
   const [videoUrlInput, setVideoUrlInput] = useState('')
   const [lessonDuration, setLessonDuration] = useState(10)
   const [addingLesson, setAddingLesson] = useState(false)
+
 
   async function fetchInstructorCourses() {
     if (!user) return
@@ -188,7 +189,8 @@ export default function CourseEditor() {
     if (!selectedCourse || !lessonTitle.trim()) return
     setAddingLesson(true)
 
-    let provider: 'youtube' | 'drive' | null = null
+    let provider: 'youtube' | 'drive' | 'direct' | null = null
+
     let videoId: string | null = null
 
     if (lessonType === 'video') {

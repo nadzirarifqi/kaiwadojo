@@ -9,12 +9,6 @@ interface SidebarProps {
   onToggle: () => void
 }
 
-const defaultNavItems = [
-  { iconImg: '/home.png',  label: 'Beranda',        to: '/dashboard' },
-  { iconImg: '/book.png',  label: 'Kursus Saya',    to: '/my-courses' },
-  { iconImg: '/task.png',  label: 'Rencana Belajar', to: '/learning-plan' },
-]
-
 const navBase =
   'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold ' +
   'transition-all duration-200 w-full text-left no-underline cursor-pointer'
@@ -23,7 +17,7 @@ const navInactive = 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:t
 
 export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const navigate = useNavigate()
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, switchRole } = useAuth()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   // Theme Sync State
@@ -65,6 +59,25 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   async function handleSignOut() {
     await signOut()
     navigate('/login')
+  }
+
+  const currentRole = profile?.role || 'pelajar'
+
+  const navItems = [
+    { iconImg: '/home.png', label: 'Beranda', to: '/dashboard' },
+    { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' },
+    { iconImg: '/calendar.png', label: 'Reservasi Kelas', to: '/reservasi-kelas' },
+    { iconImg: '/book.png', label: 'Kursus Saya', to: '/my-courses' },
+  ]
+
+
+  // Add teacher management menu if instructor or admin
+  if (currentRole === 'pemateri' || currentRole === 'admin') {
+    navItems.push({
+      iconImg: '/task.png',
+      label: 'Kelola Jadwal (Pengajar)',
+      to: '/kelola-jadwal',
+    })
   }
 
   return (
@@ -126,7 +139,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         {/* Nav */}
         <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
           <p className="text-[0.6rem] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 pt-3 pb-1.5">Menu</p>
-          {defaultNavItems.map(item => (
+          {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -138,6 +151,36 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             </NavLink>
           ))}
         </nav>
+
+        {/* Multi-role quick switcher card */}
+        <div className="mx-3 my-1.5 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400">
+            <span>Simulasi Mode Role</span>
+            <span className="text-primary dark:text-red-400">Multi-Layer</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => switchRole('pelajar')}
+              className={`py-1.5 px-2 rounded-xl text-[0.72rem] font-extrabold transition-all border cursor-pointer text-center ${
+                currentRole === 'pelajar'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
+              }`}
+            >
+              Pelajar
+            </button>
+            <button
+              onClick={() => switchRole('pemateri')}
+              className={`py-1.5 px-2 rounded-xl text-[0.72rem] font-extrabold transition-all border cursor-pointer text-center ${
+                currentRole === 'pemateri'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
+              }`}
+            >
+              Pengajar
+            </button>
+          </div>
+        </div>
 
         {/* User card & Popup Menu */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 relative">
@@ -221,11 +264,11 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[0.82rem] font-bold text-slate-800 dark:text-slate-100 truncate">{profile?.full_name ?? 'Memuat...'}</div>
-              {profile?.streak_days ? (
-                <div className="text-[0.7rem] text-orange-500 font-semibold">🔥 {profile.streak_days} hari streak</div>
-              ) : (
-                <div className="text-[0.7rem] text-slate-400 capitalize">{profile?.role ?? ''}</div>
-              )}
+              <div className="text-[0.7rem] text-slate-400 capitalize flex items-center gap-1">
+                <span className="font-semibold text-primary dark:text-red-400">
+                  {currentRole === 'pemateri' ? 'Admin Pengajar' : currentRole === 'admin' ? 'Superadmin' : 'Pelajar'}
+                </span>
+              </div>
             </div>
             <span className="text-slate-400 text-xs font-bold transition-transform">
               {userMenuOpen ? '▼' : '▲'}
