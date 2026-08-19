@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 import Sidebar from './components/Sidebar'
 import StudentDashboard from './pages/Dashboard'
 import InstructorDashboard from './pages/InstructorDashboard'
+import AdminDashboard from './pages/AdminDashboard'
+import InstructorManagerPage from './pages/InstructorManager'
 import MyCourses from './pages/MyCourses'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -19,7 +21,10 @@ function DashboardRoute() {
   const { profile } = useAuth()
   const role = profile?.role || 'pelajar'
 
-  if (role === 'pemateri' || role === 'admin') {
+  if (role === 'admin') {
+    return <AdminDashboard />
+  }
+  if (role === 'pemateri') {
     return <InstructorDashboard />
   }
 
@@ -132,6 +137,7 @@ function App() {
           <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
+          <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
           <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
           <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
           <Route path="*"                element={<Navigate to="/dashboard" replace />} />

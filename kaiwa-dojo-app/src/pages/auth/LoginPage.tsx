@@ -16,6 +16,26 @@ export default function LoginPage() {
     setLoading(true)
 
     const inputClean = username.trim().toLowerCase()
+
+    // Special Admin Login Credentials
+    if (inputClean === 'kaiwahiroshima' && password === 'inaconnextkaiwa6') {
+      try {
+        await supabase.from('profiles').upsert({
+          id: '00000000-0000-0000-0000-000000000099',
+          full_name: 'Super Admin Hiroshima',
+          username: 'kaiwahiroshima',
+          email: 'admin@kaiwadojo.com',
+          role: 'admin',
+        })
+      } catch (e) {
+        console.warn('Admin upsert note:', e)
+      }
+
+      setLoading(false)
+      navigate('/dashboard')
+      return
+    }
+
     let targetEmail = inputClean
 
     // Jika input bukan email (tidak ada '@'), cari email dari username di profiles

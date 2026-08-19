@@ -65,25 +65,29 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   const navItems = [
     { iconImg: '/home.png', label: 'Beranda', to: '/dashboard' },
-    { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' },
-    { iconImg: '/calendar.png', label: 'Reservasi Kelas', to: '/reservasi-kelas' },
-    { iconImg: '/book.png', label: 'Kursus Saya', to: '/my-courses' },
   ]
 
-
-  // Add teacher management menu if instructor or admin
-  if (currentRole === 'pemateri' || currentRole === 'admin') {
+  if (currentRole === 'admin') {
     navItems.push(
-      {
-        iconImg: '/book.png',
-        label: 'Kelola Kursus & Bab',
-        to: '/kelola-kursus',
-      },
-      {
-        iconImg: '/task.png',
-        label: 'Kelola Jadwal Kelas',
-        to: '/kelola-jadwal',
-      }
+      { iconImg: '/book.png', label: 'Edit Kursus & Durasi', to: '/kelola-kursus' },
+      { iconImg: '/home.png', label: 'Kelola Akun Pemateri', to: '/kelola-pemateri' },
+      { iconImg: '/calendar.png', label: 'Kelola Jadwal Kelas', to: '/kelola-jadwal' },
+      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' },
+      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' }
+    )
+  } else if (currentRole === 'pemateri') {
+    navItems.push(
+      { iconImg: '/calendar.png', label: 'Kelola Jadwal Kelas', to: '/kelola-jadwal' },
+      { iconImg: '/calendar.png', label: 'Reservasi Kelas Live', to: '/reservasi-kelas' },
+      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' },
+      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' }
+    )
+  } else {
+    // Pelajar
+    navItems.push(
+      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' },
+      { iconImg: '/calendar.png', label: 'Reservasi Kelas', to: '/reservasi-kelas' },
+      { iconImg: '/book.png', label: 'Kursus Saya', to: '/my-courses' }
     )
   }
 
