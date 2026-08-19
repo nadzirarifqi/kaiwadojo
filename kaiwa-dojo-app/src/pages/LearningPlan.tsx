@@ -20,6 +20,7 @@ import {
   bookClass,
   cancelClassBooking,
   calculateDateScheduleStatus,
+  sortSchedules,
   getWeekRangeId,
   getMonthRangeId,
 } from '../lib/scheduleService'
@@ -274,7 +275,7 @@ function DateClassEnrollModal({
   onRefresh: () => Promise<void>
   onOpenMissionBuilder: () => void
 }) {
-  const daySchedules = schedules.filter(s => s.date === dateStr)
+  const daySchedules = sortSchedules(schedules.filter(s => s.date === dateStr))
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 

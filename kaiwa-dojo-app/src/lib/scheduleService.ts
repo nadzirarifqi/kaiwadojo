@@ -297,17 +297,34 @@ export function getInitialReservations(): ClassReservation[] {
 
 // ── CRUD Functions ──
 
+// Helper: Sort schedules (Offline first, then Online, then Date, then Start Time)
+export function sortSchedules(schedules: ClassSchedule[]): ClassSchedule[] {
+  return [...schedules].sort((a, b) => {
+    // 1. Class type: Offline (0) comes before Online (1)
+    if (a.type !== b.type) {
+      return a.type === 'offline' ? -1 : 1
+    }
+    // 2. Date ascending
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date)
+    }
+    // 3. Start time ascending
+    return a.start_time.localeCompare(b.start_time)
+  })
+}
+
 export async function fetchSchedules(): Promise<ClassSchedule[]> {
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
     if (!error && data && data.length > 0) {
-      localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(data))
-      return data as ClassSchedule[]
+      const sortedData = sortSchedules(data as ClassSchedule[])
+      localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
+      return sortedData
     }
   } catch {
     // Fallback to local
   }
-  return getInitialSchedules()
+  return sortSchedules(getInitialSchedules())
 }
 
 export async function fetchReservations(): Promise<ClassReservation[]> {
@@ -504,7 +521,7 @@ export function calculateDateScheduleStatus(
   allSchedules: ClassSchedule[],
   allReservations: ClassReservation[]
 ): DateScheduleStatus {
-  const daySchedules = allSchedules.filter(s => s.date === dateStr)
+  const daySchedules = sortSchedules(allSchedules.filter(s => s.date === dateStr))
 
   if (daySchedules.length === 0) {
     return {
