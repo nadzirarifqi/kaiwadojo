@@ -1,476 +1,425 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
-
-
-interface Course {
-  id: string
-  title: string
-  slug: string
-  description: string
-  level: 'pemula' | 'menengah' | 'mahir'
-  category: string
-  is_published: boolean
-  sections?: Section[]
-}
-
-interface Section {
-  id: string
-  title: string
-  order_index: number
-  lessons: Lesson[]
-}
-
-interface Lesson {
-  id: string
-  title: string
-  content_type: 'video' | 'artikel' | 'quiz'
-  video_provider: 'youtube' | 'drive' | 'direct' | null
-  video_id: string | null
-  content_body: string | null
-  duration_minutes: number
-  is_free_preview: boolean
-}
+import AdaptiveIcon from '../components/AdaptiveIcon'
+import {
+  type ChapterSetting,
+  type CourseHeaderSettings,
+  getChapterSettingsMap,
+  saveChapterSetting,
+  getCourseHeaderSettings,
+  saveCourseHeaderSettings,
+} from '../lib/chapterService'
 
 export default function CourseEditor() {
-  const { user, profile } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
-  const [_loading, setLoading] = useState(true)
+  const { profile } = useAuth()
+  const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
+  const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'visible' | 'hidden'>('all')
 
-  // Form New Course
-  const [isCreating, setIsCreating] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDesc, setNewDesc] = useState('')
-  const [newLevel] = useState<'pemula' | 'menengah' | 'mahir'>('pemula')
-  const [newCategory, setNewCategory] = useState('Teknologi')
-  const [submitting, setSubmitting] = useState(false)
+  const [chapterMap, setChapterMap] = useState<Record<number, ChapterSetting>>({})
+  const [_headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
+    page_title: '?? Buku Kursus Minna no Nihongo',
+    page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
+  })
 
-  // Form New Section
-  const [newSectionTitle, setNewSectionTitle] = useState('')
-  const [addingSection, setAddingSection] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [savingBab, setSavingBab] = useState<number | null>(null)
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Form New Lesson
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
-  const [lessonTitle, setLessonTitle] = useState('')
-  const [lessonType] = useState<'video' | 'artikel'>('video')
-  const [videoUrlInput, setVideoUrlInput] = useState('')
-  const [lessonDuration, setLessonDuration] = useState(10)
-  const [addingLesson, setAddingLesson] = useState(false)
+  // Edit Header Modal / Card
+  const [isEditingHeader, setIsEditingHeader] = useState(false)
+  const [editPageTitle, setEditPageTitle] = useState('')
+  const [editPageSubtitle, setEditPageSubtitle] = useState('')
 
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  async function fetchInstructorCourses() {
-    if (!user) return
+  async function loadData() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('instructor_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setCourses(data as Course[])
-      if (data.length > 0 && !selectedCourse) {
-        loadCourseDetail(data[0].id)
-      }
-    }
+    const [map, header] = await Promise.all([
+      getChapterSettingsMap(),
+      getCourseHeaderSettings(),
+    ])
+    setChapterMap(map)
+    setHeaderSettings(header)
+    setEditPageTitle(header.page_title)
+    setEditPageSubtitle(header.page_subtitle)
     setLoading(false)
   }
 
-  async function loadCourseDetail(courseId: string) {
-    const { data: courseData } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('id', courseId)
-      .single()
-
-    const { data: sectionsData } = await supabase
-      .from('course_sections')
-      .select('*')
-      .eq('course_id', courseId)
-      .order('order_index', { ascending: true })
-
-    const { data: lessonsData } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('course_id', courseId)
-      .order('order_index', { ascending: true })
-
-    const sectionsWithLessons = (sectionsData || []).map((sec: any) => ({
-      ...sec,
-      lessons: (lessonsData || []).filter((les: any) => les.section_id === sec.id),
-    }))
-
-    if (courseData) {
-      setSelectedCourse({
-        ...courseData,
-        sections: sectionsWithLessons,
-      })
-    }
+  function showToast(text: string, type: 'success' | 'error' = 'success') {
+    setToastMessage({ text, type })
+    setTimeout(() => setToastMessage(null), 3500)
   }
 
-  useEffect(() => {
-    fetchInstructorCourses()
-  }, [user])
+  async function handleToggleHide(babNum: number) {
+    const current = chapterMap[babNum]
+    if (!current) return
 
-  async function handleCreateCourse(e: React.FormEvent) {
-    e.preventDefault()
-    if (!user) return
-    setSubmitting(true)
-
-    const slug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString().slice(-4)
-
-    const { data, error } = await supabase
-      .from('courses')
-      .insert({
-        instructor_id: user.id,
-        title: newTitle.trim(),
-        slug,
-        description: newDesc.trim(),
-        level: newLevel,
-        category: newCategory,
-        is_published: false,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      alert(`Gagal membuat kursus: ${error.message}`)
-    } else if (data) {
-      setNewTitle('')
-      setNewDesc('')
-      setIsCreating(false)
-      fetchInstructorCourses()
-      loadCourseDetail(data.id)
-    }
-    setSubmitting(false)
-  }
-
-  async function handleTogglePublish() {
-    if (!selectedCourse) return
-    const nextStatus = !selectedCourse.is_published
-
-    const { error } = await supabase
-      .from('courses')
-      .update({ is_published: nextStatus })
-      .eq('id', selectedCourse.id)
-
-    if (!error) {
-      setSelectedCourse(prev => prev ? { ...prev, is_published: nextStatus } : null)
-      setCourses(prev => prev.map(c => c.id === selectedCourse.id ? { ...c, is_published: nextStatus } : c))
-    }
-  }
-
-  async function handleAddSection(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedCourse || !newSectionTitle.trim()) return
-    setAddingSection(true)
-
-    const orderIndex = (selectedCourse.sections?.length || 0) + 1
-
-    const { error } = await supabase
-      .from('course_sections')
-      .insert({
-        course_id: selectedCourse.id,
-        title: newSectionTitle.trim(),
-        order_index: orderIndex,
-      })
-
-    if (!error) {
-      setNewSectionTitle('')
-      loadCourseDetail(selectedCourse.id)
-    }
-    setAddingSection(false)
-  }
-
-  async function handleAddLesson(e: React.FormEvent, sectionId: string) {
-    e.preventDefault()
-    if (!selectedCourse || !lessonTitle.trim()) return
-    setAddingLesson(true)
-
-    let provider: 'youtube' | 'drive' | 'direct' | null = null
-
-    let videoId: string | null = null
-
-    if (lessonType === 'video') {
-      const { detectVideoProvider } = await import('../lib/supabaseClient')
-      const detected = detectVideoProvider(videoUrlInput.trim())
-      provider = detected.provider
-      videoId = detected.videoId
+    const updated: ChapterSetting = {
+      ...current,
+      is_hidden: !current.is_hidden,
     }
 
-    const { error } = await supabase
-      .from('lessons')
-      .insert({
-        course_id: selectedCourse.id,
-        section_id: sectionId,
-        title: lessonTitle.trim(),
-        content_type: lessonType,
-        video_provider: provider,
-        video_id: videoId,
-        duration_minutes: lessonDuration,
-      })
-
-    if (error) {
-      alert(`Gagal menambah materi: ${error.message}`)
-    } else {
-      setLessonTitle('')
-      setVideoUrlInput('')
-      setActiveSectionId(null)
-      loadCourseDetail(selectedCourse.id)
-    }
-    setAddingLesson(false)
-  }
-
-  if (profile?.role !== 'pemateri') {
-    return (
-      <main className="flex-1 p-8 text-center flex flex-col items-center justify-center gap-3">
-        <span className="text-5xl">🔒</span>
-        <h2 className="text-xl font-bold text-slate-700">Akses Terbatas</h2>
-        <p className="text-sm text-slate-400">Halaman ini hanya dapat diakses oleh akun dengan role Pemateri.</p>
-      </main>
+    setChapterMap(prev => ({ ...prev, [babNum]: updated }))
+    await saveChapterSetting(updated)
+    showToast(
+      updated.is_hidden
+        ? `Bab ${babNum} kini DISEMBUNYIKAN dari siswa ??`
+        : `Bab ${babNum} kini DITAMPILKAN ke siswa ??`
     )
   }
 
-  return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+  async function handleSaveBab(babNum: number) {
+    const current = chapterMap[babNum]
+    if (!current) return
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight mb-1">
-            🛠️ Course Editor Pemateri
-          </h1>
-          <p className="text-sm text-slate-500">Kelola dan upload materi kursus kamu di sini</p>
+    setSavingBab(babNum)
+    await saveChapterSetting(current)
+    setSavingBab(null)
+    showToast(`Pengaturan Bab ${babNum} berhasil disimpan! ?`)
+  }
+
+  async function handleSaveHeader() {
+    const newHeader: CourseHeaderSettings = {
+      page_title: editPageTitle,
+      page_subtitle: editPageSubtitle,
+    }
+    setHeaderSettings(newHeader)
+    await saveCourseHeaderSettings(newHeader)
+    setIsEditingHeader(false)
+    showToast('Header halaman Kursus Saya berhasil diperbarui! ??')
+  }
+
+  // Filter bab items
+  const startBab = selectedJilid === 1 ? 1 : 26
+
+  const filteredBabNumbers = Array.from({ length: 25 }, (_, i) => startBab + i).filter(babNum => {
+    const chap = chapterMap[babNum]
+    if (!chap) return true
+
+    // Search filter
+    const matchesSearch =
+      chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      chap.subtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `bab ${babNum}`.includes(searchTerm.toLowerCase())
+
+    // Status filter
+    if (statusFilter === 'visible') return matchesSearch && !chap.is_hidden
+    if (statusFilter === 'hidden') return matchesSearch && chap.is_hidden
+
+    return matchesSearch
+  })
+
+  return (
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto flex flex-col gap-6 animate-fade-in">
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className={`fixed top-5 right-5 z-[600] px-5 py-3 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold flex items-center gap-2 animate-slide-fade ${
+          toastMessage.type === 'success'
+            ? 'bg-emerald-600 text-white border-emerald-500'
+            : 'bg-rose-600 text-white border-rose-500'
+        }`}>
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
+      {/* Header Panel */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="flex items-start gap-4 z-10">
+          <div className="size-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl shrink-0 shadow-md">
+            ??
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-0.5 rounded-full border border-amber-500/30">
+                Panel Kelola Pengajar
+              </span>
+              {!isInstructor && (
+                <span className="text-xs font-bold text-rose-300 bg-rose-500/20 px-2.5 py-0.5 rounded-full border border-rose-500/30">
+                  Mode Simulasi Admin
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
+              Kelola Judul & Visibilitas Kursus
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+              Atur judul bab, subtitle materi, dan tentukan bab mana yang ingin **ditampilkan ??** atau **disembunyikan ??** dari tampilan siswa di halaman <strong>Kursus Saya</strong>.
+            </p>
+          </div>
         </div>
 
         <button
-          onClick={() => setIsCreating(prev => !prev)}
-          className="bg-primary hover:bg-primary-dark text-white font-bold px-4 py-2.5 rounded-xl transition-all text-sm cursor-pointer border-none shadow-sm flex items-center gap-2 self-start sm:self-auto"
+          onClick={() => setIsEditingHeader(prev => !prev)}
+          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 cursor-pointer transition-all shrink-0 z-10 flex items-center justify-center gap-2"
         >
-          <span>{isCreating ? '× Batal' : '➕ Buat Kursus Baru'}</span>
+          <span>?? {isEditingHeader ? 'Tutup Edit Header' : 'Edit Header Halaman'}</span>
         </button>
       </div>
 
-      {/* Form Buat Kursus Baru */}
-      {isCreating && (
-        <form onSubmit={handleCreateCourse} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4 animate-fade-in-up">
-          <h2 className="text-lg font-bold text-slate-800">Buat Kursus Baru</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-600">Judul Kursus</label>
+      {/* Edit Header Form Card */}
+      {isEditingHeader && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-md flex flex-col gap-4 animate-slide-down">
+          <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <span>??</span>
+            <span>Ubah Judul Utama & Subtitle Halaman Kursus Saya</span>
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                Judul Utama Halaman
+              </label>
               <input
                 type="text"
-                required
-                placeholder="misal: Master Pemrograman Web 2026"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-primary bg-slate-50"
+                value={editPageTitle}
+                onChange={e => setEditPageTitle(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-600">Kategori</label>
-              <select
-                value={newCategory}
-                onChange={e => setNewCategory(e.target.value)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-primary bg-slate-50"
-              >
-                <option value="Teknologi">Teknologi</option>
-                <option value="Desain">Desain</option>
-                <option value="Bisnis">Bisnis</option>
-                <option value="Soft Skill">Soft Skill</option>
-              </select>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                Subtitle Deskripsi Halaman
+              </label>
+              <input
+                type="text"
+                value={editPageSubtitle}
+                onChange={e => setEditPageSubtitle(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+              />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-600">Deskripsi Ringkas</label>
-            <textarea
-              rows={3}
-              placeholder="Jelaskan apa yang akan dipelajari murid..."
-              value={newDesc}
-              onChange={e => setNewDesc(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-primary bg-slate-50 resize-none"
-            />
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setIsEditingHeader(false)}
+              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSaveHeader}
+              className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-extrabold border-none cursor-pointer shadow-sm hover:bg-primary-dark"
+            >
+              Simpan Header
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-all text-sm cursor-pointer border-none shadow-sm disabled:opacity-50 self-end px-6"
-          >
-            {submitting ? 'Menyimpan...' : 'Simpan Kursus ✨'}
-          </button>
-        </form>
+        </div>
       )}
 
-      {/* Grid: Daftar Kursus (kiri) & Detail Bab/Materi (kanan) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+      {/* Jilid Switcher + Search & Filter Bar */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+        {/* Jilid Tabs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            onClick={() => setSelectedJilid(1)}
+            className={`p-4 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between ${
+              selectedJilid === 1
+                ? 'bg-gradient-to-r from-primary to-primary-light text-white border-primary shadow-md'
+                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">??</span>
+              <div>
+                <div className="font-extrabold text-sm sm:text-base">Minna no Nihongo Jilid 1</div>
+                <div className="text-xs opacity-80">Bab 1 s/d Bab 25 (Tingkat Dasar I)</div>
+              </div>
+            </div>
+            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-white/20">25 Bab</span>
+          </button>
 
-        {/* Daftar Kursus Pemateri */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col gap-2 self-start">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">Kursus Kamu ({courses.length})</h3>
-          {courses.length === 0 ? (
-            <p className="text-xs text-slate-400 px-2 py-4">Belum ada kursus. Klik "Buat Kursus Baru" di atas.</p>
-          ) : (
-            courses.map(c => (
-              <button
-                key={c.id}
-                onClick={() => loadCourseDetail(c.id)}
-                className={`flex flex-col text-left p-3 rounded-xl transition-all border cursor-pointer ${
-                  selectedCourse?.id === c.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-slate-100 hover:border-slate-200 bg-slate-50'
-                }`}
-              >
-                <div className="text-sm font-bold text-slate-800 line-clamp-1">{c.title}</div>
-                <div className="flex justify-between items-center mt-2 text-xs">
-                  <span className="text-slate-400 capitalize">{c.category}</span>
-                  <span className={`font-semibold px-2 py-0.5 rounded-full ${c.is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {c.is_published ? 'Publik' : 'Draft'}
-                  </span>
-                </div>
-              </button>
-            ))
-          )}
+          <button
+            onClick={() => setSelectedJilid(2)}
+            className={`p-4 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between ${
+              selectedJilid === 2
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border-indigo-600 shadow-md'
+                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">??</span>
+              <div>
+                <div className="font-extrabold text-sm sm:text-base">Minna no Nihongo Jilid 2</div>
+                <div className="text-xs opacity-80">Bab 26 s/d Bab 50 (Tingkat Dasar II)</div>
+              </div>
+            </div>
+            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-white/20">25 Bab</span>
+          </button>
         </div>
 
-        {/* Detail & Bab Kursus Terpilih */}
-        {selectedCourse ? (
-          <div className="flex flex-col gap-5">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">{selectedCourse.category}</span>
-                  <span className="text-xs text-slate-400 capitalize">• {selectedCourse.level}</span>
-                </div>
-                <h2 className="text-xl font-extrabold text-slate-800">{selectedCourse.title}</h2>
-                <p className="text-sm text-slate-400 mt-1">{selectedCourse.description}</p>
-              </div>
+        {/* Search & Status Filter */}
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex-1 w-full relative">
+            <input
+              type="text"
+              placeholder="Cari nomor bab, judul bab, atau penjelasan..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+            />
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">??</span>
+          </div>
 
-              <button
-                onClick={handleTogglePublish}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-all shrink-0 ${
-                  selectedCourse.is_published
-                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                    : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-400 shrink-0">Filter Status:</span>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as any)}
+              className="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
+            >
+              <option value="all">Semua Status (Tampil & Sembunyi)</option>
+              <option value="visible">?? Hanya Ditampilkan (Published)</option>
+              <option value="hidden">?? Hanya Disembunyikan (Hidden)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Chapters Editor List */}
+      {loading ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-3">
+          <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-semibold text-slate-400">Memuat data bab...</span>
+        </div>
+      ) : filteredBabNumbers.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
+          <span className="text-4xl">??</span>
+          <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tidak ada bab ditemukan</h3>
+          <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau filter status.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filteredBabNumbers.map(babNum => {
+            const chap = chapterMap[babNum] || {
+              bab_number: babNum,
+              title: `Bab ${babNum}`,
+              subtitle: '',
+              is_hidden: false,
+            }
+
+            return (
+              <div
+                key={babNum}
+                className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border transition-all flex flex-col gap-4 shadow-sm ${
+                  chap.is_hidden
+                    ? 'border-rose-300/80 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/20'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
                 }`}
               >
-                {selectedCourse.is_published ? '⏸️ Kembalikan ke Draft' : '🚀 Terbitkan Kursus (Publish)'}
-              </button>
-            </div>
-
-            {/* Tambah Bab Baru */}
-            <form onSubmit={handleAddSection} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Judul Bab Baru (misal: Bab 1 - Dasar-dasar)"
-                value={newSectionTitle}
-                onChange={e => setNewSectionTitle(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-primary"
-              />
-              <button
-                type="submit"
-                disabled={addingSection}
-                className="bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all shrink-0"
-              >
-                + Tambah Bab
-              </button>
-            </form>
-
-            {/* List Bab & Materi */}
-            <div className="flex flex-col gap-4">
-              {selectedCourse.sections?.length === 0 ? (
-                <div className="bg-slate-50 p-8 text-center rounded-2xl border border-slate-200 text-slate-400 text-sm">
-                  Belum ada bab. Tambahkan bab pertama kamu di atas!
-                </div>
-              ) : (
-                selectedCourse.sections?.map(section => (
-                  <div key={section.id} className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col gap-3">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                      <h4 className="font-bold text-slate-800 text-base">📁 {section.title}</h4>
-                      <button
-                        onClick={() => setActiveSectionId(activeSectionId === section.id ? null : section.id)}
-                        className="text-xs font-bold text-primary hover:underline border-none bg-transparent cursor-pointer"
-                      >
-                        {activeSectionId === section.id ? '× Batal' : '➕ Tambah Materi Video'}
-                      </button>
+                {/* Header Row: Bab Title + Visibility Toggle Switch */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`size-11 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs ${
+                      chap.is_hidden
+                        ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200'
+                        : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/20'
+                    }`}>
+                      Bab {babNum}
                     </div>
 
-                    {/* Form Tambah Materi */}
-                    {activeSectionId === section.id && (
-                      <form onSubmit={e => handleAddLesson(e, section.id)} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            required
-                            placeholder="Judul Materi Video"
-                            value={lessonTitle}
-                            onChange={e => setLessonTitle(e.target.value)}
-                            className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none"
-                          />
-                          <input
-                            type="url"
-                            required
-                            placeholder="https://kaiwadojo.inaconnext.it.com/videos/nama-video.mp4"
-                            value={videoUrlInput}
-                            onChange={e => setVideoUrlInput(e.target.value)}
-                            className="px-3.5 py-2 rounded-lg border border-slate-200 text-sm bg-white outline-none"
-                          />
-                        </div>
-                        <p className="text-[0.72rem] text-slate-400 font-medium -mt-1">
-                          💡 Upload file video .mp4 ke hosting Rumahweb kamu, lalu tempelkan link videonya di sini.
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <span>Durasi (menit):</span>
-                            <input
-                              type="number"
-                              min={1}
-                              value={lessonDuration}
-                              onChange={e => setLessonDuration(Number(e.target.value))}
-                              className="w-16 px-2 py-1 border border-slate-200 rounded text-xs bg-white"
-                            />
-                          </div>
-                          <button
-                            type="submit"
-                            disabled={addingLesson}
-                            className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer"
-                          >
-                            Simpan Materi
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    {/* Items */}
-                    <div className="flex flex-col gap-2">
-                      {section.lessons.length === 0 ? (
-                        <p className="text-xs text-slate-400 py-2">Belum ada materi di bab ini.</p>
-                      ) : (
-                        section.lessons.map(l => (
-                          <div key={l.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span>🎬</span>
-                              <span className="font-semibold text-slate-700">{l.title}</span>
-                              <span className="text-xs text-slate-400">({l.duration_minutes}m)</span>
-                            </div>
-                            <span className="text-xs font-mono bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-500 truncate max-w-[200px]">
-                              {l.video_id || '-'}
-                            </span>
-                          </div>
-                        ))
-                      )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
+                          Bab {babNum}: {chap.title}
+                        </h3>
+                        <span className={`text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border ${
+                          chap.is_hidden
+                            ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                        }`}>
+                          {chap.is_hidden ? '?? Disembunyikan dari Siswa' : '?? Tampil ke Siswa'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                        {chap.subtitle || 'Belum ada penjelasan bab.'}
+                      </p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-sm">
-            Pilih kursus dari panel sebelah kiri atau buat kursus baru.
-          </div>
-        )}
-      </div>
-    </main>
+
+                  {/* Toggle Switch */}
+                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                    <button
+                      onClick={() => handleToggleHide(babNum)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border cursor-pointer flex items-center gap-1.5 ${
+                        chap.is_hidden
+                          ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                          : 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                      }`}
+                    >
+                      <span>{chap.is_hidden ? '?? Sembunyi (Klik untuk Tampilkan)' : '?? Tampil (Klik untuk Sembunyikan)'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Fields: Edit Title & Subtitle */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      Judul Bab (Bahasa Indonesia / Topik Bab)
+                    </label>
+                    <input
+                      type="text"
+                      value={chap.title}
+                      onChange={e => {
+                        const val = e.target.value
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], title: val },
+                        }))
+                      }}
+                      placeholder="Contoh: Perkenalan Diri"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      Subtitle / Tata Bahasa Kunci (Kotoba / Pola Kalimat)
+                    </label>
+                    <input
+                      type="text"
+                      value={chap.subtitle}
+                      onChange={e => {
+                        const val = e.target.value
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], subtitle: val },
+                        }))
+                      }}
+                      placeholder="Contoh: ??????????? (Saya adalah insinyur)"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Video File Auto-Path Preview Info */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[0.72rem]">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                    <AdaptiveIcon src="/video.png" alt="Video Path" className="size-4 object-contain shrink-0" />
+                    <span>Path File Video Otomatis di Hosting:</span>
+                    <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
+                      /kaiwa-1-courses/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mov (S1, S2, S3)
+                    </code>
+                  </div>
+
+                  <button
+                    onClick={() => handleSaveBab(babNum)}
+                    disabled={savingBab === babNum}
+                    className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all self-end sm:self-auto shrink-0 shadow-2xs"
+                  >
+                    {savingBab === babNum ? 'Menyimpan...' : '?? Simpan Bab Ini'}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }

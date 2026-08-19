@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import {
+  getChapterSettingsMap,
+  getCourseHeaderSettings,
+  type CourseHeaderSettings,
+} from '../lib/chapterService'
 
 /* ── Interfaces ───────────────────────────────────── */
 interface LessonItem {
@@ -20,6 +26,7 @@ interface ChapterItem {
   bab_number: number
   title: string
   subtitle: string
+  is_hidden?: boolean
   lessons: LessonItem[]
 }
 
@@ -158,7 +165,15 @@ const JAPAN_FUN_FACTS = [
 ]
 
 export default function MyCourses() {
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, profile } = useAuth()
+  const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
+
+  // Header Settings State
+  const [headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
+    page_title: '📚 Buku Kursus Minna no Nihongo',
+    page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
+  })
 
   // Fun Fact State
   const [funFactIndex, setFunFactIndex]   = useState(0)
@@ -203,6 +218,13 @@ export default function MyCourses() {
   async function fetchCourseData() {
     setLoading(true)
 
+    // 0. Fetch Admin Chapter Settings & Header Settings
+    const [adminChapterMap, adminHeader] = await Promise.all([
+      getChapterSettingsMap(),
+      getCourseHeaderSettings(),
+    ])
+    setHeaderSettings(adminHeader)
+
     // 1. Fetch user's progress if logged in
     let userProgress = new Map<string, { is_completed: boolean; replay_count: number }>()
     if (user) {
@@ -243,6 +265,7 @@ export default function MyCourses() {
 
     for (let bab = startBab; bab <= endBab; bab++) {
       const info = titlesMap[bab] || { title: `Bab ${bab}`, subtitle: 'Materi Bahasa Jepang' }
+      const adminSetting = adminChapterMap[bab]
 
       const lessons: LessonItem[] = CHAPTER_ITEMS_CONFIG.map(item => {
         const lessonCode = `bab_${bab}_item_${item.num}`
@@ -251,7 +274,13 @@ export default function MyCourses() {
         const isCompleted  = dbLesson ? (userProgress.get(dbLesson.id)?.is_completed || false) : false
         const replayCount  = dbLesson ? (userProgress.get(dbLesson.id)?.replay_count || 0) : 0
         const hostedUrl    = getHostedVideoUrl(bab, item.num)
-        const videoUrl     = dbLesson?.video_id || hostedUrl
+        
+        let customVideoOverride = null
+        if (item.num === 1) customVideoOverride = adminSetting?.custom_video_s1
+        if (item.num === 2) customVideoOverride = adminSetting?.custom_video_s2
+        if (item.num === 3) customVideoOverride = adminSetting?.custom_video_s3
+
+        const videoUrl = customVideoOverride || dbLesson?.video_id || hostedUrl
 
         return {
           id: dbLesson?.id || `lesson_bab_${bab}_${item.num}`,
@@ -266,10 +295,15 @@ export default function MyCourses() {
         }
       })
 
+      const finalTitle = adminSetting?.title
+        ? adminSetting.title.startsWith(`Bab ${bab}:`) ? adminSetting.title : `Bab ${bab}: ${adminSetting.title}`
+        : `Bab ${bab}: ${info.title}`
+
       generatedChapters.push({
         bab_number: bab,
-        title: `Bab ${bab}: ${info.title}`,
-        subtitle: info.subtitle,
+        title: finalTitle,
+        subtitle: adminSetting?.subtitle || info.subtitle,
+        is_hidden: adminSetting?.is_hidden || false,
         lessons,
       })
     }
@@ -370,6 +404,9 @@ export default function MyCourses() {
 
   /* ── Filter Chapters ─────────────────────────────── */
   const filteredChapters = chapters.filter(c => {
+    // If not instructor/admin, hide chapters marked as hidden
+    if (!isInstructor && c.is_hidden) return false
+
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
     return (
@@ -470,13 +507,24 @@ export default function MyCourses() {
       </div>
 
       {/* Header */}
-      <div className="mb-6 animate-fade-in-up">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight mb-1.5">
-          📚 Buku Kursus Minna no Nihongo
-        </h1>
-        <p className="text-sm sm:text-base text-slate-500">
-          Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya
-        </p>
+      <div className="mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-1.5">
+            {headerSettings.page_title}
+          </h1>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
+            {headerSettings.page_subtitle}
+          </p>
+        </div>
+
+        {isInstructor && (
+          <button
+            onClick={() => navigate('/kelola-kursus')}
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold border-none cursor-pointer shadow-md transition-all shrink-0 flex items-center justify-center gap-2 hover:-translate-y-0.5"
+          >
+            <span>⚙️ Edit Judul & Visibilitas Bab</span>
+          </button>
+        )}
       </div>
 
       {/* ── Book Selector Tabs (Jilid 1 vs Jilid 2) ── */}

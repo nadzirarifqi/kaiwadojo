@@ -73,11 +73,18 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   // Add teacher management menu if instructor or admin
   if (currentRole === 'pemateri' || currentRole === 'admin') {
-    navItems.push({
-      iconImg: '/task.png',
-      label: 'Kelola Jadwal (Pengajar)',
-      to: '/kelola-jadwal',
-    })
+    navItems.push(
+      {
+        iconImg: '/book.png',
+        label: 'Kelola Kursus & Bab',
+        to: '/kelola-kursus',
+      },
+      {
+        iconImg: '/task.png',
+        label: 'Kelola Jadwal Kelas',
+        to: '/kelola-jadwal',
+      }
+    )
   }
 
   return (
