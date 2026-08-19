@@ -20,6 +20,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: kaiwa-dojo-app/package-lock.json
 
       - name: Install Dependencies
         working-directory: kaiwa-dojo-app
