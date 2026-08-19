@@ -464,10 +464,8 @@ export default function MyCourses() {
 
   /* ── Filter Chapters ─────────────────────────────── */
   const filteredChapters = chapters.filter(c => {
-    // If student: hide if marked hidden OR if no video is available yet
-    if (!isInstructor) {
-      if (c.is_hidden || c.has_video === false) return false
-    }
+    // If student: hide if marked hidden by Admin
+    if (!isInstructor && c.is_hidden) return false
 
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()

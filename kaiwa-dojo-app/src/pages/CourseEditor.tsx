@@ -74,9 +74,12 @@ export default function CourseEditor() {
       is_hidden: false,
     }
 
+    const nextHidden = !current.is_hidden
+
     const updated: ChapterSetting = {
       ...current,
-      is_hidden: !current.is_hidden,
+      is_hidden: nextHidden,
+      has_video: !nextHidden,
     }
 
     setChapterMap(prev => ({ ...prev, [babNum]: updated }))
