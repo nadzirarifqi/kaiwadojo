@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { fetchInstructors, type InstructorAccount } from '../lib/instructorService'
-import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules } from '../lib/scheduleService'
+import { fetchStudents, type StudentAccount } from '../lib/studentService'
+import { fetchSchedules, type ClassSchedule, sortSchedules } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 
 export default function AdminDashboard() {
@@ -10,22 +11,22 @@ export default function AdminDashboard() {
   const { profile } = useAuth()
 
   const [instructors, setInstructors] = useState<InstructorAccount[]>([])
+  const [students, setStudents] = useState<StudentAccount[]>([])
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
-  const [reservations, setReservations] = useState<ClassReservation[]>([])
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [loading, setLoading] = useState(true)
 
   async function loadData() {
     setLoading(true)
-    const [instData, schData, resData, chapData] = await Promise.all([
+    const [instData, stdData, schData, chapData] = await Promise.all([
       fetchInstructors(),
+      fetchStudents(),
       fetchSchedules(),
-      fetchReservations(),
       getChapterSettingsMap(),
     ])
     setInstructors(instData)
+    setStudents(stdData)
     setSchedules(sortSchedules(schData))
-    setReservations(resData)
     setChapterSettings(chapData)
     setLoading(false)
   }
@@ -73,13 +74,19 @@ export default function AdminDashboard() {
             onClick={() => navigate('/kelola-pemateri')}
             className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
-            <span>👨‍🏫 Buat Akun Pemateri</span>
+            <span>👨‍🏫 Akun Pemateri</span>
+          </button>
+          <button
+            onClick={() => navigate('/kelola-pelajar')}
+            className="px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+          >
+            <span>🎓 Akun Pelajar</span>
           </button>
           <button
             onClick={() => navigate('/kelola-kursus')}
             className="px-4 py-2.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
-            <span>🟢 Edit Kursus & Durasi</span>
+            <span>🟢 Edit Kursus</span>
           </button>
         </div>
       </div>
@@ -134,18 +141,18 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stat 4: Student Reservations */}
+        {/* Stat 4: Student Accounts */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Reservasi Siswa</span>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              {reservations.length} <span className="text-xs font-bold text-slate-400">Siswa</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Total Akun Pelajar</span>
+            <div className="text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400">
+              {students.length} <span className="text-xs font-bold text-slate-400">Siswa</span>
             </div>
-            <span className="text-[0.68rem] font-bold text-slate-500 mt-1 block">
-              🎓 Pendaftaran Aktif
+            <span className="text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
+              🎓 Terdaftar di Sistem
             </span>
           </div>
-          <div className="size-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 flex items-center justify-center text-2xl shrink-0">
+          <div className="size-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-2xl shrink-0">
             🎓
           </div>
         </div>

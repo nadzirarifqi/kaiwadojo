@@ -6,6 +6,7 @@ import StudentDashboard from './pages/Dashboard'
 import InstructorDashboard from './pages/InstructorDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import InstructorManagerPage from './pages/InstructorManager'
+import StudentManagerPage from './pages/StudentManager'
 import MyCourses from './pages/MyCourses'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -140,6 +141,7 @@ function App() {
           <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
+          <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
           <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
           <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
           <Route path="*"                element={<Navigate to="/dashboard" replace />} />

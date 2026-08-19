@@ -172,6 +172,9 @@ export default function MyCourses() {
   const { user, profile } = useAuth()
   const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
+  // Admin student preview mode state
+  const [adminStudentViewMode, setAdminStudentViewMode] = useState(true)
+
   // Header Settings State
   const [headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
     page_title: '📚 Buku Kursus Minna no Nihongo',
@@ -464,8 +467,9 @@ export default function MyCourses() {
 
   /* ── Filter Chapters ─────────────────────────────── */
   const filteredChapters = chapters.filter(c => {
-    // If student: hide if marked hidden by Admin
-    if (!isInstructor && c.is_hidden) return false
+    // If student OR if admin is in adminStudentViewMode: hide if marked hidden by Admin
+    const shouldHideUnreleased = !isInstructor || (profile?.role === 'admin' && adminStudentViewMode)
+    if (shouldHideUnreleased && c.is_hidden) return false
 
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
@@ -487,6 +491,27 @@ export default function MyCourses() {
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+      {/* Admin Preview Control Bar */}
+      {profile?.role === 'admin' && (
+        <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black">
+              👁️ Preview Tampilan Pelajar
+            </span>
+            <span className="text-xs font-semibold text-slate-300">
+              {adminStudentViewMode
+                ? 'Menampilkan daftar bab persis seperti yang dilihat oleh Siswa (Bab Sembunyi disaring).'
+                : 'Menampilkan seluruh 50 Bab (Termasuk Bab yang disembunyikan).'}
+            </span>
+          </div>
+          <button
+            onClick={() => setAdminStudentViewMode(!adminStudentViewMode)}
+            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 cursor-pointer shrink-0"
+          >
+            {adminStudentViewMode ? '🛠️ Lihat Mode Full Admin' : '👁️ Lihat Mode Tampilan Pelajar'}
+          </button>
+        </div>
+      )}
 
       {/* ⛩️ Hero Section: Japan Fun Facts Banner */}
       <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30">

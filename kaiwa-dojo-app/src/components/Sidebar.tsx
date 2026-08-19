@@ -71,9 +71,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     navItems.push(
       { iconImg: '/book.png', label: 'Edit Kursus & Durasi', to: '/kelola-kursus' },
       { iconImg: '/home.png', label: 'Kelola Akun Pemateri', to: '/kelola-pemateri' },
+      { iconImg: '/book.png', label: 'Kelola Akun Pelajar', to: '/kelola-pelajar' },
       { iconImg: '/calendar.png', label: 'Kelola Jadwal Kelas', to: '/kelola-jadwal' },
-      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' },
-      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' }
+      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' }
     )
   } else if (currentRole === 'pemateri') {
     navItems.push(
