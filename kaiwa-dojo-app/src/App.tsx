@@ -9,6 +9,7 @@ import InstructorManagerPage from './pages/InstructorManager'
 import MyCourses from './pages/MyCourses'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
+import AdminLoginPage from './pages/auth/AdminLoginPage'
 import LearningPlanPage from './pages/LearningPlan'
 import ProfilePage from './pages/Profile'
 import SettingsPage from './pages/Settings'
@@ -128,6 +129,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login"    element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/admin"    element={<AdminLoginPage />} />
 
           {/* Protected routes */}
           <Route path="/"                element={<Navigate to="/dashboard" replace />} />
