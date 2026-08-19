@@ -199,6 +199,54 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
   return true
 }
 
+/* ── Save Multiple Chapter Settings in Batch (Publish All / Hide All) ── */
+export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): Promise<boolean> {
+  // 1. Save to LocalStorage immediately
+  try {
+    let map: Record<number, ChapterSetting> = {}
+    const localStr = localStorage.getItem(SETTINGS_KEY)
+    if (localStr) {
+      map = JSON.parse(localStr)
+    }
+    settingsList.forEach(s => {
+      map[s.bab_number] = s
+    })
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
+
+    // Dispatch global custom event for instant local tab & role-switcher sync
+    window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail: settingsList }))
+  } catch (e) {
+    console.error('LocalStorage batch save error:', e)
+  }
+
+  // 2. Batch upsert into Supabase DB
+  try {
+    const payload = settingsList.map(s => ({
+      bab_number: s.bab_number,
+      title: s.title,
+      subtitle: s.subtitle,
+      is_hidden: s.is_hidden,
+      has_video: s.has_video ?? !s.is_hidden,
+      duration_s1: s.duration_s1 != null ? String(s.duration_s1) : '15.00',
+      duration_s2: s.duration_s2 != null ? String(s.duration_s2) : '15.00',
+      duration_s3: s.duration_s3 != null ? String(s.duration_s3) : '12.00',
+      custom_video_s1: s.custom_video_s1 || null,
+      custom_video_s2: s.custom_video_s2 || null,
+      custom_video_s3: s.custom_video_s3 || null,
+      updated_at: new Date().toISOString(),
+    }))
+
+    const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
+    if (error) {
+      console.warn('Supabase batch upsert note:', error.message)
+    }
+  } catch (err) {
+    console.warn('Supabase batch save note:', err)
+  }
+
+  return true
+}
+
 /* -- Fetch Course Header Settings -- */
 export async function getCourseHeaderSettings(): Promise<CourseHeaderSettings> {
   const defaultHeader: CourseHeaderSettings = {

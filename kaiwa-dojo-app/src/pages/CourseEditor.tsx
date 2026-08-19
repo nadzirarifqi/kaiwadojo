@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import AdaptiveIcon from '../components/AdaptiveIcon'
 import {
-  type ChapterSetting,
-  type CourseHeaderSettings,
   getChapterSettingsMap,
   saveChapterSetting,
+  saveBatchChapterSettings,
   getCourseHeaderSettings,
   saveCourseHeaderSettings,
   CHAPTER_UPDATE_EVENT,
+  type ChapterSetting,
+  type CourseHeaderSettings,
 } from '../lib/chapterService'
 
 export default function CourseEditor() {
@@ -84,6 +85,40 @@ export default function CourseEditor() {
       updated.is_hidden
         ? `Bab ${babNum} kini DISEMBUNYIKAN dari siswa 🔴`
         : `Bab ${babNum} kini DITAMPILKAN ke siswa 🟢`
+    )
+  }
+
+  async function handleBulkToggleVisibility(hide: boolean) {
+    const startBab = selectedJilid === 1 ? 1 : 26
+    const endBab   = selectedJilid === 1 ? 25 : 50
+
+    const updatedList: ChapterSetting[] = []
+    const updatedMap = { ...chapterMap }
+
+    for (let bab = startBab; bab <= endBab; bab++) {
+      const current = updatedMap[bab] || {
+        bab_number: bab,
+        title: `Bab ${bab}`,
+        subtitle: '',
+        is_hidden: false,
+      }
+
+      const updated: ChapterSetting = {
+        ...current,
+        is_hidden: hide,
+      }
+
+      updatedMap[bab] = updated
+      updatedList.push(updated)
+    }
+
+    setChapterMap(updatedMap)
+    await saveBatchChapterSettings(updatedList)
+
+    showToast(
+      hide
+        ? `Semua Bab di Jilid ${selectedJilid} kini DISEMBUNYIKAN dari siswa 🔴`
+        : `Semua Bab di Jilid ${selectedJilid} kini DITAMPILKAN ke siswa 🟢`
     )
   }
 
@@ -268,6 +303,30 @@ export default function CourseEditor() {
             </div>
             <span className="text-xs font-black px-2.5 py-1 rounded-full bg-white/20">25 Bab</span>
           </button>
+        </div>
+
+        {/* Bulk Toggle Action Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+            <span>⚡ Aksi Massal (Jilid {selectedJilid}):</span>
+            <span className="text-slate-400 font-normal">Aktifkan atau sembunyikan 25 Bab sekaligus dalam 1 klik</span>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              onClick={() => handleBulkToggleVisibility(false)}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>🟢 Tampilkan Semua Jilid {selectedJilid}</span>
+            </button>
+
+            <button
+              onClick={() => handleBulkToggleVisibility(true)}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>🔴 Sembunyikan Semua Jilid {selectedJilid}</span>
+            </button>
+          </div>
         </div>
 
         {/* Search & Status Filter */}

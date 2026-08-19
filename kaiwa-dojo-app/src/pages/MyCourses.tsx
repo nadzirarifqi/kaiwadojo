@@ -987,52 +987,45 @@ export default function MyCourses() {
                     </div>
                   </div>
                 ) : activeLesson.content_type === 'quiz' ? (
-                  /* 🎯 Kuis Evaluasi Bab Frame */
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-indigo-600/10 via-indigo-600/5 to-purple-600/10 border border-indigo-200 p-6 flex flex-col gap-4 shadow-sm shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="size-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-md">
-                          🎯
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Kuis Evaluasi</span>
-                          <h3 className="text-lg font-extrabold text-slate-800 leading-tight">
-                            Kuis Pemahaman — {activeChapter?.title}
-                          </h3>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
-                        📝 10 Soal Pilihan Ganda
-                      </span>
+                  /* 🎯 Kuis Evaluasi Bab Frame (Coming Soon State) */
+                  <div className="w-full rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-800/60 p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-4 shadow-xl shrink-0 min-h-[420px] relative overflow-hidden">
+                    {/* Ambient Glow */}
+                    <div className="absolute inset-0 bg-indigo-500/10 blur-3xl pointer-events-none" />
+
+                    <div className="size-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-3xl shadow-lg relative z-10">
+                      🎯
                     </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Uji pemahamanmu tentang kosakata, tata bahasa, dan kalimat yang sudah dipelajari di Bab ini.
-                    </p>
-
-                    <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-xs flex flex-col gap-3">
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                        <span>Target Kelulusan: <strong className="text-indigo-600">80% (Min 8/10 Benar)</strong></span>
-                        <span>Estimasi: 10 Menit</span>
-                      </div>
-                      <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-900 leading-relaxed font-medium">
-                        💡 Tips: Pastikan kamu sudah menonton Video 1, 2, 3 dan menghafalkan Kotoba sebelum memulai kuis.
-                      </div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-300 relative z-10">
+                      <span>⏳ Fitur Kuis Coming Soon</span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-xs font-semibold text-slate-500">
-                        {activeLesson.is_completed ? '✅ Kuis Telah Diselesaikan' : 'Siap menguji kemampuanmu?'}
+                    <div className="relative z-10 max-w-md">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-white mb-2">
+                        Kuis Evaluasi — {activeChapter?.title}
+                      </h3>
+                      <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                        Soal kuis pilihan ganda untuk Bab ini sedang dalam tahap penyusunan & validasi oleh pengajar. Kamu bisa mempelajari video & setoran kotoba terlebih dahulu!
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-1 text-left">
+                      <span className="font-bold text-white flex items-center gap-1.5">
+                        <span>💡 Info Pengajar:</span>
                       </span>
+                      <span>Target Kuis: 10 Soal Pilihan Ganda (Passing Grade 80%)</span>
+                    </div>
+
+                    <div className="pt-2 relative z-10">
                       <button
                         onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
+                        className={`px-5 py-2.5 rounded-xl text-xs font-extrabold border-none cursor-pointer transition-all ${
                           activeLesson.is_completed
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                            ? 'bg-emerald-500 text-white shadow-md'
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
                         }`}
                       >
-                        {activeLesson.is_completed ? '✅ Kuis Selesai' : '🚀 Mulai Kuis Evaluasi'}
+                        {activeLesson.is_completed ? '✅ Kuis Ditandai Selesai' : 'Tandai Kuis Selesai (Simulasi)'}
                       </button>
                     </div>
                   </div>
