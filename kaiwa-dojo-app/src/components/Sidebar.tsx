@@ -17,7 +17,7 @@ const navInactive = 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:t
 
 export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const navigate = useNavigate()
-  const { profile, signOut, switchRole } = useAuth()
+  const { profile, signOut } = useAuth()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   // Theme Sync State
@@ -158,36 +158,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             </NavLink>
           ))}
         </nav>
-
-        {/* Multi-role quick switcher card */}
-        <div className="mx-3 my-1.5 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400">
-            <span>Simulasi Mode Role</span>
-            <span className="text-primary dark:text-red-400">Multi-Layer</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              onClick={() => switchRole('pelajar')}
-              className={`py-1.5 px-2 rounded-xl text-[0.72rem] font-extrabold transition-all border cursor-pointer text-center ${
-                currentRole === 'pelajar'
-                  ? 'bg-primary text-white border-primary shadow-xs'
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
-              }`}
-            >
-              Pelajar
-            </button>
-            <button
-              onClick={() => switchRole('pemateri')}
-              className={`py-1.5 px-2 rounded-xl text-[0.72rem] font-extrabold transition-all border cursor-pointer text-center ${
-                currentRole === 'pemateri'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'
-              }`}
-            >
-              Pengajar
-            </button>
-          </div>
-        </div>
 
         {/* User card & Popup Menu */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 relative">

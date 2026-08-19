@@ -15,7 +15,7 @@ import {
 
 export default function InstructorDashboard() {
   const navigate = useNavigate()
-  const { profile, switchRole } = useAuth()
+  const { profile } = useAuth()
 
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
@@ -78,12 +78,6 @@ export default function InstructorDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={() => switchRole('pelajar')}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-extrabold rounded-2xl border border-white/20 cursor-pointer transition-all flex items-center gap-2 backdrop-blur-xs"
-          >
-            <span>🔄 Beralih ke Tampilan Siswa</span>
-          </button>
           <button
             onClick={() => navigate('/kelola-kursus')}
             className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"

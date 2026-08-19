@@ -26,7 +26,6 @@ interface AuthContextValue {
   loading: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
-  switchRole: (role: UserRole) => void
 }
 
 const DEFAULT_DEMO_PROFILE: Profile = {
@@ -51,15 +50,11 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
-  switchRole: () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(() => {
-    const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
-    return savedRole ? { ...DEFAULT_DEMO_PROFILE, role: savedRole } : DEFAULT_DEMO_PROFILE
-  })
+  const [profile, setProfile] = useState<Profile | null>(DEFAULT_DEMO_PROFILE)
   const [loading, setLoading] = useState(true)
 
   async function fetchProfile(userId: string) {
@@ -69,9 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
     if (!error && data) {
-      const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
-      const finalRole = savedRole || (data.role as UserRole) || 'pelajar'
-      setProfile({ ...(data as Profile), role: finalRole })
+      setProfile(data as Profile)
     }
   }
 
@@ -81,20 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  function switchRole(newRole: UserRole) {
-    localStorage.setItem('kaiwa_active_role', newRole)
-    setProfile(prev => prev ? { ...prev, role: newRole } : { ...DEFAULT_DEMO_PROFILE, role: newRole })
-  }
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
-        // Keep demo profile if no remote session so local preview works
-        const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
-        setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
+        setProfile(DEFAULT_DEMO_PROFILE)
       }
       setLoading(false)
     })
@@ -104,8 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
-        const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
-        setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
+        setProfile(DEFAULT_DEMO_PROFILE)
       }
     })
 
@@ -115,12 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setSession(null)
-    const savedRole = localStorage.getItem('kaiwa_active_role') as UserRole | null
-    setProfile({ ...DEFAULT_DEMO_PROFILE, role: savedRole || 'pelajar' })
+    setProfile(DEFAULT_DEMO_PROFILE)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile, switchRole }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
