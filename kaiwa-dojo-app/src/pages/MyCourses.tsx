@@ -42,6 +42,17 @@ const CHAPTER_ITEMS_CONFIG = [
   { num: 5, title: 'Setoran Kotoba (Kosakata & Artinya)',       icon: '🔤', type: 'kotoba' as const, duration: 10, badge: '🔤 Kotoba' },
 ]
 
+/* ── Helper to map hosted video files in /kaiwa-1-courses/ ── */
+function getHostedVideoUrl(babNumber: number, itemNum: number): string | null {
+  // Only items 1, 2, 3 are video lessons (S1, S2, S3)
+  if (itemNum > 3) return null
+
+  const folderName = `BAB ${babNumber}`
+  const fileName = `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`
+
+  return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}`
+}
+
 /* ── Default Chapter Titles for Jilid 1 (Bab 1 - 25) ── */
 const JILID_1_TITLES: { [key: number]: { title: string; subtitle: string } } = {
   1:  { title: 'Perkenalan Diri', subtitle: 'わたしはエンジニアです (Saya adalah insinyur)' },
@@ -239,10 +250,11 @@ export default function MyCourses() {
 
         const isCompleted  = dbLesson ? (userProgress.get(dbLesson.id)?.is_completed || false) : false
         const replayCount  = dbLesson ? (userProgress.get(dbLesson.id)?.replay_count || 0) : 0
-        const videoUrl     = dbLesson?.video_id || null
+        const hostedUrl    = getHostedVideoUrl(bab, item.num)
+        const videoUrl     = dbLesson?.video_id || hostedUrl
 
         return {
-          id: dbLesson?.id || `placeholder_${bab}_${item.num}`,
+          id: dbLesson?.id || `lesson_bab_${bab}_${item.num}`,
           title: item.title,
           lesson_number: item.num,
           content_type: item.type,
@@ -916,14 +928,18 @@ export default function MyCourses() {
                   </div>
                 ) : activeLesson.video_id ? (
                   /* Real HTML5 Video Player */
-                  <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg shrink-0">
+                  <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg shrink-0 relative group">
                     <video
-                      src={activeLesson.video_id}
+                      key={activeLesson.video_id}
                       controls
                       controlsList="nodownload"
+                      playsInline
+                      preload="metadata"
                       className="w-full h-full object-contain"
                     >
-                      Browser kamu tidak mendukung pemutaran video ini.
+                      <source src={activeLesson.video_id} type="video/quicktime" />
+                      <source src={activeLesson.video_id} type="video/mp4" />
+                      Browser kamu tidak mendukung pemutaran langsung file video ini.
                     </video>
                   </div>
                 ) : (
