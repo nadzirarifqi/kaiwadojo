@@ -197,7 +197,12 @@ function DailyMissionBuilderModal({
                       onChange={e => {
                         const j = Number(e.target.value) as 1 | 2
                         setSelectedJilid(j)
-                        setSelectedBab(j === 1 ? 1 : 26)
+                        const start = j === 1 ? 1 : 26
+                        const firstAvailable = Array.from({ length: 25 }, (_, i) => start + i).find(b => {
+                          const setting = chapterSettingsMap[b]
+                          return setting ? !setting.is_hidden : b <= 2
+                        }) || start
+                        setSelectedBab(firstAvailable)
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
@@ -207,15 +212,36 @@ function DailyMissionBuilderModal({
                   </div>
 
                   <div>
-                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab</label>
+                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab (Hanya Bab Aktif)</label>
                     <select
                       value={selectedBab}
                       onChange={e => setSelectedBab(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
-                      {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
-                        <option key={b} value={b}>Bab {b}</option>
-                      ))}
+                      {(() => {
+                        const availableBabs = Array.from({ length: 25 }, (_, i) => startBab + i).filter(b => {
+                          const setting = chapterSettingsMap[b]
+                          return setting ? !setting.is_hidden : b <= 2
+                        })
+
+                        if (availableBabs.length === 0) {
+                          return (
+                            <option value={startBab} disabled>
+                              🚫 Bab Jilid {selectedJilid} belum dirilis Admin
+                            </option>
+                          )
+                        }
+
+                        return availableBabs.map(b => {
+                          const setting = chapterSettingsMap[b]
+                          const title = setting?.title || (b <= 25 ? DEFAULT_JILID_1[b]?.title : DEFAULT_JILID_2[b]?.title) || `Bab ${b}`
+                          return (
+                            <option key={b} value={b}>
+                              Bab {b}: {title}
+                            </option>
+                          )
+                        })
+                      })()}
                     </select>
                   </div>
                 </div>
