@@ -51,6 +51,40 @@ export interface DateScheduleStatus {
 const LOCAL_SCHEDULES_KEY = 'kaiwa_class_schedules'
 const LOCAL_RESERVATIONS_KEY = 'kaiwa_class_reservations'
 
+export function isUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(str)
+}
+
+export function ensureUUID(id: string, defaultPrefix = '00000000-0000-0000-0000-'): string {
+  if (!id) return `${defaultPrefix}000000000001`
+  if (isUUID(id)) return id
+
+  // Map known demo IDs to seeded Postgres UUIDs
+  if (id === 'inst-1' || id === 'tanakasensei') return '00000000-0000-0000-0000-000000000001'
+  if (id === 'inst-2' || id === 'kenjisensei') return '00000000-0000-0000-0000-000000000002'
+  if (id === 'inst-3' || id === 'yukisensei') return '00000000-0000-0000-0000-000000000003'
+  if (id === 'user-demo-active' || id === 'budisantoso') return '00000000-0000-0000-0000-000000000099'
+
+  if (id === 'sch-online-1a') return '00000000-0000-0000-0001-000000000001'
+  if (id === 'sch-online-1b') return '00000000-0000-0000-0001-000000000002'
+  if (id === 'sch-online-2a') return '00000000-0000-0000-0001-000000000003'
+  if (id === 'sch-online-2b') return '00000000-0000-0000-0001-000000000004'
+  if (id === 'sch-offline-1a') return '00000000-0000-0000-0001-000000000005'
+  if (id === 'sch-online-5a') return '00000000-0000-0000-0001-000000000006'
+  if (id === 'sch-online-8') return '00000000-0000-0000-0001-000000000007'
+  if (id === 'sch-offline-2') return '00000000-0000-0000-0001-000000000008'
+
+  // Hash string into a valid 12-char hex for UUID suffix
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i)
+    hash |= 0
+  }
+  const hex = Math.abs(hash).toString(16).padStart(12, '0').substring(0, 12)
+  return `${defaultPrefix}${hex}`
+}
+
 // Helper: Calculate ISO Week ID (e.g. 2026-W34)
 export function getWeekRangeId(dateStr: string): string {
   const parts = dateStr.split('-')
@@ -416,8 +450,12 @@ export async function bookClass(
   }
 
   // Create Reservation
+  const dbReservationId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ensureUUID(`res-${Date.now()}-${Math.random()}`, '00000000-0000-0000-0003-')
+  const dbScheduleId = ensureUUID(schedule.id, '00000000-0000-0000-0001-')
+  const dbUserId = ensureUUID(userId, '00000000-0000-0000-0009-')
+
   const newReservation: ClassReservation = {
-    id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    id: dbReservationId,
     schedule_id: schedule.id,
     user_id: userId,
     user_name: userName,
@@ -431,8 +469,18 @@ export async function bookClass(
   // Dispatch custom window event for instant local tab sync
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: newReservation }))
 
+  // Payload for Supabase Postgres MUST use valid UUIDs for foreign key columns
+  const dbPayload = {
+    id: dbReservationId,
+    schedule_id: dbScheduleId,
+    user_id: dbUserId,
+    user_name: userName,
+    user_email: userEmail,
+    created_at: newReservation.created_at,
+  }
+
   try {
-    const { error } = await supabase.from('class_reservations').insert(newReservation)
+    const { error } = await supabase.from('class_reservations').insert(dbPayload)
     if (error) {
       console.warn('DB insert class_reservations note:', error)
     }
@@ -451,8 +499,10 @@ export async function cancelClassBooking(reservationId: string): Promise<boolean
   // Dispatch custom window event for instant local tab sync
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: reservationId }))
 
+  const dbReservationId = ensureUUID(reservationId, '00000000-0000-0000-0003-')
+
   try {
-    const { error } = await supabase.from('class_reservations').delete().eq('id', reservationId)
+    const { error } = await supabase.from('class_reservations').delete().eq('id', dbReservationId)
     if (error) {
       console.warn('DB delete class_reservations note:', error)
     }
