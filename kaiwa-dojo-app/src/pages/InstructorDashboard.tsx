@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabaseClient'
 import {
   type ClassSchedule,
   type ClassReservation,
   fetchSchedules,
   fetchReservations,
-  sortSchedules
+  sortSchedules,
+  RESERVATION_UPDATE_EVENT
 } from '../lib/scheduleService'
 import {
   getChapterSettingsMap,
@@ -37,6 +39,25 @@ export default function InstructorDashboard() {
 
   useEffect(() => {
     loadData()
+
+    const handleReservationSync = () => {
+      loadData()
+    }
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener('storage', handleReservationSync)
+
+    const channel = supabase
+      .channel('instructor_reservations_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener('storage', handleReservationSync)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   if (loading) {

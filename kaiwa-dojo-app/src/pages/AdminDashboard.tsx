@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabaseClient'
 import { fetchInstructors, type InstructorAccount } from '../lib/instructorService'
 import { fetchStudents, type StudentAccount } from '../lib/studentService'
-import { fetchSchedules, type ClassSchedule, sortSchedules } from '../lib/scheduleService'
+import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 
 export default function AdminDashboard() {
@@ -13,26 +14,48 @@ export default function AdminDashboard() {
   const [instructors, setInstructors] = useState<InstructorAccount[]>([])
   const [students, setStudents] = useState<StudentAccount[]>([])
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
+  const [reservations, setReservations] = useState<ClassReservation[]>([])
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [loading, setLoading] = useState(true)
 
   async function loadData() {
     setLoading(true)
-    const [instData, stdData, schData, chapData] = await Promise.all([
+    const [instData, stdData, schData, resData, chapData] = await Promise.all([
       fetchInstructors(),
       fetchStudents(),
       fetchSchedules(),
+      fetchReservations(),
       getChapterSettingsMap(),
     ])
     setInstructors(instData)
     setStudents(stdData)
     setSchedules(sortSchedules(schData))
+    setReservations(resData)
     setChapterSettings(chapData)
     setLoading(false)
   }
 
   useEffect(() => {
     loadData()
+
+    const handleReservationSync = () => {
+      loadData()
+    }
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener('storage', handleReservationSync)
+
+    const channel = supabase
+      .channel('admin_reservations_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener('storage', handleReservationSync)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   if (loading) {
@@ -240,6 +263,41 @@ export default function AdminDashboard() {
             >
               Kelola Akun Pemateri ↗
             </button>
+          </div>
+
+          {/* Live Tracking Card */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="relative flex size-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full size-2.5 bg-emerald-500"></span>
+                </span>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">📡 Live Tracking Enroll Pelajar</h3>
+              </div>
+              <span className="text-[0.65rem] font-bold text-slate-400">{reservations.length} Pendaftaran</span>
+            </div>
+
+            {reservations.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-3 text-center">Belum ada pendaftaran siswa baru secara live.</p>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+                {reservations.slice(0, 5).map(res => {
+                  const targetSch = schedules.find(s => s.id === res.schedule_id)
+                  return (
+                    <div key={res.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
+                      <div className="font-extrabold text-slate-800 dark:text-white flex items-center justify-between">
+                        <span>{res.user_name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[0.62rem] font-black uppercase ${targetSch?.type === 'online' ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'}`}>
+                          {targetSch?.type === 'online' ? '💻 Online' : '🏢 Offline'}
+                        </span>
+                      </div>
+                      <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{targetSch?.title || 'Sesi Kelas'}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

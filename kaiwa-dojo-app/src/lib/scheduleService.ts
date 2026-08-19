@@ -432,9 +432,12 @@ export async function bookClass(
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: newReservation }))
 
   try {
-    await supabase.from('class_reservations').insert(newReservation)
-  } catch {
-    // Saved locally
+    const { error } = await supabase.from('class_reservations').insert(newReservation)
+    if (error) {
+      console.warn('DB insert class_reservations note:', error)
+    }
+  } catch (e) {
+    console.warn('DB insert class_reservations catch:', e)
   }
 
   return { success: true, message: 'Reservasi kelas berhasil!', reservation: newReservation }
@@ -449,9 +452,12 @@ export async function cancelClassBooking(reservationId: string): Promise<boolean
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: reservationId }))
 
   try {
-    await supabase.from('class_reservations').delete().eq('id', reservationId)
-  } catch {
-    // Saved locally
+    const { error } = await supabase.from('class_reservations').delete().eq('id', reservationId)
+    if (error) {
+      console.warn('DB delete class_reservations note:', error)
+    }
+  } catch (e) {
+    console.warn('DB delete class_reservations catch:', e)
   }
   return true
 }
