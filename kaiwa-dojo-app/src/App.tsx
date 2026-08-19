@@ -103,7 +103,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
 /* ── Protected Route ────────────────────────────── */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth()
+  const { session, profile, loading } = useAuth()
 
   if (loading) {
     return (
@@ -116,7 +116,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!session) return <Navigate to="/login" replace />
+  if (!session && !profile) return <Navigate to="/login" replace />
   return <>{children}</>
 }
 

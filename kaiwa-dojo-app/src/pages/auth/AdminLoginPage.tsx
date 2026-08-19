@@ -7,10 +7,8 @@ const ADMIN_CORRECT_PIN = '899876'
 export default function AdminLoginPage() {
   const navigate = useNavigate()
 
-  // Phase 1: PIN Gate (true if PIN 899876 is verified)
-  const [pinVerified, setPinVerified] = useState<boolean>(() => {
-    return sessionStorage.getItem('kaiwa_admin_pin_verified') === 'true'
-  })
+  // Phase 1: PIN Gate (ALWAYS requires PIN 899876 on every page load/refresh)
+  const [pinVerified, setPinVerified] = useState<boolean>(false)
 
   // PIN Form State
   const [pinInput, setPinInput] = useState('')
@@ -29,7 +27,6 @@ export default function AdminLoginPage() {
     setPinError(null)
 
     if (pinInput.trim() === ADMIN_CORRECT_PIN) {
-      sessionStorage.setItem('kaiwa_admin_pin_verified', 'true')
       setPinVerified(true)
     } else {
       setPinError('❌ PIN Keamanan Salah! Akses Admin Ditolak.')
@@ -219,7 +216,6 @@ export default function AdminLoginPage() {
 
             <button
               onClick={() => {
-                sessionStorage.removeItem('kaiwa_admin_pin_verified')
                 setPinVerified(false)
                 setPinInput('')
               }}
