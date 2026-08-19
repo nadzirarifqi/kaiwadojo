@@ -19,6 +19,20 @@ export default function LoginPage() {
 
     // Special Admin Login Credentials
     if (inputClean === 'kaiwahiroshima' && password === 'inaconnextkaiwa6') {
+      const adminProf = {
+        id: '00000000-0000-0000-0000-000000000099',
+        full_name: 'Super Admin Hiroshima',
+        username: 'kaiwahiroshima',
+        email: 'admin@kaiwadojo.com',
+        role: 'admin',
+        streak_days: 99,
+        last_active_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+      window.dispatchEvent(new Event('kaiwa_profile_updated'))
+
       try {
         await supabase.from('profiles').upsert({
           id: '00000000-0000-0000-0000-000000000099',

@@ -54,7 +54,13 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(DEFAULT_DEMO_PROFILE)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const custom = localStorage.getItem('kaiwa_custom_profile')
+    if (custom) {
+      try { return JSON.parse(custom) } catch {}
+    }
+    return DEFAULT_DEMO_PROFILE
+  })
   const [loading, setLoading] = useState(true)
 
   async function fetchProfile(userId: string) {
@@ -65,22 +71,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single()
     if (!error && data) {
       setProfile(data as Profile)
+      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(data))
     }
   }
 
   async function refreshProfile() {
+    const custom = localStorage.getItem('kaiwa_custom_profile')
+    if (custom) {
+      try {
+        setProfile(JSON.parse(custom))
+        return
+      } catch {}
+    }
     if (session?.user?.id) {
       await fetchProfile(session.user.id)
     }
   }
 
   useEffect(() => {
+    const handleProfileUpdate = () => {
+      const custom = localStorage.getItem('kaiwa_custom_profile')
+      if (custom) {
+        try { setProfile(JSON.parse(custom)) } catch {}
+      }
+    }
+
+    window.addEventListener('kaiwa_profile_updated', handleProfileUpdate)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
-        setProfile(DEFAULT_DEMO_PROFILE)
+        const custom = localStorage.getItem('kaiwa_custom_profile')
+        if (custom) {
+          try { setProfile(JSON.parse(custom)) } catch {}
+        } else {
+          setProfile(DEFAULT_DEMO_PROFILE)
+        }
       }
       setLoading(false)
     })
@@ -90,16 +118,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id)
       } else {
-        setProfile(DEFAULT_DEMO_PROFILE)
+        const custom = localStorage.getItem('kaiwa_custom_profile')
+        if (custom) {
+          try { setProfile(JSON.parse(custom)) } catch {}
+        } else {
+          setProfile(DEFAULT_DEMO_PROFILE)
+        }
       }
     })
 
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      window.removeEventListener('kaiwa_profile_updated', handleProfileUpdate)
+      listener.subscription.unsubscribe()
+    }
   }, [])
 
   async function signOut() {
     await supabase.auth.signOut()
     setSession(null)
+    localStorage.removeItem('kaiwa_custom_profile')
     setProfile(DEFAULT_DEMO_PROFILE)
   }
 
