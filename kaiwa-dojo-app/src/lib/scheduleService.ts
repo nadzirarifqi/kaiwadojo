@@ -248,50 +248,19 @@ export function getInitialReservations(): ClassReservation[] {
   const stored = localStorage.getItem(LOCAL_RESERVATIONS_KEY)
   if (stored) {
     try {
-      return JSON.parse(stored)
+      const parsed: ClassReservation[] = JSON.parse(stored)
+      // Filter out any legacy fake demo mock reservations (res-demo-1, res-demo-2, Siswa A/B/C, etc.)
+      const realOnly = parsed.filter(r => !r.id.startsWith('res-demo-') && !r.user_email.includes('@example.com'))
+      localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realOnly))
+      return realOnly
     } catch {
       // Fallback
     }
   }
 
-  // Pre-fill reservations including active user demo booking
-  const initial: ClassReservation[] = [
-    {
-      id: 'res-demo-active-1',
-      schedule_id: 'sch-online-1a',
-      user_id: 'user-demo-active',
-      user_name: 'Budi Santoso',
-      user_email: 'budi@kaiwadojo.com',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'res-demo-1',
-      schedule_id: 'sch-online-1a',
-      user_id: 'user-demo-99',
-      user_name: 'Siswa A',
-      user_email: 'siswaa@example.com',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'res-demo-2',
-      schedule_id: 'sch-online-1b',
-      user_id: 'user-demo-98',
-      user_name: 'Siswa B',
-      user_email: 'siswab@example.com',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'res-demo-3',
-      schedule_id: 'sch-offline-1a',
-      user_id: 'user-demo-97',
-      user_name: 'Siswa C',
-      user_email: 'siswac@example.com',
-      created_at: new Date().toISOString(),
-    },
-  ]
-
-  localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(initial))
-  return initial
+  const empty: ClassReservation[] = []
+  localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(empty))
+  return empty
 }
 
 
@@ -330,9 +299,10 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
 export async function fetchReservations(): Promise<ClassReservation[]> {
   try {
     const { data, error } = await supabase.from('class_reservations').select('*')
-    if (!error && data && data.length > 0) {
-      localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(data))
-      return data as ClassReservation[]
+    if (!error && data) {
+      const realData = (data as ClassReservation[]).filter(r => !r.id.startsWith('res-demo-') && !r.user_email.includes('@example.com'))
+      localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realData))
+      return realData
     }
   } catch {
     // Fallback
