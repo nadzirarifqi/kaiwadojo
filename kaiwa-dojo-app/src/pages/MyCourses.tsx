@@ -794,7 +794,7 @@ export default function MyCourses() {
 
                             {/* Duration Tag */}
                             <span className="absolute bottom-2 right-2 text-[0.65rem] font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs font-mono">
-                              ⏱️ {lesson.duration_text || `${lesson.duration_minutes}.00`} Min
+                              ⏱️ {lesson.duration_text || `${lesson.duration_minutes}.00`}
                             </span>
                           </div>
 
