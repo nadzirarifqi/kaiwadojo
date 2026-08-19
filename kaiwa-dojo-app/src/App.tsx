@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import Sidebar from './components/Sidebar'
-import InstructorDashboard from './pages/Dashboard'
+import StudentDashboard from './pages/Dashboard'
+import InstructorDashboard from './pages/InstructorDashboard'
 import MyCourses from './pages/MyCourses'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -12,6 +13,18 @@ import SettingsPage from './pages/Settings'
 import ClassReservationPage from './pages/ClassReservation'
 import InstructorScheduleManagerPage from './pages/InstructorScheduleManager'
 import CourseEditorPage from './pages/CourseEditor'
+
+/* ── Role-Aware Dashboard Router ─────────────────── */
+function DashboardRoute() {
+  const { profile } = useAuth()
+  const role = profile?.role || 'pelajar'
+
+  if (role === 'pemateri' || role === 'admin') {
+    return <InstructorDashboard />
+  }
+
+  return <StudentDashboard />
+}
 
 
 /* ── Mobile Topbar ─────────────────────────────────
@@ -113,7 +126,7 @@ function App() {
 
           {/* Protected routes */}
           <Route path="/"                element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard"       element={<ProtectedRoute><AppShell><InstructorDashboard /></AppShell></ProtectedRoute>} />
+          <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
           <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
           <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
           <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
