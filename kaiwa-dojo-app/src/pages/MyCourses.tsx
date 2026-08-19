@@ -1012,20 +1012,31 @@ export default function MyCourses() {
                     </div>
                   </div>
                 ) : activeLesson.video_id ? (
-                  /* Real HTML5 Video Player */
-                  <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg shrink-0 relative group">
-                    <video
-                      key={activeLesson.video_id}
-                      controls
-                      controlsList="nodownload"
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-contain"
-                    >
-                      <source src={activeLesson.video_id} type="video/quicktime" />
-                      <source src={activeLesson.video_id} type="video/mp4" />
-                      Browser kamu tidak mendukung pemutaran langsung file video ini.
-                    </video>
+                  /* Real HTML5 Portrait Video Player (Mobile 9:16 Responsive Container) */
+                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 min-h-[460px] sm:min-h-[580px] relative overflow-hidden">
+                    {/* Ambient Glow */}
+                    <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
+
+                    {/* Header Badge */}
+                    <div className="flex items-center gap-2 mb-3 z-10 text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                      <span>📱 Format Video Mobile (Portrait 9:16)</span>
+                    </div>
+
+                    {/* Portrait Phone Frame Container */}
+                    <div className="w-full max-w-[340px] aspect-[9/16] max-h-[65vh] sm:max-h-[540px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group">
+                      <video
+                        key={activeLesson.video_id}
+                        controls
+                        controlsList="nodownload"
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-contain bg-black"
+                      >
+                        <source src={activeLesson.video_id} type="video/quicktime" />
+                        <source src={activeLesson.video_id} type="video/mp4" />
+                        Browser kamu tidak mendukung pemutaran langsung file video ini.
+                      </video>
+                    </div>
                   </div>
                 ) : (
                   /* Elegant Placeholder Player Frame (When video not uploaded yet) */
