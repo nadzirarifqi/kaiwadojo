@@ -76,7 +76,7 @@ export const DEFAULT_JILID_2: { [key: number]: { title: string; subtitle: string
   50: { title: 'Hormat Kenjougo & Sonkeigo II', subtitle: '?????? (Saya yang akan datang)' },
 }
 
-/* -- Fetch Chapter Settings (Supabase with LocalStorage fallback) -- */
+/* ── Fetch Chapter Settings (Supabase with LocalStorage fallback) ── */
 export async function getChapterSettingsMap(): Promise<Record<number, ChapterSetting>> {
   const result: Record<number, ChapterSetting> = {}
 
@@ -91,30 +91,7 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
     }
   }
 
-  // 1. Try Supabase
-  try {
-    const { data } = await supabase.from('chapter_settings').select('*')
-    if (data && data.length > 0) {
-      data.forEach((item: any) => {
-        if (result[item.bab_number]) {
-          result[item.bab_number] = {
-            ...result[item.bab_number],
-            title: item.title || result[item.bab_number].title,
-            subtitle: item.subtitle || result[item.bab_number].subtitle,
-            is_hidden: typeof item.is_hidden === 'boolean' ? item.is_hidden : false,
-            custom_video_s1: item.custom_video_s1,
-            custom_video_s2: item.custom_video_s2,
-            custom_video_s3: item.custom_video_s3,
-          }
-        }
-      })
-      return result
-    }
-  } catch (err) {
-    console.warn('Supabase chapter_settings fetch failed, using local storage fallback:', err)
-  }
-
-  // 2. LocalStorage Fallback
+  // 1. Read LocalStorage settings
   try {
     const localStr = localStorage.getItem(SETTINGS_KEY)
     if (localStr) {
@@ -130,14 +107,40 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
     console.error('LocalStorage read error:', e)
   }
 
+  // 2. Try Supabase (overrides if remote DB records exist)
+  try {
+    const { data, error } = await supabase.from('chapter_settings').select('*')
+    if (!error && data && data.length > 0) {
+      data.forEach((item: any) => {
+        if (result[item.bab_number]) {
+          result[item.bab_number] = {
+            ...result[item.bab_number],
+            title: item.title || result[item.bab_number].title,
+            subtitle: item.subtitle || result[item.bab_number].subtitle,
+            is_hidden: typeof item.is_hidden === 'boolean' ? item.is_hidden : false,
+            custom_video_s1: item.custom_video_s1,
+            custom_video_s2: item.custom_video_s2,
+            custom_video_s3: item.custom_video_s3,
+          }
+        }
+      })
+    }
+  } catch (err) {
+    // Ignore error if table doesn't exist
+  }
+
   return result
 }
 
-/* -- Save Chapter Setting -- */
+/* ── Save Chapter Setting ── */
 export async function saveChapterSetting(setting: ChapterSetting): Promise<boolean> {
   // Update LocalStorage first
   try {
-    const map = await getChapterSettingsMap()
+    let map: Record<number, ChapterSetting> = {}
+    const localStr = localStorage.getItem(SETTINGS_KEY)
+    if (localStr) {
+      map = JSON.parse(localStr)
+    }
     map[setting.bab_number] = setting
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
   } catch (e) {
@@ -158,7 +161,7 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
     }, { onConflict: 'bab_number' })
 
     if (error) {
-      console.warn('Supabase chapter_settings upsert error (using local storage):', error.message)
+      console.warn('Supabase chapter_settings upsert note:', error.message)
     }
   } catch (err) {
     console.warn('Supabase offline, saved to local storage:', err)

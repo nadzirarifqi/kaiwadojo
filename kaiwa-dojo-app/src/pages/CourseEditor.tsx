@@ -56,8 +56,12 @@ export default function CourseEditor() {
   }
 
   async function handleToggleHide(babNum: number) {
-    const current = chapterMap[babNum]
-    if (!current) return
+    const current = chapterMap[babNum] || {
+      bab_number: babNum,
+      title: `Bab ${babNum}`,
+      subtitle: '',
+      is_hidden: false,
+    }
 
     const updated: ChapterSetting = {
       ...current,
@@ -68,19 +72,23 @@ export default function CourseEditor() {
     await saveChapterSetting(updated)
     showToast(
       updated.is_hidden
-        ? `Bab ${babNum} kini DISEMBUNYIKAN dari siswa ??`
-        : `Bab ${babNum} kini DITAMPILKAN ke siswa ??`
+        ? `Bab ${babNum} kini DISEMBUNYIKAN dari siswa 🔴`
+        : `Bab ${babNum} kini DITAMPILKAN ke siswa 🟢`
     )
   }
 
   async function handleSaveBab(babNum: number) {
-    const current = chapterMap[babNum]
-    if (!current) return
+    const current = chapterMap[babNum] || {
+      bab_number: babNum,
+      title: `Bab ${babNum}`,
+      subtitle: '',
+      is_hidden: false,
+    }
 
     setSavingBab(babNum)
     await saveChapterSetting(current)
     setSavingBab(null)
-    showToast(`Pengaturan Bab ${babNum} berhasil disimpan! ?`)
+    showToast(`Pengaturan Bab ${babNum} berhasil disimpan! ✅`)
   }
 
   async function handleSaveHeader() {
