@@ -395,7 +395,7 @@ export default function SetoranKotobaPage() {
               <span>{t('sk_guide_title', '💡 Panduan Menambah & Menguji Kosakata')}</span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300">
-              1. Catat kata baru dengan tombol <strong>"+ Tambah Kosakata Baru"</strong>.<br />
+              1. Catat kata baru dengan tombol <strong>"Tambah Kosakata Baru"</strong>.<br />
               2. Tekan <strong>"🧠 Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri (tebak gambar/romaji/makna dan periksa kunci jawabannya!).
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">

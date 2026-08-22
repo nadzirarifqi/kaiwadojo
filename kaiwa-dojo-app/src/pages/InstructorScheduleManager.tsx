@@ -10,6 +10,7 @@ import {
   saveSchedule,
   deleteSchedule,
   getWeekLabel,
+  getMonthLabel,
 } from '../lib/scheduleService'
 
 
@@ -208,7 +209,7 @@ export default function InstructorScheduleManagerPage() {
                       </span>
 
                       <span className="text-xs text-slate-400 font-bold">
-                        {sch.type === 'online' ? getWeekLabel(sch.week_range_id) : `Periode ${sch.month_range_id}`}
+                        {sch.type === 'online' ? getWeekLabel(sch.week_range_id, sch.date) : getMonthLabel(sch.month_range_id)}
                       </span>
                     </div>
 

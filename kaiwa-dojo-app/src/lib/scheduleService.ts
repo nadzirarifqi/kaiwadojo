@@ -123,11 +123,82 @@ export function getWeekRangeId(dateStr: string): string {
 }
 
 
-// Helper: Get human readable week label
-export function getWeekLabel(weekRangeId: string): string {
-  const parts = weekRangeId.split('-W')
-  if (parts.length !== 2) return weekRangeId
-  return `Minggu Ke-${parseInt(parts[1], 10)} (${parts[0]})`
+// Helper: Format YYYY-MM-DD to "Kamis, 8 Agustus 2026"
+export function formatDateIndonesian(dateStr: string, lang: string = 'id'): string {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-').map(Number)
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return dateStr
+  const dateObj = new Date(parts[0], parts[1] - 1, parts[2])
+  const locale = lang === 'ja' ? 'ja-JP' : lang === 'en' ? 'en-US' : 'id-ID'
+  return dateObj.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+// Helper: Get human readable week label (e.g. "Minggu ke-1 Agustus 2026")
+export function getWeekLabel(weekRangeIdOrDate: string, dateStr?: string): string {
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ]
+
+  let targetDate: Date | null = null
+
+  // 1. If explicit dateStr (YYYY-MM-DD) is provided
+  if (dateStr && dateStr.includes('-')) {
+    const parts = dateStr.split('-')
+    if (parts.length === 3) {
+      targetDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+    }
+  }
+
+  // 2. If input is dateStr YYYY-MM-DD
+  if (!targetDate && weekRangeIdOrDate.length === 10 && weekRangeIdOrDate.split('-').length === 3) {
+    const parts = weekRangeIdOrDate.split('-')
+    targetDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+  }
+
+  // 3. If input is ISO week YYYY-Www (e.g. 2026-W34)
+  if (!targetDate && weekRangeIdOrDate.includes('-W')) {
+    const parts = weekRangeIdOrDate.split('-W')
+    if (parts.length === 2) {
+      const year = parseInt(parts[0], 10)
+      const week = parseInt(parts[1], 10)
+      const simple = new Date(year, 0, 1 + (week - 1) * 7)
+      const dow = simple.getDay()
+      const ISOweekStart = new Date(simple)
+      if (dow <= 4) {
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1)
+      } else {
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay())
+      }
+      targetDate = ISOweekStart
+    }
+  }
+
+  if (!targetDate || isNaN(targetDate.getTime())) {
+    return weekRangeIdOrDate
+  }
+
+  const weekNum = Math.ceil(targetDate.getDate() / 7)
+  const monthName = monthNames[targetDate.getMonth()]
+  const yearNum = targetDate.getFullYear()
+
+  return `Minggu ke-${weekNum} ${monthName} ${yearNum}`
+}
+
+// Helper: Get human readable month label (e.g. "Bulan Agustus 2026")
+export function getMonthLabel(monthRangeId: string): string {
+  if (!monthRangeId || !monthRangeId.includes('-')) return monthRangeId
+  const parts = monthRangeId.split('-')
+  if (parts.length < 2) return monthRangeId
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ]
+  const mIdx = parseInt(parts[1], 10) - 1
+  if (mIdx >= 0 && mIdx < 12) {
+    return `Bulan ${monthNames[mIdx]} ${parts[0]}`
+  }
+  return monthRangeId
 }
 
 // Helper: Calculate Month ID (e.g. 2026-08)

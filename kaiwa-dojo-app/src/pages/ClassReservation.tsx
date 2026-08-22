@@ -11,6 +11,7 @@ import {
   cancelClassBooking,
   getMonthlyOnlineRequirementStatus,
   getWeekLabel,
+  formatDateIndonesian,
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
 } from '../lib/scheduleService'
@@ -18,7 +19,7 @@ import {
 
 export default function ClassReservationPage() {
   const { profile } = useAuth()
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
 
   // Use real Supabase Auth UUID — critical for RLS policy (auth.uid() = user_id)
   const userId = profile?.id ?? ''
@@ -430,13 +431,7 @@ export default function ClassReservationPage() {
                 const { isLocked, reason } = checkLockStatus(sch)
                 const isFull = enrolledCount >= sch.max_quota
 
-                const dateObj = new Date(sch.date)
-                const dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][dateObj.getDay()]
-                const monthName = [
-                  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-                ][dateObj.getMonth()]
-                const formattedDate = `${dayName}, ${dateObj.getDate()} ${monthName} ${dateObj.getFullYear()}`
+                const formattedDate = formatDateIndonesian(sch.date, language)
 
                 return (
                   <div
@@ -675,45 +670,85 @@ export default function ClassReservationPage() {
       {confirmModalType && targetSchedule && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-5 animate-scale-up">
+            
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-                {confirmModalType === 'book' ? 'Konfirmasi Reservasi Kelas' : 'Konfirmasi Pembatalan'}
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className={`size-10 rounded-2xl flex items-center justify-center text-lg ${
+                  confirmModalType === 'book'
+                    ? 'bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400'
+                    : 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
+                }`}>
+                  {confirmModalType === 'book' ? '📝' : '⚠️'}
+                </div>
+                <div>
+                  <span className="text-[0.68rem] font-black uppercase tracking-wider text-slate-400">
+                    {confirmModalType === 'book' ? 'Konfirmasi Reservasi' : 'Konfirmasi Pembatalan'}
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-tight">
+                    {confirmModalType === 'book' ? 'Reservasi Kelas Live' : 'Batalkan Reservasi Kelas'}
+                  </h3>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   setConfirmModalType(null)
                   setTargetSchedule(null)
                 }}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold border-none cursor-pointer flex items-center justify-center"
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold border-none cursor-pointer flex items-center justify-center transition-colors"
               >
                 ×
               </button>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-2 text-xs">
-              <div className="font-extrabold text-sm text-slate-800 dark:text-white">{targetSchedule.title}</div>
-              <div className="text-primary dark:text-red-400 font-bold">{targetSchedule.subtitle_chapter}</div>
-              <div className="text-slate-500 mt-2">
-                📅 Tanggal: <strong className="text-slate-700 dark:text-slate-200">{targetSchedule.date}</strong> ({targetSchedule.start_time} - {targetSchedule.end_time} WIB)
+            {/* Schedule Info Card */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-3 text-xs border border-slate-200/80 dark:border-slate-700/60">
+              <div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[0.65rem] font-black uppercase inline-block mb-1.5 ${
+                  targetSchedule.type === 'online'
+                    ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                }`}>
+                  {targetSchedule.type === 'online' ? '💻 ONLINE (Google Meet)' : '🏢 OFFLINE (Lokasi Dojo)'}
+                </span>
+                <h4 className="text-sm font-extrabold text-slate-800 dark:text-white leading-snug">
+                  {targetSchedule.title}
+                </h4>
+                <p className="text-xs text-primary dark:text-red-400 font-bold">
+                  {targetSchedule.subtitle_chapter}
+                </p>
               </div>
-              <div className="text-slate-500">
-                👨‍🏫 Instruktur: <strong className="text-slate-700 dark:text-slate-200">{targetSchedule.instructor_name}</strong>
+
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5 text-slate-600 dark:text-slate-300 font-medium">
+                <div className="flex items-center gap-2">
+                  <span>📅</span>
+                  <span>Hari & Tanggal: <strong className="text-slate-800 dark:text-white font-extrabold">{formatDateIndonesian(targetSchedule.date, language)}</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>⏰</span>
+                  <span>Waktu Sesi: <strong className="text-slate-800 dark:text-white font-extrabold">{targetSchedule.start_time} - {targetSchedule.end_time} WIB</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>👨‍🏫</span>
+                  <span>Instruktur: <strong className="text-slate-800 dark:text-white font-extrabold">{targetSchedule.instructor_name}</strong></span>
+                </div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               {confirmModalType === 'book'
-                ? 'Dengan melakukan reservasi, slot kuota akan terkunci untuk Anda dan Anda dapat bergabung dalam sesi belajar live ini.'
+                ? 'Dengan melakukan reservasi, 1 slot kuota akan terkunci untuk Anda dan Anda dapat bergabung dalam sesi belajar live ini.'
                 : 'Apakah Anda yakin ingin membatalkan reservasi ini? Slot kuota akan dilepaskan untuk siswa lain.'}
             </p>
 
-            <div className="flex items-center gap-3 pt-2">
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-1">
               <button
                 onClick={() => {
                   setConfirmModalType(null)
                   setTargetSchedule(null)
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs border-none cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs border-none cursor-pointer transition-colors"
               >
                 Batal
               </button>
@@ -723,7 +758,7 @@ export default function ClassReservationPage() {
                 onClick={handleConfirmAction}
                 className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs text-white border-none cursor-pointer transition-all shadow-md ${
                   confirmModalType === 'book'
-                    ? 'bg-primary hover:bg-primary-dark'
+                    ? 'bg-gradient-to-r from-sky-600 to-primary hover:from-sky-700 hover:to-primary-dark'
                     : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
