@@ -460,9 +460,13 @@ function DateClassEnrollModal({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black uppercase ${
-                        sch.type === 'online'
-                          ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
-                          : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                        userRes
+                          ? sch.type === 'online'
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-emerald-600 text-white shadow-xs'
+                          : sch.type === 'online'
+                            ? 'bg-transparent border border-sky-400 text-sky-600 dark:text-sky-300 font-extrabold'
+                            : 'bg-transparent border border-emerald-400 text-emerald-600 dark:text-emerald-300 font-extrabold'
                       }`}>
                         {sch.type === 'online' ? '💻 ONLINE (G-Meet)' : '🏢 OFFLINE (Dojo)'}
                       </span>
@@ -1281,10 +1285,10 @@ export default function LearningPlanPage() {
                                     ? 'bg-sky-600 text-white font-black shadow-xs'
                                     : 'bg-emerald-600 text-white font-black shadow-xs'
                                   : isFull
-                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 font-normal'
+                                    ? 'bg-transparent text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 font-normal'
                                     : sch.type === 'online'
-                                      ? 'bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 font-semibold hover:bg-sky-100 dark:hover:bg-sky-950/60'
-                                      : 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
+                                      ? 'bg-transparent text-sky-600 dark:text-sky-300 border border-sky-400/90 dark:border-sky-700 font-bold hover:bg-sky-50/40'
+                                      : 'bg-transparent text-emerald-600 dark:text-emerald-300 border border-emerald-400/90 dark:border-emerald-700 font-bold hover:bg-emerald-50/40'
                               }`}
                             >
                               <div className="flex items-center gap-1 min-w-0 truncate">

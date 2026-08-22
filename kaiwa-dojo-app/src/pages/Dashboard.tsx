@@ -236,12 +236,20 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               <span className="text-[0.7rem] text-slate-400 font-medium">Linimasa Misi Harian & Kelas Live</span>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/learning-plan')}
-            className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-all shrink-0"
-          >
-            Kalender Lengkap →
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => navigate('/reservasi-kelas')}
+              className="text-xs font-extrabold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200 dark:border-sky-800 cursor-pointer transition-all shrink-0"
+            >
+              💻 Reservasi Kelas →
+            </button>
+            <button
+              onClick={() => navigate('/learning-plan')}
+              className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-all shrink-0"
+            >
+              Kalender →
+            </button>
+          </div>
         </div>
 
         {/* Filter Pills */}
@@ -884,7 +892,7 @@ export default function Dashboard() {
 
             {/* Shortcut 2: Reservasi Kelas */}
             <button
-              onClick={() => navigate('/class-reservation')}
+              onClick={() => navigate('/reservasi-kelas')}
               className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 rounded-2xl p-4 sm:p-5 flex items-center gap-3 shadow-sm border border-slate-200 dark:border-slate-800 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md hover:border-sky-500 text-left group"
             >
               <span className="size-10 sm:size-11 rounded-2xl bg-sky-500/10 dark:bg-sky-400/20 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xl shrink-0 shadow-xs">

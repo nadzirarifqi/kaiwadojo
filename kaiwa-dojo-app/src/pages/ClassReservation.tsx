@@ -452,9 +452,13 @@ export default function ClassReservationPage() {
                     {/* Top Ribbon Badge */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                        sch.type === 'online'
-                          ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300'
-                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                        userRes
+                          ? sch.type === 'online'
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-emerald-600 text-white shadow-xs'
+                          : sch.type === 'online'
+                            ? 'bg-transparent border border-sky-400 text-sky-600 dark:text-sky-300 font-extrabold'
+                            : 'bg-transparent border border-emerald-400 text-emerald-600 dark:text-emerald-300 font-extrabold'
                       }`}>
                         {sch.type === 'online' ? '💻 ONLINE (G-Meet)' : '🏢 OFFLINE (Lokasi)'}
                       </span>

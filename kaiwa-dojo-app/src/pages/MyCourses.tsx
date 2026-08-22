@@ -1144,19 +1144,6 @@ export default function MyCourses() {
                       </span>
                       <span>Target Kuis: 10 Soal Pilihan Ganda (Passing Grade 80%)</span>
                     </div>
-
-                    <div className="pt-2 relative z-10">
-                      <button
-                        onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-extrabold border-none cursor-pointer transition-all ${
-                          activeLesson.is_completed
-                            ? 'bg-emerald-500 text-white shadow-md'
-                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
-                        }`}
-                      >
-                        {activeLesson.is_completed ? '✅ Kuis Ditandai Selesai' : 'Tandai Kuis Selesai (Simulasi)'}
-                      </button>
-                    </div>
                   </div>
                 ) : activeLesson.video_id ? (
                   /* Real HTML5 Portrait Video Player (Mobile 9:16 Responsive Container) */
@@ -1215,21 +1202,13 @@ export default function MyCourses() {
                     <h3 className="text-base sm:text-lg font-bold max-w-md leading-snug mb-1">
                       {activeLesson.title}
                     </h3>
-                    <p className="text-xs text-slate-300 max-w-sm leading-relaxed mb-4">
+                    <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
                       Video materi ini sedang dalam tahap perekaman/upload oleh admin. Kamu tetap bisa mencatat judul bab dan lanjut ke video berikutnya!
                     </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 cursor-pointer transition-all"
-                      >
-                        {activeLesson.is_completed ? '✅ Sudah Ditandai' : 'Tandai Sudah Dipelajari'}
-                      </button>
-                    </div>
                   </div>
                 )}
 
-                {/* Lesson Details & Controls */}
+                {/* Lesson Details */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
                     <h3 className="text-lg font-bold text-slate-800">{activeLesson.title}</h3>
@@ -1237,26 +1216,10 @@ export default function MyCourses() {
                       ⏱️ Estimasi Durasi: {activeLesson.duration_minutes} menit • Diulang {activeLesson.replay_count || 0} kali
                     </p>
                   </div>
-
-                  {!activeLesson.is_placeholder && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleIncrementReplay(activeLesson)}
-                        className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold border-none cursor-pointer transition-all"
-                      >
-                        🔄 Ulangi Video
-                      </button>
-                      <button
-                        onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
-                          activeLesson.is_completed
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-primary text-white hover:bg-primary-dark'
-                        }`}
-                      >
-                        {activeLesson.is_completed ? '✅ Selesai' : 'Tandai Selesai'}
-                      </button>
-                    </div>
+                  {activeLesson.is_completed && (
+                    <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 self-start sm:self-center">
+                      ✓ Video Selesai Ditonton
+                    </span>
                   )}
                 </div>
 
