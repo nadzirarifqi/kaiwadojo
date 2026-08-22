@@ -27,6 +27,7 @@ import {
   RESERVATION_UPDATE_EVENT,
   getWeekRangeId,
   getMonthRangeId,
+  matchScheduleId,
 } from '../lib/scheduleService'
 import {
   getChapterSettingsMap,
@@ -414,8 +415,8 @@ function DateClassEnrollModal({
           ) : (
             <div className="space-y-3">
               {daySchedules.map(sch => {
-                const enrolledCount = reservations.filter(r => r.schedule_id === sch.id).length
-                const userRes = reservations.find(r => r.schedule_id === sch.id && r.user_id === userId)
+                const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
+                const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === userId)
                 const isFull = enrolledCount >= sch.max_quota
 
                 // Check conflict
@@ -426,7 +427,7 @@ function DateClassEnrollModal({
                   if (sch.type === 'online') {
                     const hasWeeklyOnline = reservations.some(r => {
                       if (r.user_id !== userId) return false
-                      const targetSch = schedules.find(s => s.id === r.schedule_id)
+                      const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                       return targetSch && targetSch.type === 'online' && targetSch.week_range_id === sch.week_range_id
                     })
                     if (hasWeeklyOnline) {
@@ -436,7 +437,7 @@ function DateClassEnrollModal({
                   } else {
                     const hasMonthlyOffline = reservations.some(r => {
                       if (r.user_id !== userId) return false
-                      const targetSch = schedules.find(s => s.id === r.schedule_id)
+                      const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                       return targetSch && targetSch.type === 'offline' && targetSch.month_range_id === sch.month_range_id
                     })
                     if (hasMonthlyOffline) {
@@ -599,7 +600,7 @@ export default function LearningPlanPage() {
 
     // 2. Supabase Realtime channel for cross-device sync
     const channel = supabase
-      .channel('class_reservations_realtime')
+      .channel('class_reservations_realtime_lp')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'class_reservations' },
@@ -614,7 +615,7 @@ export default function LearningPlanPage() {
       window.removeEventListener('storage', handleSync)
       supabase.removeChannel(channel)
     }
-  }, [selectedDateStr, currentMonthDate])
+  }, [])
 
 
   useEffect(() => {
@@ -626,20 +627,23 @@ export default function LearningPlanPage() {
   async function loadData() {
     if (!user) return
 
-    // 1. Fetch user's streaks from Supabase
-    const { data: streaksData } = await supabase
-      .from('learning_streaks')
-      .select('date')
-      .eq('student_id', user.id)
+    // 1. Batch fetch user's streaks, lesson progress, and kotoba submissions in parallel
+    const [{ data: streaksData }, { data: pData }, { data: kData }] = await Promise.all([
+      supabase.from('learning_streaks').select('date').eq('student_id', user.id),
+      supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', user.id),
+      supabase.from('user_kotoba_submissions').select('id').eq('user_id', user.id),
+    ])
 
     const streakDates = new Set((streaksData || []).map((s: any) => s.date))
     setStreakSet(streakDates)
+
+    const preFetched = { progressData: pData || [], kotobaSubmissions: kData || [] }
 
     // 2. Fetch all missions from Supabase DB + LocalStorage
     const allMissionsMap = await fetchAllUserMissions(user.id)
     setUserMissions(allMissionsMap)
 
-    // 3. Compute past missions progress for the displayed month
+    // 3. Compute past missions progress for the displayed month (using preFetched data in memory)
     const year = currentMonthDate.getFullYear()
     const month = currentMonthDate.getMonth()
     const daysInCurrentMonth = new Date(year, month + 1, 0).getDate()
@@ -655,7 +659,7 @@ export default function LearningPlanPage() {
       } else {
         const m = allMissionsMap.get(dStr)
         if (m) {
-          const prog = await calculateMissionProgress(user.id, m)
+          const prog = await calculateMissionProgress(user.id, m, preFetched)
           if (prog.isFullyCompleted) {
             completedSet.add(dStr)
           }
@@ -672,7 +676,7 @@ export default function LearningPlanPage() {
     setSelectedMission(mission)
 
     if (mission) {
-      const prog = await calculateMissionProgress(user.id, mission)
+      const prog = await calculateMissionProgress(user.id, mission, preFetched)
       setMissionProgress(prog)
     } else {
       setMissionProgress(null)
@@ -719,7 +723,7 @@ export default function LearningPlanPage() {
 
   const daysToRender = (viewMode === 'schedule' && showOnlyActivities)
     ? allMonthDays.filter(item => {
-        const activeUserId = profile?.id || user?.id || 'user-demo-active'
+        const activeUserId = profile?.id || user?.id || ''
         const status = calculateDateScheduleStatus(item.dateStr, activeUserId, schedules, reservations)
         const mission = user ? getDailyMission(user.id, item.dateStr) : null
         return status.hasSchedule || mission !== null
@@ -888,7 +892,7 @@ export default function LearningPlanPage() {
                   const dateMission = user ? getDailyMission(user.id, dateStr) : null
                   const hasPlan = dateMission !== null
 
-                  const activeUserId = profile?.id || user?.id || 'user-demo-active'
+                  const activeUserId = profile?.id || user?.id || ''
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
                   const daySchedules = dateStatus.schedules || []
                   const hasActivity = daySchedules.length > 0 || dateMission !== null
@@ -1043,8 +1047,8 @@ export default function LearningPlanPage() {
                             <div className="flex flex-col gap-2">
                               <span className="text-[0.72rem] font-bold text-slate-500 uppercase tracking-wider">Kelas Live ({daySchedules.length}):</span>
                               {daySchedules.map(sch => {
-                                const isUserEnrolled = reservations.some(r => r.schedule_id === sch.id && r.user_id === activeUserId)
-                                const enrolledCount = reservations.filter(r => r.schedule_id === sch.id).length
+                                const isUserEnrolled = reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
+                                const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
                                 const isFull = enrolledCount >= sch.max_quota
                                 const isLockedByWeekRule = !isUserEnrolled && isDateLocked && dateStatus.lockReason === 'week_locked'
 
@@ -1188,7 +1192,7 @@ export default function LearningPlanPage() {
                   const dateMission = (user ? userMissions.get(dateStr) : null) || (user ? getDailyMission(user.id, dateStr) : null)
                   const hasPlan = dateMission !== null
 
-                  const activeUserId = profile?.id || user?.id || 'user-demo-active'
+                  const activeUserId = profile?.id || user?.id || ''
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
 
                   const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
@@ -1264,8 +1268,8 @@ export default function LearningPlanPage() {
                       {/* Live Class Schedule Items (Google Calendar Style: Transparent with thin border for available, solid for booked) */}
                       <div className="flex flex-col gap-1 relative z-20">
                         {dateStatus.schedules.map(sch => {
-                          const isEnrolled = reservations.some(r => r.schedule_id === sch.id && r.user_id === activeUserId)
-                          const enrolledCount = reservations.filter(r => r.schedule_id === sch.id).length
+                          const isEnrolled = reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
+                          const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
                           const isFull = enrolledCount >= sch.max_quota
 
                           return (
@@ -1440,9 +1444,9 @@ export default function LearningPlanPage() {
 
                 <div className="space-y-2">
                   {schedules.filter(s => s.date === selectedDateStr).map(sch => {
-                    const activeUserId = profile?.id || user?.id || 'user-demo-active'
-                    const userRes = reservations.find(r => r.schedule_id === sch.id && r.user_id === activeUserId)
-                    const enrolledCount = reservations.filter(r => r.schedule_id === sch.id).length
+                    const activeUserId = profile?.id || user?.id || ''
+                    const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
+                    const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
                     const isFull = enrolledCount >= sch.max_quota
 
                     let isLocked = false
@@ -1453,7 +1457,7 @@ export default function LearningPlanPage() {
                         const schWeekId = sch.week_range_id || getWeekRangeId(sch.date)
                         const hasWeeklyOnline = reservations.some(r => {
                           if (r.user_id !== activeUserId) return false
-                          const targetSch = schedules.find(s => s.id === r.schedule_id)
+                          const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                           if (!targetSch || targetSch.type !== 'online') return false
                           const targetWeekId = targetSch.week_range_id || getWeekRangeId(targetSch.date)
                           return targetWeekId === schWeekId
@@ -1466,7 +1470,7 @@ export default function LearningPlanPage() {
                         const schMonthId = sch.month_range_id || getMonthRangeId(sch.date)
                         const hasMonthlyOffline = reservations.some(r => {
                           if (r.user_id !== activeUserId) return false
-                          const targetSch = schedules.find(s => s.id === r.schedule_id)
+                          const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                           if (!targetSch || targetSch.type !== 'offline') return false
                           const targetMonthId = targetSch.month_range_id || getMonthRangeId(targetSch.date)
                           return targetMonthId === schMonthId
@@ -1612,9 +1616,9 @@ export default function LearningPlanPage() {
           dateStr={selectedDateStr}
           schedules={schedules}
           reservations={reservations}
-          userId={profile?.id || user?.id || 'user-demo-active'}
-          userName={profile?.full_name || user?.user_metadata?.full_name || 'Budi Santoso'}
-          userEmail={profile?.email || user?.email || 'budi@kaiwadojo.com'}
+          userId={profile?.id || user?.id || ''}
+          userName={profile?.full_name || user?.user_metadata?.full_name || 'Pengguna'}
+          userEmail={profile?.email || user?.email || ''}
           onClose={() => setShowClassModal(false)}
           onRefresh={reloadSchedules}
           onOpenMissionBuilder={() => setShowMissionModal(true)}

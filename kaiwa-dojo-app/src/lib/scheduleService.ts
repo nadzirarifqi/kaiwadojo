@@ -85,6 +85,23 @@ export function ensureUUID(id: string, defaultPrefix = '00000000-0000-0000-0000-
   return `${defaultPrefix}${hex}`
 }
 
+/**
+ * Bidirectional schedule ID matcher.
+ * Handles the mismatch between localStorage string IDs (e.g. 'sch-online-1a')
+ * and Supabase UUID IDs (e.g. '00000000-0000-0000-0001-000000000001').
+ */
+export function matchScheduleId(scheduleId: string, reservationScheduleId: string): boolean {
+  if (!scheduleId || !reservationScheduleId) return false
+  if (scheduleId === reservationScheduleId) return true
+  // Check UUID form of scheduleId against reservationScheduleId
+  const schUUID = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
+  if (schUUID === reservationScheduleId) return true
+  // Check UUID form of reservationScheduleId against scheduleId
+  const resUUID = ensureUUID(reservationScheduleId, '00000000-0000-0000-0001-')
+  if (resUUID === scheduleId) return true
+  return false
+}
+
 // Helper: Calculate ISO Week ID (e.g. 2026-W34)
 export function getWeekRangeId(dateStr: string): string {
   const parts = dateStr.split('-')
@@ -349,7 +366,7 @@ export async function seedInitialSchedulesIfEmpty() {
 export async function fetchSchedules(): Promise<ClassSchedule[]> {
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       const sortedData = sortSchedules(data as ClassSchedule[])
       localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
       return sortedData
@@ -357,15 +374,24 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
   } catch {
     // Fallback to local
   }
-  await seedInitialSchedulesIfEmpty()
-  return sortSchedules(getInitialSchedules())
+  const stored = localStorage.getItem(LOCAL_SCHEDULES_KEY)
+  if (stored) {
+    try {
+      return sortSchedules(JSON.parse(stored))
+    } catch {
+      // Fallback
+    }
+  }
+  return []
 }
 
 export async function fetchReservations(): Promise<ClassReservation[]> {
   try {
     const { data, error } = await supabase.from('class_reservations').select('*')
     if (!error && data) {
-      const realData = (data as ClassReservation[]).filter(r => !r.id.startsWith('res-demo-') && !r.user_email?.includes('@example.com'))
+      const realData = (data as ClassReservation[]).filter(
+        r => !r.id.startsWith('res-demo-') && !r.user_email?.includes('@example.com')
+      )
       localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realData))
       return realData
     }
@@ -456,18 +482,21 @@ export async function bookClass(
     return { success: false, message: `Kuota kelas sudah penuh (Maksimal ${schedule.max_quota} orang per kelas).` }
   }
 
-  // 2. Already booked check
-  const alreadyBooked = reservations.some(r => r.schedule_id === schedule.id && r.user_id === userId)
+  // 2. Already booked check — match both raw ID and mapped UUID for reliability
+  const dbScheduleId = ensureUUID(schedule.id, '00000000-0000-0000-0001-')
+  const alreadyBooked = reservations.some(
+    r => (r.schedule_id === schedule.id || r.schedule_id === dbScheduleId) && r.user_id === userId
+  )
   if (alreadyBooked) {
     return { success: false, message: 'Anda sudah mendaftar di kelas ini.' }
   }
 
-  // 3. Conflict Check
+  // 3. Conflict Check (weekly online / monthly offline)
   if (schedule.type === 'online') {
     const targetWeekId = schedule.week_range_id || getWeekRangeId(schedule.date)
     const userWeeklyOnlineBookings = reservations.filter(r => {
       if (r.user_id !== userId) return false
-      const targetSch = schedules.find(s => s.id === r.schedule_id)
+      const targetSch = schedules.find(s => s.id === r.schedule_id || ensureUUID(s.id, '00000000-0000-0000-0001-') === r.schedule_id)
       if (!targetSch || targetSch.type !== 'online') return false
       const schWeekId = targetSch.week_range_id || getWeekRangeId(targetSch.date)
       return schWeekId === targetWeekId
@@ -485,7 +514,7 @@ export async function bookClass(
     const targetMonthId = schedule.month_range_id || getMonthRangeId(schedule.date)
     const userMonthlyOfflineBookings = reservations.filter(r => {
       if (r.user_id !== userId) return false
-      const targetSch = schedules.find(s => s.id === r.schedule_id)
+      const targetSch = schedules.find(s => s.id === r.schedule_id || ensureUUID(s.id, '00000000-0000-0000-0001-') === r.schedule_id)
       if (!targetSch || targetSch.type !== 'offline') return false
       const schMonthId = targetSch.month_range_id || getMonthRangeId(targetSch.date)
       return schMonthId === targetMonthId
@@ -499,73 +528,97 @@ export async function bookClass(
     }
   }
 
-  // Create Reservation
-  const dbReservationId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ensureUUID(`res-${Date.now()}-${Math.random()}`, '00000000-0000-0000-0003-')
-  const dbScheduleId = ensureUUID(schedule.id, '00000000-0000-0000-0001-')
-  const dbUserId = ensureUUID(userId, '00000000-0000-0000-0009-')
+  // ── Attempt to save to Supabase DB first (source of truth) ──
+  const newReservationId = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : ensureUUID(`res-${Date.now()}-${Math.random()}`, '00000000-0000-0000-0003-')
 
-  const newReservation: ClassReservation = {
-    id: dbReservationId,
+  const createdAt = new Date().toISOString()
+
+  let savedToDb = false
+  let finalReservation: ClassReservation = {
+    id: newReservationId,
     schedule_id: schedule.id,
     user_id: userId,
     user_name: userName,
     user_email: userEmail,
-    created_at: new Date().toISOString(),
+    created_at: createdAt,
   }
 
-  const updatedReservations = [newReservation, ...reservations]
-  localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedReservations))
-
-  // Dispatch custom window event for instant local tab sync
-  window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: newReservation }))
-
-  // Ensure schedule row exists in Supabase DB first
   try {
-    await supabase.from('class_schedules').upsert({
-      id: dbScheduleId,
-      type: schedule.type,
-      title: schedule.title,
-      subtitle_chapter: schedule.subtitle_chapter,
-      instructor_id: ensureUUID(schedule.instructor_id, '00000000-0000-0000-0000-'),
-      instructor_name: schedule.instructor_name,
-      date: schedule.date,
-      start_time: schedule.start_time,
-      end_time: schedule.end_time,
-      week_range_id: schedule.week_range_id || getWeekRangeId(schedule.date),
-      month_range_id: schedule.month_range_id || getMonthRangeId(schedule.date),
-      meet_url: schedule.meet_url || null,
-      location: schedule.location || null,
-      max_quota: schedule.max_quota,
-      created_at: schedule.created_at || new Date().toISOString(),
-    }, { onConflict: 'id' })
+    // 1. Ensure the class schedule row exists in DB before reserving
+    const { data: existingSch } = await supabase
+      .from('class_schedules')
+      .select('id')
+      .eq('id', dbScheduleId)
+      .maybeSingle()
 
-    // Ensure user profile exists in Supabase DB
-    await supabase.from('profiles').upsert({
-      id: dbUserId,
-      full_name: userName,
-      username: userEmail.split('@')[0] || 'user',
-      email: userEmail,
-      role: 'pelajar',
-    }, { onConflict: 'id' })
+    if (!existingSch) {
+      await supabase.from('class_schedules').insert({
+        id: dbScheduleId,
+        type: schedule.type,
+        title: schedule.title,
+        subtitle_chapter: schedule.subtitle_chapter,
+        instructor_id: ensureUUID(schedule.instructor_id, '00000000-0000-0000-0000-'),
+        instructor_name: schedule.instructor_name,
+        date: schedule.date,
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+        week_range_id: schedule.week_range_id || getWeekRangeId(schedule.date),
+        month_range_id: schedule.month_range_id || getMonthRangeId(schedule.date),
+        meet_url: schedule.meet_url || null,
+        location: schedule.location || null,
+        max_quota: schedule.max_quota,
+        created_at: schedule.created_at || createdAt,
+      })
+    }
 
-    // Save reservation to Supabase DB
+    // 2. Insert reservation — RLS requires auth.uid() = user_id
+    //    We use the real userId from Supabase Auth (passed in by the caller)
     const dbPayload = {
-      id: dbReservationId,
+      id: newReservationId,
       schedule_id: dbScheduleId,
-      user_id: dbUserId,
+      user_id: userId,  // Must be real auth.uid() for RLS to pass
       user_name: userName,
       user_email: userEmail,
-      created_at: newReservation.created_at,
+      created_at: createdAt,
     }
-    const { error } = await supabase.from('class_reservations').insert(dbPayload)
-    if (error) {
-      console.warn('DB insert class_reservations note:', error)
+    const { data: insertedRow, error: insertError } = await supabase
+      .from('class_reservations')
+      .insert(dbPayload)
+      .select()
+      .single()
+
+    if (insertError) {
+      console.warn('DB insert class_reservations error:', insertError.message)
+    } else if (insertedRow) {
+      savedToDb = true
+      // Use the DB row as canonical source — schedule_id may differ (hashed UUID vs original)
+      finalReservation = {
+        id: insertedRow.id,
+        schedule_id: insertedRow.schedule_id,
+        user_id: insertedRow.user_id,
+        user_name: insertedRow.user_name,
+        user_email: insertedRow.user_email,
+        created_at: insertedRow.created_at,
+      }
     }
   } catch (e) {
-    console.warn('DB insert class_reservations catch:', e)
+    console.warn('bookClass DB catch:', e)
   }
 
-  return { success: true, message: 'Reservasi kelas berhasil!', reservation: newReservation }
+  // ── Always update localStorage for instant local UI feedback ──
+  const updatedReservations = [finalReservation, ...reservations]
+  localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedReservations))
+
+  // Dispatch window event for instant same-browser sync
+  window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: finalReservation }))
+
+  const message = savedToDb
+    ? 'Reservasi kelas berhasil! Data tersimpan ke server.'
+    : 'Reservasi dicatat (akan disinkronkan saat koneksi tersedia).'
+
+  return { success: true, message, reservation: finalReservation }
 }
 
 export async function cancelClassBooking(reservationId: string): Promise<boolean> {
@@ -658,12 +711,13 @@ export function calculateDateScheduleStatus(
   const onlineSchedules = daySchedules.filter(s => s.type === 'online')
   const offlineSchedules = daySchedules.filter(s => s.type === 'offline')
 
+  // Use matchScheduleId for bidirectional ID matching (handles UUID vs string mismatch)
   const isOnlineBooked = onlineSchedules.some(sch =>
-    allReservations.some(r => r.schedule_id === sch.id && r.user_id === userId)
+    allReservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === userId)
   )
 
   const isOfflineBooked = offlineSchedules.some(sch =>
-    allReservations.some(r => r.schedule_id === sch.id && r.user_id === userId)
+    allReservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === userId)
   )
 
   const isBooked = isOnlineBooked || isOfflineBooked
@@ -672,12 +726,12 @@ export function calculateDateScheduleStatus(
   let onlineLockReason: 'full' | 'week_locked' | undefined
 
   for (const sch of onlineSchedules) {
-    const enrolled = allReservations.filter(r => r.schedule_id === sch.id).length
+    const enrolled = allReservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
     const isFull = enrolled >= sch.max_quota
     const schWeekId = sch.week_range_id || getWeekRangeId(sch.date)
     const locked = allReservations.some(r => {
       if (r.user_id !== userId) return false
-      const targetSch = allSchedules.find(s => s.id === r.schedule_id)
+      const targetSch = allSchedules.find(s => matchScheduleId(s.id, r.schedule_id))
       if (!targetSch || targetSch.type !== 'online') return false
       const targetWeekId = targetSch.week_range_id || getWeekRangeId(targetSch.date)
       return targetWeekId === schWeekId
@@ -695,12 +749,12 @@ export function calculateDateScheduleStatus(
   let offlineLockReason: 'full' | 'month_locked' | undefined
 
   for (const sch of offlineSchedules) {
-    const enrolled = allReservations.filter(r => r.schedule_id === sch.id).length
+    const enrolled = allReservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
     const isFull = enrolled >= sch.max_quota
     const schMonthId = sch.month_range_id || getMonthRangeId(sch.date)
     const locked = allReservations.some(r => {
       if (r.user_id !== userId) return false
-      const targetSch = allSchedules.find(s => s.id === r.schedule_id)
+      const targetSch = allSchedules.find(s => matchScheduleId(s.id, r.schedule_id))
       if (!targetSch || targetSch.type !== 'offline') return false
       const targetMonthId = targetSch.month_range_id || getMonthRangeId(targetSch.date)
       return targetMonthId === schMonthId

@@ -213,21 +213,29 @@ export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: 
 
 export async function calculateMissionProgress(
   userId: string,
-  mission: DailyMissionData
+  mission: DailyMissionData,
+  preFetched?: { progressData: any[]; kotobaSubmissions: any[] }
 ): Promise<MissionProgress> {
   const dateStr = mission.date || getTodayDateString()
 
-  // Fetch lesson progress & kotoba submissions from Supabase
-  const [{ data: progressData }, { data: kotobaSubmissions }] = await Promise.all([
-    supabase
-      .from('lesson_progress')
-      .select('lesson_id, is_completed, replay_count, last_watched_at')
-      .eq('student_id', userId),
-    supabase
-      .from('user_kotoba_submissions')
-      .select('id')
-      .eq('user_id', userId),
-  ])
+  let progressData = preFetched?.progressData
+  let kotobaSubmissions = preFetched?.kotobaSubmissions
+
+  if (!preFetched) {
+    // Fetch lesson progress & kotoba submissions from Supabase if not pre-fetched
+    const [{ data: pData }, { data: kData }] = await Promise.all([
+      supabase
+        .from('lesson_progress')
+        .select('lesson_id, is_completed, replay_count, last_watched_at')
+        .eq('student_id', userId),
+      supabase
+        .from('user_kotoba_submissions')
+        .select('id')
+        .eq('user_id', userId),
+    ])
+    progressData = pData || []
+    kotobaSubmissions = kData || []
+  }
 
   let actualReplays = 0
   let actualQuizzes = 0

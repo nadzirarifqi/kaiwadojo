@@ -12,15 +12,18 @@ import {
   getMonthlyOnlineRequirementStatus,
   getWeekLabel,
   RESERVATION_UPDATE_EVENT,
+  matchScheduleId,
 } from '../lib/scheduleService'
 
 
 export default function ClassReservationPage() {
   const { profile } = useAuth()
   const { t } = useLanguage()
-  const userId = profile?.id || 'user-demo-active'
-  const userName = profile?.full_name || 'Budi Santoso'
-  const userEmail = profile?.email || 'budi@kaiwadojo.com'
+
+  // Use real Supabase Auth UUID — critical for RLS policy (auth.uid() = user_id)
+  const userId = profile?.id ?? ''
+  const userName = profile?.full_name || profile?.username || 'Pengguna'
+  const userEmail = profile?.email || ''
 
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
@@ -97,32 +100,29 @@ export default function ClassReservationPage() {
     setTimeout(() => setToastMessage(null), 4000)
   }
 
-  // Get enrolled count for a schedule
+  // Get enrolled count for a schedule (uses matchScheduleId for UUID/string compatibility)
   function getEnrolledCount(schId: string): number {
-    return reservations.filter(r => r.schedule_id === schId).length
+    return reservations.filter(r => matchScheduleId(schId, r.schedule_id)).length
   }
 
   // Check if user is enrolled in a schedule
   function getUserReservation(schId: string): ClassReservation | undefined {
-    return reservations.find(r => r.schedule_id === schId && r.user_id === userId)
+    return reservations.find(r => matchScheduleId(schId, r.schedule_id) && r.user_id === userId)
   }
 
   // Check locking constraint for user
   function checkLockStatus(sch: ClassSchedule): { isLocked: boolean; reason?: string } {
-    // If already booked, not "locked by rule", user is participant
     if (getUserReservation(sch.id)) return { isLocked: false }
 
-    // Quota full check
     const enrolled = getEnrolledCount(sch.id)
     if (enrolled >= sch.max_quota) {
       return { isLocked: true, reason: 'Kuota Penuh' }
     }
 
     if (sch.type === 'online') {
-      // User can only pick 1 online class per week range
       const hasOtherOnlineInWeek = reservations.some(r => {
         if (r.user_id !== userId) return false
-        const targetSch = schedules.find(s => s.id === r.schedule_id)
+        const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
         return targetSch && targetSch.type === 'online' && targetSch.week_range_id === sch.week_range_id
       })
       if (hasOtherOnlineInWeek) {
@@ -131,10 +131,9 @@ export default function ClassReservationPage() {
     }
 
     if (sch.type === 'offline') {
-      // User can only pick 1 offline class per month range
       const hasOtherOfflineInMonth = reservations.some(r => {
         if (r.user_id !== userId) return false
-        const targetSch = schedules.find(s => s.id === r.schedule_id)
+        const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
         return targetSch && targetSch.type === 'offline' && targetSch.month_range_id === sch.month_range_id
       })
       if (hasOtherOfflineInMonth) {
@@ -147,12 +146,18 @@ export default function ClassReservationPage() {
 
   async function handleConfirmAction() {
     if (!targetSchedule) return
+    if (!userId) {
+      showToast('Silakan login terlebih dahulu untuk melakukan reservasi.', 'error')
+      setConfirmModalType(null)
+      setTargetSchedule(null)
+      return
+    }
     setActionLoading(true)
 
     if (confirmModalType === 'book') {
       const res = await bookClass(targetSchedule, userId, userName, userEmail)
       if (res.success) {
-        showToast(`Berhasil reservasi kelas "${targetSchedule.title}"!`)
+        showToast(res.message || `Berhasil reservasi kelas "${targetSchedule.title}"!`)
         await loadData()
       } else {
         showToast(res.message, 'error')
@@ -208,6 +213,21 @@ export default function ClassReservationPage() {
       schedule: schedules.find(s => s.id === r.schedule_id),
     }))
     .filter((item): item is { reservation: ClassReservation; schedule: ClassSchedule } => Boolean(item.schedule))
+
+  // Guard: if user not logged in, show login prompt
+  if (!profile) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col items-center gap-4 max-w-sm text-center">
+          <span className="text-5xl">🔒</span>
+          <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Login Diperlukan</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Kamu perlu login terlebih dahulu untuk melihat jadwal dan melakukan reservasi kelas.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col gap-6">

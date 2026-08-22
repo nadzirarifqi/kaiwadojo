@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy ke Rumahweb (FTP)
+    name: Build & Deploy ke Rumahweb (FTPS)
     runs-on: ubuntu-latest
 
     steps:
@@ -33,12 +33,14 @@ jobs:
       - name: Copy .htaccess ke dist/
         run: cp public/.htaccess dist/.htaccess
 
-      - name: Deploy via FTP ke Rumahweb
+      - name: Deploy via FTPS ke Rumahweb
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          protocol: ftps
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           dangerous-clean-slate: false
@@ -48,3 +50,4 @@ jobs:
             **/.git*/**
             **/node_modules/**
             .ftp-deploy-sync-state.json
+
