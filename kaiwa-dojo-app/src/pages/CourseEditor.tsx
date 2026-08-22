@@ -7,6 +7,7 @@ import {
   saveBatchChapterSettings,
   getCourseHeaderSettings,
   saveCourseHeaderSettings,
+  detectVideoDuration,
   CHAPTER_UPDATE_EVENT,
   type ChapterSetting,
   type CourseHeaderSettings,
@@ -22,18 +23,75 @@ export default function CourseEditor() {
 
   const [chapterMap, setChapterMap] = useState<Record<number, ChapterSetting>>({})
   const [_headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
-    page_title: '?? Buku Kursus Minna no Nihongo',
+    page_title: '📚 Buku Kursus Minna no Nihongo',
     page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
   })
 
   const [loading, setLoading] = useState(true)
   const [savingBab, setSavingBab] = useState<number | null>(null)
+  const [detectingBab, setDetectingBab] = useState<number | null>(null)
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Edit Header Modal / Card
   const [isEditingHeader, setIsEditingHeader] = useState(false)
   const [editPageTitle, setEditPageTitle] = useState('')
   const [editPageSubtitle, setEditPageSubtitle] = useState('')
+
+  async function handleAutoDetectDurations(babNum: number) {
+    setDetectingBab(babNum)
+    const chap = chapterMap[babNum]
+    const getHostedUrl = (b: number, s: number) => {
+      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mov`
+    }
+
+    let detectedCount = 0
+
+    // S1
+    try {
+      const urlS1 = chap?.custom_video_s1 || getHostedUrl(babNum, 1)
+      const d1 = await detectVideoDuration(urlS1)
+      setChapterMap(prev => ({
+        ...prev,
+        [babNum]: { ...prev[babNum], duration_s1: d1 },
+      }))
+      detectedCount++
+    } catch {
+      // fallback
+    }
+
+    // S2
+    try {
+      const urlS2 = chap?.custom_video_s2 || getHostedUrl(babNum, 2)
+      const d2 = await detectVideoDuration(urlS2)
+      setChapterMap(prev => ({
+        ...prev,
+        [babNum]: { ...prev[babNum], duration_s2: d2 },
+      }))
+      detectedCount++
+    } catch {
+      // fallback
+    }
+
+    // S3
+    try {
+      const urlS3 = chap?.custom_video_s3 || getHostedUrl(babNum, 3)
+      const d3 = await detectVideoDuration(urlS3)
+      setChapterMap(prev => ({
+        ...prev,
+        [babNum]: { ...prev[babNum], duration_s3: d3 },
+      }))
+      detectedCount++
+    } catch {
+      // fallback
+    }
+
+    setDetectingBab(null)
+    if (detectedCount > 0) {
+      showToast(`Berhasil mendeteksi ${detectedCount} durasi video secara otomatis dari file! ⏱️`)
+    } else {
+      showToast(`Video metadata belum siap atau durasi dapat terdeteksi otomatis saat diputar.`, 'error')
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -478,62 +536,80 @@ export default function CourseEditor() {
                 </div>
 
                 {/* Duration Form Fields: Video 1, 2, 3 Durations (Minutes.Seconds, e.g. 3.44) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                  <div>
-                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 1 (Menit.Detik)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 3.44"
-                      value={chap.duration_s1 ?? '15.00'}
-                      onChange={e => {
-                        const val = e.target.value
-                        setChapterMap(prev => ({
-                          ...prev,
-                          [babNum]: { ...prev[babNum], duration_s1: val },
-                        }))
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                    />
+                <div className="flex flex-col gap-2.5 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>⏱️ Durasi Video S1, S2, S3:</span>
+                      <span className="text-[0.68rem] text-slate-400 font-normal">(Terisi otomatis dari metadata file video)</span>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutoDetectDurations(babNum)}
+                      disabled={detectingBab === babNum}
+                      className="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[0.68rem] font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1 shrink-0 self-start sm:self-auto"
+                    >
+                      <span>🔍 {detectingBab === babNum ? 'Mendeteksi File...' : 'Deteksi Otomatis Durasi dari File'}</span>
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 2 (Menit.Detik)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 15.30"
-                      value={chap.duration_s2 ?? '15.00'}
-                      onChange={e => {
-                        const val = e.target.value
-                        setChapterMap(prev => ({
-                          ...prev,
-                          [babNum]: { ...prev[babNum], duration_s2: val },
-                        }))
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        ⏱️ Durasi Video 1 (S1)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Otomatis terdeteksi"
+                        value={chap.duration_s1 ?? '15.00'}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], duration_s1: val },
+                          }))
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      ⏱️ Durasi Video 3 (Menit.Detik)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 12.00"
-                      value={chap.duration_s3 ?? '12.00'}
-                      onChange={e => {
-                        const val = e.target.value
-                        setChapterMap(prev => ({
-                          ...prev,
-                          [babNum]: { ...prev[babNum], duration_s3: val },
-                        }))
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                    />
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        ⏱️ Durasi Video 2 (S2)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Otomatis terdeteksi"
+                        value={chap.duration_s2 ?? '15.00'}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], duration_s2: val },
+                          }))
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        ⏱️ Durasi Video 3 (S3)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Otomatis terdeteksi"
+                        value={chap.duration_s3 ?? '12.00'}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], duration_s3: val },
+                          }))
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
                   </div>
                 </div>
 

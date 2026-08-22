@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface SidebarProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ const navInactive = 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:t
 export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const navigate = useNavigate()
   const { profile, signOut } = useAuth()
+  const { t } = useLanguage()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   // Theme Sync State
@@ -75,7 +77,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           ⛩️
         </span>
       ),
-      label: 'Beranda',
+      label: t('nav_beranda', 'Beranda Dojo'),
       to: '/dashboard',
     },
   ]
@@ -124,7 +126,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             語
           </span>
         ),
-        label: 'Setoran Kotoba',
+        label: t('nav_kotoba', 'Setoran Kotoba'),
         to: '/kotoba',
       },
       {
@@ -133,7 +135,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             📚
           </span>
         ),
-        label: 'Preview Kursus',
+        label: t('nav_kursus', 'Kursus Saya'),
         to: '/my-courses',
       }
     )
@@ -154,7 +156,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             💻
           </span>
         ),
-        label: 'Reservasi Kelas Live',
+        label: t('nav_reservasi', 'Reservasi Kelas'),
         to: '/reservasi-kelas',
       },
       {
@@ -163,7 +165,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             語
           </span>
         ),
-        label: 'Setoran Kotoba',
+        label: t('nav_kotoba', 'Setoran Kotoba'),
         to: '/kotoba',
       },
       {
@@ -172,7 +174,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             📚
           </span>
         ),
-        label: 'Preview Kursus',
+        label: t('nav_kursus', 'Kursus Saya'),
         to: '/my-courses',
       },
       {
@@ -181,7 +183,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             🎯
           </span>
         ),
-        label: 'Rencana Belajar',
+        label: t('nav_rencana', 'Rencana Belajar'),
         to: '/learning-plan',
       }
     )
@@ -194,7 +196,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             🎯
           </span>
         ),
-        label: 'Rencana Belajar',
+        label: t('nav_rencana', 'Rencana Belajar'),
         to: '/learning-plan',
       },
       {
@@ -203,7 +205,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             💻
           </span>
         ),
-        label: 'Reservasi Kelas',
+        label: t('nav_reservasi', 'Reservasi Kelas'),
         to: '/reservasi-kelas',
       },
       {
@@ -212,7 +214,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             語
           </span>
         ),
-        label: 'Setoran Kotoba',
+        label: t('nav_kotoba', 'Setoran Kotoba'),
         to: '/kotoba',
       },
       {
@@ -221,7 +223,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             📚
           </span>
         ),
-        label: 'Kursus Saya',
+        label: t('nav_kursus', 'Kursus Saya'),
         to: '/my-courses',
       }
     )
@@ -324,7 +326,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   <span className="size-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/20">
                     👤
                   </span>
-                  <span>Lihat Profil</span>
+                  <span>{t('nav_profil', 'Lihat Profil')}</span>
                 </button>
 
                 {/* 2. Pengaturan */}
@@ -340,7 +342,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   <span className="size-6 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-500/20">
                     ⚙️
                   </span>
-                  <span>Pengaturan</span>
+                  <span>{t('nav_pengaturan', 'Pengaturan')}</span>
                 </button>
 
                 <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
@@ -357,7 +359,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   <span className="size-6 rounded-lg bg-rose-500/10 text-rose-600 dark:bg-rose-400/20 dark:text-rose-300 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-500/20">
                     🚪
                   </span>
-                  <span>Keluar</span>
+                  <span>{t('nav_keluar', 'Keluar')}</span>
                 </button>
               </div>
             </>

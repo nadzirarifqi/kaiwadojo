@@ -9,6 +9,7 @@ import {
   calculateMissionProgress,
   calculateStreakFromDates,
 } from '../lib/dailyMission'
+import { useLanguage } from '../contexts/LanguageContext'
 
 /* ── Helpers ───────────────────────────────────────── */
 function getLast7DayLabels() {
@@ -500,6 +501,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const [stats, setStats] = useState({
     enrolledCoursesCount: 0,
     completedCoursesCount: 0,
@@ -646,10 +648,10 @@ export default function Dashboard() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2 tracking-tight leading-snug">
-            Selamat datang, {profile?.full_name || 'User'}! 👋
+            {t('dash_welcome', 'Selamat datang')}, {profile?.full_name || 'User'}! 👋
           </h1>
           <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-lg">
-            Setiap video yang kamu selesaikan adalah investasi terbaik untuk masa depanmu. ✨
+            {t('dash_subtitle', 'Mari lanjutkan perjalanan belajar bahasa Jepangmu hari ini!')} ✨
           </p>
         </div>
 
@@ -660,21 +662,21 @@ export default function Dashboard() {
               学
             </span>
             <div className="text-2xl font-black text-white">{stats.enrolledCoursesCount}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">Kursus</div>
+            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_enrolled_courses', 'Kursus')}</div>
           </div>
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-center min-w-[90px] flex flex-col items-center justify-center">
             <span className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-base font-black mb-1 shadow-xs">
               🔥
             </span>
             <div className="text-2xl font-black text-white">{stats.streakDays}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">Streak</div>
+            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_streak_label', 'Streak')}</div>
           </div>
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-center min-w-[90px] flex flex-col items-center justify-center">
             <span className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-base font-black mb-1 font-serif shadow-xs">
               済
             </span>
             <div className="text-2xl font-black text-white">{stats.completedCoursesCount}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">Selesai</div>
+            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_completed_courses', 'Selesai')}</div>
           </div>
         </div>
       </header>
@@ -907,14 +909,14 @@ export default function Dashboard() {
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">📖 Progress Belajar Buku</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">Minna no Nihongo Jilid 1 & 2 (Bab 1 - 50)</p>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">📖 {t('dash_book_progress_title', 'Progress Belajar Buku')}</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">{t('dash_book_progress_sub', 'Minna no Nihongo Jilid 1 & 2 (Bab 1 - 50)')}</p>
           </div>
           <button
             onClick={() => navigate('/my-courses')}
             className="text-primary dark:text-red-400 text-xs sm:text-sm font-bold bg-transparent border-none cursor-pointer hover:underline"
           >
-            Buka Kursus →
+            {t('dash_open_course_btn', 'Buka Kursus →')}
           </button>
         </div>
 
@@ -930,8 +932,8 @@ export default function Dashboard() {
                   📘
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo Jilid 1</h3>
-                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">Bab 1 – 25 · 125 Materi & Evaluasi</span>
+                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
+                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 125 Video Materi')}</span>
                 </div>
               </div>
               <span className="text-sm font-black text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-2.5 py-1 rounded-xl">
@@ -941,7 +943,7 @@ export default function Dashboard() {
 
             <div>
               <div className="flex justify-between text-[0.7rem] text-slate-500 dark:text-slate-300 font-semibold mb-1">
-                <span>Pencapaian: {bookProgress.jilid1DoneItems}/125 Selesai</span>
+                <span>Pencapaian: {bookProgress.jilid1DoneItems}/125 {t('completed', 'Selesai')}</span>
                 <span>{bookProgress.jilid1Pct}%</span>
               </div>
               <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -964,8 +966,8 @@ export default function Dashboard() {
                   📗
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo Jilid 2</h3>
-                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">Bab 26 – 50 · 125 Materi & Evaluasi</span>
+                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
+                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 125 Video Materi')}</span>
                 </div>
               </div>
               <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-xl">

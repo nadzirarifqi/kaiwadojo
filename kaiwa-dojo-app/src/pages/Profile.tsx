@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
@@ -33,6 +34,7 @@ interface CourseEnrollmentItem {
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { user, profile, refreshProfile } = useAuth()
+  const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Active Tab
@@ -522,7 +524,7 @@ export default function ProfilePage() {
               : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
           }`}
         >
-          <span>👤</span> Ringkasan & Edit Profil
+          <span>{t('pf_tab_overview', '👤 Ringkasan & Edit Profil')}</span>
         </button>
 
         <button
@@ -533,7 +535,7 @@ export default function ProfilePage() {
               : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
           }`}
         >
-          <span>📚</span> Kursus Saya ({stats.enrolledCoursesCount})
+          <span>{t('pf_tab_courses', '📚 Kursus Saya')} ({stats.enrolledCoursesCount})</span>
         </button>
 
         <button
@@ -544,7 +546,7 @@ export default function ProfilePage() {
               : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
           }`}
         >
-          <span>🏆</span> Pencapaian & Lencana
+          <span>{t('pf_tab_achievements', '🏆 Pencapaian & Lencana')}</span>
         </button>
 
         <button
@@ -555,7 +557,7 @@ export default function ProfilePage() {
               : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
           }`}
         >
-          <span>📊</span> Statistik & Aktivitas
+          <span>{t('pf_tab_stats', '📊 Statistik & Aktivitas')}</span>
         </button>
       </div>
 
@@ -573,14 +575,14 @@ export default function ProfilePage() {
                 {/* Full Name */}
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Nama Lengkap
+                    {t('pf_input_fullname', 'Nama Lengkap')}
                   </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Contoh: Tanaka Sensei"
+                    placeholder={t('pf_input_fullname_ph', 'Masukkan nama lengkap...')}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                   />
                 </div>
@@ -588,7 +590,7 @@ export default function ProfilePage() {
                 {/* Username */}
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Username
+                    {t('pf_input_username', 'Nama Pengguna (Username)')}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
@@ -597,7 +599,7 @@ export default function ProfilePage() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="tanakaking"
+                      placeholder={t('pf_input_username_ph', 'Masukkan username...')}
                       className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
@@ -621,13 +623,13 @@ export default function ProfilePage() {
               {/* Bio */}
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Bio / Deskripsi Singkat
+                  {t('pf_input_bio', 'Biografi Singkat / Bio')}
                 </label>
                 <textarea
                   rows={4}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tuliskan sedikit tentang diri Anda, perjalanan belajar bahasa Jepang, atau target Anda..."
+                  placeholder={t('pf_input_bio_ph', 'Tulis sepatah kata tentang motivasi belajar bahasa Jepangmu...')}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-medium focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                 />
               </div>

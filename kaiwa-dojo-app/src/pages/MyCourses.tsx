@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 import {
   getChapterSettingsMap,
   getCourseHeaderSettings,
@@ -172,6 +173,7 @@ export default function MyCourses() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
+  const { language, t } = useLanguage()
   const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
   // Admin student preview mode state
@@ -594,7 +596,7 @@ export default function MyCourses() {
             {/* Tag Badge */}
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[0.65rem] font-black uppercase tracking-widest bg-rose-500/80 text-white px-3 py-1 rounded-full shadow-xs">
-                ⛩️ Japan Trivia & Fun Fact
+                {t('mc_trivia_title', '⛩️ Japan Trivia & Fun Fact')}
               </span>
               <span className="text-[0.68rem] font-bold text-rose-200/80 bg-white/10 px-2.5 py-0.5 rounded-full">
                 {currentFact.tag}
@@ -663,10 +665,10 @@ export default function MyCourses() {
       <div className="mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-1.5">
-            {headerSettings.page_title}
+            {t('mc_title', headerSettings.page_title)}
           </h1>
           <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-            {headerSettings.page_subtitle}
+            {t('mc_subtitle', headerSettings.page_subtitle)}
           </p>
         </div>
 
@@ -697,13 +699,13 @@ export default function MyCourses() {
           </div>
           <div className="min-w-0 flex-1">
             <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
-              Jilid 1 (Dasar I)
+              {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}
             </div>
             <div className="text-base sm:text-lg font-extrabold truncate leading-tight">
-              Minna no Nihongo I
+              {t('course_title_vol1', 'Bahasa Jepang Dasar (Jilid 1)')}
             </div>
             <div className={`text-xs font-semibold mt-1 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
-              Bab 1 s/d Bab 25 • 125 Video Materi
+              {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 125 Video Materi')}
             </div>
           </div>
           {selectedJilid === 1 && (
@@ -726,13 +728,13 @@ export default function MyCourses() {
           </div>
           <div className="min-w-0 flex-1">
             <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${selectedJilid === 2 ? 'text-white/80' : 'text-slate-400'}`}>
-              Jilid 2 (Dasar II)
+              {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}
             </div>
             <div className="text-base sm:text-lg font-extrabold truncate leading-tight">
-              Minna no Nihongo II
+              {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
             </div>
             <div className={`text-xs font-semibold mt-1 ${selectedJilid === 2 ? 'text-white/90' : 'text-slate-500'}`}>
-              Bab 26 s/d Bab 50 • 125 Video Materi
+              {t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 125 Video Materi')}
             </div>
           </div>
           {selectedJilid === 2 && (
@@ -745,8 +747,8 @@ export default function MyCourses() {
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="w-full sm:w-auto flex-1 min-w-0">
           <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5 text-slate-700">
-            <span>Progress Minna no Nihongo Jilid {selectedJilid}</span>
-            <span className="text-primary font-black">{completedLessonsCount} / {totalLessonsCount} Selesai ({totalProgressPct}%)</span>
+            <span>{t('dash_book_progress_title', 'Progress Minna no Nihongo')} (Jilid {selectedJilid})</span>
+            <span className="text-primary font-black">{completedLessonsCount} / {totalLessonsCount} {t('completed', 'Selesai')} ({totalProgressPct}%)</span>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
             <div
@@ -761,7 +763,7 @@ export default function MyCourses() {
           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder="Cari bab atau materi..."
+            placeholder={t('mc_search_placeholder', 'Cari bab atau materi...')}
             value={searchBab}
             onChange={e => setSearchBab(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-primary bg-slate-50 font-medium"
@@ -807,7 +809,7 @@ export default function MyCourses() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
-                        {chap.title}
+                        {language === 'ja' ? `第${chap.bab_number}課 ${chap.title.replace(/^Bab\s+\d+:\s*/i, '')}` : language === 'en' ? `Chapter ${chap.bab_number}: ${chap.title.replace(/^Bab\s+\d+:\s*/i, '')}` : chap.title}
                       </h3>
                       <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">
                         {chap.subtitle}
@@ -817,7 +819,7 @@ export default function MyCourses() {
 
                   <div className="flex items-center gap-3 shrink-0 ml-2">
                     <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full hidden sm:inline-block">
-                      {completedInBab}/5 Selesai
+                      {completedInBab}/5 {t('completed', 'Selesai')}
                     </span>
                     <span className="text-slate-400 text-sm font-bold">
                       {isExpanded ? '▲' : '▼'}
@@ -892,19 +894,19 @@ export default function MyCourses() {
                             {/* Top Status Badges */}
                             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
                               <span className="text-[0.65rem] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md bg-black/40 text-white backdrop-blur-sm">
-                                {isKotoba ? 'Kotoba' : isQuiz ? 'Kuis' : `Video ${lesson.lesson_number}`}
+                                {isKotoba ? t('mc_lesson_kotoba', 'Kotoba') : isQuiz ? t('mc_lesson_quiz', 'Kuis') : `${t('mc_lesson_video', 'Video')} ${lesson.lesson_number}`}
                               </span>
                               {isQuizLocked ? (
                                 <span className="text-[0.65rem] font-extrabold bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs">
-                                  🔒 Terkunci ({watchedCount}/3)
+                                  🔒 {t('mc_locked', 'Terkunci')} ({watchedCount}/3)
                                 </span>
                               ) : lesson.is_completed ? (
                                 <span className="text-[0.65rem] font-extrabold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs">
-                                  ✓ Selesai
+                                  ✓ {t('completed', 'Selesai')}
                                 </span>
                               ) : lesson.is_placeholder ? (
                                 <span className="text-[0.65rem] font-bold bg-amber-500/90 text-white px-2 py-0.5 rounded-full shadow-xs">
-                                  ⏳ Segera Hadir
+                                  ⏳ {t('mc_coming_soon', 'Segera Hadir')}
                                 </span>
                               ) : null}
                             </div>
@@ -919,18 +921,22 @@ export default function MyCourses() {
                           <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
                             <div>
                               <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-snug line-clamp-2 mb-1">
-                                {lesson.title}
+                                {isQuiz
+                                  ? (language === 'ja' ? `評価クイズ ${lesson.lesson_number - 3}` : language === 'en' ? `Evaluation Quiz ${lesson.lesson_number - 3}` : `Kuis Evaluasi ${lesson.lesson_number - 3}`)
+                                  : isKotoba
+                                    ? (language === 'ja' ? `第${chap.bab_number}課 単語提出` : language === 'en' ? `Chapter ${chap.bab_number} Vocabulary` : `Setoran Kotoba Bab ${chap.bab_number}`)
+                                    : (language === 'ja' ? `第${chap.bab_number}課 パート${lesson.lesson_number}` : language === 'en' ? `Chapter ${chap.bab_number} Part ${lesson.lesson_number}` : `Bab ${chap.bab_number} Part ${lesson.lesson_number}`)}
                               </h4>
                               <p className="text-[0.7rem] text-slate-400 font-medium">
                                 {isQuizLocked
-                                  ? `Tonton ${3 - watchedCount} video lagi untuk membuka`
+                                  ? (language === 'ja' ? `あと${3 - watchedCount}個の動画を視聴して解除` : language === 'en' ? `Watch ${3 - watchedCount} more video(s) to unlock` : `Tonton ${3 - watchedCount} video lagi untuk membuka`)
                                   : isKotoba
-                                    ? 'Setoran Kosakata & Artinya'
+                                    ? t('mc_kotoba_desc', 'Setoran Kosakata & Artinya')
                                     : isQuiz
-                                      ? '10 Soal Pilihan Ganda'
+                                      ? t('mc_quiz_desc', '10 Soal Pilihan Ganda')
                                       : lesson.is_placeholder
-                                        ? 'Video sedang disiapkan'
-                                        : 'Materi Bahasa Jepang'}
+                                        ? t('mc_video_prep_desc', 'Video sedang disiapkan')
+                                        : t('mc_video_desc', 'Materi Bahasa Jepang')}
                               </p>
                             </div>
 
@@ -1172,6 +1178,18 @@ export default function MyCourses() {
                         playsInline
                         preload="metadata"
                         className="w-full h-full object-contain bg-black"
+                        onLoadedMetadata={e => {
+                          const totalSecs = e.currentTarget.duration
+                          if (totalSecs && !isNaN(totalSecs) && totalSecs > 0 && isFinite(totalSecs)) {
+                            const mins = Math.floor(totalSecs / 60)
+                            const secs = Math.floor(totalSecs % 60)
+                            const formatted = `${mins}.${String(secs).padStart(2, '0')}`
+                            if (activeLesson) {
+                              activeLesson.duration_text = formatted
+                              activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
+                            }
+                          }
+                        }}
                         onEnded={() => {
                           handleIncrementReplay(activeLesson)
                           if (!activeLesson.is_completed) {

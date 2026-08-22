@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 import {
   type DailyMissionData,
   type SelectedVideoItem,
@@ -37,22 +38,26 @@ import {
 
 
 
-/* ── Date & Month Helpers in Indonesian ──────────────── */
-const FULL_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-const MONTH_NAMES = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-]
-const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+/* ── Date & Month Helpers (Localized) ──────────────── */
+export function getLocalizedMonthName(monthIdx: number, lang: string = 'id'): string {
+  const date = new Date(2026, monthIdx, 1)
+  const locale = lang === 'ja' ? 'ja-JP' : lang === 'en' ? 'en-US' : 'id-ID'
+  return date.toLocaleString(locale, { month: 'long' })
+}
 
-export function formatDateIndonesian(dateStr: string): string {
+export function getLocalizedDayNames(lang: string = 'id'): string[] {
+  if (lang === 'ja') return ['日', '月', '火', '水', '木', '金', '土']
+  if (lang === 'en') return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  return ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+}
+
+export function formatDateIndonesian(dateStr: string, lang: string = 'id'): string {
   if (!dateStr) return ''
   const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
   const dateObj = new Date(y, m - 1, d)
-  const dayName = FULL_DAY_NAMES[dateObj.getDay()]
-  const dayNum = String(d).padStart(2, '0')
-  const monthName = MONTH_NAMES[m - 1]
-  return `${dayName}, ${dayNum} ${monthName} ${y}`
+  const locale = lang === 'ja' ? 'ja-JP' : lang === 'en' ? 'en-US' : 'id-ID'
+  return dateObj.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 /* ── Daily Mission Builder Modal ────────────────────── */
@@ -67,9 +72,10 @@ function DailyMissionBuilderModal({
   onSave: (data: Omit<DailyMissionData, 'date'>, dateStr: string) => void
   onClose: () => void
 }) {
+  const { language, t } = useLanguage()
   const [missionDate, setMissionDate]     = useState<string>(targetDate)
-  const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
-  const [selectedBab, setSelectedBab]     = useState<number>(1)
+  const [selectedJilid, setSelectedJilid] = useState<1 | 2>(currentMission?.selectedVideos?.[0]?.jilid || 1)
+  const [selectedBab, setSelectedBab]     = useState<number>(currentMission?.selectedVideos?.[0]?.bab || 1)
   const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
 
   useEffect(() => {
@@ -86,6 +92,19 @@ function DailyMissionBuilderModal({
   const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission?.targetKotobaCount ?? 1)
 
   const startBab = selectedJilid === 1 ? 1 : 26
+  const currentBabSetting = chapterSettingsMap[selectedBab]
+  const rawBabTitle = currentBabSetting?.title || (selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab]?.title : DEFAULT_JILID_2[selectedBab]?.title) || `Bab ${selectedBab}`
+  const upperBabTitle = rawBabTitle.toUpperCase()
+
+  const currentBabVideos: SelectedVideoItem[] = [1, 2, 3].map(vNum => ({
+    id: `bab_${selectedBab}_video_${vNum}`,
+    title: `[${upperBabTitle}] Part ${vNum}`,
+    jilid: selectedJilid,
+    bab: selectedBab,
+    videoNum: vNum,
+  }))
+
+  const totalReplayTarget = noVideoPlan ? 0 : selectedVideos.length * 3
 
   function toggleVideoSelection(vItem: SelectedVideoItem) {
     setSelectedVideos(prev => {
@@ -122,34 +141,26 @@ function DailyMissionBuilderModal({
 
     onSave({
       selectedVideos: finalVideos,
-      targetReplayCount: noVideoPlan ? 0 : finalVideos.length * 3,
+      targetReplayCount: totalReplayTarget,
       targetQuizCount: targetQuiz,
       targetKotobaCount: targetKotoba,
     }, missionDate)
   }
 
-  const currentBabSetting = chapterSettingsMap[selectedBab]
-  const rawBabTitle = currentBabSetting?.title || (selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab]?.title : DEFAULT_JILID_2[selectedBab]?.title) || `Bab ${selectedBab}`
-  const upperBabTitle = rawBabTitle.toUpperCase()
-
-  const currentBabVideos: SelectedVideoItem[] = [1, 2, 3].map(vNum => ({
-    id: `bab_${selectedBab}_video_${vNum}`,
-    title: `[${upperBabTitle}] Part ${vNum}`,
-    jilid: selectedJilid,
-    bab: selectedBab,
-    videoNum: vNum,
-  }))
-
-  const totalReplayTarget = selectedVideos.length * 3
-
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
+        
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between shrink-0">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-white/80">Susun Misi Harian</span>
-            <h3 className="text-lg font-extrabold">🎯 {formatDateIndonesian(missionDate)}</h3>
+        <div className="px-6 py-4 bg-gradient-to-r from-primary via-primary-dark to-slate-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shrink-0">
+              🎯
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-white">{t('lp_modal_title', 'Susun Misi Belajar Mandiri')}</h3>
+              <p className="text-xs text-white/80 font-medium">KaiwaDoJo Personal Target Builder</p>
+            </div>
           </div>
           <button onClick={onClose} className="size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-xl flex items-center justify-center">×</button>
         </div>
@@ -159,8 +170,8 @@ function DailyMissionBuilderModal({
           {/* Target Date Selector inside Modal */}
           <div className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
-              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 block">Target Tanggal Misi</span>
-              <span className="text-sm font-black text-slate-800 dark:text-white">{formatDateIndonesian(missionDate)}</span>
+              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 block">{t('lp_target_date', 'Target Tanggal Misi')}</span>
+              <span className="text-sm font-black text-slate-800 dark:text-white">{formatDateIndonesian(missionDate, language)}</span>
             </div>
             <input
               type="date"
@@ -175,7 +186,7 @@ function DailyMissionBuilderModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block">
-                1. Target Video
+                {t('lp_step1_video', '1. Target Video')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">
                 <input
@@ -187,121 +198,69 @@ function DailyMissionBuilderModal({
                   }}
                   className="size-4 accent-slate-700 cursor-pointer"
                 />
-                <span>🚫 Tidak Ada Rencana</span>
+                <span>🚫 {t('sk_stamp_noplan', 'Tidak Ada Rencana')}</span>
               </label>
             </div>
 
             {noVideoPlan ? (
               <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between">
-                <span>🚫 Video: Tidak ada rencana nonton pada tanggal ini</span>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black">
-                  ✅ 100% Selesai
-                </span>
+                <span>🚫 {t('lp_no_video_target', 'Hari ini tidak ada target nonton video (Cap Biru jika kuis & kotoba 0).')}</span>
+                <button
+                  type="button"
+                  onClick={() => setNoVideoPlan(false)}
+                  className="text-xs text-primary dark:text-red-400 font-extrabold underline border-none bg-transparent cursor-pointer"
+                >
+                  + Tambah Target Video
+                </button>
               </div>
             ) : (
               <>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                  💡 <strong>Aturan Pengulangan:</strong> Setiap 1 video yang dicentang = <strong>3 kali target pengulangan</strong> (misal 2 video = 6 kali pengulangan total).
-                </p>
-
-                {/* Jilid & Bab Selector */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Jilid Buku</label>
+                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Buku Jilid</label>
                     <select
                       value={selectedJilid}
                       onChange={e => {
-                        const j = Number(e.target.value) as 1 | 2
-                        setSelectedJilid(j)
-                        const start = j === 1 ? 1 : 26
-                        const firstAvailable = Array.from({ length: 25 }, (_, i) => start + i).find(b => {
-                          const setting = chapterSettingsMap[b]
-                          return setting ? !setting.is_hidden : b <= 2
-                        }) || start
-                        setSelectedBab(firstAvailable)
+                        const newJilid = Number(e.target.value) as 1 | 2
+                        setSelectedJilid(newJilid)
+                        const defaultBab = newJilid === 1 ? 1 : 26
+                        setSelectedBab(defaultBab)
+                        setSelectedVideos([])
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
-                      <option value={1}>📘 Jilid 1 (Bab 1 - 25)</option>
-                      <option value={2}>📗 Jilid 2 (Bab 26 - 50)</option>
+                      <option value={1}>📘 {t('dash_jilid_1_title', 'Jilid 1 (Bab 1 - 25)')}</option>
+                      <option value={2}>📗 {t('dash_jilid_2_title', 'Jilid 2 (Bab 26 - 50)')}</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab (Hanya Bab Aktif)</label>
+                    <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab</label>
                     <select
                       value={selectedBab}
                       onChange={e => setSelectedBab(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
-                      {(() => {
-                        const availableBabs = Array.from({ length: 25 }, (_, i) => startBab + i).filter(b => {
-                          const setting = chapterSettingsMap[b]
-                          return setting ? !setting.is_hidden : b <= 2
-                        })
-
-                        if (availableBabs.length === 0) {
-                          return (
-                            <option value={startBab} disabled>
-                              🚫 Bab Jilid {selectedJilid} belum dirilis Admin
-                            </option>
-                          )
-                        }
-
-                        return availableBabs.map(b => {
-                          const setting = chapterSettingsMap[b]
-                          const title = setting?.title || (b <= 25 ? DEFAULT_JILID_1[b]?.title : DEFAULT_JILID_2[b]?.title) || `Bab ${b}`
-                          return (
-                            <option key={b} value={b}>
-                              Bab {b}: {title}
-                            </option>
-                          )
-                        })
-                      })()}
+                      {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
+                        <option key={b} value={b}>Bab {b}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Checkbox List for 3 Videos in Selected Bab */}
                 <div className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <span className="text-[0.7rem] font-bold text-slate-400 uppercase">Daftar Video Bab {selectedBab}:</span>
                   {currentBabVideos.map(vItem => {
                     const isChecked = selectedVideos.some(v => v.id === vItem.id)
                     return (
-                      <label
-                        key={vItem.id}
-                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-red-400 font-bold shadow-xs'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-300'
-                        }`}
-                      >
+                      <label key={vItem.id} className="p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-3 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleVideoSelection(vItem)}
-                            className="size-4 accent-primary cursor-pointer"
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => toggleVideoSelection(vItem)} className="size-4 accent-primary cursor-pointer" />
                           <span>🎥 {vItem.title}</span>
                         </div>
-                        <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          +3 Replays Target
-                        </span>
                       </label>
                     )
                   })}
                 </div>
-
-                {/* Selected Summary Badge */}
-                {selectedVideos.length > 0 && (
-                  <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
-                    <span>📹 {selectedVideos.length} Video Dipilih</span>
-                    <span className="bg-amber-500 text-white px-2.5 py-1 rounded-lg">
-                      Target = {totalReplayTarget}x Total Pengulangan Video
-                    </span>
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -310,37 +269,32 @@ function DailyMissionBuilderModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-1.5">
-                2. Target Kuis
+                {t('lp_step3_quiz', '2. Target Kuis Evaluasi')}
               </label>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setTargetQuiz(q => Math.max(0, q - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">−</button>
-                <span className={`flex-1 text-center text-xs sm:text-sm font-black ${targetQuiz === 0 ? 'text-slate-500 italic' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                  {targetQuiz === 0 ? '🚫 Tidak Ada Rencana (100%)' : `${targetQuiz} Kuis`}
-                </span>
-                <button type="button" onClick={() => setTargetQuiz(q => Math.min(10, q + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">+</button>
+                <button type="button" onClick={() => setTargetQuiz(q => Math.max(0, q - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
+                <span className="flex-1 text-center text-xs font-black">{targetQuiz} Kuis</span>
+                <button type="button" onClick={() => setTargetQuiz(q => Math.min(10, q + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
               </div>
             </div>
 
             <div>
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-1.5">
-                3. Target Setoran Kotoba
+                {t('lp_step4_kotoba', '3. Target Setoran Kotoba')}
               </label>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setTargetKotoba(k => Math.max(0, k - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">−</button>
-                <span className={`flex-1 text-center text-xs sm:text-sm font-black ${targetKotoba === 0 ? 'text-slate-500 italic' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {targetKotoba === 0 ? '🚫 Tidak Ada Rencana (100%)' : `${targetKotoba} Setoran`}
-                </span>
-                <button type="button" onClick={() => setTargetKotoba(k => Math.min(10, k + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700">+</button>
+                <button type="button" onClick={() => setTargetKotoba(k => Math.max(0, k - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
+                <span className="flex-1 text-center text-xs font-black">{targetKotoba} Setoran</span>
+                <button type="button" onClick={() => setTargetKotoba(k => Math.min(10, k + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
               </div>
             </div>
           </div>
 
-          {/* Submit CTA */}
           <button
             type="submit"
             className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light text-white font-extrabold rounded-2xl border-none cursor-pointer text-sm shadow-md transition-all hover:-translate-y-0.5 mt-2"
           >
-            🚀 Simpan Misi Tanggal Ini
+            🚀 {t('lp_save_mission', 'Simpan Misi Belajar')}
           </button>
         </form>
         <CustomAlertModal {...alertConfig} />
@@ -577,16 +531,16 @@ function DateClassEnrollModal({
   )
 }
 
-function formatDayNameShort(dateStr: string): string {
+function formatDayNameShort(dateStr: string, lang: string = 'id'): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   const date = new Date(y, m - 1, d)
-  const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
-  return dayNames[date.getDay()]
+  return getLocalizedDayNames(lang)[date.getDay()]
 }
 
 export default function LearningPlanPage() {
 
   const { user, profile } = useAuth()
+  const { language, t } = useLanguage()
 
   // Calendar State
   const todayStr = getTodayDateString()
@@ -783,7 +737,7 @@ export default function LearningPlanPage() {
             <span className="size-9 sm:size-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 border border-indigo-500/20 flex items-center justify-center text-xl shrink-0 font-serif shadow-xs">
               🎯
             </span>
-            <span>Rencana Belajar & Kalender Misi</span>
+            <span>{t('lp_title', 'Rencana Belajar & Kalender Misi')}</span>
           </h1>
           <p className="text-xs sm:text-base text-slate-500 dark:text-slate-400">
             Klik pada tanggal di kalender untuk menyusun misi harian atau melihat arsip pembelajaran
@@ -797,7 +751,7 @@ export default function LearningPlanPage() {
           }}
           className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center"
         >
-          <span>+ Susun Misi Hari Ini</span>
+          <span>{t('lp_btn_create', '+ Susun Misi Hari Ini')}</span>
         </button>
       </div>
 
@@ -809,23 +763,23 @@ export default function LearningPlanPage() {
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white">
-              Panduan Praktis Rencana Belajar & Reservasi Kelas Live
+              {t('lp_banner_guide_title', 'Panduan Praktis Rencana Belajar & Reservasi Kelas Live')}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-              Gunakan mode <strong>📅 Kalender Grid</strong> untuk melihat ringkasan status bulanan, atau mode <strong>📋 Agenda Schedule</strong> untuk menyusuri linimasa harian lengkap dengan link Zoom, lokasi dojo, materi bab, dan sisa kuota. Klik tanggal mana pun untuk menyusun target video harian.
+              {t('lp_banner_guide_desc', 'Gunakan mode Kalender Grid untuk melihat ringkasan status bulanan, atau mode Agenda Schedule untuk menyusuri linimasa harian.')}
             </p>
           </div>
         </div>
 
         <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
           <span className="text-xs font-black bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
-            🎯 Misi Rencana Harian (Wajib Setiap Hari)
+            {t('lp_tag_daily_mission', '🎯 Misi Rencana Harian (Wajib Setiap Hari)')}
           </span>
           <span className="text-xs font-black bg-sky-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
-            💻 Kelas Online (Batas 1 Sesi/Minggu)
+            {t('lp_tag_online_class', '💻 Kelas Online (Batas 1 Sesi/Minggu)')}
           </span>
           <span className="text-xs font-black bg-emerald-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
-            🏢 Kelas Offline (Batas 1 Sesi/Bulan)
+            {t('lp_tag_offline_class', '🏢 Kelas Offline (Batas 1 Sesi/Bulan)')}
           </span>
         </div>
       </div>
@@ -842,7 +796,7 @@ export default function LearningPlanPage() {
                 📅
               </span>
               <h2 className="text-base sm:text-xl font-extrabold text-slate-800 dark:text-white">
-                {MONTH_NAMES[month]} {year}
+                {getLocalizedMonthName(month, language)} {year}
               </h2>
             </div>
 
@@ -858,7 +812,7 @@ export default function LearningPlanPage() {
                   }`}
                 >
                   <span>📅</span>
-                  <span>Kalender</span>
+                  <span>{t('lp_calendar_view', 'Kalender')}</span>
                 </button>
                 <button
                   onClick={() => setViewMode('schedule')}
@@ -869,7 +823,7 @@ export default function LearningPlanPage() {
                   }`}
                 >
                   <span>📋</span>
-                  <span>Agenda Schedule</span>
+                  <span>{t('lp_schedule_view', 'Agenda Schedule')}</span>
                 </button>
               </div>
 
@@ -878,7 +832,7 @@ export default function LearningPlanPage() {
                   onClick={handleTodayClick}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border-none cursor-pointer transition-all"
                 >
-                  Hari Ini
+                  {t('lp_today_btn', 'Hari Ini')}
                 </button>
                 <button
                   onClick={() => changeMonth(-1)}
@@ -904,7 +858,7 @@ export default function LearningPlanPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
                 <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                   <span>📋</span>
-                  <span>Agenda Jadwal Pembelajaran & Kelas Live</span>
+                  <span>{t('lp_agenda_header', 'Agenda Jadwal Pembelajaran & Kelas Live')}</span>
                 </span>
                 <button
                   onClick={() => setShowOnlyActivities(prev => !prev)}
@@ -915,7 +869,7 @@ export default function LearningPlanPage() {
                   }`}
                 >
                   <span>⚡</span>
-                  <span>{showOnlyActivities ? 'Hanya Hari Beragenda' : 'Tampilkan Semua Tanggal'}</span>
+                  <span>{showOnlyActivities ? t('lp_only_activities', 'Hanya Hari Beragenda') : t('lp_show_all_dates', 'Tampilkan Semua Tanggal')}</span>
                 </button>
               </div>
 
@@ -1204,10 +1158,9 @@ export default function LearningPlanPage() {
             <>
               {/* Days of Week Header */}
               <div className="grid grid-cols-7 text-center font-extrabold text-[0.62rem] sm:text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
-                {DAY_NAMES.map(d => (
+                {getLocalizedDayNames(language).map(d => (
                   <div key={d}>
-                    <span className="sm:hidden">{d.slice(0, 3)}</span>
-                    <span className="hidden sm:inline">{d}</span>
+                    <span>{d}</span>
                   </div>
                 ))}
               </div>
@@ -1415,22 +1368,22 @@ export default function LearningPlanPage() {
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[0.65rem] sm:text-xs">
                 <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
                   <img src="/lulus.png" alt="Lulus 100%" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">100% Selesai</span>
+                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">{t('lp_stamp_passed', '100% Selesai')}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-red-200 dark:border-red-800">
                   <img src="/gagal.png" alt="Belum Tuntas" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-red-700 dark:text-red-300 font-extrabold">Belum Tuntas (&lt;100%)</span>
+                  <span className="text-red-700 dark:text-red-300 font-extrabold">{t('lp_stamp_incomplete', 'Belum Tuntas (<100%)')}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-sky-200 dark:border-sky-800">
                   <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-sky-700 dark:text-sky-300 font-extrabold">Tidak Ada Rencana</span>
+                  <span className="text-sky-700 dark:text-sky-300 font-extrabold">{t('lp_stamp_noplan', 'Tidak Ada Rencana')}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
                   <img src="/kosong.png" alt="Belum Buat Rencana" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-slate-600 dark:text-slate-300 font-extrabold">Belum Buat Rencana</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-extrabold">{t('lp_stamp_uncreated', 'Belum Buat Rencana')}</span>
                 </div>
               </div>
             </div>
@@ -1449,15 +1402,15 @@ export default function LearningPlanPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <span className="text-[0.65rem] font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  {isSelectedDatePast ? 'Arsip Rencana Belajar' : 'Target & Misi'}
+                  {isSelectedDatePast ? t('lp_archive_mode', 'Arsip Rencana Belajar') : t('lp_target_missions', 'Target & Misi')}
                 </span>
                 <h3 className="text-base sm:text-lg font-extrabold mt-1 text-white leading-snug">
-                  {formatDateIndonesian(selectedDateStr)}
+                  {formatDateIndonesian(selectedDateStr, language)}
                 </h3>
               </div>
               {selectedDateStr === todayStr && (
                 <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0">
-                  Hari Ini
+                  {t('lp_today_btn', 'Hari Ini')}
                 </span>
               )}
             </div>
@@ -1616,14 +1569,14 @@ export default function LearningPlanPage() {
                 {/* If past date, show read-only note instead of edit button */}
                 {isSelectedDatePast ? (
                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center text-xs text-slate-400 font-medium">
-                    🔒 Tanggal telah berlalu (Mode Lihat Arsip)
+                    {t('lp_past_date_locked', '🔒 Tanggal telah berlalu (Mode Lihat Arsip)')}
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowMissionModal(true)}
                     className="w-full py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold rounded-2xl border-none cursor-pointer text-xs shadow-md transition-all mt-1"
                   >
-                    ⚙️ Edit Misi Tanggal Ini
+                    {t('lp_edit_mission_btn', '⚙️ Edit Misi Tanggal Ini')}
                   </button>
                 )}
               </div>
@@ -1632,18 +1585,18 @@ export default function LearningPlanPage() {
                 <span className="text-4xl">📝</span>
                 {isSelectedDatePast ? (
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr)}</strong>.
+                    Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
                   </p>
                 ) : (
                   <>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(selectedDateStr)}</strong>.
+                      Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
                     </p>
                     <button
                       onClick={() => setShowMissionModal(true)}
                       className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md"
                     >
-                      + Susun Misi Tanggal Ini
+                      {t('lp_btn_create', '+ Susun Misi Tanggal Ini')}
                     </button>
                   </>
                 )}

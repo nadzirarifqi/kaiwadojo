@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 
 export interface UserKotoba {
@@ -39,6 +40,7 @@ type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_
 
 export default function SetoranKotobaPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -359,10 +361,10 @@ export default function SetoranKotobaPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-              Jurnal Kosakata (Kotoba) Saya
+              {t('sk_title', 'Jurnal Kosakata (Kotoba) Saya')}
             </h1>
             <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
-              Catat dan simpan setiap kosakata Bahasa Jepang baru yang kamu temukan. Uji hafalanmu secara berkala untuk menentukan kata yang sudah kamu kuasai!
+              {t('sk_subtitle', 'Catat dan simpan setiap kosakata Bahasa Jepang baru yang kamu temukan. Uji hafalanmu secara berkala untuk menentukan kata yang sudah kamu kuasai!')}
             </p>
           </div>
 
@@ -371,7 +373,7 @@ export default function SetoranKotobaPage() {
               onClick={handleStartTest}
               className="px-5 py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
             >
-              <span>🧠 Uji Hafalan Kosakata</span>
+              <span>{t('sk_test_btn', '🧠 Uji Hafalan Kosakata')}</span>
             </button>
 
             <button
@@ -379,7 +381,7 @@ export default function SetoranKotobaPage() {
               className="px-6 py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
             >
               <span className="text-base">＋</span>
-              <span>Tambah Kosakata Baru</span>
+              <span>{t('sk_add_btn', 'Tambah Kosakata Baru')}</span>
             </button>
           </div>
         </div>
@@ -390,7 +392,7 @@ export default function SetoranKotobaPage() {
         <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-3xl p-5 mb-6 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row gap-5 justify-between items-start">
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-sm">
-              <span>💡 Panduan Menambah & Menguji Kosakata</span>
+              <span>{t('sk_guide_title', '💡 Panduan Menambah & Menguji Kosakata')}</span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300">
               1. Catat kata baru dengan tombol <strong>"+ Tambah Kosakata Baru"</strong>.<br />
@@ -419,7 +421,7 @@ export default function SetoranKotobaPage() {
             onClick={() => setShowGuide(false)}
             className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0"
           >
-            Sembunyikan ✕
+            {t('sk_guide_hide', 'Sembunyikan ✕')}
           </button>
         </div>
       )}
@@ -432,7 +434,7 @@ export default function SetoranKotobaPage() {
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{totalCount}</div>
-            <div className="text-xs text-slate-400 font-medium">Kosakata Tersimpan</div>
+            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_total', 'Kosakata Tersimpan')}</div>
           </div>
         </div>
 
@@ -442,7 +444,7 @@ export default function SetoranKotobaPage() {
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{masteredCount}</div>
-            <div className="text-xs text-slate-400 font-medium">Kosakata Dikuasai</div>
+            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_mastered', 'Kosakata Dikuasai')}</div>
           </div>
         </div>
 
@@ -454,7 +456,7 @@ export default function SetoranKotobaPage() {
             <div className="text-2xl font-black text-slate-800 dark:text-white">
               {totalCount > 0 ? `${Math.round((masteredCount / totalCount) * 100)}%` : '0%'}
             </div>
-            <div className="text-xs text-slate-400 font-medium">Tingkat Hafalan</div>
+            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_memorization', 'Tingkat Hafalan')}</div>
           </div>
         </div>
       </div>
@@ -471,7 +473,7 @@ export default function SetoranKotobaPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
             }`}
           >
-            Semua ({totalCount})
+            {t('sk_filter_all', 'Semua')} ({totalCount})
           </button>
           <button
             onClick={() => setFilterMode('unmastered')}
@@ -481,7 +483,7 @@ export default function SetoranKotobaPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
             }`}
           >
-            📖 Masih Dipelajari ({totalCount - masteredCount})
+            {t('sk_filter_unmastered', '📖 Masih Dipelajari')} ({totalCount - masteredCount})
           </button>
           <button
             onClick={() => setFilterMode('mastered')}
@@ -491,7 +493,7 @@ export default function SetoranKotobaPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500'
             }`}
           >
-            ✅ Sudah Dikuasai ({masteredCount})
+            {t('sk_filter_mastered', '✅ Sudah Dikuasai')} ({masteredCount})
           </button>
         </div>
 
@@ -499,7 +501,7 @@ export default function SetoranKotobaPage() {
         <div className="relative w-full sm:w-72">
           <input
             type="text"
-            placeholder="Cari kanji, romaji, atau arti..."
+            placeholder={t('sk_search_placeholder', 'Cari kanji, romaji, atau arti...')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
@@ -591,7 +593,7 @@ export default function SetoranKotobaPage() {
                           : 'bg-slate-900/60 text-white hover:bg-emerald-500'
                       }`}
                     >
-                      {item.is_mastered ? '✅ Dikuasai' : '⭕ Tandai Dikuasai'}
+                      {item.is_mastered ? t('sk_badge_mastered', '✅ Dikuasai') : t('sk_badge_mark_mastered', '⭕ Tandai Dikuasai')}
                     </button>
                   </div>
                 </div>
@@ -618,14 +620,14 @@ export default function SetoranKotobaPage() {
                           : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700'
                       }`}
                     >
-                      {item.is_mastered ? '✅ Dikuasai' : '⭕ Tandai Dikuasai'}
+                      {item.is_mastered ? t('sk_badge_mastered', '✅ Dikuasai') : t('sk_badge_mark_mastered', '⭕ Tandai Dikuasai')}
                     </button>
                   )}
                 </div>
 
                 {/* Indonesian Meaning */}
                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="text-xs text-slate-400 font-semibold mb-0.5">Makna / Arti:</div>
+                  <div className="text-xs text-slate-400 font-semibold mb-0.5">{t('sk_meaning_label', 'Makna / Arti:')}</div>
                   <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
                     🇮🇩 {item.meaning}
                   </div>
@@ -812,13 +814,13 @@ export default function SetoranKotobaPage() {
                         onClick={() => handleSelfAssessment(false)}
                         className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
                       >
-                        <span>🔴 Masih Sulit</span>
+                        <span>{t('sk_test_difficult_btn', '🔴 Masih Sulit')}</span>
                       </button>
                       <button
                         onClick={() => handleSelfAssessment(true)}
                         className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
                       >
-                        <span>🟢 Sudah Mudah / Dikuasai</span>
+                        <span>{t('sk_test_mastered_btn', '🟢 Sudah Mudah / Dikuasai')}</span>
                       </button>
                     </div>
                   </div>
@@ -849,12 +851,12 @@ export default function SetoranKotobaPage() {
               {/* Field 1: Kanji / Katakana / Hiragana */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  1. Huruf Jepang (Kanji / Katakana / Hiragana) <span className="text-red-500">*</span>
+                  1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: 食べる atau たべる atau ラーメン"
+                  placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
                   value={formData.japanese}
                   onChange={e => setFormData({ ...formData, japanese: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
@@ -864,12 +866,12 @@ export default function SetoranKotobaPage() {
               {/* Field 2: Romaji */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  2. Cara Baca (Romaji) <span className="text-red-500">*</span>
+                  2. {t('sk_input_romaji', 'Cara Baca (Romaji)')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: taberu atau raamen"
+                  placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
                   value={formData.romaji}
                   onChange={e => setFormData({ ...formData, romaji: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
@@ -879,12 +881,12 @@ export default function SetoranKotobaPage() {
               {/* Field 3: Meaning */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  3. Makna / Arti Bahasa Indonesia <span className="text-red-500">*</span>
+                  3. {t('sk_input_meaning', 'Makna / Terjemahan')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Makan (Kata Kerja)"
+                  placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
                   value={formData.meaning}
                   onChange={e => setFormData({ ...formData, meaning: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
@@ -894,11 +896,11 @@ export default function SetoranKotobaPage() {
               {/* Field 4: Image URL & Presets */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. URL Gambar Visual (Opsional)
+                  4. {t('sk_input_image', 'URL Gambar Visual (Opsional)')}
                 </label>
                 <input
                   type="url"
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder={t('sk_input_image_ph', 'https://...')}
                   value={formData.image_url}
                   onChange={e => setFormData({ ...formData, image_url: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all mb-2"

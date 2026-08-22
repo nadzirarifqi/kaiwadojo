@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../contexts/LanguageContext'
 import { supabase } from '../lib/supabaseClient'
 import {
   type ClassSchedule,
@@ -16,6 +17,7 @@ import {
 
 export default function ClassReservationPage() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
   const userId = profile?.id || 'user-demo-active'
   const userName = profile?.full_name || 'Budi Santoso'
   const userEmail = profile?.email || 'budi@kaiwadojo.com'
@@ -229,13 +231,13 @@ export default function ClassReservationPage() {
             <span className="size-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs">
               💻
             </span>
-            <span>Jadwal & Interaktif Class</span>
+            <span>{t('cr_tag', 'Jadwal & Interaktif Class')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white mt-1">
-            Reservasi Kelas Online & Offline
+            {t('cr_title', 'Reservasi Kelas Online & Offline')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Pilih hari dan jam terbaik untuk mengasah percakapan (Kaiwa) dengan instruktur.
+            {t('cr_subtitle', 'Pilih hari dan jam terbaik untuk mengasah percakapan (Kaiwa) dengan instruktur.')}
           </p>
         </div>
 
@@ -261,10 +263,10 @@ export default function ClassReservationPage() {
             <span className="text-xs text-white/80 font-bold">({reqStatus.currentMonthLabel})</span>
           </div>
           <h2 className="text-lg sm:text-xl font-black text-white">
-            *Wajib Mengambil Minimal 2 Kelas Online / Bulan
+            *{t('cr_requirement', 'Wajib Mengambil Minimal 2 Kelas Online / Bulan')}
           </h2>
           <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
-            Untuk memastikan kemampuan percakapan Bahasa Jepang kamu terus terasah, setiap siswa diwajibkan mengikuti sekurang-kurangnya 2 sesi kelas online live per minggu/bulan.
+            {t('cr_requirement_sub', 'Untuk memastikan kemampuan percakapan Bahasa Jepang kamu terus terasah, setiap siswa diwajibkan mengikuti sekurang-kurangnya 2 sesi kelas online live per minggu/bulan.')}
           </p>
         </div>
 
@@ -299,7 +301,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            Semua Kelas ({schedules.length})
+            {t('cr_tab_all', 'Semua Kelas')} ({schedules.length})
           </button>
 
           <button
@@ -310,7 +312,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>💻 Kelas Online (Mingguan)</span>
+            <span>{t('cr_tab_online', '💻 Kelas Online (Mingguan)')}</span>
           </button>
 
           <button
@@ -321,7 +323,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>🏢 Kelas Offline (Bulanan)</span>
+            <span>{t('cr_tab_offline', '🏢 Kelas Offline (Bulanan)')}</span>
           </button>
 
           <button
@@ -332,7 +334,7 @@ export default function ClassReservationPage() {
                 : 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60'
             }`}
           >
-            <span>📌 Jadwal Saya ({myReservationsList.length})</span>
+            <span>{t('cr_tab_my_booking', '📌 Jadwal Saya')} ({myReservationsList.length})</span>
           </button>
         </div>
 
@@ -343,7 +345,7 @@ export default function ClassReservationPage() {
             <div className="flex-1 w-full relative">
               <input
                 type="text"
-                placeholder="Cari judul bab, materi, atau instruktur..."
+                placeholder={t('cr_search_placeholder', 'Cari judul bab, materi, atau instruktur...')}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
@@ -353,13 +355,13 @@ export default function ClassReservationPage() {
 
             {/* Week Filter */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-slate-400 shrink-0">Filter Minggu:</span>
+              <span className="text-xs font-bold text-slate-400 shrink-0">{t('cr_filter_week_label', 'Filter Minggu:')}</span>
               <select
                 value={selectedWeekFilter}
                 onChange={e => setSelectedWeekFilter(e.target.value)}
                 className="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
               >
-                <option value="all">Semua Minggu</option>
+                <option value="all">{t('cr_all_weeks', 'Semua Minggu')}</option>
                 {availableWeeks.map(w => (
                   <option key={w} value={w}>{getWeekLabel(w)}</option>
                 ))}

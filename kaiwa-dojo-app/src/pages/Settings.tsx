@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage, type Language } from '../contexts/LanguageContext'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { user, profile, signOut } = useAuth()
+  const { user, signOut } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
 
   // ── 1. Preferences State ──────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
@@ -16,9 +18,12 @@ export default function SettingsPage() {
     return (localStorage.getItem('kaiwa_text_size') as any) || 'normal'
   })
 
-  const [language, setLanguage] = useState<'id' | 'en' | 'ja'>(() => {
-    return (localStorage.getItem('kaiwa_language') as any) || 'id'
-  })
+  const handleLanguageChange = (newLang: Language) => {
+    setLanguage(newLang)
+    if (newLang === 'id') showToast('success', 'Bahasa aplikasi berhasil diubah ke Bahasa Indonesia 🇮🇩')
+    else if (newLang === 'en') showToast('success', 'Language successfully updated to English 🇬🇧')
+    else if (newLang === 'ja') showToast('success', '言語が日本語に変更されました 🇯🇵')
+  }
 
   // ── 2. Password Form State ────────────────────────────
   const [newPassword, setNewPassword] = useState('')
@@ -149,10 +154,10 @@ export default function SettingsPage() {
             <span className="size-10 sm:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xl shrink-0 font-serif shadow-xs">
               設
             </span>
-            <span>Pengaturan Akun</span>
+            <span>{t('settings_title', 'Pengaturan Akun & Tampilan')}</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
-            Atur preferensi tampilan, bahasa, kata sandi, dan privasi akun KaiwaDoJo Anda
+            {t('settings_subtitle', 'Sesuaikan pengalaman belajar, preferensi tampilan, bahasa, dan keamanan akun Anda')}
           </p>
         </div>
       </div>
@@ -170,7 +175,7 @@ export default function SettingsPage() {
           {/* 1. Light / Dark Theme */}
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Tema Aplikasi (Light / Dark Mode)
+              {t('theme_title', 'Tema Aplikasi (Light / Dark Mode)')}
             </label>
             <div className="grid grid-cols-3 gap-3">
               <button
@@ -185,7 +190,7 @@ export default function SettingsPage() {
                 <span className="size-9 rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center text-xl shrink-0 border border-amber-500/20">
                   ☀️
                 </span>
-                <span className="font-extrabold text-xs sm:text-sm">Terang (Light)</span>
+                <span className="font-extrabold text-xs sm:text-sm">{t('theme_light', 'Terang (Light)')}</span>
               </button>
 
               <button
@@ -200,7 +205,7 @@ export default function SettingsPage() {
                 <span className="size-9 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center text-xl shrink-0 border border-indigo-500/20">
                   🌙
                 </span>
-                <span className="font-extrabold text-xs sm:text-sm">Gelap (Dark)</span>
+                <span className="font-extrabold text-xs sm:text-sm">{t('theme_dark', 'Gelap (Dark)')}</span>
               </button>
 
               <button
@@ -215,7 +220,7 @@ export default function SettingsPage() {
                 <span className="size-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center text-xl shrink-0 border border-purple-500/20">
                   💻
                 </span>
-                <span className="font-extrabold text-xs sm:text-sm">Ikuti Sistem</span>
+                <span className="font-extrabold text-xs sm:text-sm">{t('theme_system', 'Ikuti Sistem')}</span>
               </button>
             </div>
           </div>
@@ -223,7 +228,7 @@ export default function SettingsPage() {
           {/* 2. Ukuran Teks (Text Size) */}
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Ukuran Teks Aplikasi
+              {t('text_size_title', 'Ukuran Teks Aplikasi')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
@@ -253,7 +258,7 @@ export default function SettingsPage() {
           {/* 3. Bahasa Aplikasi (Language) */}
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Bahasa Antarmuka Aplikasi
+              {t('language_title', 'Bahasa Antarmuka Aplikasi')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
@@ -264,7 +269,7 @@ export default function SettingsPage() {
                 <button
                   key={lang.id}
                   type="button"
-                  onClick={() => setLanguage(lang.id as any)}
+                  onClick={() => handleLanguageChange(lang.id as any)}
                   className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center gap-3 ${
                     language === lang.id
                       ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
@@ -289,13 +294,13 @@ export default function SettingsPage() {
           <span className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base shrink-0 shadow-xs">
             🔒
           </span>
-          <span>Keamanan & Ubah Kata Sandi</span>
+          <span>{t('security_title', 'Keamanan & Ubah Kata Sandi')}</span>
         </h2>
 
         <form onSubmit={handleChangePassword} className="space-y-5 max-w-xl">
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              Kata Sandi Baru
+              {t('new_password', 'Kata Sandi Baru')}
             </label>
             <input
               type="password"
@@ -303,14 +308,14 @@ export default function SettingsPage() {
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimal 6 karakter"
+              placeholder={t('pw_min_char', 'Minimal 6 karakter')}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
             />
           </div>
 
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              Konfirmasi Kata Sandi Baru
+              {t('confirm_password', 'Konfirmasi Kata Sandi Baru')}
             </label>
             <input
               type="password"
@@ -318,7 +323,7 @@ export default function SettingsPage() {
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Ulangi kata sandi baru"
+              placeholder={t('pw_repeat_ph', 'Ulangi kata sandi baru')}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
             />
           </div>
@@ -339,7 +344,7 @@ export default function SettingsPage() {
                   <div className="size-7 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
                     <span className="text-base">🔑</span>
                   </div>
-                  <span>Perbarui Kata Sandi</span>
+                  <span>{t('update_password', 'Perbarui Kata Sandi')}</span>
                 </>
               )}
             </button>
@@ -353,10 +358,10 @@ export default function SettingsPage() {
           <span className="size-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0 shadow-xs">
             ⚠️
           </span>
-          <span>Zona Bahaya</span>
+          <span>{t('danger_zone', 'Zona Bahaya')}</span>
         </h2>
         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
-          Menghapus akun Anda akan menghapus data profil, histori pembelajaran, dan progres streak secara permanen. Tindakan ini tidak dapat dibatalkan.
+          {t('danger_desc', 'Menghapus akun Anda akan menghapus data profil, histori pembelajaran, dan progres streak secara permanen. Tindakan ini tidak dapat dibatalkan.')}
         </p>
 
         <div className="pt-2">
@@ -369,7 +374,7 @@ export default function SettingsPage() {
             className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2.5"
           >
             <span className="text-base">🗑️</span>
-            <span>Hapus Akun Saya</span>
+            <span>{t('delete_account', 'Hapus Akun Saya')}</span>
           </button>
         </div>
       </section>
@@ -381,7 +386,7 @@ export default function SettingsPage() {
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xl font-extrabold text-red-600 dark:text-red-400 flex items-center gap-2.5">
                 <span className="text-2xl">⚠️</span>
-                <span>Konfirmasi Hapus Akun</span>
+                <span>{t('delete_modal_title', 'Konfirmasi Hapus Akun')}</span>
               </h3>
               <button
                 type="button"
@@ -393,19 +398,18 @@ export default function SettingsPage() {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Apakah Anda yakin ingin menghapus akun <strong>{profile?.full_name}</strong> (@{profile?.username})?
-              Semua data Anda akan dihapus secara permanen dari KaiwaDoJo.
+              {t('delete_modal_prompt', 'Apakah Anda yakin ingin menghapus akun ini? Semua data Anda akan dihapus secara permanen dari KaiwaDoJo.')}
             </p>
 
             <div>
               <label className="block text-xs font-extrabold text-slate-500 dark:text-slate-400 mb-2">
-                Ketik <span className="text-red-600 dark:text-red-400 font-black">HAPUS AKUN</span> untuk mengonfirmasi:
+                {t('delete_modal_instruction', 'Ketik HAPUS AKUN untuk mengonfirmasi:')}
               </label>
               <input
                 type="text"
                 value={deleteConfirmationText}
                 onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                placeholder="HAPUS AKUN"
+                placeholder={t('delete_confirm_code', 'HAPUS AKUN')}
                 className="w-full px-4 py-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 text-slate-800 dark:text-white text-sm font-extrabold focus:outline-none focus:border-red-500"
               />
             </div>
@@ -416,15 +420,19 @@ export default function SettingsPage() {
                 onClick={() => setIsDeleteModalOpen(false)}
                 className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
               >
-                Batal
+                {t('cancel', 'Batal')}
               </button>
               <button
                 type="button"
-                disabled={deleteConfirmationText.trim().toUpperCase() !== 'HAPUS AKUN' || isDeletingAccount}
+                disabled={
+                  (deleteConfirmationText.trim().toUpperCase() !== 'HAPUS AKUN' &&
+                   deleteConfirmationText.trim().toUpperCase() !== 'DELETE ACCOUNT') ||
+                  isDeletingAccount
+                }
                 onClick={handleDeleteAccount}
                 className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all disabled:opacity-40 cursor-pointer flex items-center gap-2"
               >
-                {isDeletingAccount ? 'Deleting...' : 'Ya, Hapus Permanen'}
+                {isDeletingAccount ? 'Deleting...' : t('delete_confirm_btn', 'Ya, Hapus Permanen')}
               </button>
             </div>
           </div>

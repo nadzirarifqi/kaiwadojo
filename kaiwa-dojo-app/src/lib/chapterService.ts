@@ -276,3 +276,45 @@ export async function saveCourseHeaderSettings(header: CourseHeaderSettings): Pr
     return false
   }
 }
+
+/* ── Auto Detect Video Duration from File Metadata ── */
+export function detectVideoDuration(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!url) {
+      reject('No URL provided')
+      return
+    }
+
+    const tempVideo = document.createElement('video')
+    tempVideo.preload = 'metadata'
+    tempVideo.crossOrigin = 'anonymous'
+    tempVideo.src = url
+
+    const timeout = setTimeout(() => {
+      tempVideo.src = ''
+      reject('Timeout detecting video metadata')
+    }, 10000)
+
+    tempVideo.onloadedmetadata = () => {
+      clearTimeout(timeout)
+      const totalSeconds = tempVideo.duration
+      if (!isNaN(totalSeconds) && totalSeconds > 0 && isFinite(totalSeconds)) {
+        const mins = Math.floor(totalSeconds / 60)
+        const secs = Math.floor(totalSeconds % 60)
+        const formattedSecs = String(secs).padStart(2, '0')
+        const resultStr = `${mins}.${formattedSecs}`
+        tempVideo.src = ''
+        resolve(resultStr)
+      } else {
+        tempVideo.src = ''
+        reject('Invalid duration')
+      }
+    }
+
+    tempVideo.onerror = () => {
+      clearTimeout(timeout)
+      tempVideo.src = ''
+      reject('Failed to load video metadata')
+    }
+  })
+}
