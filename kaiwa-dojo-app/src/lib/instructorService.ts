@@ -98,11 +98,38 @@ export async function createInstructorAccount(data: {
   full_name: string
   username: string
   email: string
+  password?: string
   bio?: string
   expertise?: string[]
 }): Promise<InstructorAccount> {
+  let createdId = `inst-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+
+  // 1. If password is set by admin, register the instructor in Supabase Auth
+  if (data.password && data.password.length >= 6) {
+    try {
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: data.email.toLowerCase().trim(),
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.full_name,
+            username: data.username.toLowerCase().trim(),
+            role: 'pemateri',
+          },
+        },
+      })
+      if (!authErr && authData.user) {
+        createdId = authData.user.id
+      } else if (authErr) {
+        console.warn('Supabase Auth signUp for instructor note:', authErr.message)
+      }
+    } catch (err) {
+      console.warn('Supabase Auth signUp catch:', err)
+    }
+  }
+
   const newInst: InstructorAccount = {
-    id: `inst-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    id: createdId,
     full_name: data.full_name,
     username: data.username.toLowerCase().trim(),
     email: data.email.toLowerCase().trim(),
@@ -119,7 +146,7 @@ export async function createInstructorAccount(data: {
   localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
 
   try {
-    await supabase.from('profiles').insert({
+    await supabase.from('profiles').upsert({
       id: newInst.id,
       full_name: newInst.full_name,
       username: newInst.username,
@@ -127,14 +154,14 @@ export async function createInstructorAccount(data: {
       role: 'pemateri',
       avatar_url: newInst.avatar_url,
       bio: newInst.bio,
-    })
+    }, { onConflict: 'id' })
 
-    await supabase.from('instructor_profiles').insert({
+    await supabase.from('instructor_profiles').upsert({
       id: newInst.id,
       expertise: newInst.expertise,
       total_students: 0,
       verified: true,
-    })
+    }, { onConflict: 'id' })
   } catch (e) {
     console.warn('DB createInstructorAccount note:', e)
   }

@@ -26,6 +26,7 @@ export default function InstructorManager() {
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [bio, setBio] = useState('')
   const [expertise, setExpertise] = useState('Bunpou, Kaiwa')
 
@@ -52,6 +53,7 @@ export default function InstructorManager() {
     setFullName('')
     setUsername('')
     setEmail('')
+    setPassword('')
     setBio('')
     setExpertise('Bunpou, Kaiwa')
     setShowAddModal(true)
@@ -68,8 +70,13 @@ export default function InstructorManager() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!fullName.trim() || !username.trim() || !email.trim()) {
-      alert('Mohon isi nama lengkap, username, dan email pengajar!')
+    if (!fullName.trim() || !username.trim() || !email.trim() || !password.trim()) {
+      alert('Mohon isi nama lengkap, username, email, dan password pengajar!')
+      return
+    }
+
+    if (password.length < 6) {
+      alert('Kata sandi / password pengajar minimal harus 6 karakter!')
       return
     }
 
@@ -79,13 +86,14 @@ export default function InstructorManager() {
       full_name: fullName,
       username,
       email,
+      password,
       bio,
       expertise: expArr.length > 0 ? expArr : ['Kaiwa', 'Japanese'],
     })
 
     setSaving(false)
     setShowAddModal(false)
-    showToastMsg(`Berhasil menambahkan akun Pemateri baru: ${created.full_name}!`)
+    showToastMsg(`Berhasil membuat akun Pemateri baru: ${created.full_name}! Password telah dikonfigurasi.`)
     await loadData()
   }
 
@@ -310,6 +318,19 @@ export default function InstructorManager() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Password Akun Pemateri (Min. 6 Karakter) *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Password123!"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
               </div>
 
               <div>
