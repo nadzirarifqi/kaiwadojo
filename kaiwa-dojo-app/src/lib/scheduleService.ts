@@ -316,6 +316,36 @@ export function sortSchedules(schedules: ClassSchedule[]): ClassSchedule[] {
   })
 }
 
+// Seed initial schedules to DB if table is empty
+export async function seedInitialSchedulesIfEmpty() {
+  try {
+    const { data } = await supabase.from('class_schedules').select('id').limit(1)
+    if (!data || data.length === 0) {
+      const initials = getInitialSchedules()
+      const dbRows = initials.map(s => ({
+        id: ensureUUID(s.id, '00000000-0000-0000-0001-'),
+        type: s.type,
+        title: s.title,
+        subtitle_chapter: s.subtitle_chapter,
+        instructor_id: ensureUUID(s.instructor_id, '00000000-0000-0000-0000-'),
+        instructor_name: s.instructor_name,
+        date: s.date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        week_range_id: s.week_range_id,
+        month_range_id: s.month_range_id,
+        meet_url: s.meet_url || null,
+        location: s.location || null,
+        max_quota: s.max_quota,
+        created_at: s.created_at,
+      }))
+      await supabase.from('class_schedules').upsert(dbRows, { onConflict: 'id' })
+    }
+  } catch (e) {
+    console.warn('Seed initial schedules catch:', e)
+  }
+}
+
 export async function fetchSchedules(): Promise<ClassSchedule[]> {
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
@@ -327,6 +357,7 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
   } catch {
     // Fallback to local
   }
+  await seedInitialSchedulesIfEmpty()
   return sortSchedules(getInitialSchedules())
 }
 
@@ -334,7 +365,7 @@ export async function fetchReservations(): Promise<ClassReservation[]> {
   try {
     const { data, error } = await supabase.from('class_reservations').select('*')
     if (!error && data) {
-      const realData = (data as ClassReservation[]).filter(r => !r.id.startsWith('res-demo-') && !r.user_email.includes('@example.com'))
+      const realData = (data as ClassReservation[]).filter(r => !r.id.startsWith('res-demo-') && !r.user_email?.includes('@example.com'))
       localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realData))
       return realData
     }
@@ -348,9 +379,10 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
   const week_range_id = getWeekRangeId(scheduleData.date)
   const month_range_id = getMonthRangeId(scheduleData.date)
 
+  const rawId = `sch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
   const newSchedule: ClassSchedule = {
     ...scheduleData,
-    id: `sch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    id: rawId,
     week_range_id,
     month_range_id,
     created_at: new Date().toISOString(),
@@ -363,9 +395,27 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
 
   // Try DB insert async
   try {
-    await supabase.from('class_schedules').insert(newSchedule)
-  } catch {
-    // Local fallback is saved
+    const dbScheduleId = ensureUUID(newSchedule.id, '00000000-0000-0000-0001-')
+    const dbInstructorId = ensureUUID(newSchedule.instructor_id, '00000000-0000-0000-0000-')
+    await supabase.from('class_schedules').insert({
+      id: dbScheduleId,
+      type: newSchedule.type,
+      title: newSchedule.title,
+      subtitle_chapter: newSchedule.subtitle_chapter,
+      instructor_id: dbInstructorId,
+      instructor_name: newSchedule.instructor_name,
+      date: newSchedule.date,
+      start_time: newSchedule.start_time,
+      end_time: newSchedule.end_time,
+      week_range_id: newSchedule.week_range_id,
+      month_range_id: newSchedule.month_range_id,
+      meet_url: newSchedule.meet_url || null,
+      location: newSchedule.location || null,
+      max_quota: newSchedule.max_quota,
+      created_at: newSchedule.created_at,
+    })
+  } catch (e) {
+    console.warn('saveSchedule DB catch:', e)
   }
 
   return newSchedule
@@ -381,6 +431,8 @@ export async function deleteSchedule(scheduleId: string): Promise<void> {
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedRes))
 
   try {
+    const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
+    await supabase.from('class_schedules').delete().eq('id', dbScheduleId)
     await supabase.from('class_schedules').delete().eq('id', scheduleId)
   } catch {
     // Silent fallback
@@ -411,7 +463,6 @@ export async function bookClass(
   }
 
   // 3. Conflict Check
-  // ONLINE CLASS: User can only select 1 day from the same week range (week_range_id)
   if (schedule.type === 'online') {
     const targetWeekId = schedule.week_range_id || getWeekRangeId(schedule.date)
     const userWeeklyOnlineBookings = reservations.filter(r => {
@@ -430,7 +481,6 @@ export async function bookClass(
     }
   }
 
-  // OFFLINE CLASS: User can only select 1 day from the same month range (month_range_id)
   if (schedule.type === 'offline') {
     const targetMonthId = schedule.month_range_id || getMonthRangeId(schedule.date)
     const userMonthlyOfflineBookings = reservations.filter(r => {
@@ -469,17 +519,44 @@ export async function bookClass(
   // Dispatch custom window event for instant local tab sync
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: newReservation }))
 
-  // Payload for Supabase Postgres MUST use valid UUIDs for foreign key columns
-  const dbPayload = {
-    id: dbReservationId,
-    schedule_id: dbScheduleId,
-    user_id: dbUserId,
-    user_name: userName,
-    user_email: userEmail,
-    created_at: newReservation.created_at,
-  }
-
+  // Ensure schedule row exists in Supabase DB first
   try {
+    await supabase.from('class_schedules').upsert({
+      id: dbScheduleId,
+      type: schedule.type,
+      title: schedule.title,
+      subtitle_chapter: schedule.subtitle_chapter,
+      instructor_id: ensureUUID(schedule.instructor_id, '00000000-0000-0000-0000-'),
+      instructor_name: schedule.instructor_name,
+      date: schedule.date,
+      start_time: schedule.start_time,
+      end_time: schedule.end_time,
+      week_range_id: schedule.week_range_id || getWeekRangeId(schedule.date),
+      month_range_id: schedule.month_range_id || getMonthRangeId(schedule.date),
+      meet_url: schedule.meet_url || null,
+      location: schedule.location || null,
+      max_quota: schedule.max_quota,
+      created_at: schedule.created_at || new Date().toISOString(),
+    }, { onConflict: 'id' })
+
+    // Ensure user profile exists in Supabase DB
+    await supabase.from('profiles').upsert({
+      id: dbUserId,
+      full_name: userName,
+      username: userEmail.split('@')[0] || 'user',
+      email: userEmail,
+      role: 'pelajar',
+    }, { onConflict: 'id' })
+
+    // Save reservation to Supabase DB
+    const dbPayload = {
+      id: dbReservationId,
+      schedule_id: dbScheduleId,
+      user_id: dbUserId,
+      user_name: userName,
+      user_email: userEmail,
+      created_at: newReservation.created_at,
+    }
     const { error } = await supabase.from('class_reservations').insert(dbPayload)
     if (error) {
       console.warn('DB insert class_reservations note:', error)
@@ -493,6 +570,7 @@ export async function bookClass(
 
 export async function cancelClassBooking(reservationId: string): Promise<boolean> {
   const reservations = await fetchReservations()
+  const targetRes = reservations.find(r => r.id === reservationId)
   const updated = reservations.filter(r => r.id !== reservationId)
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updated))
 
@@ -502,9 +580,12 @@ export async function cancelClassBooking(reservationId: string): Promise<boolean
   const dbReservationId = ensureUUID(reservationId, '00000000-0000-0000-0003-')
 
   try {
-    const { error } = await supabase.from('class_reservations').delete().eq('id', dbReservationId)
-    if (error) {
-      console.warn('DB delete class_reservations note:', error)
+    await supabase.from('class_reservations').delete().eq('id', dbReservationId)
+    await supabase.from('class_reservations').delete().eq('id', reservationId)
+    if (targetRes) {
+      const dbScheduleId = ensureUUID(targetRes.schedule_id, '00000000-0000-0000-0001-')
+      const dbUserId = ensureUUID(targetRes.user_id, '00000000-0000-0000-0009-')
+      await supabase.from('class_reservations').delete().match({ schedule_id: dbScheduleId, user_id: dbUserId })
     }
   } catch (e) {
     console.warn('DB delete class_reservations catch:', e)

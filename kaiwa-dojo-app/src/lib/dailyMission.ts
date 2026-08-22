@@ -174,8 +174,6 @@ export async function saveDailyMission(
 
 export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: string = getTodayDateString()): number {
   let streak = 0
-  let checkDate = new Date(todayStr)
-
   const formatDateStr = (d: Date) => {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -183,22 +181,28 @@ export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: 
     return `${y}-${m}-${day}`
   }
 
+  const checkDate = new Date(todayStr)
   const todayFormatted = formatDateStr(checkDate)
-  let hasToday = streakDatesSet.has(todayFormatted)
+  const hasToday = streakDatesSet.has(todayFormatted)
 
-  if (!hasToday) {
-    checkDate.setDate(checkDate.getDate() - 1)
-    const yesterdayFormatted = formatDateStr(checkDate)
-    if (!streakDatesSet.has(yesterdayFormatted)) {
-      return 0
-    }
+  const yesterdayDate = new Date(todayStr)
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+  const yesterdayFormatted = formatDateStr(yesterdayDate)
+  const hasYesterday = streakDatesSet.has(yesterdayFormatted)
+
+  // If user hasn't completed today AND didn't complete yesterday, streak is broken -> 0
+  if (!hasToday && !hasYesterday) {
+    return 0
   }
 
+  // Start counting backward from today (if done today) or yesterday (if today not done yet)
+  let curr = hasToday ? new Date(todayStr) : yesterdayDate
+
   while (true) {
-    const dateFormatted = formatDateStr(checkDate)
-    if (streakDatesSet.has(dateFormatted)) {
+    const dStr = formatDateStr(curr)
+    if (streakDatesSet.has(dStr)) {
       streak++
-      checkDate.setDate(checkDate.getDate() - 1)
+      curr.setDate(curr.getDate() - 1)
     } else {
       break
     }
@@ -213,25 +217,45 @@ export async function calculateMissionProgress(
 ): Promise<MissionProgress> {
   const dateStr = mission.date || getTodayDateString()
 
-  // Fetch lesson progress
-  const { data: progressData } = await supabase
-    .from('lesson_progress')
-    .select('lesson_id, is_completed, replay_count, last_watched_at')
-    .eq('student_id', userId)
+  // Fetch lesson progress & kotoba submissions from Supabase
+  const [{ data: progressData }, { data: kotobaSubmissions }] = await Promise.all([
+    supabase
+      .from('lesson_progress')
+      .select('lesson_id, is_completed, replay_count, last_watched_at')
+      .eq('student_id', userId),
+    supabase
+      .from('user_kotoba_submissions')
+      .select('id')
+      .eq('user_id', userId),
+  ])
 
   let actualReplays = 0
   let actualQuizzes = 0
-  let actualKotoba  = 0
+  let actualKotoba  = kotobaSubmissions ? kotobaSubmissions.length : 0
 
   if (progressData) {
-    const selectedVideoIds = new Set(mission.selectedVideos.map(v => v.id))
+    // Generate all acceptable ID strings for each selected video
+    const videoTargetPatterns = new Set<string>()
+    mission.selectedVideos.forEach(v => {
+      videoTargetPatterns.add(v.id.toLowerCase())
+      videoTargetPatterns.add(`bab_${v.bab}_video_${v.videoNum}`.toLowerCase())
+      videoTargetPatterns.add(`bab_${v.bab}_item_${v.videoNum}`.toLowerCase())
+      videoTargetPatterns.add(`lesson_bab_${v.bab}_${v.videoNum}`.toLowerCase())
+    })
 
     progressData.forEach((p: any) => {
-      const matchVideo = selectedVideoIds.has(p.lesson_id) || selectedVideoIds.has(p.lesson_id?.toLowerCase())
-      if (matchVideo) {
-        actualReplays += (p.replay_count || 1)
-      } else if (p.lesson_id?.includes('video_')) {
-        actualReplays += (p.replay_count || 1)
+      const lessonIdLower = (p.lesson_id || '').toLowerCase()
+      const isMatchedVideo = videoTargetPatterns.has(lessonIdLower) ||
+        (videoTargetPatterns.size > 0 && Array.from(videoTargetPatterns).some(pat => lessonIdLower.includes(pat)))
+
+      if (isMatchedVideo) {
+        const count = p.replay_count && p.replay_count > 0 ? p.replay_count : (p.is_completed ? 1 : 0)
+        actualReplays += count
+      } else if (p.lesson_id?.includes('video_') || p.lesson_id?.includes('item_1') || p.lesson_id?.includes('item_2') || p.lesson_id?.includes('item_3')) {
+        if (mission.selectedVideos.length === 0) {
+          const count = p.replay_count && p.replay_count > 0 ? p.replay_count : (p.is_completed ? 1 : 0)
+          actualReplays += count
+        }
       }
 
       if (p.lesson_id?.includes('quiz') || p.lesson_id?.includes('item_4')) {

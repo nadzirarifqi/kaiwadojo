@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -8,6 +8,7 @@ import {
   CHAPTER_UPDATE_EVENT,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
+import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 
 /* ── Interfaces ───────────────────────────────────── */
 interface LessonItem {
@@ -43,13 +44,13 @@ interface CommentItem {
   } | null
 }
 
-/* ── Standard 5 Items for each Bab in Minna no Nihongo ── */
+/* ── Standard 5 Items for each Bab in Minna no Nihongo (3 Video + 2 Kuis) ── */
 const CHAPTER_ITEMS_CONFIG = [
-  { num: 1, title: 'Video 1: Tata Bahasa Bagian 1 (Bunpou A)', icon: '📖', type: 'video'  as const, duration: 15, badge: '🎥 Video 1' },
-  { num: 2, title: 'Video 2: Tata Bahasa Bagian 2 (Bunpou B)', icon: '📝', type: 'video'  as const, duration: 15, badge: '🎥 Video 2' },
-  { num: 3, title: 'Video 3: Percakapan & Penerapan (Kaiwa)',  icon: '🗣️', type: 'video'  as const, duration: 12, badge: '🎥 Video 3' },
-  { num: 4, title: 'Kuis Evaluasi Bab',                       icon: '🎯', type: 'quiz'   as const, duration: 10, badge: '🎯 Kuis'    },
-  { num: 5, title: 'Setoran Kotoba (Kosakata & Artinya)',       icon: '🔤', type: 'kotoba' as const, duration: 10, badge: '🔤 Kotoba' },
+  { num: 1, title: 'Video 1: Tata Bahasa Bagian 1 (Bunpou A)', icon: '📖', type: 'video' as const, duration: 15, badge: '🎥 Video 1' },
+  { num: 2, title: 'Video 2: Tata Bahasa Bagian 2 (Bunpou B)', icon: '📝', type: 'video' as const, duration: 15, badge: '🎥 Video 2' },
+  { num: 3, title: 'Video 3: Percakapan & Penerapan (Kaiwa)',  icon: '🗣️', type: 'video' as const, duration: 12, badge: '🎥 Video 3' },
+  { num: 4, title: 'Kuis Evaluasi 1: Tata Bahasa & Bunpou',  icon: '🎯', type: 'quiz'  as const, duration: 10, badge: '🎯 Kuis 1'  },
+  { num: 5, title: 'Kuis Evaluasi 2: Pemahaman & Kaiwa',     icon: '🎯', type: 'quiz'  as const, duration: 10, badge: '🎯 Kuis 2'  },
 ]
 
 /* ── Helper to map hosted video files in /kaiwa-1-courses/ ── */
@@ -169,6 +170,7 @@ const JAPAN_FUN_FACTS = [
 
 export default function MyCourses() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
   const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
@@ -241,6 +243,16 @@ export default function MyCourses() {
   const [comments, setComments]                   = useState<CommentItem[]>([])
   const [newComment, setNewComment]               = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+
+  // Custom Alert Modal State
+  const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'lock',
+    buttonText: 'Mengerti',
+    onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+  })
 
   // Real database lesson map: key = `bab_X_lesson_Y`
   const [_progressMap, setProgressMap] = useState<Map<string, { is_completed: boolean; replay_count: number }>>(new Map())
@@ -326,8 +338,8 @@ export default function MyCourses() {
         if (item.num === 1) lessonTitle = `${babCleanTitle} Part 1`
         if (item.num === 2) lessonTitle = `${babCleanTitle} Part 2`
         if (item.num === 3) lessonTitle = `${babCleanTitle} Part 3`
-        if (item.num === 4) lessonTitle = `Kuis Evaluasi — ${babCleanTitle}`
-        if (item.num === 5) lessonTitle = `Setoran Kotoba — ${babCleanTitle}`
+        if (item.num === 4) lessonTitle = `Kuis Evaluasi 1 — ${babCleanTitle}`
+        if (item.num === 5) lessonTitle = `Kuis Evaluasi 2 — ${babCleanTitle}`
 
         // Duration text (e.g. "3.44", "15.30")
         let durationText = `${item.duration}.00`
@@ -366,6 +378,41 @@ export default function MyCourses() {
     setChapters(generatedChapters)
     setLoading(false)
   }
+
+  // Handle URL search params for direct video navigation from Daily Missions (e.g. ?jilid=1&bab=1&item=1)
+  useEffect(() => {
+    if (chapters.length === 0) return
+    const paramJilid = searchParams.get('jilid')
+    const paramBab   = searchParams.get('bab')
+    const paramItem  = searchParams.get('item') || searchParams.get('lesson')
+
+    if (paramJilid) {
+      const jNum = parseInt(paramJilid, 10)
+      if (jNum === 1 || jNum === 2) {
+        setSelectedJilid(jNum as 1 | 2)
+      }
+    }
+
+    if (paramBab) {
+      const babNum = parseInt(paramBab, 10)
+      setExpandedBabs(prev => new Set(prev).add(babNum))
+      const chap = chapters.find(c => c.bab_number === babNum)
+      if (chap) {
+        setActiveChapter(chap)
+        if (paramItem) {
+          const itemNum = parseInt(paramItem, 10)
+          const lessonObj = chap.lessons.find(item => item.lesson_number === itemNum)
+          if (lessonObj) {
+            setActiveLesson(lessonObj)
+          } else if (chap.lessons.length > 0) {
+            setActiveLesson(chap.lessons[0])
+          }
+        } else if (chap.lessons.length > 0) {
+          setActiveLesson(chap.lessons[0])
+        }
+      }
+    }
+  }, [chapters, searchParams])
 
   // Fetch comments when active lesson changes
   useEffect(() => {
@@ -416,6 +463,7 @@ export default function MyCourses() {
     if (!user || lesson.is_placeholder) return
     const newStatus = !lesson.is_completed
 
+    // 1. Update lesson_progress in Supabase
     await supabase.from('lesson_progress').upsert({
       student_id: user.id,
       lesson_id: lesson.id,
@@ -423,6 +471,7 @@ export default function MyCourses() {
       last_watched_at: new Date().toISOString(),
     }, { onConflict: 'student_id,lesson_id' })
 
+    // 2. Update state & active lesson
     setChapters(prev =>
       prev.map(chap => ({
         ...chap,
@@ -436,6 +485,25 @@ export default function MyCourses() {
       setActiveLesson(prev => (prev ? { ...prev, is_completed: newStatus } : null))
     }
 
+    // 3. Upsert overall course progress to Supabase enrollments table
+    try {
+      const courseId = selectedJilid === 1 ? 'minna-no-nihongo-1' : 'minna-no-nihongo-2'
+      const updatedCompletedCount = chapters.reduce(
+        (acc, c) => acc + c.lessons.filter(l => l.id === lesson.id ? newStatus : l.is_completed).length, 0
+      )
+      const newProgressPct = Math.min(100, Math.round((updatedCompletedCount / (25 * 5)) * 100))
+
+      await supabase.from('enrollments').upsert({
+        student_id: user.id,
+        course_id: courseId,
+        progress_pct: newProgressPct,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,course_id' })
+    } catch (e) {
+      console.warn('Course progress enrollments sync note:', e)
+    }
+
+    // 4. Update learning streak
     await supabase.from('learning_streaks').upsert({
       student_id: user.id,
       date: new Date().toISOString().split('T')[0],
@@ -764,39 +832,61 @@ export default function MyCourses() {
                       const isKotoba = lesson.content_type === 'kotoba'
                       const isQuiz   = lesson.content_type === 'quiz'
 
+                      // Check if all 3 videos in this chapter are watched by user
+                      const babVideos = chap.lessons.filter(l => l.content_type === 'video' || l.lesson_number <= 3)
+                      const watchedCount = babVideos.filter(l => l.is_completed || (l.replay_count && l.replay_count > 0)).length
+                      const areAllVideosWatched = watchedCount >= 3
+
+                      const isQuizLocked = isQuiz && !areAllVideosWatched
+
                       return (
                         <div
                           key={lesson.id}
                           onClick={() => {
+                            if (isQuizLocked) {
+                              setAlertConfig({
+                                isOpen: true,
+                                title: 'Kuis Masih Terkunci 🔒',
+                                message: `Kamu harus menonton seluruh 3 video materi pada "${chap.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedCount}/3 Video Selesai)`,
+                                type: 'lock',
+                                buttonText: 'Siap, Nonton Dulu!',
+                                onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+                              })
+                              return
+                            }
                             setActiveChapter(chap)
                             setActiveLesson(lesson)
                           }}
                           className={`w-[230px] sm:w-[250px] shrink-0 rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg ${
-                            lesson.is_completed
-                              ? 'bg-emerald-50/40 border-emerald-300'
-                              : lesson.is_placeholder
-                                ? 'bg-slate-50 border-slate-200'
-                                : 'bg-white border-slate-200 shadow-sm'
+                            isQuizLocked
+                              ? 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700 opacity-80'
+                              : lesson.is_completed
+                                ? 'bg-emerald-50/40 border-emerald-300'
+                                : lesson.is_placeholder
+                                  ? 'bg-slate-50 border-slate-200'
+                                  : 'bg-white border-slate-200 shadow-sm'
                           }`}
                         >
                           {/* Visual Banner Thumbnail */}
                           <div className={`w-full aspect-[16/9] relative flex items-center justify-center overflow-hidden ${
-                            isKotoba
-                              ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-                              : isQuiz
-                                ? 'bg-gradient-to-br from-indigo-600 to-purple-700'
-                                : lesson.is_placeholder
-                                  ? 'bg-gradient-to-br from-slate-700 to-slate-900'
-                                  : 'bg-gradient-to-br from-primary to-primary-dark'
+                            isQuizLocked
+                              ? 'bg-gradient-to-br from-slate-700 to-slate-900'
+                              : isKotoba
+                                ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                                : isQuiz
+                                  ? 'bg-gradient-to-br from-indigo-600 to-purple-700'
+                                  : lesson.is_placeholder
+                                    ? 'bg-gradient-to-br from-slate-700 to-slate-900'
+                                    : 'bg-gradient-to-br from-primary to-primary-dark'
                           }`}>
                             {/* Decorative Background Symbol */}
                             <span className="text-5xl opacity-20 absolute -right-2 -bottom-2 select-none pointer-events-none text-white font-black">
-                              {isKotoba ? 'あ' : isQuiz ? '🎯' : '🎥'}
+                              {isQuizLocked ? '🔒' : isKotoba ? 'あ' : isQuiz ? '🎯' : '🎥'}
                             </span>
 
                             {/* Center Visual Icon / Play Button */}
                             <div className="size-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white text-lg font-bold shadow-md transition-transform group-hover:scale-110">
-                              {isKotoba ? '🔤' : isQuiz ? '🎯' : lesson.is_placeholder ? '🔒' : '▶'}
+                              {isQuizLocked ? '🔒' : isKotoba ? '🔤' : isQuiz ? '🎯' : lesson.is_placeholder ? '🔒' : '▶'}
                             </div>
 
                             {/* Top Status Badges */}
@@ -804,7 +894,11 @@ export default function MyCourses() {
                               <span className="text-[0.65rem] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md bg-black/40 text-white backdrop-blur-sm">
                                 {isKotoba ? 'Kotoba' : isQuiz ? 'Kuis' : `Video ${lesson.lesson_number}`}
                               </span>
-                              {lesson.is_completed ? (
+                              {isQuizLocked ? (
+                                <span className="text-[0.65rem] font-extrabold bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                                  🔒 Terkunci ({watchedCount}/3)
+                                </span>
+                              ) : lesson.is_completed ? (
                                 <span className="text-[0.65rem] font-extrabold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs">
                                   ✓ Selesai
                                 </span>
@@ -828,34 +922,40 @@ export default function MyCourses() {
                                 {lesson.title}
                               </h4>
                               <p className="text-[0.7rem] text-slate-400 font-medium">
-                                {isKotoba
-                                  ? 'Setoran Kosakata & Artinya'
-                                  : isQuiz
-                                    ? '10 Soal Pilihan Ganda'
-                                    : lesson.is_placeholder
-                                      ? 'Video sedang disiapkan'
-                                      : 'Materi Bahasa Jepang'}
+                                {isQuizLocked
+                                  ? `Tonton ${3 - watchedCount} video lagi untuk membuka`
+                                  : isKotoba
+                                    ? 'Setoran Kosakata & Artinya'
+                                    : isQuiz
+                                      ? '10 Soal Pilihan Ganda'
+                                      : lesson.is_placeholder
+                                        ? 'Video sedang disiapkan'
+                                        : 'Materi Bahasa Jepang'}
                               </p>
                             </div>
 
                             <button
                               className={`w-full py-2 rounded-xl text-xs font-extrabold border-none cursor-pointer transition-all ${
-                                isKotoba
-                                  ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
-                                  : isQuiz
-                                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                                    : lesson.is_placeholder
-                                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 shadow-xs'
-                                      : 'bg-primary hover:bg-primary-dark text-white shadow-xs'
+                                isQuizLocked
+                                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                                  : isKotoba
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                                    : isQuiz
+                                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
+                                      : lesson.is_placeholder
+                                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 shadow-xs'
+                                        : 'bg-primary hover:bg-primary-dark text-white shadow-xs'
                               }`}
                             >
-                              {isKotoba
-                                ? '🔤 Setor Kotoba'
-                                : isQuiz
-                                  ? '🎯 Kerjakan Kuis'
-                                  : lesson.is_placeholder
-                                    ? '🔍 Lihat Preview'
-                                    : '▶ Putar Video'}
+                              {isQuizLocked
+                                ? `🔒 Terkunci (${watchedCount}/3 Video)`
+                                : isKotoba
+                                  ? '🔤 Setor Kotoba'
+                                  : isQuiz
+                                    ? '🎯 Kerjakan Kuis'
+                                    : lesson.is_placeholder
+                                      ? '🔍 Lihat Preview'
+                                      : '▶ Putar Video'}
                             </button>
                           </div>
                         </div>
@@ -1072,6 +1172,12 @@ export default function MyCourses() {
                         playsInline
                         preload="metadata"
                         className="w-full h-full object-contain bg-black"
+                        onEnded={() => {
+                          handleIncrementReplay(activeLesson)
+                          if (!activeLesson.is_completed) {
+                            handleToggleLessonComplete(activeLesson)
+                          }
+                        }}
                       >
                         <source src={activeLesson.video_id} type="video/quicktime" />
                         <source src={activeLesson.video_id} type="video/mp4" />
@@ -1225,6 +1331,8 @@ export default function MyCourses() {
           </div>
         </div>
       )}
+      {/* Beautiful Custom Alert Modal */}
+      <CustomAlertModal {...alertConfig} />
     </main>
   )
 }

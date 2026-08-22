@@ -17,6 +17,7 @@ import SettingsPage from './pages/Settings'
 import ClassReservationPage from './pages/ClassReservation'
 import InstructorScheduleManagerPage from './pages/InstructorScheduleManager'
 import CourseEditorPage from './pages/CourseEditor'
+import SetoranKotobaPage from './pages/SetoranKotoba'
 
 /* ── Role-Aware Dashboard Router ─────────────────── */
 function DashboardRoute() {
@@ -137,6 +138,7 @@ function App() {
           <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
           <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
           <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
+          <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
           <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
           <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />

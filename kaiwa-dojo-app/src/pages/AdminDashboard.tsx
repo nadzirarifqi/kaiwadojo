@@ -254,7 +254,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tugas Admin 2: Buat Akun Pemateri</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Daftarkan akun pengajar/sensei baru ke sistem database</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Daftarkan akun pengajar/sensei baru ke platform</p>
               </div>
             </div>
             <button

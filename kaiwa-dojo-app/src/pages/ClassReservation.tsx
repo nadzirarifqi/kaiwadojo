@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import AdaptiveIcon from '../components/AdaptiveIcon'
+import { supabase } from '../lib/supabaseClient'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -10,6 +10,7 @@ import {
   cancelClassBooking,
   getMonthlyOnlineRequirementStatus,
   getWeekLabel,
+  RESERVATION_UPDATE_EVENT,
 } from '../lib/scheduleService'
 
 
@@ -61,6 +62,32 @@ export default function ClassReservationPage() {
 
   useEffect(() => {
     loadData()
+
+    // 1. Instant local window event sync (multi-tab / role switcher)
+    const handleLocalSync = () => loadData()
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleLocalSync)
+    window.addEventListener('storage', handleLocalSync)
+
+    // 2. Supabase Realtime channel for cross-device live quota updates
+    const channel = supabase
+      .channel('class_reservations_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_reservations' },
+        () => loadData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_schedules' },
+        () => loadData()
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleLocalSync)
+      window.removeEventListener('storage', handleLocalSync)
+      supabase.removeChannel(channel)
+    }
   }, [userId])
 
   function showToast(text: string, type: 'success' | 'error' = 'success') {
@@ -199,7 +226,9 @@ export default function ClassReservationPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary dark:text-red-400">
-            <AdaptiveIcon src="/calendar.png" alt="Reservasi" className="size-4 object-contain" />
+            <span className="size-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs">
+              💻
+            </span>
             <span>Jadwal & Interaktif Class</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white mt-1">
@@ -212,8 +241,8 @@ export default function ClassReservationPage() {
 
         {/* User Role Badge */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-xs shrink-0">
-          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
-            🎓
+          <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-lg font-serif">
+            学
           </div>
           <div>
             <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400">Login Sebagai</div>

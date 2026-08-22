@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import AdaptiveIcon from './AdaptiveIcon'
 
 interface SidebarProps {
   isOpen: boolean
@@ -63,31 +62,168 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   const currentRole = profile?.role || 'pelajar'
 
-  const navItems = [
-    { iconImg: '/home.png', label: 'Beranda', to: '/dashboard' },
+  interface NavItem {
+    icon: React.ReactNode
+    label: string
+    to: string
+  }
+
+  const navItems: NavItem[] = [
+    {
+      icon: (
+        <span className="size-7 rounded-xl bg-red-500/10 text-red-600 dark:bg-red-400/20 dark:text-red-300 flex items-center justify-center font-bold text-sm shrink-0 border border-red-500/20 shadow-xs">
+          ⛩️
+        </span>
+      ),
+      label: 'Beranda',
+      to: '/dashboard',
+    },
   ]
 
   if (currentRole === 'admin') {
     navItems.push(
-      { iconImg: '/book.png', label: 'Edit Kursus & Durasi', to: '/kelola-kursus' },
-      { iconImg: '/home.png', label: 'Kelola Akun Pemateri', to: '/kelola-pemateri' },
-      { iconImg: '/book.png', label: 'Kelola Akun Pelajar', to: '/kelola-pelajar' },
-      { iconImg: '/calendar.png', label: 'Kelola Jadwal Kelas', to: '/kelola-jadwal' },
-      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' }
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-400/20 dark:text-orange-300 flex items-center justify-center font-bold text-xs shrink-0 border border-orange-500/20 shadow-xs">
+            🛠️
+          </span>
+        ),
+        label: 'Edit Kursus & Durasi',
+        to: '/kelola-kursus',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-400/20 dark:text-rose-300 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-500/20 shadow-xs">
+            👨‍🏫
+          </span>
+        ),
+        label: 'Kelola Akun Pemateri',
+        to: '/kelola-pemateri',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-teal-500/10 text-teal-600 dark:bg-teal-400/20 dark:text-teal-300 flex items-center justify-center font-bold text-xs shrink-0 border border-teal-500/20 shadow-xs">
+            🧑‍🎓
+          </span>
+        ),
+        label: 'Kelola Akun Pelajar',
+        to: '/kelola-pelajar',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/20 shadow-xs">
+            📆
+          </span>
+        ),
+        label: 'Kelola Jadwal Kelas',
+        to: '/kelola-jadwal',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
+            語
+          </span>
+        ),
+        label: 'Setoran Kotoba',
+        to: '/kotoba',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-500/20 shadow-xs">
+            📚
+          </span>
+        ),
+        label: 'Preview Kursus',
+        to: '/my-courses',
+      }
     )
   } else if (currentRole === 'pemateri') {
     navItems.push(
-      { iconImg: '/calendar.png', label: 'Kelola Jadwal Kelas', to: '/kelola-jadwal' },
-      { iconImg: '/calendar.png', label: 'Reservasi Kelas Live', to: '/reservasi-kelas' },
-      { iconImg: '/book.png', label: 'Preview Kursus', to: '/my-courses' },
-      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' }
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/20 shadow-xs">
+            📆
+          </span>
+        ),
+        label: 'Kelola Jadwal Kelas',
+        to: '/kelola-jadwal',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-400/20 dark:text-sky-300 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-500/20 shadow-xs">
+            💻
+          </span>
+        ),
+        label: 'Reservasi Kelas Live',
+        to: '/reservasi-kelas',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
+            語
+          </span>
+        ),
+        label: 'Setoran Kotoba',
+        to: '/kotoba',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-500/20 shadow-xs">
+            📚
+          </span>
+        ),
+        label: 'Preview Kursus',
+        to: '/my-courses',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/20 shadow-xs">
+            🎯
+          </span>
+        ),
+        label: 'Rencana Belajar',
+        to: '/learning-plan',
+      }
     )
   } else {
     // Pelajar
     navItems.push(
-      { iconImg: '/task.png', label: 'Rencana Belajar', to: '/learning-plan' },
-      { iconImg: '/calendar.png', label: 'Reservasi Kelas', to: '/reservasi-kelas' },
-      { iconImg: '/book.png', label: 'Kursus Saya', to: '/my-courses' }
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/20 shadow-xs">
+            🎯
+          </span>
+        ),
+        label: 'Rencana Belajar',
+        to: '/learning-plan',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-400/20 dark:text-sky-300 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-500/20 shadow-xs">
+            💻
+          </span>
+        ),
+        label: 'Reservasi Kelas',
+        to: '/reservasi-kelas',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
+            語
+          </span>
+        ),
+        label: 'Setoran Kotoba',
+        to: '/kotoba',
+      },
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-500/20 shadow-xs">
+            📚
+          </span>
+        ),
+        label: 'Kursus Saya',
+        to: '/my-courses',
+      }
     )
   }
 
@@ -130,9 +266,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               className="size-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-all shrink-0"
             >
               {isDark ? (
-                <AdaptiveIcon src="/moon.png" alt="Mode Gelap" className="size-4.5 object-contain shrink-0" />
+                <span className="text-sm">🌙</span>
               ) : (
-                <AdaptiveIcon src="/day.png" alt="Mode Terang" className="size-4.5 object-contain shrink-0" />
+                <span className="text-sm">☀️</span>
               )}
             </button>
 
@@ -157,7 +293,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               onClick={onClose}
               className={({ isActive }) => `${navBase} ${isActive ? navActive : navInactive}`}
             >
-              <AdaptiveIcon src={item.iconImg} alt={item.label} className="size-5 object-contain shrink-0" />
+              {item.icon}
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -185,7 +321,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-left border-none bg-transparent cursor-pointer"
                 >
-                  <AdaptiveIcon src="/profile.png" alt="Lihat Profil" className="size-4.5 object-contain shrink-0" />
+                  <span className="size-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/20">
+                    👤
+                  </span>
                   <span>Lihat Profil</span>
                 </button>
 
@@ -199,7 +337,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-left border-none bg-transparent cursor-pointer"
                 >
-                  <AdaptiveIcon src="/setting.png" alt="Pengaturan" className="size-4.5 object-contain shrink-0" />
+                  <span className="size-6 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-500/20">
+                    ⚙️
+                  </span>
                   <span>Pengaturan</span>
                 </button>
 
@@ -214,7 +354,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all text-left border-none bg-transparent cursor-pointer"
                 >
-                  <AdaptiveIcon src="/logout.png" alt="Keluar" className="size-4.5 object-contain shrink-0" />
+                  <span className="size-6 rounded-lg bg-rose-500/10 text-rose-600 dark:bg-rose-400/20 dark:text-rose-300 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-500/20">
+                    🚪
+                  </span>
                   <span>Keluar</span>
                 </button>
               </div>

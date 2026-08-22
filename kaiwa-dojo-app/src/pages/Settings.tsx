@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 
-import AdaptiveIcon from '../components/AdaptiveIcon'
-
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
@@ -148,7 +146,9 @@ export default function SettingsPage() {
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-            <AdaptiveIcon src="/setting.png" alt="Pengaturan" className="size-8 sm:size-9 object-contain shrink-0" />
+            <span className="size-10 sm:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xl shrink-0 font-serif shadow-xs">
+              設
+            </span>
             <span>Pengaturan Akun</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
@@ -160,7 +160,9 @@ export default function SettingsPage() {
       {/* ── BAGIAN 1: TAMPILAN & BAHASA (APPEARANCE & LANGUAGE) ──── */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
         <h2 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <AdaptiveIcon src="/brush.png" alt="Tampilan & Preferensi" className="size-6 object-contain shrink-0" />
+          <span className="size-8 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center text-base shrink-0 shadow-xs">
+            🎨
+          </span>
           <span>Tampilan & Preferensi</span>
         </h2>
 
@@ -180,7 +182,9 @@ export default function SettingsPage() {
                     : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
                 }`}
               >
-                <AdaptiveIcon src="/day.png" alt="Terang (Light)" className="size-7 object-contain shrink-0" />
+                <span className="size-9 rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center text-xl shrink-0 border border-amber-500/20">
+                  ☀️
+                </span>
                 <span className="font-extrabold text-xs sm:text-sm">Terang (Light)</span>
               </button>
 
@@ -193,7 +197,9 @@ export default function SettingsPage() {
                     : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
                 }`}
               >
-                <AdaptiveIcon src="/moon.png" alt="Gelap (Dark)" className="size-7 object-contain shrink-0" />
+                <span className="size-9 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center text-xl shrink-0 border border-indigo-500/20">
+                  🌙
+                </span>
                 <span className="font-extrabold text-xs sm:text-sm">Gelap (Dark)</span>
               </button>
 
@@ -206,7 +212,9 @@ export default function SettingsPage() {
                     : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
                 }`}
               >
-                <AdaptiveIcon src="/system.png" alt="Ikuti Sistem" className="size-7 object-contain shrink-0" />
+                <span className="size-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center text-xl shrink-0 border border-purple-500/20">
+                  💻
+                </span>
                 <span className="font-extrabold text-xs sm:text-sm">Ikuti Sistem</span>
               </button>
             </div>
@@ -278,7 +286,9 @@ export default function SettingsPage() {
       {/* ── BAGIAN 2: KEAMANAN & UBAH KATA SANDI (SECURITY) ────── */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
         <h2 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <AdaptiveIcon src="/lock.png" alt="Keamanan & Ubah Kata Sandi" className="size-6 object-contain shrink-0" />
+          <span className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base shrink-0 shadow-xs">
+            🔒
+          </span>
           <span>Keamanan & Ubah Kata Sandi</span>
         </h2>
 
@@ -327,7 +337,7 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <div className="size-7 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                    <AdaptiveIcon src="/key.png" alt="Key" className="size-4.5 object-contain shrink-0" />
+                    <span className="text-base">🔑</span>
                   </div>
                   <span>Perbarui Kata Sandi</span>
                 </>
@@ -340,7 +350,9 @@ export default function SettingsPage() {
       {/* ── BAGIAN 3: ZONA BAHAYA / HAPUS AKUN (DANGER ZONE) ──── */}
       <section className="bg-red-500/5 dark:bg-red-950/20 rounded-3xl p-6 sm:p-8 border border-red-200 dark:border-red-900 shadow-sm space-y-4">
         <h2 className="text-lg font-extrabold text-red-600 dark:text-red-400 flex items-center gap-3">
-          <AdaptiveIcon src="/caution.png" alt="Zona Bahaya" className="size-6 object-contain shrink-0" />
+          <span className="size-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0 shadow-xs">
+            ⚠️
+          </span>
           <span>Zona Bahaya</span>
         </h2>
         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
@@ -356,7 +368,7 @@ export default function SettingsPage() {
             }}
             className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2.5"
           >
-            <AdaptiveIcon src="/trash.png" alt="Hapus Akun" className="size-4.5 object-contain shrink-0" />
+            <span className="text-base">🗑️</span>
             <span>Hapus Akun Saya</span>
           </button>
         </div>
@@ -368,7 +380,7 @@ export default function SettingsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-up">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xl font-extrabold text-red-600 dark:text-red-400 flex items-center gap-2.5">
-                <AdaptiveIcon src="/caution.png" alt="Zona Bahaya" className="size-6 object-contain shrink-0" />
+                <span className="text-2xl">⚠️</span>
                 <span>Konfirmasi Hapus Akun</span>
               </h3>
               <button

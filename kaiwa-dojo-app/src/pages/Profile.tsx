@@ -363,18 +363,18 @@ export default function ProfilePage() {
       {/* ── MODAL UPLOAD / PILIH AVATAR ─────────────────────── */}
       {isAvatarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-200 space-y-6 animate-scale-up">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-up">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                <h3 className="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
                   <span>📷</span> Ganti Foto Profil
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">Unggah foto sendiri atau pilih rekomendasi avatar Dojo</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Unggah foto sendiri atau pilih rekomendasi avatar Dojo</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAvatarModalOpen(false)}
-                className="size-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-extrabold flex items-center justify-center border-none cursor-pointer text-base"
+                className="size-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-extrabold flex items-center justify-center border-none cursor-pointer text-base"
               >
                 ✕
               </button>
@@ -391,13 +391,13 @@ export default function ProfilePage() {
                 className="w-full p-5 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group"
               >
                 <span className="text-3xl group-hover:scale-110 transition-transform">📁</span>
-                <span className="text-sm font-extrabold text-primary">Pilih File Foto Profil</span>
+                <span className="text-sm font-extrabold text-primary dark:text-red-400">Pilih File Foto Profil</span>
                 <span className="text-xs text-slate-400">Mendukung format JPG, PNG, atau WebP (Maks 5MB)</span>
               </button>
             </div>
 
             {/* OPSI 2: Rekomendasi Avatar Dojo */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-400">
                 Opsi 2: Rekomendasi Avatar Dojo
               </label>
@@ -417,11 +417,11 @@ export default function ProfilePage() {
                     className={`p-2.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
                       avatarUrl === preset.url
                         ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-white'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700'
                     }`}
                   >
                     <img src={preset.url} alt={preset.label} className="size-12 rounded-xl object-cover" />
-                    <span className="text-xs font-bold text-slate-700 truncate max-w-full">{preset.label}</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-full">{preset.label}</span>
                   </button>
                 ))}
               </div>
@@ -431,7 +431,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsAvatarModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer border-none"
               >
                 Tutup
               </button>
@@ -563,8 +563,8 @@ export default function ProfilePage() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Edit Form */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-extrabold text-slate-800 mb-6 flex items-center gap-2">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
               <span>⚙️</span> Edit Data Profil
             </h2>
 
@@ -572,7 +572,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                     Nama Lengkap
                   </label>
                   <input
@@ -581,13 +581,13 @@ export default function ProfilePage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Contoh: Tanaka Sensei"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                   />
                 </div>
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                     Username
                   </label>
                   <div className="relative">
@@ -598,7 +598,7 @@ export default function ProfilePage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="tanakaking"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white transition-all"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
                 </div>
@@ -606,21 +606,21 @@ export default function ProfilePage() {
 
               {/* Email (Read Only) */}
               <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                   Alamat Email (Auth System)
                 </label>
                 <input
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 text-sm font-semibold cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-semibold cursor-not-allowed"
                 />
                 <p className="text-xs text-slate-400 mt-1">Email dikelola langsung oleh sistem otentikasi Supabase.</p>
               </div>
 
               {/* Bio */}
               <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                   Bio / Deskripsi Singkat
                 </label>
                 <textarea
@@ -628,7 +628,7 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tuliskan sedikit tentang diri Anda, perjalanan belajar bahasa Jepang, atau target Anda..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-primary focus:bg-white transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-medium focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                 />
               </div>
 
@@ -658,28 +658,28 @@ export default function ProfilePage() {
           {/* Side Info Cards */}
           <div className="space-y-6">
             {/* Account Quick Status */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2 border-b border-slate-100 pb-3">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 className="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <span>🛡️</span> Informasi Status Akun
               </h3>
 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-slate-500 font-semibold">User ID</span>
-                  <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold truncate max-w-[140px]">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">User ID</span>
+                  <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md font-bold truncate max-w-[140px]">
                     {user?.id}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center py-1 border-t border-slate-100">
-                  <span className="text-slate-500 font-semibold">Aktif Terakhir</span>
-                  <span className="font-semibold text-slate-700 text-xs">
+                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktif Terakhir</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 text-xs">
                     {profile?.last_active_at ? new Date(profile.last_active_at).toLocaleString('id-ID') : 'Hari ini'}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center py-1 border-t border-slate-100">
-                  <span className="text-slate-500 font-semibold">Aktifkan Streak</span>
+                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktifkan Streak</span>
                   <span className="font-extrabold text-orange-500 flex items-center gap-1">
                     🔥 {profile?.streak_days || 0} Hari
                   </span>
@@ -719,18 +719,18 @@ export default function ProfilePage() {
       {/* ── TAB CONTENT 2: COURSES ──────────────────────────── */}
       {activeTab === 'courses' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div>
-              <h2 className="text-lg font-extrabold text-slate-800">Daftar Kursus Terdaftar</h2>
-              <p className="text-xs text-slate-500 font-medium">Total {enrollments.length} kursus bahasa Jepang dalam progress Anda</p>
+              <h2 className="text-lg font-extrabold text-slate-800 dark:text-white">Daftar Kursus Terdaftar</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total {enrollments.length} kursus bahasa Jepang dalam progress Anda</p>
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
               <button
                 onClick={() => setCourseFilter('all')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                  courseFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 Semua ({enrollments.length})
@@ -738,7 +738,7 @@ export default function ProfilePage() {
               <button
                 onClick={() => setCourseFilter('in_progress')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'in_progress' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                  courseFilter === 'in_progress' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 Sedang Belajar ({enrollments.filter(e => !e.completed_at && e.progress_pct < 100).length})
@@ -746,7 +746,7 @@ export default function ProfilePage() {
               <button
                 onClick={() => setCourseFilter('completed')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'completed' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                  courseFilter === 'completed' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 Selesai ({enrollments.filter(e => e.completed_at || e.progress_pct >= 100).length})
@@ -761,9 +761,9 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : filteredCourses.length === 0 ? (
-            <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 text-slate-400 space-y-3">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 space-y-3">
               <span className="text-5xl">📚</span>
-              <h3 className="text-lg font-bold text-slate-700">Belum Ada Kursus Ditemukan</h3>
+              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Belum Ada Kursus Ditemukan</h3>
               <p className="text-sm max-w-md mx-auto">
                 Anda belum terdaftar pada kategori kursus ini. Cari kursus menarik di Katalog untuk memulai petualangan Anda!
               </p>
@@ -782,9 +782,9 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={item.id}
-                    className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
+                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
                   >
-                    <div className="h-40 bg-slate-100 relative overflow-hidden">
+                    <div className="h-40 bg-slate-100 dark:bg-slate-800 relative overflow-hidden">
                       {course?.thumbnail_url ? (
                         <img src={course.thumbnail_url} alt={course.title} className="size-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
@@ -804,20 +804,20 @@ export default function ProfilePage() {
 
                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                       <div>
-                        <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-primary">
+                        <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-primary dark:text-red-400">
                           {course?.category || 'Bahasa Jepang'}
                         </span>
-                        <h3 className="font-extrabold text-slate-800 text-base line-clamp-2 mt-1">
+                        <h3 className="font-extrabold text-slate-800 dark:text-white text-base line-clamp-2 mt-1">
                           {course?.title || 'Kursus Bahasa Jepang'}
                         </h3>
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <div className="flex justify-between items-center text-xs font-bold">
-                          <span className="text-slate-500">Kemajuan Belajar</span>
-                          <span className="text-primary">{Math.round(item.progress_pct)}%</span>
+                          <span className="text-slate-500 dark:text-slate-400">Kemajuan Belajar</span>
+                          <span className="text-primary dark:text-red-400">{Math.round(item.progress_pct)}%</span>
                         </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${
                               isCompleted ? 'bg-emerald-500' : 'bg-primary'
@@ -829,7 +829,7 @@ export default function ProfilePage() {
 
                       <button
                         onClick={() => navigate('/my-courses')}
-                        className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-primary hover:text-white text-slate-700 font-extrabold text-xs transition-all cursor-pointer text-center"
+                        className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary dark:hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 font-extrabold text-xs transition-all cursor-pointer text-center"
                       >
                         {isCompleted ? 'Tinjau Materi' : 'Lanjutkan Belajar'}
                       </button>
@@ -845,17 +845,17 @@ export default function ProfilePage() {
       {/* ── TAB CONTENT 3: ACHIEVEMENTS & BADGES ─────────────── */}
       {activeTab === 'achievements' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-              <h2 className="text-xl font-extrabold text-slate-800">Lencana & Pencapaian Dojo</h2>
-              <p className="text-xs text-slate-500 font-medium">Selesaikan tantangan untuk membuka semua lencana bahasa Jepang Anda</p>
+              <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Lencana & Pencapaian Dojo</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Selesaikan tantangan untuk membuka semua lencana bahasa Jepang Anda</p>
             </div>
 
-            <div className="flex items-center gap-3 bg-orange-50 px-4 py-2.5 rounded-2xl border border-orange-200">
+            <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-950/40 px-4 py-2.5 rounded-2xl border border-orange-200 dark:border-orange-800">
               <span className="text-2xl">🏆</span>
               <div>
-                <div className="text-xs text-slate-500 font-bold">Terbuka</div>
-                <div className="text-sm font-extrabold text-orange-600">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Terbuka</div>
+                <div className="text-sm font-extrabold text-orange-600 dark:text-orange-400">
                   {badges.filter(b => b.unlocked).length} dari {badges.length} Lencana
                 </div>
               </div>
@@ -868,38 +868,38 @@ export default function ProfilePage() {
                 key={badge.id}
                 className={`rounded-3xl p-5 border transition-all flex flex-col justify-between relative overflow-hidden ${
                   badge.unlocked
-                    ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                    : 'bg-slate-50/80 border-slate-200/60 opacity-60'
+                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md'
+                    : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-60'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className={`text-4xl p-3 rounded-2xl ${
-                      badge.unlocked ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-400 grayscale'
+                      badge.unlocked ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 grayscale'
                     }`}>
                       {badge.icon}
                     </span>
                     {badge.unlocked ? (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
                         ✓ Terbuka
                       </span>
                     ) : (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-200 text-slate-500">
+                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                         🔒 Terkunci
                       </span>
                     )}
                   </div>
 
-                  <h3 className="font-extrabold text-slate-800 text-base mb-1">{badge.title}</h3>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed mb-3">
+                  <h3 className="font-extrabold text-slate-800 dark:text-white text-base mb-1">{badge.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-3">
                     {badge.description}
                   </p>
                 </div>
 
                 {badge.progress && (
-                  <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-bold text-slate-400">
                     <span>Progress:</span>
-                    <span className={badge.unlocked ? 'text-emerald-600' : 'text-slate-500'}>
+                    <span className={badge.unlocked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}>
                       {badge.progress}
                     </span>
                   </div>
@@ -915,89 +915,89 @@ export default function ProfilePage() {
         <div className="space-y-8">
           {/* Key Stat Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-red-100 text-primary flex items-center justify-center text-2xl shrink-0 font-bold">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-red-100 dark:bg-red-950/60 text-primary dark:text-red-400 flex items-center justify-center text-2xl shrink-0 font-bold">
                 ⏱️
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Durasi</div>
-                <div className="text-2xl font-black text-slate-800 mt-0.5">{stats.totalWatchDurationMinutes} <span className="text-xs text-slate-400 font-semibold">Menit</span></div>
-                <div className="text-[0.68rem] text-slate-500 font-medium">Dari lesson_progress</div>
+                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.totalWatchDurationMinutes} <span className="text-xs text-slate-400 font-semibold">Menit</span></div>
+                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Dari lesson_progress</div>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center text-2xl shrink-0 font-bold">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-2xl shrink-0 font-bold">
                 🔁
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Replays</div>
-                <div className="text-2xl font-black text-slate-800 mt-0.5">{stats.totalReplays} <span className="text-xs text-slate-400 font-semibold">Kali</span></div>
-                <div className="text-[0.68rem] text-slate-500 font-medium">Pengulangan materi</div>
+                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.totalReplays} <span className="text-xs text-slate-400 font-semibold">Kali</span></div>
+                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Pengulangan materi</div>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shrink-0 font-bold">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shrink-0 font-bold">
                 🎯
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Kuis Lulus</div>
-                <div className="text-2xl font-black text-slate-800 mt-0.5">{stats.quizPassed}/{stats.quizAttempts}</div>
-                <div className="text-[0.68rem] text-slate-500 font-medium">Rata-rata skor: {stats.averageQuizScore}%</div>
+                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.quizPassed}/{stats.quizAttempts}</div>
+                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Rata-rata skor: {stats.averageQuizScore}%</div>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl shrink-0 font-bold">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl shrink-0 font-bold">
                 📜
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Tamat Kursus</div>
-                <div className="text-2xl font-black text-slate-800 mt-0.5">{stats.completedCoursesCount}/{stats.enrolledCoursesCount}</div>
-                <div className="text-[0.68rem] text-slate-500 font-medium">Dari enrollments</div>
+                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.completedCoursesCount}/{stats.enrolledCoursesCount}</div>
+                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Dari enrollments</div>
               </div>
             </div>
           </div>
 
           {/* Detailed Summary Box */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-            <h3 className="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
               <span>📈</span> Ringkasan Aktivitas Belajar
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <h4 className="font-extrabold text-sm text-slate-700">Aktivitas Kuis & Tes (quiz_attempts)</h4>
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">Aktivitas Kuis & Tes (quiz_attempts)</h4>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Percobaan Kuis:</span>
-                    <span className="text-slate-800 font-bold">{stats.quizAttempts} Kali</span>
+                    <span className="text-slate-500 dark:text-slate-400">Percobaan Kuis:</span>
+                    <span className="text-slate-800 dark:text-white font-bold">{stats.quizAttempts} Kali</span>
                   </div>
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Kuis Berhasil Lulus:</span>
-                    <span className="text-emerald-600 font-bold">{stats.quizPassed} Kuis</span>
+                    <span className="text-slate-500 dark:text-slate-400">Kuis Berhasil Lulus:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{stats.quizPassed} Kuis</span>
                   </div>
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Rata-rata Skor Kuis:</span>
-                    <span className="text-primary font-bold">{stats.averageQuizScore}%</span>
+                    <span className="text-slate-500 dark:text-slate-400">Rata-rata Skor Kuis:</span>
+                    <span className="text-primary dark:text-red-400 font-bold">{stats.averageQuizScore}%</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <h4 className="font-extrabold text-sm text-slate-700">Pelajaran & Video (lesson_progress)</h4>
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">Pelajaran & Video (lesson_progress)</h4>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Pelajaran Selesai:</span>
-                    <span className="text-slate-800 font-bold">{stats.completedLessons} Bab</span>
+                    <span className="text-slate-500 dark:text-slate-400">Pelajaran Selesai:</span>
+                    <span className="text-slate-800 dark:text-white font-bold">{stats.completedLessons} Bab</span>
                   </div>
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Total Menit Menonton:</span>
-                    <span className="text-slate-800 font-bold">{stats.totalWatchDurationMinutes} Menit</span>
+                    <span className="text-slate-500 dark:text-slate-400">Total Menit Menonton:</span>
+                    <span className="text-slate-800 dark:text-white font-bold">{stats.totalWatchDurationMinutes} Menit</span>
                   </div>
                   <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500">Total Putar Ulang (Replays):</span>
+                    <span className="text-slate-500 dark:text-slate-400">Total Putar Ulang (Replays):</span>
                     <span className="text-orange-600 font-bold">{stats.totalReplays} Kali</span>
                   </div>
                 </div>

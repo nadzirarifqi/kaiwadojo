@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabaseClient'
 
 export type UserRole = 'pelajar' | 'pemateri' | 'admin'
 
+const INACTIVITY_LIMIT_MS = 30 * 60 * 1000 // 30 minutes in milliseconds
+const LAST_ACTIVITY_KEY   = 'kaiwa_last_activity_timestamp'
+
 export interface Profile {
   id: string
   full_name: string
@@ -24,6 +27,8 @@ interface AuthContextValue {
   user: User | null
   profile: Profile | null
   loading: boolean
+  sessionExpiredNotice: string | null
+  clearSessionNotice: () => void
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -37,7 +42,7 @@ const DEFAULT_DEMO_PROFILE: Profile = {
   avatar_url: null,
   bio: 'Semangat belajar Bahasa Jepang untuk persiapan kerja & magang!',
   role: 'pelajar',
-  streak_days: 12,
+  streak_days: 0,
   last_active_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -48,6 +53,8 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   profile: null,
   loading: true,
+  sessionExpiredNotice: null,
+  clearSessionNotice: () => {},
   signOut: async () => {},
   refreshProfile: async () => {},
 })
@@ -62,6 +69,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_DEMO_PROFILE
   })
   const [loading, setLoading] = useState(true)
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(() => {
+    return localStorage.getItem('kaiwa_session_expired_reason')
+  })
+
+  function clearSessionNotice() {
+    localStorage.removeItem('kaiwa_session_expired_reason')
+    setSessionExpiredNotice(null)
+  }
+
+  // Update activity timestamp in local storage
+  const updateActivity = () => {
+    const now = Date.now()
+    const storedStr = localStorage.getItem(LAST_ACTIVITY_KEY)
+    const stored = storedStr ? parseInt(storedStr, 10) : 0
+    // Throttle to update at most once every 5 seconds
+    if (now - stored > 5000) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, now.toString())
+    }
+  }
 
   async function fetchProfile(userId: string) {
     const { data, error } = await supabase
@@ -88,7 +114,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function signOut(reason?: string) {
+    await supabase.auth.signOut()
+    setSession(null)
+    localStorage.removeItem('kaiwa_custom_profile')
+    localStorage.removeItem(LAST_ACTIVITY_KEY)
+    setProfile(null)
+
+    if (reason) {
+      localStorage.setItem('kaiwa_session_expired_reason', reason)
+      setSessionExpiredNotice(reason)
+    }
+  }
+
   useEffect(() => {
+    // Record initial activity time
+    if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString())
+    }
+
+    // Activity event listeners
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    const handleUserActivity = () => updateActivity()
+
+    activityEvents.forEach(evt => {
+      window.addEventListener(evt, handleUserActivity, { passive: true })
+    })
+
+    // Inactivity check interval every 10 seconds
+    const interval = setInterval(() => {
+      const storedStr = localStorage.getItem(LAST_ACTIVITY_KEY)
+      if (storedStr) {
+        const lastActive = parseInt(storedStr, 10)
+        if (Date.now() - lastActive > INACTIVITY_LIMIT_MS) {
+          signOut('Sesi Anda telah berakhir secara otomatis karena tidak ada aktivitas selama 30 menit demi keamanan akun.')
+        }
+      }
+    }, 10000)
+
     const handleProfileUpdate = () => {
       const custom = localStorage.getItem('kaiwa_custom_profile')
       if (custom) {
@@ -128,20 +191,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => {
+      activityEvents.forEach(evt => {
+        window.removeEventListener(evt, handleUserActivity)
+      })
+      clearInterval(interval)
       window.removeEventListener('kaiwa_profile_updated', handleProfileUpdate)
       listener.subscription.unsubscribe()
     }
   }, [])
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    setSession(null)
-    localStorage.removeItem('kaiwa_custom_profile')
-    setProfile(DEFAULT_DEMO_PROFILE)
-  }
-
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{
+      session,
+      user: session?.user ?? null,
+      profile,
+      loading,
+      sessionExpiredNotice,
+      clearSessionNotice,
+      signOut,
+      refreshProfile
+    }}>
       {children}
     </AuthContext.Provider>
   )

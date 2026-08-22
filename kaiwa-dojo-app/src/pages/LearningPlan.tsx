@@ -13,7 +13,7 @@ import {
   getTodayDateString
 } from '../lib/dailyMission'
 
-import AdaptiveIcon from '../components/AdaptiveIcon'
+import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -95,12 +95,28 @@ function DailyMissionBuilderModal({
     })
   }
 
+  const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    buttonText: 'Mengerti',
+    onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+  })
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     const finalVideos = noVideoPlan ? [] : selectedVideos
     if (!noVideoPlan && finalVideos.length === 0 && targetQuiz > 0 && targetKotoba > 0) {
-      alert('Pilihlah minimal 1 video atau centang "Tidak Ada Rencana"!')
+      setAlertConfig({
+        isOpen: true,
+        title: 'Target Video Belum Dipilih ⚠️',
+        message: 'Silakan pilih minimal 1 video materi pada fitur "Target Misi Harian", atau centang opsi "Tidak Ada Rencana".',
+        type: 'warning',
+        buttonText: 'Pilih Video Materi',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
       return
     }
 
@@ -327,6 +343,7 @@ function DailyMissionBuilderModal({
             🚀 Simpan Misi Tanggal Ini
           </button>
         </form>
+        <CustomAlertModal {...alertConfig} />
       </div>
     </div>
   )
@@ -760,11 +777,12 @@ export default function LearningPlanPage() {
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in">
       {/* Header */}
-
       <div className="mb-4 sm:mb-6 animate-fade-in-up flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-1 flex items-center gap-2">
-            <AdaptiveIcon src="/calendar.png" alt="Kalender" className="size-7 sm:size-8 object-contain shrink-0" />
+          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-1 flex items-center gap-3">
+            <span className="size-9 sm:size-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 border border-indigo-500/20 flex items-center justify-center text-xl shrink-0 font-serif shadow-xs">
+              🎯
+            </span>
             <span>Rencana Belajar & Kalender Misi</span>
           </h1>
           <p className="text-xs sm:text-base text-slate-500 dark:text-slate-400">
@@ -777,9 +795,8 @@ export default function LearningPlanPage() {
             setSelectedDateStr(todayStr)
             setShowMissionModal(true)
           }}
-          className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center"
         >
-          <AdaptiveIcon src="/target.png" alt="Target Misi" className="size-4.5 object-contain shrink-0" />
           <span>+ Susun Misi Hari Ini</span>
         </button>
       </div>
@@ -801,6 +818,9 @@ export default function LearningPlanPage() {
         </div>
 
         <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+          <span className="text-xs font-black bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
+            🎯 Misi Rencana Harian (Wajib Setiap Hari)
+          </span>
           <span className="text-xs font-black bg-sky-600 text-white px-3.5 py-2 rounded-xl shadow-2xs flex items-center justify-center sm:justify-start gap-1.5 whitespace-nowrap">
             💻 Kelas Online (Batas 1 Sesi/Minggu)
           </span>
@@ -818,7 +838,9 @@ export default function LearningPlanPage() {
           {/* Calendar Header / Month Nav & View Mode Switcher */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <AdaptiveIcon src="/calendar.png" alt="Kalender" className="size-5 sm:size-6 object-contain shrink-0" />
+              <span className="size-8 sm:size-9 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-400/20 dark:text-sky-300 border border-sky-500/20 flex items-center justify-center font-bold text-base shrink-0 shadow-xs">
+                📅
+              </span>
               <h2 className="text-base sm:text-xl font-extrabold text-slate-800 dark:text-white">
                 {MONTH_NAMES[month]} {year}
               </h2>
@@ -906,6 +928,9 @@ export default function LearningPlanPage() {
                   const isPassed = streakSet.has(dateStr) || pastCompletedSet.has(dateStr)
                   const isExpanded = expandedDates.has(dateStr)
 
+                  const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
+                  const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
+
                   const dateMission = user ? getDailyMission(user.id, dateStr) : null
                   const hasPlan = dateMission !== null
 
@@ -915,17 +940,23 @@ export default function LearningPlanPage() {
                   const hasActivity = daySchedules.length > 0 || dateMission !== null
                   const isDateLocked = dateStatus.hasSchedule && !dateStatus.canEnroll && !dateStatus.isBooked
 
+                  const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
+
                   const stampSrc = isPassed
                     ? '/lulus.png'
                     : hasPlan
-                      ? '/gagal.png'
+                      ? isNoPlan
+                        ? '/tidakada.png'
+                        : '/gagal.png'
                       : '/kosong.png'
 
                   const stampAlt = isPassed
                     ? 'Lulus (100%)'
                     : hasPlan
-                      ? 'Gagal (Tidak Selesai)'
-                      : 'Kosong (Tidak Ada Rencana)'
+                      ? isNoPlan
+                        ? 'Tidak Ada Rencana (Cap Biru)'
+                        : 'Gagal (Tidak Selesai)'
+                      : 'Kosong (Belum Ada Rencana)'
 
                   let cardBorderAccent = 'border-l-4 border-l-transparent'
 
@@ -996,8 +1027,8 @@ export default function LearningPlanPage() {
 
                         {/* Minimalist Right Action Group */}
                         <div className="flex items-center gap-2.5 shrink-0">
-                          {/* Minimalist Hanko Stamp Badge for Past Dates */}
-                          {isPast && (
+                          {/* Minimalist Hanko Stamp Badge for Past Dates (Hanya tanggal setelah user buat akun) */}
+                          {isPastEligibleForStamp && (
                             <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70">
                               <img
                                 src={stampSrc}
@@ -1005,7 +1036,7 @@ export default function LearningPlanPage() {
                                 className="size-6 object-contain shrink-0 rotate-[-6deg]"
                               />
                               <span className="text-[0.68rem] font-semibold text-slate-600 dark:text-slate-300 hidden xs:inline">
-                                {isPassed ? 'Lulus 100%' : hasPlan ? 'Belum Tuntas' : 'Tanpa Rencana'}
+                                {isPassed ? 'Lulus 100%' : hasPlan ? (isNoPlan ? 'Tidak Ada Rencana' : 'Belum Tuntas') : 'Tanpa Rencana'}
                               </span>
                             </div>
                           )}
@@ -1197,6 +1228,9 @@ export default function LearningPlanPage() {
                   const isSelected = dateStr === selectedDateStr
                   const hasStreak = streakSet.has(dateStr)
                   const isPassed = streakSet.has(dateStr) || pastCompletedSet.has(dateStr)
+
+                  const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
+                  const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
                   
                   const dateMission = (user ? userMissions.get(dateStr) : null) || (user ? getDailyMission(user.id, dateStr) : null)
                   const hasPlan = dateMission !== null
@@ -1204,39 +1238,32 @@ export default function LearningPlanPage() {
                   const activeUserId = profile?.id || user?.id || 'user-demo-active'
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
 
+                  const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
+
                   const stampSrc = isPassed
                     ? '/lulus.png'
                     : hasPlan
-                      ? '/gagal.png'
+                      ? isNoPlan
+                        ? '/tidakada.png'
+                        : '/gagal.png'
                       : '/kosong.png'
 
                   const stampAlt = isPassed
                     ? 'Lulus (100%)'
                     : hasPlan
-                      ? 'Gagal (Tidak Selesai)'
-                      : 'Kosong (Tidak Ada Rencana)'
+                      ? isNoPlan
+                        ? 'Tidak Ada Rencana (Cap Biru)'
+                        : 'Gagal (Tidak Selesai)'
+                      : 'Kosong (Belum Ada Rencana)'
 
                   let cellBgStyle = ''
-                  let topStripStyle = ''
 
                   if (dateStatus.isOnlineBooked && dateStatus.isOfflineBooked) {
                     cellBgStyle = 'bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 text-indigo-950 dark:text-indigo-100 shadow-xs'
-                    topStripStyle = 'border-t-4 border-t-indigo-500'
                   } else if (dateStatus.isOnlineBooked) {
                     cellBgStyle = 'bg-sky-50/90 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-950 dark:text-sky-100 shadow-xs'
-                    topStripStyle = 'border-t-4 border-t-sky-500'
                   } else if (dateStatus.isOfflineBooked) {
                     cellBgStyle = 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-100 shadow-xs'
-                    topStripStyle = 'border-t-4 border-t-emerald-500'
-                  } else if (dateStatus.hasOnline && dateStatus.hasOffline) {
-                    cellBgStyle = 'bg-indigo-50/20 border-indigo-300 dark:border-indigo-700/60'
-                    topStripStyle = 'border-t-4 border-t-indigo-500'
-                  } else if (dateStatus.hasOnline) {
-                    cellBgStyle = dateStatus.onlineCanEnroll ? 'bg-sky-50/20 border-sky-300 dark:border-sky-700/60' : 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50'
-                    topStripStyle = dateStatus.onlineCanEnroll ? 'border-t-4 border-t-sky-500' : 'border-t-4 border-t-amber-500'
-                  } else if (dateStatus.hasOffline) {
-                    cellBgStyle = dateStatus.offlineCanEnroll ? 'bg-emerald-50/20 border-emerald-300 dark:border-emerald-700/60' : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/50'
-                    topStripStyle = dateStatus.offlineCanEnroll ? 'border-t-4 border-t-emerald-500' : 'border-t-4 border-t-rose-500'
                   } else if (isSelected) {
                     cellBgStyle = 'bg-primary/10 dark:bg-primary/20 border-primary ring-2 ring-primary/20 shadow-md scale-[1.02] z-10'
                   } else if (isToday) {
@@ -1256,10 +1283,10 @@ export default function LearningPlanPage() {
                           setShowMissionModal(true)
                         }
                       }}
-                      className={`min-h-[5.5rem] xs:min-h-[6.5rem] sm:min-h-[8.5rem] p-1.5 xs:p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none relative group overflow-hidden ${cellBgStyle} ${topStripStyle}`}
+                      className={`min-h-[5.5rem] xs:min-h-[6.5rem] sm:min-h-[8.5rem] p-1.5 xs:p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none relative group overflow-hidden ${cellBgStyle}`}
                     >
-                      {/* Past Hanko Stamp Overlay for Daily Mission (HANYA tanggal sebelum hari ini) */}
-                      {isPast && (
+                      {/* Past Hanko Stamp Overlay for Daily Mission (HANYA tanggal setelah user buat akun) */}
+                      {isPastEligibleForStamp && (
                         <img
                           src={stampSrc}
                           alt={stampAlt}
@@ -1281,7 +1308,7 @@ export default function LearningPlanPage() {
                         )}
                       </div>
 
-                      {/* Live Class Schedule Items (Clean 1-Line Badges in Grid Calendar View) */}
+                      {/* Live Class Schedule Items (Google Calendar Style: Transparent with thin border for available, solid for booked) */}
                       <div className="flex flex-col gap-1 relative z-20">
                         {dateStatus.schedules.map(sch => {
                           const isEnrolled = reservations.some(r => r.schedule_id === sch.id && r.user_id === activeUserId)
@@ -1291,16 +1318,16 @@ export default function LearningPlanPage() {
                           return (
                             <div
                               key={sch.id}
-                              className={`text-[0.62rem] sm:text-[0.68rem] font-bold px-1.5 py-0.5 rounded-md flex items-center justify-between gap-1 shadow-2xs whitespace-nowrap truncate ${
+                              className={`text-[0.62rem] sm:text-[0.68rem] px-1.5 py-0.5 rounded-md flex items-center justify-between gap-1 whitespace-nowrap truncate transition-all ${
                                 isEnrolled
                                   ? sch.type === 'online'
-                                    ? 'bg-sky-600 text-white font-black'
-                                    : 'bg-emerald-600 text-white font-black'
+                                    ? 'bg-sky-600 text-white font-black shadow-xs'
+                                    : 'bg-emerald-600 text-white font-black shadow-xs'
                                   : isFull
-                                    ? 'bg-rose-500 text-white font-bold'
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 font-normal'
                                     : sch.type === 'online'
-                                      ? 'bg-sky-500 text-white font-extrabold'
-                                      : 'bg-emerald-500 text-white font-extrabold'
+                                      ? 'bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 font-semibold hover:bg-sky-100 dark:hover:bg-sky-950/60'
+                                      : 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
                               }`}
                             >
                               <div className="flex items-center gap-1 min-w-0 truncate">
@@ -1311,7 +1338,7 @@ export default function LearningPlanPage() {
                               {isEnrolled ? (
                                 <span className="text-[0.55rem] bg-white/30 text-white px-1 py-0.2 rounded font-black shrink-0">✓</span>
                               ) : isFull ? (
-                                <span className="text-[0.55rem] bg-white/30 text-white px-1 py-0.2 rounded font-black shrink-0">Penuh</span>
+                                <span className="text-[0.55rem] text-slate-400 font-normal shrink-0">Penuh</span>
                               ) : null}
                             </div>
                           )
@@ -1325,7 +1352,9 @@ export default function LearningPlanPage() {
                         )}
                         {!isPast && dateMission && (
                           <span className="text-[0.58rem] sm:text-[0.68rem] font-extrabold bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300 px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate text-center sm:text-left">
-                            🎯 {dateMission.selectedVideos.length} <span className="hidden sm:inline">Video Misi</span>
+                            🎯 {dateMission.selectedVideos.length > 0
+                              ? dateMission.selectedVideos.map(v => `Bab ${v.bab} P${v.videoNum}`).join(', ')
+                              : 'Misi Mandiri'}
                           </span>
                         )}
                       </div>
@@ -1335,8 +1364,6 @@ export default function LearningPlanPage() {
               </div>
             </>
           )}
-
-
 
           {/* Hanko Stamp & Class Schedule Legend */}
           <div className="pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 sm:gap-3 text-xs">
@@ -1351,56 +1378,59 @@ export default function LearningPlanPage() {
                 {/* Online Row */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="font-bold text-sky-600 dark:text-sky-400 text-[0.68rem] sm:text-[0.72rem] shrink-0">💻 Online:</span>
-                  <div className="flex items-center gap-1 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-200 dark:border-sky-800 text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="w-2.5 h-1 rounded-full bg-sky-500"></span>
-                    <span className="text-sky-700 dark:text-sky-300 font-extrabold">Tersedia</span>
+                  <div className="flex items-center gap-1 bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold">
+                    <span>Tersedia (Bening)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="font-bold">✓ Online</span>
+                  <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold shadow-2xs">
+                    <span>✓ Diikuti (Solid)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="font-bold">Penuh</span>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-[0.65rem] sm:text-[0.68rem]">
+                    <span>Penuh</span>
                   </div>
                 </div>
 
                 {/* Offline Row */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[0.68rem] sm:text-[0.72rem] shrink-0">🏢 Offline:</span>
-                  <div className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="w-2.5 h-1 rounded-full bg-emerald-500"></span>
-                    <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">Tersedia</span>
+                  <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold">
+                    <span>Tersedia (Bening)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="font-bold">✓ Offline</span>
+                  <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold shadow-2xs">
+                    <span>✓ Diikuti (Solid)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-rose-500 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem]">
-                    <span className="font-bold">Penuh</span>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-[0.65rem] sm:text-[0.68rem]">
+                    <span>Penuh</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Category 2: Cap Status Misi Belajar Mandiri */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 bg-slate-50/70 dark:bg-slate-950/40 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <span className="font-black text-slate-700 dark:text-slate-200 shrink-0 text-[0.72rem] sm:text-xs flex items-center gap-1.5">
+            <div className="flex flex-col gap-2.5 bg-slate-50/70 dark:bg-slate-950/40 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
+              <span className="font-black text-slate-700 dark:text-slate-200 text-[0.72rem] sm:text-xs flex items-center gap-1.5">
                 <span>🎯</span>
                 <span>Cap Status Misi Mandiri (Tanggal Berlalu):</span>
               </span>
 
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 text-[0.65rem] sm:text-xs">
-                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <img src="/lulus.png" alt="Cap Hijau" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">Cap Hijau: 100%</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[0.65rem] sm:text-xs">
+                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <img src="/lulus.png" alt="Lulus 100%" className="size-4 sm:size-5 object-contain" />
+                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">100% Selesai</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl border border-red-200 dark:border-red-800">
-                  <img src="/gagal.png" alt="Cap Merah" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-red-700 dark:text-red-300 font-extrabold">Cap Merah: &lt; 100%</span>
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-red-200 dark:border-red-800">
+                  <img src="/gagal.png" alt="Belum Tuntas" className="size-4 sm:size-5 object-contain" />
+                  <span className="text-red-700 dark:text-red-300 font-extrabold">Belum Tuntas (&lt;100%)</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
-                  <img src="/kosong.png" alt="Cap Abu-abu" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-slate-600 dark:text-slate-300 font-extrabold">Cap Abu-abu: Tanpa Rencana</span>
+                <div className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-sky-200 dark:border-sky-800">
+                  <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-4 sm:size-5 object-contain" />
+                  <span className="text-sky-700 dark:text-sky-300 font-extrabold">Tidak Ada Rencana</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
+                  <img src="/kosong.png" alt="Belum Buat Rencana" className="size-4 sm:size-5 object-contain" />
+                  <span className="text-slate-600 dark:text-slate-300 font-extrabold">Belum Buat Rencana</span>
                 </div>
               </div>
             </div>

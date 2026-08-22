@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { sessionExpiredNotice, clearSessionNotice } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -12,6 +14,7 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    clearSessionNotice()
     setError(null)
     setLoading(true)
 
@@ -62,13 +65,13 @@ export default function LoginPage() {
 
       if (profileError) {
         console.error('Error fetching profile:', profileError)
-        setError(`Error database: ${profileError.message}`)
+        setError(`Gagal masuk: ${profileError.message}`)
         setLoading(false)
         return
       }
 
       if (!userProfile) {
-        setError('Username tidak ditemukan. Periksa kembali username kamu.')
+        setError('Email untuk username ini belum terdaftar. Silakan periksa kembali atau buat akun baru.')
         setLoading(false)
         return
       }
@@ -129,6 +132,21 @@ export default function LoginPage() {
               Selamat datang kembali! Silakan masukkan username dan password kamu.
             </p>
           </div>
+
+          {sessionExpiredNotice && (
+            <div className="mb-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 flex items-start justify-between gap-3 text-xs text-amber-800 dark:text-amber-200 font-semibold animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="text-base shrink-0">🔒</span>
+                <span>{sessionExpiredNotice}</span>
+              </div>
+              <button
+                onClick={clearSessionNotice}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-base border-none bg-transparent cursor-pointer shrink-0"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
 

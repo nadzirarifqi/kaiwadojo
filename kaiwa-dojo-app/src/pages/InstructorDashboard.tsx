@@ -87,7 +87,7 @@ export default function InstructorDashboard() {
               👨‍🏫 Mode Pengajardojo & Admin
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
-              ● Live Database Connected
+              ● Sistem Terhubung
             </span>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">

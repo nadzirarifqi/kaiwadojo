@@ -1,0 +1,949 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../hooks/useAuth'
+import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+
+export interface UserKotoba {
+  id: string
+  user_id: string
+  japanese: string
+  romaji: string
+  meaning: string
+  image_url?: string
+  is_mastered: boolean
+  created_at?: string
+}
+
+// Preset images for easy selection if user doesn't have a custom image URL
+const PRESET_IMAGES = [
+  'https://images.unsplash.com/photo-1528164344705-47542687990d?w=400&auto=format&fit=crop&q=60', // Sakura / Japan
+  'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&auto=format&fit=crop&q=60', // Ramen
+  'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=400&auto=format&fit=crop&q=60', // Tokyo St
+  'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=60', // Tea / Matcha
+  'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=400&auto=format&fit=crop&q=60', // Travel
+  'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&auto=format&fit=crop&q=60', // Mount Fuji
+]
+
+// Single Sample Guide Card shown only as visual reference for new users
+const SAMPLE_GUIDE_KOTOBA: UserKotoba = {
+  id: 'sample-guide-1',
+  user_id: 'sample',
+  japanese: '食べる (たべる)',
+  romaji: 'taberu',
+  meaning: 'Makan (Kata Kerja)',
+  image_url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&auto=format&fit=crop&q=60',
+  is_mastered: true,
+}
+
+type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_japanese_meaning'
+
+export default function SetoranKotobaPage() {
+  const { user } = useAuth()
+  const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterMode, setFilterMode] = useState<'all' | 'unmastered' | 'mastered'>('all')
+  const [showGuide, setShowGuide]   = useState(true)
+
+  // Modal Create/Edit State
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<UserKotoba | null>(null)
+  const [formData, setFormData]       = useState({
+    japanese: '',
+    romaji: '',
+    meaning: '',
+    image_url: '',
+  })
+  const [saving, setSaving]           = useState(false)
+
+  // Flashcard Test Mode State
+  const [isTestActive, setIsTestActive]       = useState(false)
+  const [testItems, setTestItems]             = useState<UserKotoba[]>([])
+  const [currentTestIndex, setCurrentTestIndex] = useState(0)
+  const [questionMode, setQuestionMode]       = useState<QuestionMode>('prompt_japanese_meaning')
+  const [userAnswerInput, setUserAnswerInput] = useState('')
+  const [showAnswerKey, setShowAnswerKey]     = useState(false)
+  const [testResults, setTestResults]         = useState<{ mastered: number; difficult: number }>({ mastered: 0, difficult: 0 })
+  const [isTestFinished, setIsTestFinished]   = useState(false)
+
+  // Custom Alert Modal State
+  const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    buttonText: 'Mengerti',
+    onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+  })
+
+  // Load Kotoba strictly from Database
+  useEffect(() => {
+    loadKotobaList()
+  }, [user])
+
+  async function loadKotobaList() {
+    setLoading(true)
+    const storageKey = `kaiwa_user_kotoba_${user?.id || 'guest'}`
+
+    if (user) {
+      const { data, error } = await supabase
+        .from('user_kotoba_submissions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setKotobaList(data as UserKotoba[])
+        localStorage.setItem(storageKey, JSON.stringify(data))
+        setLoading(false)
+        return
+      }
+    }
+
+    // Fallback to local storage for guest / offline mode
+    const localData = localStorage.getItem(storageKey)
+    if (localData) {
+      setKotobaList(JSON.parse(localData))
+    } else {
+      setKotobaList([])
+    }
+    setLoading(false)
+  }
+
+  function saveToLocal(updatedList: UserKotoba[]) {
+    setKotobaList(updatedList)
+    const storageKey = `kaiwa_user_kotoba_${user?.id || 'guest'}`
+    localStorage.setItem(storageKey, JSON.stringify(updatedList))
+  }
+
+  function handleOpenCreateModal() {
+    setEditingItem(null)
+    setFormData({
+      japanese: '',
+      romaji: '',
+      meaning: '',
+      image_url: PRESET_IMAGES[Math.floor(Math.random() * PRESET_IMAGES.length)],
+    })
+    setIsModalOpen(true)
+  }
+
+  function handleOpenEditModal(item: UserKotoba) {
+    setEditingItem(item)
+    setFormData({
+      japanese: item.japanese,
+      romaji: item.romaji,
+      meaning: item.meaning,
+      image_url: item.image_url || '',
+    })
+    setIsModalOpen(true)
+  }
+
+  async function handleSubmitForm(e: React.FormEvent) {
+    e.preventDefault()
+    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim()) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Formulir Belum Lengkap ⚠️',
+        message: 'Mohon isi 3 bidang wajib pada "Formulir Setoran Kotoba": Huruf Jepang, Romaji, dan Maknanya!',
+        type: 'warning',
+        buttonText: 'Lengkapi Data',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+
+    setSaving(true)
+
+    if (editingItem) {
+      const updated = kotobaList.map(item =>
+        item.id === editingItem.id
+          ? {
+              ...item,
+              japanese: formData.japanese.trim(),
+              romaji: formData.romaji.trim(),
+              meaning: formData.meaning.trim(),
+              image_url: formData.image_url.trim() || undefined,
+            }
+          : item
+      )
+      saveToLocal(updated)
+
+      if (user) {
+        await supabase
+          .from('user_kotoba_submissions')
+          .update({
+            japanese: formData.japanese.trim(),
+            romaji: formData.romaji.trim(),
+            meaning: formData.meaning.trim(),
+            image_url: formData.image_url.trim() || null,
+          })
+          .eq('id', editingItem.id)
+      }
+    } else {
+      const newItem: UserKotoba = {
+        id: `kotoba-${Date.now()}`,
+        user_id: user?.id || 'guest',
+        japanese: formData.japanese.trim(),
+        romaji: formData.romaji.trim(),
+        meaning: formData.meaning.trim(),
+        image_url: formData.image_url.trim() || undefined,
+        is_mastered: false,
+        created_at: new Date().toISOString(),
+      }
+
+      if (user) {
+        const { data, error } = await supabase
+          .from('user_kotoba_submissions')
+          .insert({
+            user_id: user.id,
+            japanese: formData.japanese.trim(),
+            romaji: formData.romaji.trim(),
+            meaning: formData.meaning.trim(),
+            image_url: formData.image_url.trim() || null,
+            is_mastered: false,
+          })
+          .select()
+          .single()
+
+        if (!error && data) {
+          newItem.id = data.id
+        }
+      }
+
+      const updated = [newItem, ...kotobaList]
+      saveToLocal(updated)
+
+      if (user) {
+        const todayStr = new Date().toISOString().split('T')[0]
+        await supabase.from('lesson_progress').upsert({
+          student_id: user.id,
+          lesson_id: `user_kotoba_${newItem.id}`,
+          is_completed: true,
+          last_watched_at: new Date().toISOString(),
+        }, { onConflict: 'student_id,lesson_id' })
+
+        await supabase.from('learning_streaks').upsert({
+          student_id: user.id,
+          date: todayStr,
+        }, { onConflict: 'student_id,date' })
+      }
+    }
+
+    setSaving(false)
+    setIsModalOpen(false)
+  }
+
+  async function handleToggleMastered(item: UserKotoba) {
+    const updatedStatus = !item.is_mastered
+    const updated = kotobaList.map(k => k.id === item.id ? { ...k, is_mastered: updatedStatus } : k)
+    saveToLocal(updated)
+
+    if (user) {
+      await supabase
+        .from('user_kotoba_submissions')
+        .update({ is_mastered: updatedStatus })
+        .eq('id', item.id)
+    }
+  }
+
+  async function handleDeleteItem(id: string) {
+    if (!confirm('Apakah kamu yakin ingin menghapus kosakata ini dari catatanmu?')) return
+    const updated = kotobaList.filter(k => k.id !== id)
+    saveToLocal(updated)
+
+    if (user) {
+      await supabase
+        .from('user_kotoba_submissions')
+        .delete()
+        .eq('id', id)
+    }
+  }
+
+  /* ── Flashcard Test Logic ── */
+  function handleStartTest() {
+    if (kotobaList.length === 0) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Jurnal Masih Kosong 💡',
+        message: 'Kamu belum memiliki catatan di "Jurnal Kosakata". Tambah beberapa kosakata terlebih dahulu untuk memulai fitur "Uji Hafalan Kosakata"!',
+        type: 'info',
+        buttonText: 'Tambah Kosakata',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+
+    // Shuffle kotoba list for the test session
+    const shuffled = [...kotobaList].sort(() => Math.random() - 0.5)
+    setTestItems(shuffled)
+    setCurrentTestIndex(0)
+    setTestResults({ mastered: 0, difficult: 0 })
+    setIsTestFinished(false)
+    setIsTestActive(true)
+
+    setupQuestionMode(shuffled[0])
+  }
+
+  function setupQuestionMode(item: UserKotoba) {
+    setUserAnswerInput('')
+    setShowAnswerKey(false)
+
+    // Randomize question mode based on item features
+    const modes: QuestionMode[] = ['prompt_japanese_meaning', 'prompt_japanese_romaji']
+    if (item.image_url) {
+      modes.push('prompt_image_meaning')
+    }
+    const chosenMode = modes[Math.floor(Math.random() * modes.length)]
+    setQuestionMode(chosenMode)
+  }
+
+  async function handleSelfAssessment(isMasteredChoice: boolean) {
+    const currentItem = testItems[currentTestIndex]
+    if (!currentItem) return
+
+    // Update is_mastered status in DB & Local
+    const updated = kotobaList.map(k => k.id === currentItem.id ? { ...k, is_mastered: isMasteredChoice } : k)
+    saveToLocal(updated)
+
+    if (user) {
+      await supabase
+        .from('user_kotoba_submissions')
+        .update({ is_mastered: isMasteredChoice })
+        .eq('id', currentItem.id)
+    }
+
+    // Update test session score
+    if (isMasteredChoice) {
+      setTestResults(prev => ({ ...prev, mastered: prev.mastered + 1 }))
+    } else {
+      setTestResults(prev => ({ ...prev, difficult: prev.difficult + 1 }))
+    }
+
+    // Move to next question or finish test
+    if (currentTestIndex + 1 < testItems.length) {
+      const nextIndex = currentTestIndex + 1
+      setCurrentTestIndex(nextIndex)
+      setupQuestionMode(testItems[nextIndex])
+    } else {
+      setIsTestFinished(true)
+    }
+  }
+
+  // Filter & Search
+  const filteredList = kotobaList.filter(item => {
+    const matchesSearch =
+      item.japanese.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.romaji.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.meaning.toLowerCase().includes(searchTerm.toLowerCase())
+
+    if (filterMode === 'mastered') return matchesSearch && item.is_mastered
+    if (filterMode === 'unmastered') return matchesSearch && !item.is_mastered
+    return matchesSearch
+  })
+
+  const totalCount    = kotobaList.length
+  const masteredCount = kotobaList.filter(k => k.is_mastered).length
+
+  const activeTestItem = testItems[currentTestIndex]
+
+  return (
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+      {/* Header Banner */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-8 mb-6 text-white shadow-xl animate-fade-in">
+        <div className="absolute -top-12 -right-12 size-56 bg-white/10 rounded-full pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-black uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full backdrop-blur-xs">
+                🔤 Catatan Kosakata Mandiri
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+              Jurnal Kosakata (Kotoba) Saya
+            </h1>
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
+              Catat dan simpan setiap kosakata Bahasa Jepang baru yang kamu temukan. Uji hafalanmu secara berkala untuk menentukan kata yang sudah kamu kuasai!
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <button
+              onClick={handleStartTest}
+              className="px-5 py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <span>🧠 Uji Hafalan Kosakata</span>
+            </button>
+
+            <button
+              onClick={handleOpenCreateModal}
+              className="px-6 py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span className="text-base">＋</span>
+              <span>Tambah Kosakata Baru</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Guide Banner: Panduan Cara Mengisi */}
+      {showGuide && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-3xl p-5 mb-6 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row gap-5 justify-between items-start">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-sm">
+              <span>💡 Panduan Menambah & Menguji Kosakata</span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              1. Catat kata baru dengan tombol <strong>"+ Tambah Kosakata Baru"</strong>.<br />
+              2. Tekan <strong>"🧠 Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri (tebak gambar/romaji/makna dan periksa kunci jawabannya!).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">1. Huruf Jepang</span>
+                Kanji / Katakana / Hiragana (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">食べる</code> atau <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">たべる</code>)
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">2. Cara Baca (Romaji)</span>
+                Pelafalan latin (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">taberu</code>)
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">3. Makna / Arti</span>
+                Terjemahan Indonesia (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">Makan (Kata Kerja)</code>)
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual</span>
+                URL Foto atau pilih gambar sampel yang pas
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowGuide(false)}
+            className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0"
+          >
+            Sembunyikan ✕
+          </button>
+        </div>
+      )}
+
+      {/* Stats Summary Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="size-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold shrink-0">
+            🔤
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-800 dark:text-white">{totalCount}</div>
+            <div className="text-xs text-slate-400 font-medium">Kosakata Tersimpan</div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="size-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold shrink-0">
+            ✅
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-800 dark:text-white">{masteredCount}</div>
+            <div className="text-xs text-slate-400 font-medium">Kosakata Dikuasai</div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
+          <div className="size-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold shrink-0">
+            🔥
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-800 dark:text-white">
+              {totalCount > 0 ? `${Math.round((masteredCount / totalCount) * 100)}%` : '0%'}
+            </div>
+            <div className="text-xs text-slate-400 font-medium">Tingkat Hafalan</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Toolbar */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Filter Pills */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto">
+          <button
+            onClick={() => setFilterMode('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+              filterMode === 'all'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
+            }`}
+          >
+            Semua ({totalCount})
+          </button>
+          <button
+            onClick={() => setFilterMode('unmastered')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+              filterMode === 'unmastered'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
+            }`}
+          >
+            📖 Masih Dipelajari ({totalCount - masteredCount})
+          </button>
+          <button
+            onClick={() => setFilterMode('mastered')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+              filterMode === 'mastered'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500'
+            }`}
+          >
+            ✅ Sudah Dikuasai ({masteredCount})
+          </button>
+        </div>
+
+        {/* Search input */}
+        <div className="relative w-full sm:w-72">
+          <input
+            type="text"
+            placeholder="Cari kanji, romaji, atau arti..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+          />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+        </div>
+      </div>
+
+      {/* Kotoba Cards Grid */}
+      {loading ? (
+        <div className="py-16 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
+          <div className="size-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <span>Memuat catatan kosakatamu...</span>
+        </div>
+      ) : filteredList.length === 0 ? (
+        <div className="flex flex-col gap-6">
+          {/* Empty State Card */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center gap-3">
+            <span className="text-4xl">🔤</span>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Catatan Kosakata</h3>
+            <p className="text-xs text-slate-400 max-w-sm">
+              {searchTerm
+                ? 'Tidak ada kosakata yang cocok dengan pencarianmu.'
+                : 'Kamu belum menambah kosakata baru. Klik tombol di bawah untuk mencatat kata Jepang pertamamu!'}
+            </p>
+            <button
+              onClick={handleOpenCreateModal}
+              className="mt-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md active:scale-95"
+            >
+              ＋ Tambah Kosakata Pertama →
+            </button>
+          </div>
+
+          {/* Sample Card Preview Guide */}
+          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
+            <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400 mb-3 flex items-center justify-between">
+              <span>💡 Contoh Tampilan Kartu Kosakata:</span>
+              <span className="text-[0.65rem] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">Contoh Referensi</span>
+            </div>
+            <div className="max-w-sm">
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-950/60 bg-emerald-50/30 shadow-sm flex flex-col gap-3">
+                <div className="relative h-32 w-full rounded-2xl overflow-hidden bg-slate-100">
+                  <img src={SAMPLE_GUIDE_KOTOBA.image_url} alt="Sample" className="size-full object-cover" />
+                  <span className="absolute top-2 right-2 bg-emerald-500 text-white px-2 py-0.5 rounded-lg text-[0.65rem] font-bold">
+                    ✅ Dikuasai
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
+                    {SAMPLE_GUIDE_KOTOBA.japanese}
+                  </h4>
+                  <div className="text-xs font-bold text-amber-600 mt-0.5">{SAMPLE_GUIDE_KOTOBA.romaji}</div>
+                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    🇮🇩 {SAMPLE_GUIDE_KOTOBA.meaning}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredList.map(item => (
+            <div
+              key={item.id}
+              className={`p-4 rounded-3xl bg-white dark:bg-slate-900 border transition-all shadow-sm flex flex-col justify-between gap-4 group ${
+                item.is_mastered
+                  ? 'border-emerald-200 dark:border-emerald-950/60 bg-emerald-50/30 dark:bg-emerald-950/10'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-500/60'
+              }`}
+            >
+              {/* Image Preview */}
+              {item.image_url && (
+                <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
+                  <img
+                    src={item.image_url}
+                    alt={item.romaji}
+                    className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={e => {
+                      ;(e.target as HTMLElement).style.display = 'none'
+                    }}
+                  />
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleToggleMastered(item)}
+                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-black backdrop-blur-md cursor-pointer border-none transition-all ${
+                        item.is_mastered
+                          ? 'bg-emerald-500/90 text-white shadow-xs'
+                          : 'bg-slate-900/60 text-white hover:bg-emerald-500'
+                      }`}
+                    >
+                      {item.is_mastered ? '✅ Dikuasai' : '⭕ Tandai Dikuasai'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Japanese & Romaji Header */}
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
+                      {item.japanese}
+                    </h3>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                      {item.romaji}
+                    </div>
+                  </div>
+
+                  {!item.image_url && (
+                    <button
+                      onClick={() => handleToggleMastered(item)}
+                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-black cursor-pointer border-none transition-all shrink-0 ${
+                        item.is_mastered
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700'
+                      }`}
+                    >
+                      {item.is_mastered ? '✅ Dikuasai' : '⭕ Tandai Dikuasai'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Indonesian Meaning */}
+                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="text-xs text-slate-400 font-semibold mb-0.5">Makna / Arti:</div>
+                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                    🇮🇩 {item.meaning}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Footer */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => handleOpenEditModal(item)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all"
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteItem(item.id)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all"
+                >
+                  🗑️ Hapus
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Flashcard Test Modal Screen */}
+      {isTestActive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  🧠 Tes Evaluasi Hafalan
+                </span>
+                <h3 className="text-lg font-black text-slate-800 dark:text-white mt-0.5">
+                  {isTestFinished
+                    ? 'Hasil Tes Evaluasi Hafalan'
+                    : `Soal ${currentTestIndex + 1} dari ${testItems.length}`}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsTestActive(false)}
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Test Content */}
+            {isTestFinished ? (
+              <div className="space-y-6 text-center">
+                <div className="size-20 bg-amber-100 dark:bg-amber-950/60 rounded-full flex items-center justify-center text-4xl mx-auto">
+                  🏆
+                </div>
+                <div>
+                  <h4 className="text-xl font-black text-slate-800 dark:text-white">Latihan Selesai!</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
+                    Status hafalan kosakata milikmu telah diperbarui di catatan akunmu.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-900 text-center">
+                    <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
+                      {testResults.mastered}
+                    </div>
+                    <div className="text-[0.68rem] text-emerald-800 dark:text-emerald-300 font-bold">Sudah Dikuasai</div>
+                  </div>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-900 text-center">
+                    <div className="text-2xl font-black text-amber-700 dark:text-amber-400">
+                      {testResults.difficult}
+                    </div>
+                    <div className="text-[0.68rem] text-amber-800 dark:text-amber-300 font-bold">Masih Sulit</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsTestActive(false)}
+                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs sm:text-sm rounded-2xl border-none cursor-pointer shadow-md transition-all"
+                >
+                  Tutup Tes & Kembali ke Jurnal →
+                </button>
+              </div>
+            ) : activeTestItem ? (
+              <div className="space-y-5">
+                {/* Progress bar */}
+                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentTestIndex + 1) / testItems.length) * 100}%` }}
+                  />
+                </div>
+
+                {/* Prompt Card */}
+                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-center space-y-3">
+                  {questionMode === 'prompt_image_meaning' && activeTestItem.image_url ? (
+                    <div className="space-y-2">
+                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
+                        Tebak Huruf Jepang dari Gambar / Makna Berikut:
+                      </span>
+                      <div className="h-40 w-full rounded-xl overflow-hidden bg-slate-200 mx-auto max-w-xs">
+                        <img src={activeTestItem.image_url} alt="Prompt" className="size-full object-cover" />
+                      </div>
+                      <div className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                        Makna: 🇮🇩 {activeTestItem.meaning}
+                      </div>
+                    </div>
+                  ) : questionMode === 'prompt_japanese_romaji' ? (
+                    <div className="space-y-2">
+                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
+                        Tebak Cara Baca (Romaji) kata ini:
+                      </span>
+                      <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white pt-2">
+                        {activeTestItem.japanese}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
+                        Tebak Makna / Arti kata ini:
+                      </span>
+                      <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white pt-2">
+                        {activeTestItem.japanese}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input area */}
+                  <div className="pt-2">
+                    <input
+                      type="text"
+                      placeholder="Ketik tebakan jawabanmu di sini..."
+                      value={userAnswerInput}
+                      onChange={e => setUserAnswerInput(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all text-center"
+                    />
+                  </div>
+
+                  {!showAnswerKey && (
+                    <button
+                      onClick={() => setShowAnswerKey(true)}
+                      className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border-none cursor-pointer transition-all"
+                    >
+                      🔍 Periksa Kunci Jawaban
+                    </button>
+                  )}
+                </div>
+
+                {/* Answer Key Display & Self Assessment */}
+                {showAnswerKey && (
+                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 space-y-3 animate-fade-in">
+                    <div className="text-xs font-extrabold text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                      <span>🔑 Kunci Jawaban Lengkap:</span>
+                      {userAnswerInput && (
+                        <span className="text-[0.68rem] font-normal text-slate-500">
+                          Jawabanmu: "{userAnswerInput}"
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white dark:bg-slate-900 p-3 rounded-xl border border-amber-100 dark:border-amber-950">
+                      <div>
+                        <div className="text-[0.65rem] text-slate-400 font-semibold">Huruf Jepang</div>
+                        <div className="font-extrabold text-slate-800 dark:text-white">{activeTestItem.japanese}</div>
+                      </div>
+                      <div>
+                        <div className="text-[0.65rem] text-slate-400 font-semibold">Romaji</div>
+                        <div className="font-extrabold text-amber-600 dark:text-amber-400">{activeTestItem.romaji}</div>
+                      </div>
+                      <div>
+                        <div className="text-[0.65rem] text-slate-400 font-semibold">Makna / Arti</div>
+                        <div className="font-extrabold text-slate-800 dark:text-slate-100">{activeTestItem.meaning}</div>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-center font-bold text-slate-700 dark:text-slate-200 pt-1">
+                      Bagaimana tingkat kesulitan soal ini untukmu?
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <button
+                        onClick={() => handleSelfAssessment(false)}
+                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
+                      >
+                        <span>🔴 Masih Sulit</span>
+                      </button>
+                      <button
+                        onClick={() => handleSelfAssessment(true)}
+                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
+                      >
+                        <span>🟢 Sudah Mudah / Dikuasai</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Form Setor Kotoba */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-slate-800 dark:text-white">
+                {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitForm} className="space-y-4">
+              {/* Field 1: Kanji / Katakana / Hiragana */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  1. Huruf Jepang (Kanji / Katakana / Hiragana) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: 食べる atau たべる atau ラーメン"
+                  value={formData.japanese}
+                  onChange={e => setFormData({ ...formData, japanese: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                />
+              </div>
+
+              {/* Field 2: Romaji */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  2. Cara Baca (Romaji) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: taberu atau raamen"
+                  value={formData.romaji}
+                  onChange={e => setFormData({ ...formData, romaji: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                />
+              </div>
+
+              {/* Field 3: Meaning */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  3. Makna / Arti Bahasa Indonesia <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Makan (Kata Kerja)"
+                  value={formData.meaning}
+                  onChange={e => setFormData({ ...formData, meaning: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                />
+              </div>
+
+              {/* Field 4: Image URL & Presets */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  4. URL Gambar Visual (Opsional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={formData.image_url}
+                  onChange={e => setFormData({ ...formData, image_url: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all mb-2"
+                />
+
+                <div className="text-[0.65rem] text-slate-400 font-semibold mb-1.5">Atau pilih gambar sampel cepat:</div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {PRESET_IMAGES.map((imgUrl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image_url: imgUrl })}
+                      className={`size-10 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        formData.image_url === imgUrl ? 'border-amber-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={imgUrl} alt="Sample" className="size-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 border-none cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md"
+                >
+                  {saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : '＋ Simpan Kosakata'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Beautiful Custom Alert Modal */}
+      <CustomAlertModal {...alertConfig} />
+    </main>
+  )
+}
