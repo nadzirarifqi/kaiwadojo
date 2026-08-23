@@ -33,6 +33,7 @@ export default function LoginPage() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
+      sessionStorage.setItem('kaiwa_session_active', 'true')
       localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
       window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
@@ -100,6 +101,7 @@ export default function LoginPage() {
       }
       setLoading(false)
     } else {
+      sessionStorage.setItem('kaiwa_session_active', 'true')
       navigate('/dashboard')
     }
   }

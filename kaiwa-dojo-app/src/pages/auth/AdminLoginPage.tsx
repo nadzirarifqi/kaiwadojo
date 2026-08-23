@@ -54,6 +54,7 @@ export default function AdminLoginPage() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
+      sessionStorage.setItem('kaiwa_session_active', 'true')
       localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
       window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
@@ -75,15 +76,22 @@ export default function AdminLoginPage() {
     }
 
     // Try standard auth login for admin
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email: cleanUser.includes('@') ? cleanUser : 'admin@kaiwadojo.com',
       password,
     })
 
-    if (error) {
-      setLoginError('Username atau Password Admin salah. Periksa kembali kredensial Anda.')
+    if (authError) {
+      if (authError.message === 'Email not confirmed') {
+        setLoginError('Email belum dikonfirmasi. Silakan cek inbox/spam email kamu.')
+      } else if (authError.message === 'Invalid login credentials') {
+        setLoginError('Username atau password salah. Coba lagi.')
+      } else {
+        setLoginError(authError.message)
+      }
       setLoading(false)
     } else {
+      sessionStorage.setItem('kaiwa_session_active', 'true')
       navigate('/dashboard')
     }
   }

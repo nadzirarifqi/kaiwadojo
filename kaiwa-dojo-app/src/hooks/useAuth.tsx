@@ -33,20 +33,6 @@ interface AuthContextValue {
   refreshProfile: () => Promise<void>
 }
 
-const DEFAULT_DEMO_PROFILE: Profile = {
-  id: 'user-demo-active',
-  full_name: 'Budi Santoso',
-  username: 'budisantoso',
-  email: 'budi@kaiwadojo.com',
-  phone_number: '08123456789',
-  avatar_url: null,
-  bio: 'Semangat belajar Bahasa Jepang untuk persiapan kerja & magang!',
-  role: 'pelajar',
-  streak_days: 0,
-  last_active_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-}
 
 const AuthContext = createContext<AuthContextValue>({
   session: null,
@@ -62,11 +48,18 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(() => {
+    // Check if browser session is active (sessionStorage lives only while tab/browser is open)
+    const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+    if (!isBrowserSessionActive) {
+      localStorage.removeItem('kaiwa_custom_profile')
+      localStorage.removeItem(LAST_ACTIVITY_KEY)
+      return null
+    }
     const custom = localStorage.getItem('kaiwa_custom_profile')
     if (custom) {
       try { return JSON.parse(custom) } catch {}
     }
-    return DEFAULT_DEMO_PROFILE
+    return null
   })
   const [loading, setLoading] = useState(true)
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(() => {
@@ -97,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single()
     if (!error && data) {
       setProfile(data as Profile)
+      sessionStorage.setItem('kaiwa_session_active', 'true')
       localStorage.setItem('kaiwa_custom_profile', JSON.stringify(data))
     }
   }
@@ -115,10 +109,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut(reason?: string) {
-    await supabase.auth.signOut()
-    setSession(null)
+    await supabase.auth.signOut().catch(() => {})
+    sessionStorage.removeItem('kaiwa_session_active')
     localStorage.removeItem('kaiwa_custom_profile')
     localStorage.removeItem(LAST_ACTIVITY_KEY)
+    setSession(null)
     setProfile(null)
 
     if (reason) {
@@ -153,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 10000)
 
     const handleProfileUpdate = () => {
+      const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+      if (!isBrowserSessionActive) return
       const custom = localStorage.getItem('kaiwa_custom_profile')
       if (custom) {
         try { setProfile(JSON.parse(custom)) } catch {}
@@ -161,31 +158,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('kaiwa_profile_updated', handleProfileUpdate)
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        const custom = localStorage.getItem('kaiwa_custom_profile')
-        if (custom) {
-          try { setProfile(JSON.parse(custom)) } catch {}
-        } else {
-          setProfile(DEFAULT_DEMO_PROFILE)
-        }
-      }
+    // Check browser session status
+    const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+    if (!isBrowserSessionActive) {
+      // Browser was newly opened or closed — enforce fresh login
+      localStorage.removeItem('kaiwa_custom_profile')
+      localStorage.removeItem(LAST_ACTIVITY_KEY)
+      setSession(null)
+      setProfile(null)
       setLoading(false)
-    })
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          const custom = localStorage.getItem('kaiwa_custom_profile')
+          if (custom) {
+            try { setProfile(JSON.parse(custom)) } catch {}
+          } else {
+            setProfile(null)
+          }
+        }
+        setLoading(false)
+      })
+    }
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
       if (session?.user) {
+        setSession(session)
+        sessionStorage.setItem('kaiwa_session_active', 'true')
         fetchProfile(session.user.id)
       } else {
-        const custom = localStorage.getItem('kaiwa_custom_profile')
-        if (custom) {
-          try { setProfile(JSON.parse(custom)) } catch {}
+        const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+        if (!isBrowserSessionActive) {
+          setSession(null)
+          setProfile(null)
         } else {
-          setProfile(DEFAULT_DEMO_PROFILE)
+          setSession(session)
+          const custom = localStorage.getItem('kaiwa_custom_profile')
+          if (custom) {
+            try { setProfile(JSON.parse(custom)) } catch {}
+          } else {
+            setProfile(null)
+          }
         }
       }
     })
