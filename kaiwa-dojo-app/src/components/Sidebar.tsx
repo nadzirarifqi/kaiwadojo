@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   async function handleSignOut() {
     await signOut()
-    navigate('/login')
+    navigate('/')
   }
 
   const currentRole = profile?.role || 'pelajar'
@@ -216,9 +216,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             <div className="size-10 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
               <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-8 object-contain" />
             </div>
-            <div className="min-w-0">
-              <div className="text-[1.05rem] font-extrabold text-primary dark:text-red-400 tracking-tight leading-tight truncate">KaiwaDoJo</div>
-              <div className="text-[0.6rem] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Learning Platform</div>
+            <div className="min-h-0">
+              <div className="text-[1.05rem] font-extrabold text-primary dark:text-red-400 tracking-tight leading-tight truncate flex items-center gap-1">
+                <span>KaiwaDoJo</span>
+                <span className="text-[0.6rem] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">会話</span>
+              </div>
+              <div className="text-[0.62rem] text-slate-400 font-semibold tracking-wider mt-0.5 font-jp">会話道場 ・ Bahasa Jepang</div>
             </div>
           </div>
 

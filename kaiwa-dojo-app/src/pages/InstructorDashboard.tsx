@@ -14,6 +14,7 @@ import {
   getChapterSettingsMap,
   type ChapterSetting
 } from '../lib/chapterService'
+import LoadingScreen from '../components/LoadingScreen'
 
 export default function InstructorDashboard() {
   const navigate = useNavigate()
@@ -61,30 +62,39 @@ export default function InstructorDashboard() {
   }, [])
 
   if (loading) {
-    return (
-      <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-bold text-slate-400">Memuat Dashboard Pengajar...</span>
-        </div>
-      </main>
-    )
+    return <LoadingScreen message="Memuat Dashboard Pengajar..." fullScreen={false} />
   }
 
+  // Filter schedules assigned to this instructor (by name match or show all if match not strictly found)
+  const mySchedules = schedules.filter(s => 
+    s.instructor_name?.toLowerCase().includes(profile?.full_name?.toLowerCase() || '') ||
+    profile?.full_name?.toLowerCase().includes(s.instructor_name?.toLowerCase() || '')
+  )
+
+  const displaySchedules = mySchedules.length > 0 ? mySchedules : schedules
+
   // Calculations
-  const onlineSchedules = schedules.filter(s => s.type === 'online')
-  const offlineSchedules = schedules.filter(s => s.type === 'offline')
+  const onlineSchedules = displaySchedules.filter(s => s.type === 'online')
+  const offlineSchedules = displaySchedules.filter(s => s.type === 'offline')
   const publishedChapters = Object.values(chapterSettings).filter(c => !c.is_hidden).length
   const totalReservationsCount = reservations.length
 
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in">
       {/* Header Banner */}
-      <div className="mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-700/50">
+      <div
+        className="mb-6 rounded-3xl p-5 sm:p-7 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-700/50 bg-cover bg-center text-white"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(15,23,42,0.92), rgba(127,29,29,0.85)), url('/japan-background(4).jpg')",
+        }}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
-              👨‍🏫 Mode Pengajardojo & Admin
+            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1">
+              <span>👨‍🏫</span>
+              <span className="font-jp font-bold mr-1">先生</span>
+              <span>Mode Pengajar & Sensei</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
               ● Sistem Terhubung
@@ -93,7 +103,8 @@ export default function InstructorDashboard() {
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <span>Halo Sensei, {profile?.full_name || 'Pengajar KaiwaDojo'}!</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed font-medium">
+            <span className="font-jp font-bold text-red-300 mr-1.5">ようこそ先生!</span>
             Selamat datang di Dashboard Pengajar. Di sini Anda dapat mengelola materi bab, rilis durasi video, serta memantau reservasi kelas live online dan offline siswa secara real-time.
           </p>
         </div>

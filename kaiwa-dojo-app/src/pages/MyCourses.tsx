@@ -560,7 +560,7 @@ export default function MyCourses() {
   const currentFact = JAPAN_FUN_FACTS[funFactIndex]
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Admin Preview Control Bar */}
       {profile?.role === 'admin' && (
         <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">

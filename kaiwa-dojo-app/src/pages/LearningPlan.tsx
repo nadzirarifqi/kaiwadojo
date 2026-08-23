@@ -737,7 +737,7 @@ export default function LearningPlanPage() {
   const isSelectedDatePast = selectedDateStr < todayStr
 
   return (
-    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in">
+    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header */}
       <div className="mb-4 sm:mb-6 animate-fade-in-up flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>

@@ -349,7 +349,7 @@ export default function SetoranKotobaPage() {
   const activeTestItem = testItems[currentTestIndex]
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header Banner */}
       <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-8 mb-6 text-white shadow-xl animate-fade-in">
         <div className="absolute -top-12 -right-12 size-56 bg-white/10 rounded-full pointer-events-none" />

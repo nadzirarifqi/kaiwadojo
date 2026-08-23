@@ -126,7 +126,21 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 transition-colors relative"
+      style={{
+        backgroundImage:
+          "linear-gradient(to bottom, rgba(15,23,42,0.75), rgba(15,23,42,0.88)), url('/japan-background(5).jpg')",
+      }}
+    >
+
+      {/* Floating Back to Landing Page Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      >
+        <span>← Kembali ke Landing Page</span>
+      </button>
 
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -280,14 +294,20 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* Login Link AFTER Submit Button */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+          {/* Login Link & Back to Landing Page */}
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center flex flex-col items-center gap-3">
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
               Sudah punya akun?{' '}
               <Link to="/login" className="text-primary dark:text-red-400 font-extrabold hover:underline">
                 Masuk di sini
               </Link>
             </p>
+            <button
+              onClick={() => navigate('/')}
+              className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-red-400 transition-colors border-none bg-transparent cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🏠 Kembali ke Halaman Utama</span>
+            </button>
           </div>
         </div>
 

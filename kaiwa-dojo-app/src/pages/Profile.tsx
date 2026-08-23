@@ -340,7 +340,7 @@ export default function ProfilePage() {
     : 'Agustus 2024'
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-page-slide">
       {/* Toast Popup */}
       {toastMessage && (
         <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-bold animate-slide-fade ${

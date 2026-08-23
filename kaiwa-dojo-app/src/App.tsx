@@ -21,6 +21,9 @@ import CourseEditorPage from './pages/CourseEditor'
 import SetoranKotobaPage from './pages/SetoranKotoba'
 import LandingPage from './pages/LandingPage'
 
+import LoadingScreen from './components/LoadingScreen'
+import PageTransition from './components/PageTransition'
+
 /* ── Role-Aware Dashboard Router ─────────────────── */
 function DashboardRoute() {
   const { profile } = useAuth()
@@ -44,19 +47,24 @@ function DashboardRoute() {
    ─────────────────────────────────────────────── */
 function MobileTopbar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-14 flex items-center px-4 gap-3 shadow-sm safe-left safe-right">
-      <button
-        onClick={onMenuClick}
-        aria-label="Buka menu"
-        className="size-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-lg transition-all hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer shrink-0"
-      >
-        ☰
-      </button>
-      <div className="flex items-center gap-2">
-        <div className="size-7 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-          <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-6 object-contain" />
+    <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 h-14 flex items-center justify-between px-4 shadow-xs safe-left safe-right transition-all">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuClick}
+          aria-label="Buka menu navigasi"
+          className="size-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-base font-bold transition-all hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 border-none cursor-pointer shrink-0"
+        >
+          ☰
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="size-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-5 object-contain" />
+          </div>
+          <span className="font-black text-primary dark:text-red-400 text-sm tracking-tight flex items-center gap-1">
+            <span>KaiwaDojo</span>
+            <span className="text-[0.6rem] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">会話</span>
+          </span>
         </div>
-        <span className="font-extrabold text-primary dark:text-red-400 text-sm tracking-tight">KaiwaDoJo</span>
       </div>
     </header>
   )
@@ -110,14 +118,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, profile, loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-bold text-slate-400">Memeriksa Keamanan Sesi...</p>
-        </div>
-      </div>
-    )
+    return <LoadingScreen message="Memeriksa Keamanan Sesi..." fullScreen={true} />
   }
 
   const isBrowserActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
@@ -125,7 +126,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const hasValidSession = Boolean(session?.user || isSuperAdmin)
 
   if (!isBrowserActive || !hasValidSession || !profile) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/" replace />
   }
 
   return <>{children}</>
@@ -137,28 +138,30 @@ export function AppRoutes() {
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/"         element={<LandingPage />} />
-            <Route path="/login"    element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/admin"    element={<AdminLoginPage />} />
+          <PageTransition>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/"         element={<LandingPage />} />
+              <Route path="/login"    element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/admin"    element={<AdminLoginPage />} />
 
-            {/* Protected routes */}
-            <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
-            <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
-            <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
-            <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
-            <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
-            <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
-            <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
-            <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
-            <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
-            <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
-            <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
-            <Route path="*"                element={<Navigate to="/" replace />} />
+              {/* Protected routes */}
+              <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
+              <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
+              <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
+              <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
+              <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
+              <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
+              <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
+              <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
+              <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
+              <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
+              <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
+              <Route path="*"                element={<Navigate to="/" replace />} />
 
-          </Routes>
+            </Routes>
+          </PageTransition>
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>

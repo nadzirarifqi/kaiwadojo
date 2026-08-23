@@ -642,23 +642,32 @@ export default function Dashboard() {
   }, [user, profile])
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
 
       {/* Hero Header */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-light rounded-2xl lg:rounded-[28px] px-6 py-8 sm:px-8 sm:py-10 lg:px-11 lg:py-12 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-lg animate-fade-in-up">
+      <header
+        className="relative overflow-hidden rounded-2xl lg:rounded-[28px] px-6 py-8 sm:px-8 sm:py-10 lg:px-11 lg:py-12 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-lg animate-fade-in-up bg-cover bg-center"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(185,28,28,0.92), rgba(127,29,29,0.85)), url('/japan-background(2).jpg')",
+        }}
+      >
         <div className="absolute -top-14 -right-14 size-64 bg-white/5 rounded-full pointer-events-none" />
         <div className="absolute -bottom-16 right-20 size-48 bg-white/[0.04] rounded-full pointer-events-none" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-bold text-white/90 bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider">
-              Pelajar
+            <span className="text-xs font-bold text-white/95 bg-white/20 px-3 py-1 rounded-full tracking-wider flex items-center gap-1.5">
+              <span>🌸</span>
+              <span className="font-jp font-bold">日本語学習</span>
+              <span>• Pelajar</span>
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2 tracking-tight leading-snug">
             {t('dash_welcome', 'Selamat datang')}, {profile?.full_name || 'User'}! 👋
           </h1>
-          <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-lg">
+          <p className="text-white/90 text-sm sm:text-base leading-relaxed max-w-lg font-medium">
+            <span className="font-jp font-bold mr-1">今日も頑張りましょう!</span>
             {t('dash_subtitle', 'Mari lanjutkan perjalanan belajar bahasa Jepangmu hari ini!')} ✨
           </p>
         </div>

@@ -97,7 +97,20 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat text-white flex items-center justify-center p-4 relative overflow-hidden font-sans"
+      style={{
+        backgroundImage:
+          "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.92)), url('/japan-background(4).jpg')",
+      }}
+    >
+      {/* Floating Back to Landing Page Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white hover:border-red-500/50 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      >
+        <span>← Kembali ke Landing Page</span>
+      </button>
       {/* Dynamic Background Effects */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[120px] pointer-events-none" />

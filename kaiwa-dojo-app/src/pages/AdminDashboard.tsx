@@ -7,6 +7,8 @@ import { fetchStudents, type StudentAccount } from '../lib/studentService'
 import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 
+import LoadingScreen from '../components/LoadingScreen'
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { profile } = useAuth()
@@ -59,26 +61,27 @@ export default function AdminDashboard() {
   }, [])
 
   if (loading) {
-    return (
-      <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-bold text-slate-400">Memuat Dashboard Super Admin...</span>
-        </div>
-      </main>
-    )
+    return <LoadingScreen message="Memuat Dashboard Super Admin..." fullScreen={false} />
   }
 
   const publishedCount = Object.values(chapterSettings).filter(c => !c.is_hidden).length
 
   return (
-    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in">
+    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header Banner */}
-      <div className="mb-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-700/50">
+      <div
+        className="mb-6 rounded-3xl p-5 sm:p-7 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-700/50 bg-cover bg-center text-white"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(15,23,42,0.92), rgba(127,29,29,0.85)), url('/japan-background(4).jpg')",
+        }}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
-              👑 Mode Super Admin ({profile?.username || 'kaiwahiroshima'})
+            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1">
+              <span>👑</span>
+              <span className="font-jp font-bold mr-1">管理者</span>
+              <span>Super Admin ({profile?.username || 'kaiwahiroshima'})</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
               ● Akses Penuh Sistem
@@ -87,7 +90,8 @@ export default function AdminDashboard() {
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <span>Halo Admin, {profile?.full_name || 'Super Admin Hiroshima'}!</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed font-medium">
+            <span className="font-jp font-bold text-red-300 mr-1.5">システム管理</span>
             Sebagai Admin Utama, tugas Anda adalah mengedit materi kursus, mempublikasikan durasi video, serta membuat dan mengelola akun Pemateri/Pengajar.
           </p>
         </div>

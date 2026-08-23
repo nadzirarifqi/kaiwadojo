@@ -120,10 +120,10 @@ export default function SettingsPage() {
 
       if (profileErr) console.warn('Peringatan hapus profil:', profileErr)
 
-      // Sign out user and redirect to login
+      // Sign out user and redirect to landing page
       await signOut()
       showToast('success', 'Akun Anda telah berhasil dihapus.')
-      navigate('/login')
+      navigate('/')
     } catch (err: any) {
       console.error('Gagal menghapus akun:', err)
       showToast('error', err.message || 'Gagal menghapus akun.')
@@ -134,7 +134,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-fade-in space-y-8">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-page-slide space-y-8">
       {/* Toast Notification */}
       {toastMessage && (
         <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-bold animate-slide-fade ${

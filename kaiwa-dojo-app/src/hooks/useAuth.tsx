@@ -60,18 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
 
-    // Only restore profile from sessionStorage if it's a valid admin bypass
+    // Restore profile from sessionStorage if browser session is active
     const raw = sessionStorage.getItem('kaiwa_custom_profile')
     if (raw) {
       try {
         const parsed = JSON.parse(raw)
-        // Only allow admin bypass profile from session cache
-        if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
+        if (parsed && parsed.id && parsed.role) {
           return parsed
         }
       } catch {}
     }
-    // All other profiles must come from Supabase auth flow
     return null
   })
   const [loading, setLoading] = useState(true)
@@ -195,12 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session)
           fetchProfile(session.user.id)
         } else {
-          // Only allow super admin local bypass profile
           const customStr = sessionStorage.getItem('kaiwa_custom_profile')
           if (customStr) {
             try {
               const parsed = JSON.parse(customStr)
-              if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
+              if (parsed && parsed.id && parsed.role) {
                 setProfile(parsed)
               } else {
                 setProfile(null)
@@ -234,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (customStr) {
           try {
             const parsed = JSON.parse(customStr)
-            if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
+            if (parsed && parsed.id && parsed.role) {
               setProfile(parsed)
             } else {
               setProfile(null)
