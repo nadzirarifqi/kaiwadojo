@@ -111,16 +111,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="size-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-400 font-medium">Memuat...</p>
+          <div className="size-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-400">Memeriksa Keamanan Sesi...</p>
         </div>
       </div>
     )
   }
 
-  if (!session && !profile) return <Navigate to="/login" replace />
+  const isBrowserActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+  const isSuperAdmin = profile?.role === 'admin' && profile?.username === 'kaiwahiroshima'
+  const hasValidSession = Boolean(session?.user || isSuperAdmin)
+
+  if (!isBrowserActive || !hasValidSession || !profile) {
+    return <Navigate to="/login" replace />
+  }
+
   return <>{children}</>
 }
 

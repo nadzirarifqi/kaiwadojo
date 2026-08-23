@@ -34,7 +34,7 @@ export default function LoginPage() {
         updated_at: new Date().toISOString(),
       }
       sessionStorage.setItem('kaiwa_session_active', 'true')
-      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
       window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
       try {
