@@ -6,6 +6,26 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const { session, profile } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+
+  const toggleTheme = () => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.remove('dark')
+      localStorage.setItem('kaiwa_theme', 'light')
+      setIsDark(false)
+    } else {
+      root.classList.add('dark')
+      localStorage.setItem('kaiwa_theme', 'dark')
+      setIsDark(true)
+    }
+    window.dispatchEvent(new Event('storage'))
+  }
 
   const isLoggedIn = Boolean(session || profile)
 
@@ -53,8 +73,18 @@ export default function LandingPage() {
             </a>
           </nav>
 
-          {/* Right Action Buttons & Mobile Hamburger */}
+          {/* Right Action Buttons & Theme Toggle */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Dark / Light Mode Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Beralih ke Mode Terang (Light)' : 'Beralih ke Mode Gelap (Dark)'}
+              aria-label="Toggle Theme"
+              className="size-9 sm:size-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-300 font-bold border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center text-sm transition-all hover:scale-105 active:scale-95 shadow-2xs shrink-0"
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+
             {isLoggedIn ? (
               <button
                 onClick={() => navigate('/dashboard')}
@@ -115,6 +145,16 @@ export default function LandingPage() {
             >
               <span>📚 Kurikulum 50 Bab</span>
             </a>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400 font-bold">Mode Tema:</span>
+              <button
+                onClick={toggleTheme}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-amber-300 font-bold text-xs border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>{isDark ? '☀️ Mode Terang' : '🌙 Mode Gelap'}</span>
+              </button>
+            </div>
 
             {!isLoggedIn && (
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">

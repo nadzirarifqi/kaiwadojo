@@ -73,16 +73,36 @@ function DailyMissionBuilderModal({
   onSave: (data: Omit<DailyMissionData, 'date'>, dateStr: string) => void
   onClose: () => void
 }) {
+  const { profile } = useAuth()
   const { language, t } = useLanguage()
+  const isStudent = profile?.role === 'pelajar' || !profile?.role
+
   const [missionDate, setMissionDate]     = useState<string>(targetDate)
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(currentMission?.selectedVideos?.[0]?.jilid || 1)
-  const [selectedBab, setSelectedBab]     = useState<number>(currentMission?.selectedVideos?.[0]?.bab || 1)
   const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
 
   useEffect(() => {
     getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
+    const handleUpdate = () => {
+      getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
+    }
+    window.addEventListener('kaiwa_chapter_updated', handleUpdate)
+    return () => window.removeEventListener('kaiwa_chapter_updated', handleUpdate)
   }, [])
   
+  const startBab = selectedJilid === 1 ? 1 : 26
+  const availableBabs = Array.from({ length: 25 }, (_, i) => startBab + i).filter(b => {
+    if (!isStudent) return true
+    const setting = chapterSettingsMap[b]
+    if (setting) return !setting.is_hidden
+    return b <= 2
+  })
+
+  const [selectedBab, setSelectedBab] = useState<number>(() => {
+    const initBab = currentMission?.selectedVideos?.[0]?.bab || startBab
+    return availableBabs.includes(initBab) ? initBab : (availableBabs[0] || startBab)
+  })
+
   const [noVideoPlan, setNoVideoPlan] = useState<boolean>(
     currentMission ? currentMission.targetReplayCount === 0 : false
   )
@@ -92,14 +112,14 @@ function DailyMissionBuilderModal({
   const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
   const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
 
-  const startBab = selectedJilid === 1 ? 1 : 26
   const currentBabSetting = chapterSettingsMap[selectedBab]
-  const rawBabTitle = currentBabSetting?.title || (selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab]?.title : DEFAULT_JILID_2[selectedBab]?.title) || `Bab ${selectedBab}`
-  const upperBabTitle = rawBabTitle.toUpperCase()
+  const defaultInfo = selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab] : DEFAULT_JILID_2[selectedBab]
+  const rawBabTitle = currentBabSetting?.title || defaultInfo?.title || `Bab ${selectedBab}`
+  const cleanBabTitle = rawBabTitle.replace(/^Bab\s+\d+:\s*/i, '')
 
   const currentBabVideos: SelectedVideoItem[] = [1, 2, 3].map(vNum => ({
     id: `bab_${selectedBab}_video_${vNum}`,
-    title: `[${upperBabTitle}] Part ${vNum}`,
+    title: `[Bab ${selectedBab}: ${cleanBabTitle}] Part ${vNum}`,
     jilid: selectedJilid,
     bab: selectedBab,
     videoNum: vNum,
@@ -224,8 +244,14 @@ function DailyMissionBuilderModal({
                       onChange={e => {
                         const newJilid = Number(e.target.value) as 1 | 2
                         setSelectedJilid(newJilid)
-                        const defaultBab = newJilid === 1 ? 1 : 26
-                        setSelectedBab(defaultBab)
+                        const newStartBab = newJilid === 1 ? 1 : 26
+                        const newAvail = Array.from({ length: 25 }, (_, i) => newStartBab + i).filter(b => {
+                          if (!isStudent) return true
+                          const setting = chapterSettingsMap[b]
+                          if (setting) return !setting.is_hidden
+                          return b <= 2
+                        })
+                        setSelectedBab(newAvail[0] || newStartBab)
                         setSelectedVideos([])
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
@@ -244,9 +270,23 @@ function DailyMissionBuilderModal({
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
-                      {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
-                        <option key={b} value={b}>📖 Bab {b}</option>
-                      ))}
+                      {availableBabs.length > 0 ? (
+                        availableBabs.map(b => {
+                          const setting = chapterSettingsMap[b]
+                          const def = b <= 25 ? DEFAULT_JILID_1[b] : DEFAULT_JILID_2[b]
+                          const titleText = setting?.title || def?.title || `Bab ${b}`
+                          const cleanTitle = titleText.replace(/^Bab\s+\d+:\s*/i, '')
+                          const isHidden = setting?.is_hidden
+
+                          return (
+                            <option key={b} value={b}>
+                              📖 Bab {b}: {cleanTitle} {isHidden ? '🔒 (Disembunyikan)' : ''}
+                            </option>
+                          )
+                        })
+                      ) : (
+                        <option value="" disabled>🚫 Belum ada Bab dipublikasikan</option>
+                      )}
                     </select>
                   </div>
                 </div>
