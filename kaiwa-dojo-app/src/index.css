@@ -71,10 +71,17 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
-  /* overflow-x:clip doesn't create a new scroll container unlike overflow-x:hidden */
-  overflow-x: clip;
-  /* iOS safe area for notched phones */
+  font-size: 15px;
   -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: clip;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
 }
 
 body {

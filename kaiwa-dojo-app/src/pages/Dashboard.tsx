@@ -238,12 +238,6 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => navigate('/reservasi-kelas')}
-              className="text-xs font-extrabold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 px-2.5 py-1.5 rounded-xl border border-sky-200 dark:border-sky-800 cursor-pointer transition-all shrink-0"
-            >
-              💻 Reservasi Kelas →
-            </button>
-            <button
               onClick={() => navigate('/learning-plan')}
               className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-all shrink-0"
             >
