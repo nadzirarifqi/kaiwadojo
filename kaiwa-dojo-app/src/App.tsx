@@ -19,6 +19,7 @@ import ClassReservationPage from './pages/ClassReservation'
 import InstructorScheduleManagerPage from './pages/InstructorScheduleManager'
 import CourseEditorPage from './pages/CourseEditor'
 import SetoranKotobaPage from './pages/SetoranKotoba'
+import LandingPage from './pages/LandingPage'
 
 /* ── Role-Aware Dashboard Router ─────────────────── */
 function DashboardRoute() {
@@ -131,12 +132,12 @@ export function AppRoutes() {
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
+            <Route path="/"         element={<LandingPage />} />
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/admin"    element={<AdminLoginPage />} />
 
             {/* Protected routes */}
-            <Route path="/"                element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
             <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
             <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
@@ -148,7 +149,7 @@ export function AppRoutes() {
             <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
             <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
             <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
-            <Route path="*"                element={<Navigate to="/dashboard" replace />} />
+            <Route path="*"                element={<Navigate to="/" replace />} />
 
           </Routes>
         </BrowserRouter>
