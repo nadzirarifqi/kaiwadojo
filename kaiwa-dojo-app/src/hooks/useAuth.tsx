@@ -48,19 +48,30 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(() => {
-    // Wipe legacy localStorage profile to ensure strict session security
+    // ── FORCE-CLEAR all legacy localStorage auth data on every boot ──
     localStorage.removeItem('kaiwa_custom_profile')
-    
+    localStorage.removeItem('kaiwa_session_active')
+
     // Check if browser session is active (sessionStorage lives only while tab/browser is open)
-    const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
-    if (!isBrowserSessionActive) {
+    const isActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
+    if (!isActive) {
       sessionStorage.removeItem('kaiwa_custom_profile')
+      sessionStorage.removeItem('kaiwa_session_active')
       return null
     }
-    const custom = sessionStorage.getItem('kaiwa_custom_profile')
-    if (custom) {
-      try { return JSON.parse(custom) } catch {}
+
+    // Only restore profile from sessionStorage if it's a valid admin bypass
+    const raw = sessionStorage.getItem('kaiwa_custom_profile')
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        // Only allow admin bypass profile from session cache
+        if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
+          return parsed
+        }
+      } catch {}
     }
+    // All other profiles must come from Supabase auth flow
     return null
   })
   const [loading, setLoading] = useState(true)
