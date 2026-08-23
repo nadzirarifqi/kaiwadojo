@@ -89,8 +89,8 @@ function DailyMissionBuilderModal({
   const [selectedVideos, setSelectedVideos] = useState<SelectedVideoItem[]>(
     currentMission?.selectedVideos || []
   )
-  const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission?.targetQuizCount ?? 1)
-  const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission?.targetKotobaCount ?? 1)
+  const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
+  const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
 
   const startBab = selectedJilid === 1 ? 1 : 26
   const currentBabSetting = chapterSettingsMap[selectedBab]
@@ -128,7 +128,7 @@ function DailyMissionBuilderModal({
     e.preventDefault()
 
     const finalVideos = noVideoPlan ? [] : selectedVideos
-    if (!noVideoPlan && finalVideos.length === 0 && targetQuiz > 0 && targetKotoba > 0) {
+    if (!noVideoPlan && finalVideos.length === 0 && targetQuiz === 0 && targetKotoba === 0) {
       setAlertConfig({
         isOpen: true,
         title: 'Target Video Belum Dipilih ⚠️',
@@ -238,27 +238,40 @@ function DailyMissionBuilderModal({
                     <label className="text-[0.7rem] font-bold text-slate-500 dark:text-slate-400 block mb-1">Pilih Bab</label>
                     <select
                       value={selectedBab}
-                      onChange={e => setSelectedBab(Number(e.target.value))}
+                      onChange={e => {
+                        setSelectedBab(Number(e.target.value))
+                        setSelectedVideos([])
+                      }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
                       {Array.from({ length: 25 }, (_, i) => startBab + i).map(b => (
-                        <option key={b} value={b}>Bab {b}</option>
+                        <option key={b} value={b}>📖 Bab {b}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[0.7rem] font-bold text-slate-400 uppercase">Daftar Video Bab {selectedBab}:</span>
+                <div className="flex flex-col gap-2">
                   {currentBabVideos.map(vItem => {
-                    const isChecked = selectedVideos.some(v => v.id === vItem.id)
+                    const isSelected = selectedVideos.some(v => v.id === vItem.id)
                     return (
-                      <label key={vItem.id} className="p-3 rounded-xl border flex items-center justify-between cursor-pointer bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-3 text-xs">
-                          <input type="checkbox" checked={isChecked} onChange={() => toggleVideoSelection(vItem)} className="size-4 accent-primary cursor-pointer" />
-                          <span>🎥 {vItem.title}</span>
+                      <div
+                        key={vItem.id}
+                        onClick={() => toggleVideoSelection(vItem)}
+                        className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-primary/10 border-primary dark:bg-primary/20 dark:border-red-500 text-primary dark:text-red-300 font-extrabold shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base">{isSelected ? '✅' : '🎥'}</span>
+                          <span className="text-xs truncate">{vItem.title}</span>
                         </div>
-                      </label>
+                        <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10 shrink-0">
+                          3x Replays
+                        </span>
+                      </div>
                     )
                   })}
                 </div>
@@ -274,7 +287,9 @@ function DailyMissionBuilderModal({
               </label>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setTargetQuiz(q => Math.max(0, q - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
-                <span className="flex-1 text-center text-xs font-black">{targetQuiz} Kuis</span>
+                <span className="flex-1 text-center text-xs font-black">
+                  {targetQuiz > 0 ? `${targetQuiz} Kuis` : '0 Kuis (🚫 Tidak Ada Rencana)'}
+                </span>
                 <button type="button" onClick={() => setTargetQuiz(q => Math.min(10, q + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
               </div>
             </div>
@@ -285,7 +300,9 @@ function DailyMissionBuilderModal({
               </label>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setTargetKotoba(k => Math.max(0, k - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
-                <span className="flex-1 text-center text-xs font-black">{targetKotoba} Setoran</span>
+                <span className="flex-1 text-center text-xs font-black">
+                  {targetKotoba > 0 ? `${targetKotoba} Setoran` : '0 Setoran (🚫 Tidak Ada Rencana)'}
+                </span>
                 <button type="button" onClick={() => setTargetKotoba(k => Math.min(10, k + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
               </div>
             </div>
@@ -922,21 +939,21 @@ export default function LearningPlanPage() {
 
                   const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
 
-                  const stampSrc = isPassed
-                    ? '/lulus.png'
-                    : hasPlan
-                      ? isNoPlan
-                        ? '/tidakada.png'
-                        : '/gagal.png'
-                      : '/kosong.png'
+                  const stampSrc = isNoPlan
+                    ? '/tidakada.png'
+                    : isPassed
+                      ? '/lulus.png'
+                      : hasPlan
+                        ? '/gagal.png'
+                        : '/kosong.png'
 
-                  const stampAlt = isPassed
-                    ? 'Lulus (100%)'
-                    : hasPlan
-                      ? isNoPlan
-                        ? 'Tidak Ada Rencana (Cap Biru)'
-                        : 'Gagal (Tidak Selesai)'
-                      : 'Kosong (Belum Ada Rencana)'
+                  const stampAlt = isNoPlan
+                    ? 'Tidak Ada Rencana (Cap Biru)'
+                    : isPassed
+                      ? 'Lulus (100%)'
+                      : hasPlan
+                        ? 'Gagal (Tidak Selesai)'
+                        : 'Kosong (Belum Ada Rencana)'
 
                   let cardBorderAccent = 'border-l-4 border-l-transparent'
 
@@ -1219,21 +1236,21 @@ export default function LearningPlanPage() {
 
                   const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
 
-                  const stampSrc = isPassed
-                    ? '/lulus.png'
-                    : hasPlan
-                      ? isNoPlan
-                        ? '/tidakada.png'
-                        : '/gagal.png'
-                      : '/kosong.png'
+                  const stampSrc = isNoPlan
+                    ? '/tidakada.png'
+                    : isPassed
+                      ? '/lulus.png'
+                      : hasPlan
+                        ? '/gagal.png'
+                        : '/kosong.png'
 
-                  const stampAlt = isPassed
-                    ? 'Lulus (100%)'
-                    : hasPlan
-                      ? isNoPlan
-                        ? 'Tidak Ada Rencana (Cap Biru)'
-                        : 'Gagal (Tidak Selesai)'
-                      : 'Kosong (Belum Ada Rencana)'
+                  const stampAlt = isNoPlan
+                    ? 'Tidak Ada Rencana (Cap Biru)'
+                    : isPassed
+                      ? 'Lulus (100%)'
+                      : hasPlan
+                        ? 'Gagal (Tidak Selesai)'
+                        : 'Kosong (Belum Ada Rencana)'
 
                   let cellBgStyle = ''
 
@@ -1550,16 +1567,31 @@ export default function LearningPlanPage() {
 
             {selectedMission && missionProgress ? (
               <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-300 font-medium">Status Misi:</span>
-                  <span className={`font-black px-2.5 py-0.5 rounded-full text-[0.7rem] ${
-                    missionProgress.isFullyCompleted
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-amber-500 text-white'
-                  }`}>
-                    {missionProgress.isFullyCompleted ? '🎉 100% Selesai' : `${missionProgress.overallPct}% Selesai`}
-                  </span>
-                </div>
+                {selectedMission.selectedVideos.length === 0 && (selectedMission.targetQuizCount || 0) === 0 && (selectedMission.targetKotobaCount || 0) === 0 ? (
+                  <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-8 object-contain shrink-0" />
+                      <div>
+                        <div className="text-xs font-black text-sky-300">Cap Biru Diberikan</div>
+                        <div className="text-[0.68rem] text-slate-300">Tidak ada rencana (Video, Kuis, & Kotoba 0)</div>
+                      </div>
+                    </div>
+                    <span className="text-[0.65rem] font-extrabold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
+                      Cap Biru 🟦
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300 font-medium">Status Misi:</span>
+                    <span className={`font-black px-2.5 py-0.5 rounded-full text-[0.7rem] ${
+                      missionProgress.isFullyCompleted
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-amber-500 text-white'
+                    }`}>
+                      {missionProgress.isFullyCompleted ? '🎉 100% Selesai' : `${missionProgress.overallPct}% Selesai`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Video Target Details */}
                 <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex flex-col gap-2">
@@ -1587,7 +1619,7 @@ export default function LearningPlanPage() {
                     {missionProgress.targetQuizzes > 0 ? (
                       <span className="font-extrabold text-indigo-300 text-sm">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
                     ) : (
-                      <span className="font-bold text-slate-400 text-xs">🚫 Tanpa Target</span>
+                      <span className="font-bold text-slate-400 text-[0.7rem] block">Tidak ada kuis yang direncanakan</span>
                     )}
                   </div>
                   <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
@@ -1595,7 +1627,7 @@ export default function LearningPlanPage() {
                     {missionProgress.targetKotoba > 0 ? (
                       <span className="font-extrabold text-amber-300 text-sm">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
                     ) : (
-                      <span className="font-bold text-slate-400 text-xs">🚫 Tanpa Target</span>
+                      <span className="font-bold text-slate-400 text-[0.7rem] block">Tidak ada kotoba yang direncanakan</span>
                     )}
                   </div>
                 </div>

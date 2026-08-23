@@ -826,94 +826,98 @@ export default function Dashboard() {
             )}
 
             {/* Target Kuis Card */}
-            <button
-              onClick={() => {
-                const targetBab = dailyMission.selectedVideos[0]?.bab || 1
-                const targetJilid = dailyMission.selectedVideos[0]?.jilid || 1
-                navigate(`/my-courses?jilid=${targetJilid}&bab=${targetBab}&item=4`)
-              }}
-              className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
-                missionProgress.targetQuizzes === 0
-                  ? 'bg-slate-50/70 border-slate-200 text-slate-400'
-                  : missionProgress.quizCompleted
+            {dailyMission.targetQuizCount > 0 ? (
+              <button
+                onClick={() => {
+                  const targetBab = dailyMission.selectedVideos[0]?.bab || 1
+                  const targetJilid = dailyMission.selectedVideos[0]?.jilid || 1
+                  navigate(`/my-courses?jilid=${targetJilid}&bab=${targetBab}&item=4`)
+                }}
+                className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
+                  missionProgress.quizCompleted
                     ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
                     : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
-              }`}
-            >
-              <div>
-                <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span className="group-hover:text-indigo-600 transition-colors">🎯 Kuis Evaluasi Bab</span>
-                  {missionProgress.targetQuizzes > 0 ? (
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
+                    <span className="group-hover:text-indigo-600 transition-colors">🎯 Kuis Evaluasi Bab</span>
                     <span className={missionProgress.quizCompleted ? 'text-emerald-700 font-extrabold' : 'text-indigo-600 font-bold'}>
                       {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
                     </span>
-                  ) : (
-                    <span className="text-slate-400 font-bold">🚫 Tanpa Target</span>
-                  )}
+                  </div>
+                  <p className="text-[0.68rem] text-slate-400 mb-2">
+                    Target: {missionProgress.targetQuizzes} kuis selesai
+                  </p>
                 </div>
-                <p className="text-[0.68rem] text-slate-400 mb-2">
-                  {missionProgress.targetQuizzes > 0
-                    ? `Target: ${missionProgress.targetQuizzes} kuis selesai`
-                    : 'Hari ini tidak ada target kuis'}
-                </p>
-              </div>
 
-              <div>
-                <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                    style={{ width: `${missionProgress.targetQuizzes > 0 ? Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100) : 100}%` }}
-                  />
+                <div>
+                  <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-[0.65rem] font-extrabold text-indigo-600 group-hover:underline flex items-center justify-between">
+                    <span>🎯 Kerjakan Kuis Evaluasi</span>
+                    <span>→</span>
+                  </div>
                 </div>
-                <div className="text-[0.65rem] font-extrabold text-indigo-600 group-hover:underline flex items-center justify-between">
-                  <span>🎯 Kerjakan Kuis Evaluasi</span>
-                  <span>→</span>
+              </button>
+            ) : (
+              /* No quiz plan card */
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs flex flex-col justify-center min-h-[100px]">
+                <div>
+                  <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs mb-1">🎯 Kuis Evaluasi Bab</div>
+                  <p className="text-[0.68rem] text-slate-400">Tidak ada kuis yang direncanakan</p>
                 </div>
               </div>
-            </button>
+            )}
 
             {/* Target Kotoba Card */}
-            <button
-              onClick={() => navigate('/kotoba')}
-              className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
-                missionProgress.targetKotoba === 0
-                  ? 'bg-slate-50/70 border-slate-200 text-slate-400'
-                  : missionProgress.kotobaCompleted
+            {dailyMission.targetKotobaCount > 0 ? (
+              <button
+                onClick={() => navigate('/kotoba')}
+                className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
+                  missionProgress.kotobaCompleted
                     ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
                     : 'bg-slate-50 border-slate-200 hover:border-amber-500'
-              }`}
-            >
-              <div>
-                <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span className="group-hover:text-amber-600 transition-colors">🔤 Setoran Kotoba</span>
-                  {missionProgress.targetKotoba > 0 ? (
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
+                    <span className="group-hover:text-amber-600 transition-colors">🔤 Setoran Kotoba</span>
                     <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 font-extrabold' : 'text-amber-600 font-bold'}>
                       {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
                     </span>
-                  ) : (
-                    <span className="text-slate-400 font-bold">🚫 Tanpa Target</span>
-                  )}
+                  </div>
+                  <p className="text-[0.68rem] text-slate-400 mb-2">
+                    Target: {missionProgress.targetKotoba} setoran selesai
+                  </p>
                 </div>
-                <p className="text-[0.68rem] text-slate-400 mb-2">
-                  {missionProgress.targetKotoba > 0
-                    ? `Target: ${missionProgress.targetKotoba} setoran selesai`
-                    : 'Hari ini tidak ada target setoran kotoba'}
-                </p>
-              </div>
 
-              <div>
-                <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${missionProgress.targetKotoba > 0 ? Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100) : 100}%` }}
-                  />
+                <div>
+                  <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-[0.65rem] font-extrabold text-amber-600 group-hover:underline flex items-center justify-between">
+                    <span>🔤 Buka Setoran Kotoba</span>
+                    <span>→</span>
+                  </div>
                 </div>
-                <div className="text-[0.65rem] font-extrabold text-amber-600 group-hover:underline flex items-center justify-between">
-                  <span>🔤 Buka Setoran Kotoba</span>
-                  <span>→</span>
+              </button>
+            ) : (
+              /* No kotoba plan card */
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs flex flex-col justify-center min-h-[100px]">
+                <div>
+                  <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs mb-1">🔤 Setoran Kotoba</div>
+                  <p className="text-[0.68rem] text-slate-400">Tidak ada kotoba yang direncanakan</p>
                 </div>
               </div>
-            </button>
+            )}
           </div>
         ) : (
           <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2">

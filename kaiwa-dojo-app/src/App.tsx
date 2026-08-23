@@ -122,8 +122,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   const isBrowserActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
-  const isSuperAdmin = profile?.role === 'admin' && profile?.username === 'kaiwahiroshima'
-  const hasValidSession = Boolean(session?.user || isSuperAdmin)
+  const hasValidSession = Boolean(session?.user || profile)
 
   if (!isBrowserActive || !hasValidSession || !profile) {
     return <Navigate to="/" replace />

@@ -164,7 +164,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isBrowserSessionActive) return
       const custom = sessionStorage.getItem('kaiwa_custom_profile')
       if (custom) {
-        try { setProfile(JSON.parse(custom)) } catch {}
+        try {
+          const parsed = JSON.parse(custom)
+          if (parsed && parsed.id) {
+            setProfile(parsed)
+            setLoading(false)
+          }
+        } catch {}
       }
     }
 
@@ -188,31 +194,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null)
       setLoading(false)
     } else {
+      // Restore cached profile from sessionStorage immediately for 0ms Instant Entry
+      const customStr = sessionStorage.getItem('kaiwa_custom_profile')
+      if (customStr) {
+        try {
+          const parsed = JSON.parse(customStr)
+          if (parsed && parsed.id && parsed.role) {
+            setProfile(parsed)
+          }
+        } catch {}
+      }
+      setLoading(false)
+
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user && sessionStorage.getItem('kaiwa_session_active') === 'true') {
           setSession(session)
-          fetchProfile(session.user.id)
+          fetchProfile(session.user.id).catch(() => {}).finally(() => setLoading(false))
         } else {
-          const customStr = sessionStorage.getItem('kaiwa_custom_profile')
-          if (customStr) {
-            try {
-              const parsed = JSON.parse(customStr)
-              if (parsed && parsed.id && parsed.role) {
-                setProfile(parsed)
-              } else {
-                setProfile(null)
-                setSession(null)
-              }
-            } catch {
-              setProfile(null)
-              setSession(null)
-            }
-          } else {
-            setProfile(null)
-            setSession(null)
-          }
+          setLoading(false)
         }
-        setLoading(false)
       })
     }
 
@@ -220,11 +220,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const active = sessionStorage.getItem('kaiwa_session_active') === 'true'
       if (active && session?.user) {
         setSession(session)
-        fetchProfile(session.user.id)
+        const customStr = sessionStorage.getItem('kaiwa_custom_profile')
+        if (customStr) {
+          try {
+            const parsed = JSON.parse(customStr)
+            if (parsed && parsed.id) {
+              setProfile(parsed)
+              setLoading(false)
+            }
+          } catch {}
+        }
+        fetchProfile(session.user.id).catch(() => {}).finally(() => setLoading(false))
       } else if (!active) {
-        // If not explicitly logged in during this browser tab session, ignore restored tokens
         setSession(null)
         setProfile(null)
+        setLoading(false)
       } else {
         setSession(session)
         const customStr = sessionStorage.getItem('kaiwa_custom_profile')
@@ -233,15 +243,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsed = JSON.parse(customStr)
             if (parsed && parsed.id && parsed.role) {
               setProfile(parsed)
-            } else {
-              setProfile(null)
             }
-          } catch {
-            setProfile(null)
-          }
-        } else {
-          setProfile(null)
+          } catch {}
         }
+        setLoading(false)
       }
     })
 

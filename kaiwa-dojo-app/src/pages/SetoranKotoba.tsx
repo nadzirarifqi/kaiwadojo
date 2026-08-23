@@ -38,6 +38,29 @@ const SAMPLE_GUIDE_KOTOBA: UserKotoba = {
 
 type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_japanese_meaning'
 
+export function detectJapaneseScript(text: string) {
+  const clean = text.trim()
+  const hasHiragana = /[\u3040-\u309F]/.test(clean)
+  const hasKatakana = /[\u30A0-\u30FF\uFF65-\uFF9F]/.test(clean)
+  const hasKanji    = /[\u4E00-\u9FAF\u3400-\u4DBF]/.test(clean)
+
+  const isValid = hasHiragana || hasKatakana || hasKanji
+
+  const scripts: string[] = []
+  if (hasKanji) scripts.push('Kanji (漢字)')
+  if (hasHiragana) scripts.push('Hiragana (ひらがな)')
+  if (hasKatakana) scripts.push('Katakana (カタカナ)')
+
+  return {
+    isValid,
+    hasHiragana,
+    hasKatakana,
+    hasKanji,
+    scripts,
+    detectedSummary: scripts.length > 0 ? scripts.join(', ') : 'Belum ada karakter Jepang',
+  }
+}
+
 export default function SetoranKotobaPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
@@ -167,6 +190,19 @@ export default function SetoranKotobaPage() {
         message: 'Mohon isi 3 bidang wajib pada "Formulir Setoran Kotoba": Huruf Jepang, Romaji, dan Maknanya!',
         type: 'warning',
         buttonText: 'Lengkapi Data',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+
+    const scriptCheck = detectJapaneseScript(formData.japanese)
+    if (!scriptCheck.isValid) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Input Bukan Huruf Jepang! ⚠️',
+        message: 'Bidang "Huruf Jepang" wajib mengandung setidaknya satu karakter asli Hiragana (あ/い), Katakana (ア/イ), atau Kanji (日/本).\n\nMohon periksa kembali inputanmu agar tidak memasukkan alfabet biasa/teks acak pada kolom huruf Jepang!',
+        type: 'warning',
+        buttonText: 'Perbaiki Huruf Jepang',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
       })
       return
@@ -868,17 +904,39 @@ export default function SetoranKotobaPage() {
             <form onSubmit={handleSubmitForm} className="space-y-4">
               {/* Field 1: Kanji / Katakana / Hiragana */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
+                  </label>
+                  {formData.japanese.trim() && (
+                    <span className={`text-[0.65rem] font-bold px-2.5 py-0.5 rounded-full border transition-all ${
+                      detectJapaneseScript(formData.japanese).isValid
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
+                        : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
+                    }`}>
+                      {detectJapaneseScript(formData.japanese).isValid
+                        ? `✅ Terdeteksi: ${detectJapaneseScript(formData.japanese).detectedSummary}`
+                        : '⚠️ Wajib mengandung Hiragana/Katakana/Kanji'}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
                   placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
                   value={formData.japanese}
                   onChange={e => setFormData({ ...formData, japanese: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium ${
+                    formData.japanese.trim()
+                      ? detectJapaneseScript(formData.japanese).isValid
+                        ? 'border-emerald-400 focus:border-emerald-500'
+                        : 'border-amber-400 focus:border-amber-500'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                  }`}
                 />
+                <p className="text-[0.68rem] text-slate-400 font-medium mt-1">
+                  Sistem otomatis memverifikasi karakter Hiragana (あ), Katakana (ア), atau Kanji (日).
+                </p>
               </div>
 
               {/* Field 2: Romaji */}

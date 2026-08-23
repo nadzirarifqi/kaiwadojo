@@ -74,9 +74,9 @@ export async function fetchDailyMission(userId: string, targetDate: string): Pro
       const mission: DailyMissionData = {
         date: data.date,
         selectedVideos: data.selected_videos || [],
-        targetReplayCount: data.target_replay_count || 3,
-        targetQuizCount: data.target_quiz_count || 1,
-        targetKotobaCount: data.target_kotoba_count || 1,
+        targetReplayCount: typeof data.target_replay_count === 'number' ? data.target_replay_count : (data.selected_videos?.length ? data.selected_videos.length * 3 : 0),
+        targetQuizCount: typeof data.target_quiz_count === 'number' ? data.target_quiz_count : 0,
+        targetKotobaCount: typeof data.target_kotoba_count === 'number' ? data.target_kotoba_count : 0,
       }
       localStorage.setItem(`kaiwa_daily_mission_${userId}_${targetDate}`, JSON.stringify(mission))
       return mission
@@ -119,9 +119,9 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
         const mission: DailyMissionData = {
           date: row.date,
           selectedVideos: row.selected_videos || [],
-          targetReplayCount: row.target_replay_count || 3,
-          targetQuizCount: row.target_quiz_count || 1,
-          targetKotobaCount: row.target_kotoba_count || 1,
+          targetReplayCount: typeof row.target_replay_count === 'number' ? row.target_replay_count : (row.selected_videos?.length ? row.selected_videos.length * 3 : 0),
+          targetQuizCount: typeof row.target_quiz_count === 'number' ? row.target_quiz_count : 0,
+          targetKotobaCount: typeof row.target_kotoba_count === 'number' ? row.target_kotoba_count : 0,
         }
         missionMap.set(row.date, mission)
         localStorage.setItem(`kaiwa_daily_mission_${userId}_${row.date}`, JSON.stringify(mission))
