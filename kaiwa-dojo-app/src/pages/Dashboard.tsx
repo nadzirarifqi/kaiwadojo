@@ -532,20 +532,48 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadDashboardData() {
-      if (!user || !profile) return
+      const effectiveUserId = profile?.id || user?.id || 'active_user'
 
       // Daily Mission
-      const mission = getDailyMission(user.id)
+      const mission = getDailyMission(effectiveUserId)
       setDailyMission(mission)
       if (mission) {
-        const prog = await calculateMissionProgress(user.id, mission)
+        const prog = await calculateMissionProgress(effectiveUserId, mission)
         setMissionProgress(prog)
 
         if (mission.selectedVideos.length > 0) {
-          const { data: progData } = await supabase
-            .from('lesson_progress')
-            .select('lesson_id, is_completed, replay_count')
-            .eq('student_id', user.id)
+          let progData: any[] = []
+          if (user?.id || profile?.id) {
+            const { data } = await supabase
+              .from('lesson_progress')
+              .select('lesson_id, is_completed, replay_count')
+              .eq('student_id', effectiveUserId)
+            progData = data || []
+          }
+
+          // Merge local progress map
+          const localProgKey = `kaiwa_lesson_progress_${effectiveUserId}`
+          const globalProgKey = `kaiwa_lesson_progress_active_global`
+          const savedProgRaw = localStorage.getItem(localProgKey) || localStorage.getItem(globalProgKey)
+          if (savedProgRaw) {
+            try {
+              const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedProgRaw)
+              const progMap = new Map<string, { is_completed: boolean; replay_count: number }>()
+              progData.forEach(p => progMap.set(p.lesson_id, { is_completed: p.is_completed, replay_count: p.replay_count || 0 }))
+              parsedArr.forEach(([lId, val]) => {
+                const existing = progMap.get(lId)
+                progMap.set(lId, {
+                  is_completed: val.is_completed || existing?.is_completed || false,
+                  replay_count: Math.max(val.replay_count || 0, existing?.replay_count || 0),
+                })
+              })
+              progData = Array.from(progMap.entries()).map(([lId, val]) => ({
+                lesson_id: lId,
+                is_completed: val.is_completed,
+                replay_count: val.replay_count,
+              }))
+            } catch {}
+          }
 
           const map = new Map<string, number>()
           mission.selectedVideos.forEach(v => {
@@ -571,11 +599,15 @@ export default function Dashboard() {
       }
 
       // Calculate Minna no Nihongo Jilid 1 & 2 Progress
-      const { data: userLessonProgress } = await supabase
-        .from('lesson_progress')
-        .select('lesson_id, is_completed')
-        .eq('student_id', user.id)
-        .eq('is_completed', true)
+      let userLessonProgress: any[] = []
+      if (user?.id || profile?.id) {
+        const { data } = await supabase
+          .from('lesson_progress')
+          .select('lesson_id, is_completed')
+          .eq('student_id', effectiveUserId)
+          .eq('is_completed', true)
+        userLessonProgress = data || []
+      }
 
       let j1Count = 0
       let j2Count = 0
@@ -600,24 +632,31 @@ export default function Dashboard() {
       })
 
       // Fetch enrollments
-      const { data: enrollData } = await supabase
-        .from('enrollments')
-        .select(`
-          id, progress_pct, course_id,
-          course:courses!enrollments_course_id_fkey(id, title, category, thumbnail_url, total_lessons)
-        `)
-        .eq('student_id', user.id)
+      let enrollData: any[] = []
+      let streaksData: any[] = []
 
-      const enrolled = enrollData || []
+      if (user?.id || profile?.id) {
+        const [eRes, sRes] = await Promise.all([
+          supabase
+            .from('enrollments')
+            .select(`
+              id, progress_pct, course_id,
+              course:courses!enrollments_course_id_fkey(id, title, category, thumbnail_url, total_lessons)
+            `)
+            .eq('student_id', effectiveUserId),
+          supabase
+            .from('learning_streaks')
+            .select('date')
+            .eq('student_id', effectiveUserId),
+        ])
+        enrollData = eRes.data || []
+        streaksData = sRes.data || []
+      }
+
+      const enrolled = enrollData
       const completed = enrolled.filter((e: any) => Number(e.progress_pct) === 100)
 
-      // Fetch recent streaks and calculate live consecutive streak count
-      const { data: streaksData } = await supabase
-        .from('learning_streaks')
-        .select('date')
-        .eq('student_id', user.id)
-
-      const streakDates = new Set((streaksData || []).map((s: any) => s.date))
+      const streakDates = new Set(streaksData.map((s: any) => s.date))
       const liveStreakCount = calculateStreakFromDates(streakDates)
 
       const today = new Date()
@@ -655,46 +694,44 @@ export default function Dashboard() {
         <div className="absolute -top-14 -right-14 size-64 bg-white/5 rounded-full pointer-events-none" />
         <div className="absolute -bottom-16 right-20 size-48 bg-white/[0.04] rounded-full pointer-events-none" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-bold text-white/95 bg-white/20 px-3 py-1 rounded-full tracking-wider flex items-center gap-1.5">
-              <span>🌸</span>
-              <span className="font-jp font-bold">日本語学習</span>
-              <span>• Pelajar</span>
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2 tracking-tight leading-snug">
-            {t('dash_welcome', 'Selamat datang')}, {profile?.full_name || 'User'}! 👋
-          </h1>
-          <p className="text-white/90 text-sm sm:text-base leading-relaxed max-w-lg font-medium">
-            <span className="font-jp font-bold mr-1">今日も頑張りましょう!</span>
-            {t('dash_subtitle', 'Mari lanjutkan perjalanan belajar bahasa Jepangmu hari ini!')} ✨
-          </p>
-        </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+          <div className="flex items-center gap-4">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name}
+                className="size-16 sm:size-20 rounded-2xl border-2 border-white/30 object-cover shadow-md"
+              />
+            ) : (
+              <div className="size-16 sm:size-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-white text-2xl sm:text-3xl shadow-md font-serif">
+                {profile?.full_name?.[0] || '学'}
+              </div>
+            )}
 
-        {/* Stats Cards */}
-        <div className="flex gap-3 shrink-0 relative z-10 flex-wrap">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-center min-w-[90px] flex flex-col items-center justify-center">
-            <span className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-base font-black mb-1 font-serif shadow-xs">
-              学
-            </span>
-            <div className="text-2xl font-black text-white">{stats.enrolledCoursesCount}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_enrolled_courses', 'Kursus')}</div>
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="bg-white/20 backdrop-blur-md text-white text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border border-white/30">
+                  🌸 {t('dash_welcome_student', 'Pelajar KaiwaDoJo')}
+                </span>
+                <span className="bg-amber-400/20 backdrop-blur-md text-amber-200 text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                  {t('dash_jlpt_n5_target', 'Target JLPT N5')}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight">
+                {t('dash_konnichiwa', 'Konnichiwa')}, {profile?.full_name || 'Pelajar'}! 👋
+              </h1>
+              <p className="text-xs sm:text-sm text-white/80 font-medium mt-1">
+                {t('dash_tagline', 'Mari lanjutkan perjalanan bahasa Jepangmu hari ini dengan percaya diri.')}
+              </p>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-center min-w-[90px] flex flex-col items-center justify-center">
-            <span className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-base font-black mb-1 shadow-xs">
-              🔥
-            </span>
-            <div className="text-2xl font-black text-white">{stats.streakDays}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_streak_label', 'Streak')}</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-center min-w-[90px] flex flex-col items-center justify-center">
-            <span className="size-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-base font-black mb-1 font-serif shadow-xs">
-              済
-            </span>
-            <div className="text-2xl font-black text-white">{stats.completedCoursesCount}</div>
-            <div className="text-[0.65rem] text-white/70 font-bold uppercase">{t('dash_completed_courses', 'Selesai')}</div>
-          </div>
+
+          <button
+            onClick={() => navigate('/my-courses')}
+            className="self-start md:self-center px-5 py-3 rounded-2xl bg-white text-slate-900 font-extrabold hover:bg-slate-100 text-xs sm:text-sm border-none cursor-pointer shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+          >
+            <span>▶ {t('dash_continue_learning', 'Lanjut Belajar')}</span>
+          </button>
         </div>
       </header>
 
@@ -720,7 +757,7 @@ export default function Dashboard() {
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {dailyMission
-                  ? `Target: ${dailyMission.selectedVideos.length > 0 ? dailyMission.selectedVideos.map(v => `Bab ${v.bab} Part ${v.videoNum}`).join(', ') : 'Tanpa Video'} (${missionProgress?.targetReplays}x Replays) • ${dailyMission.targetQuizCount} Kuis • ${dailyMission.targetKotobaCount} Kotoba`
+                  ? `Target: ${dailyMission.selectedVideos.length > 0 ? dailyMission.selectedVideos.map(v => `Bab ${v.bab} Part ${v.videoNum}`).join(', ') : 'Tanpa Video'} (${missionProgress?.targetReplays}x Replays) ${dailyMission.targetQuizCount > 0 ? `• ${dailyMission.targetQuizCount} Kuis` : ''} ${dailyMission.targetKotobaCount > 0 ? `• ${dailyMission.targetKotobaCount} Kotoba` : ''}`
                   : 'Buat misi harian kamu untuk mulai menambah streak hari ini!'}
               </p>
             </div>
@@ -788,7 +825,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Target Kuis Card (Clickable -> Opens evaluation quiz item=4) */}
+            {/* Target Kuis Card */}
             <button
               onClick={() => {
                 const targetBab = dailyMission.selectedVideos[0]?.bab || 1
@@ -796,20 +833,28 @@ export default function Dashboard() {
                 navigate(`/my-courses?jilid=${targetJilid}&bab=${targetBab}&item=4`)
               }}
               className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
-                missionProgress.quizCompleted
-                  ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
-                  : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
+                missionProgress.targetQuizzes === 0
+                  ? 'bg-slate-50/70 border-slate-200 text-slate-400'
+                  : missionProgress.quizCompleted
+                    ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
+                    : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
               }`}
             >
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
                   <span className="group-hover:text-indigo-600 transition-colors">🎯 Kuis Evaluasi Bab</span>
-                  <span className={missionProgress.quizCompleted ? 'text-emerald-700 font-extrabold' : 'text-indigo-600 font-bold'}>
-                    {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
-                  </span>
+                  {missionProgress.targetQuizzes > 0 ? (
+                    <span className={missionProgress.quizCompleted ? 'text-emerald-700 font-extrabold' : 'text-indigo-600 font-bold'}>
+                      {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-bold">🚫 Tanpa Target</span>
+                  )}
                 </div>
                 <p className="text-[0.68rem] text-slate-400 mb-2">
-                  Target: {missionProgress.targetQuizzes} kuis selesai
+                  {missionProgress.targetQuizzes > 0
+                    ? `Target: ${missionProgress.targetQuizzes} kuis selesai`
+                    : 'Hari ini tidak ada target kuis'}
                 </p>
               </div>
 
@@ -817,7 +862,7 @@ export default function Dashboard() {
                 <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
                   <div
                     className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / (missionProgress.targetQuizzes || 1)) * 100)}%` }}
+                    style={{ width: `${missionProgress.targetQuizzes > 0 ? Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100) : 100}%` }}
                   />
                 </div>
                 <div className="text-[0.65rem] font-extrabold text-indigo-600 group-hover:underline flex items-center justify-between">
@@ -827,24 +872,32 @@ export default function Dashboard() {
               </div>
             </button>
 
-            {/* Target Kotoba Card (Clickable -> Opens /kotoba page) */}
+            {/* Target Kotoba Card */}
             <button
               onClick={() => navigate('/kotoba')}
               className={`p-4 rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md group flex flex-col justify-between ${
-                missionProgress.kotobaCompleted
-                  ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
-                  : 'bg-slate-50 border-slate-200 hover:border-amber-500'
+                missionProgress.targetKotoba === 0
+                  ? 'bg-slate-50/70 border-slate-200 text-slate-400'
+                  : missionProgress.kotobaCompleted
+                    ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
+                    : 'bg-slate-50 border-slate-200 hover:border-amber-500'
               }`}
             >
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 mb-1">
                   <span className="group-hover:text-amber-600 transition-colors">🔤 Setoran Kotoba</span>
-                  <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 font-extrabold' : 'text-amber-600 font-bold'}>
-                    {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
-                  </span>
+                  {missionProgress.targetKotoba > 0 ? (
+                    <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 font-extrabold' : 'text-amber-600 font-bold'}>
+                      {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-bold">🚫 Tanpa Target</span>
+                  )}
                 </div>
                 <p className="text-[0.68rem] text-slate-400 mb-2">
-                  Target: {missionProgress.targetKotoba} setoran selesai
+                  {missionProgress.targetKotoba > 0
+                    ? `Target: ${missionProgress.targetKotoba} setoran selesai`
+                    : 'Hari ini tidak ada target setoran kotoba'}
                 </p>
               </div>
 
@@ -852,7 +905,7 @@ export default function Dashboard() {
                 <div className="h-2 bg-slate-200/80 rounded-full overflow-hidden mb-2">
                   <div
                     className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (missionProgress.actualKotoba / (missionProgress.targetKotoba || 1)) * 100)}%` }}
+                    style={{ width: `${missionProgress.targetKotoba > 0 ? Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100) : 100}%` }}
                   />
                 </div>
                 <div className="text-[0.65rem] font-extrabold text-amber-600 group-hover:underline flex items-center justify-between">

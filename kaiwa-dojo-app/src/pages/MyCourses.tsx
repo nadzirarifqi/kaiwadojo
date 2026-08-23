@@ -275,21 +275,40 @@ export default function MyCourses() {
     ])
     setHeaderSettings(adminHeader)
 
-    // 1. Fetch user's progress if logged in
+    // 1. Fetch user's progress from local storage & Supabase
+    const effectiveUserId = profile?.id || user?.id || 'active_user'
+    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
+    const globalKey = `kaiwa_lesson_progress_active_global`
+
     let userProgress = new Map<string, { is_completed: boolean; replay_count: number }>()
-    if (user) {
+
+    // Load from local storage backup first
+    const savedLocal = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+    if (savedLocal) {
+      try {
+        const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedLocal)
+        parsedArr.forEach(([lId, val]) => userProgress.set(lId, val))
+      } catch {}
+    }
+
+    if (user?.id || profile?.id) {
       const { data: progressData } = await supabase
         .from('lesson_progress')
         .select('lesson_id, is_completed, replay_count')
-        .eq('student_id', user.id)
+        .eq('student_id', effectiveUserId)
 
       if (progressData) {
         progressData.forEach((p: any) => {
-          userProgress.set(p.lesson_id, { is_completed: p.is_completed, replay_count: p.replay_count || 0 })
+          const existing = userProgress.get(p.lesson_id)
+          const mergedCompleted = p.is_completed || existing?.is_completed || false
+          const mergedReplay = Math.max(p.replay_count || 0, existing?.replay_count || 0)
+          userProgress.set(p.lesson_id, { is_completed: mergedCompleted, replay_count: mergedReplay })
         })
       }
     }
     setProgressMap(userProgress)
+    localStorage.setItem(storageKey, JSON.stringify(Array.from(userProgress.entries())))
+    localStorage.setItem(globalKey, JSON.stringify(Array.from(userProgress.entries())))
 
     // 2. Fetch real database lessons from Supabase (if available)
     const { data: realLessons } = await supabase
@@ -300,9 +319,9 @@ export default function MyCourses() {
     const realLessonMap = new Map<string, any>()
     if (realLessons) {
       realLessons.forEach((l: any) => {
-        // e.g. title matched or ID matched
         realLessonMap.set(l.id, l)
         realLessonMap.set(l.title?.toLowerCase(), l)
+        realLessonMap.set(`bab_${l.bab_number}_video_${l.lesson_number}`, l)
       })
     }
 
@@ -315,42 +334,40 @@ export default function MyCourses() {
 
     for (let bab = startBab; bab <= endBab; bab++) {
       const info = titlesMap[bab] || { title: `Bab ${bab}`, subtitle: 'Materi Bahasa Jepang', has_video: false }
-      const adminSetting = adminChapterMap[bab]
-
-      const rawBabTitle = adminSetting?.title || info.title
-      const babCleanTitle = rawBabTitle.replace(/^Bab\s+\d+:\s*/i, '')
+      const adminSetting = (adminChapterMap && typeof (adminChapterMap as any).get === 'function')
+        ? (adminChapterMap as any).get(bab)
+        : (adminChapterMap as any)?.[bab]
 
       const lessons: LessonItem[] = CHAPTER_ITEMS_CONFIG.map(item => {
         const lessonCode = `bab_${bab}_item_${item.num}`
-        const dbLesson   = realLessonMap.get(lessonCode)
+        const dbLesson   = realLessonMap.get(lessonCode) || realLessonMap.get(`bab_${bab}_video_${item.num}`) || realLessonMap.get(`lesson_bab_${bab}_${item.num}`)
+        
+        const dbLessonId = dbLesson?.id || `lesson_bab_${bab}_${item.num}`
+        const pState = userProgress.get(dbLessonId) || userProgress.get(`lesson_bab_${bab}_${item.num}`) || userProgress.get(`bab_${bab}_video_${item.num}`)
 
-        const isCompleted  = dbLesson ? (userProgress.get(dbLesson.id)?.is_completed || false) : false
-        const replayCount  = dbLesson ? (userProgress.get(dbLesson.id)?.replay_count || 0) : 0
+        const isCompleted  = pState?.is_completed || false
+        const replayCount  = pState?.replay_count || 0
         const hostedUrl    = getHostedVideoUrl(bab, item.num)
         
         let customVideoOverride = null
-        if (item.num === 1) customVideoOverride = adminSetting?.custom_video_s1
-        if (item.num === 2) customVideoOverride = adminSetting?.custom_video_s2
-        if (item.num === 3) customVideoOverride = adminSetting?.custom_video_s3
+        if (item.num === 1 && adminSetting?.video1_url) customVideoOverride = adminSetting.video1_url
+        if (item.num === 2 && adminSetting?.video2_url) customVideoOverride = adminSetting.video2_url
+        if (item.num === 3 && adminSetting?.video3_url) customVideoOverride = adminSetting.video3_url
 
-        const videoUrl = customVideoOverride || dbLesson?.video_id || hostedUrl
+        const videoUrl = customVideoOverride || dbLesson?.video_url || hostedUrl
 
-        // Format Title: [JUDUL BAB] Part 1, Part 2, Part 3
-        let lessonTitle = item.title
-        if (item.num === 1) lessonTitle = `${babCleanTitle} Part 1`
-        if (item.num === 2) lessonTitle = `${babCleanTitle} Part 2`
-        if (item.num === 3) lessonTitle = `${babCleanTitle} Part 3`
-        if (item.num === 4) lessonTitle = `Kuis Evaluasi 1 — ${babCleanTitle}`
-        if (item.num === 5) lessonTitle = `Kuis Evaluasi 2 — ${babCleanTitle}`
+        const lessonTitle = item.num === 1 && adminSetting?.video1_title ? adminSetting.video1_title
+          : item.num === 2 && adminSetting?.video2_title ? adminSetting.video2_title
+          : item.num === 3 && adminSetting?.video3_title ? adminSetting.video3_title
+          : dbLesson?.title || item.title
 
-        // Duration text (e.g. "3.44", "15.30")
-        let durationText = `${item.duration}.00`
+        let durationText = item.duration.toString()
         if (item.num === 1 && adminSetting?.duration_s1) durationText = String(adminSetting.duration_s1)
         if (item.num === 2 && adminSetting?.duration_s2) durationText = String(adminSetting.duration_s2)
         if (item.num === 3 && adminSetting?.duration_s3) durationText = String(adminSetting.duration_s3)
 
         return {
-          id: dbLesson?.id || `lesson_bab_${bab}_${item.num}`,
+          id: dbLessonId,
           title: lessonTitle,
           lesson_number: item.num,
           content_type: item.type,
@@ -462,16 +479,25 @@ export default function MyCourses() {
   }
 
   async function handleToggleLessonComplete(lesson: LessonItem) {
-    if (!user || lesson.is_placeholder) return
+    if (lesson.is_placeholder) return
     const newStatus = !lesson.is_completed
+    const effectiveUserId = profile?.id || user?.id || 'active_user'
 
-    // 1. Update lesson_progress in Supabase
-    await supabase.from('lesson_progress').upsert({
-      student_id: user.id,
-      lesson_id: lesson.id,
-      is_completed: newStatus,
-      last_watched_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,lesson_id' })
+    // 1. Update local progress map & local storage
+    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
+    const globalKey = `kaiwa_lesson_progress_active_global`
+
+    setProgressMap(prev => {
+      const next = new Map(prev)
+      const existing = next.get(lesson.id)
+      next.set(lesson.id, {
+        is_completed: newStatus,
+        replay_count: existing?.replay_count || lesson.replay_count || 0,
+      })
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
+      localStorage.setItem(globalKey, JSON.stringify(Array.from(next.entries())))
+      return next
+    })
 
     // 2. Update state & active lesson
     setChapters(prev =>
@@ -487,7 +513,20 @@ export default function MyCourses() {
       setActiveLesson(prev => (prev ? { ...prev, is_completed: newStatus } : null))
     }
 
-    // 3. Upsert overall course progress to Supabase enrollments table
+    window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
+    window.dispatchEvent(new Event('storage'))
+
+    // 3. Update lesson_progress in Supabase if logged in
+    if (user?.id || profile?.id) {
+      await supabase.from('lesson_progress').upsert({
+        student_id: effectiveUserId,
+        lesson_id: lesson.id,
+        is_completed: newStatus,
+        last_watched_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,lesson_id' })
+    }
+
+    // 4. Upsert overall course progress to Supabase enrollments table
     try {
       const courseId = selectedJilid === 1 ? 'minna-no-nihongo-1' : 'minna-no-nihongo-2'
       const updatedCompletedCount = chapters.reduce(
@@ -495,35 +534,73 @@ export default function MyCourses() {
       )
       const newProgressPct = Math.min(100, Math.round((updatedCompletedCount / (25 * 5)) * 100))
 
-      await supabase.from('enrollments').upsert({
-        student_id: user.id,
-        course_id: courseId,
-        progress_pct: newProgressPct,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'student_id,course_id' })
+      if (user?.id || profile?.id) {
+        await supabase.from('enrollments').upsert({
+          student_id: effectiveUserId,
+          course_id: courseId,
+          progress_pct: newProgressPct,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'student_id,course_id' })
+      }
     } catch (e) {
       console.warn('Course progress enrollments sync note:', e)
     }
 
-    // 4. Update learning streak
-    await supabase.from('learning_streaks').upsert({
-      student_id: user.id,
-      date: new Date().toISOString().split('T')[0],
-    }, { onConflict: 'student_id,date' })
+    // 5. Update learning streak
+    if (user?.id || profile?.id) {
+      await supabase.from('learning_streaks').upsert({
+        student_id: effectiveUserId,
+        date: new Date().toISOString().split('T')[0],
+      }, { onConflict: 'student_id,date' })
+    }
   }
 
   async function handleIncrementReplay(lesson: LessonItem) {
-    if (!user || lesson.is_placeholder) return
+    if (lesson.is_placeholder) return
     const currentReplay = lesson.replay_count || 0
+    const newReplayCount = currentReplay + 1
+    const effectiveUserId = profile?.id || user?.id || 'active_user'
 
-    await supabase.from('lesson_progress').upsert({
-      student_id: user.id,
-      lesson_id: lesson.id,
-      replay_count: currentReplay + 1,
-      last_watched_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,lesson_id' })
+    // 1. Update local progress map & local storage
+    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
+    const globalKey = `kaiwa_lesson_progress_active_global`
 
-    setActiveLesson(prev => prev ? { ...prev, replay_count: currentReplay + 1 } : null)
+    setProgressMap(prev => {
+      const next = new Map(prev)
+      const existing = next.get(lesson.id)
+      next.set(lesson.id, {
+        is_completed: existing?.is_completed || lesson.is_completed || false,
+        replay_count: newReplayCount,
+      })
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
+      localStorage.setItem(globalKey, JSON.stringify(Array.from(next.entries())))
+      return next
+    })
+
+    // 2. Update state & active lesson
+    setChapters(prev =>
+      prev.map(chap => ({
+        ...chap,
+        lessons: chap.lessons.map(l =>
+          l.id === lesson.id ? { ...l, replay_count: newReplayCount } : l
+        ),
+      }))
+    )
+
+    setActiveLesson(prev => (prev ? { ...prev, replay_count: newReplayCount } : null))
+
+    window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
+    window.dispatchEvent(new Event('storage'))
+
+    // 3. Update lesson_progress in Supabase if logged in
+    if (user?.id || profile?.id) {
+      await supabase.from('lesson_progress').upsert({
+        student_id: effectiveUserId,
+        lesson_id: lesson.id,
+        replay_count: newReplayCount,
+        last_watched_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,lesson_id' })
+    }
   }
 
   function toggleBabAccordion(babNum: number) {

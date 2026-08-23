@@ -622,29 +622,47 @@ export default function LearningPlanPage() {
   }, [])
 
 
-  useEffect(() => {
-    if (!user) return
-    loadData()
-  }, [user, selectedDateStr, currentMonthDate])
+  const activeUserId = profile?.id || user?.id || 'active_user'
 
+  useEffect(() => {
+    loadData()
+
+    const handleMissionSync = () => {
+      loadData()
+    }
+    window.addEventListener('kaiwa_mission_progress_updated', handleMissionSync)
+    window.addEventListener('storage', handleMissionSync)
+
+    return () => {
+      window.removeEventListener('kaiwa_mission_progress_updated', handleMissionSync)
+      window.removeEventListener('storage', handleMissionSync)
+    }
+  }, [user, profile?.id, selectedDateStr, currentMonthDate])
 
   async function loadData() {
-    if (!user) return
-
     // 1. Batch fetch user's streaks, lesson progress, and kotoba submissions in parallel
-    const [{ data: streaksData }, { data: pData }, { data: kData }] = await Promise.all([
-      supabase.from('learning_streaks').select('date').eq('student_id', user.id),
-      supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', user.id),
-      supabase.from('user_kotoba_submissions').select('id').eq('user_id', user.id),
-    ])
+    let streaksData: any[] = []
+    let pData: any[] = []
+    let kData: any[] = []
 
-    const streakDates = new Set((streaksData || []).map((s: any) => s.date))
+    if (user?.id || profile?.id) {
+      const [sRes, pRes, kRes] = await Promise.all([
+        supabase.from('learning_streaks').select('date').eq('student_id', activeUserId),
+        supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', activeUserId),
+        supabase.from('user_kotoba_submissions').select('id').eq('user_id', activeUserId),
+      ])
+      streaksData = sRes.data || []
+      pData = pRes.data || []
+      kData = kRes.data || []
+    }
+
+    const streakDates = new Set(streaksData.map((s: any) => s.date))
     setStreakSet(streakDates)
 
-    const preFetched = { progressData: pData || [], kotobaSubmissions: kData || [] }
+    const preFetched = { progressData: pData, kotobaSubmissions: kData }
 
     // 2. Fetch all missions from Supabase DB + LocalStorage
-    const allMissionsMap = await fetchAllUserMissions(user.id)
+    const allMissionsMap = await fetchAllUserMissions(activeUserId)
     setUserMissions(allMissionsMap)
 
     // 3. Compute past missions progress for the displayed month (using preFetched data in memory)
@@ -663,7 +681,7 @@ export default function LearningPlanPage() {
       } else {
         const m = allMissionsMap.get(dStr)
         if (m) {
-          const prog = await calculateMissionProgress(user.id, m, preFetched)
+          const prog = await calculateMissionProgress(activeUserId, m, preFetched)
           if (prog.isFullyCompleted) {
             completedSet.add(dStr)
           }
@@ -673,14 +691,14 @@ export default function LearningPlanPage() {
     setPastCompletedSet(completedSet)
 
     // 4. Load mission for selected date
-    let mission = allMissionsMap.get(selectedDateStr) || getDailyMission(user.id, selectedDateStr)
-    if (!mission) {
-      mission = await fetchDailyMission(user.id, selectedDateStr)
+    let mission = allMissionsMap.get(selectedDateStr) || getDailyMission(activeUserId, selectedDateStr)
+    if (!mission && (user?.id || profile?.id)) {
+      mission = await fetchDailyMission(activeUserId, selectedDateStr)
     }
     setSelectedMission(mission)
 
     if (mission) {
-      const prog = await calculateMissionProgress(user.id, mission, preFetched)
+      const prog = await calculateMissionProgress(activeUserId, mission, preFetched)
       setMissionProgress(prog)
     } else {
       setMissionProgress(null)
@@ -1566,11 +1584,19 @@ export default function LearningPlanPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
                     <span className="text-slate-300 text-[0.68rem] block mb-1">🎯 Target Kuis</span>
-                    <span className="font-extrabold text-indigo-300 text-sm">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
+                    {missionProgress.targetQuizzes > 0 ? (
+                      <span className="font-extrabold text-indigo-300 text-sm">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
+                    ) : (
+                      <span className="font-bold text-slate-400 text-xs">🚫 Tanpa Target</span>
+                    )}
                   </div>
                   <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
                     <span className="text-slate-300 text-[0.68rem] block mb-1">🔤 Target Kotoba</span>
-                    <span className="font-extrabold text-amber-300 text-sm">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
+                    {missionProgress.targetKotoba > 0 ? (
+                      <span className="font-extrabold text-amber-300 text-sm">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
+                    ) : (
+                      <span className="font-bold text-slate-400 text-xs">🚫 Tanpa Target</span>
+                    )}
                   </div>
                 </div>
 

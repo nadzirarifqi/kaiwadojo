@@ -218,23 +218,61 @@ export async function calculateMissionProgress(
 ): Promise<MissionProgress> {
   const dateStr = mission.date || getTodayDateString()
 
-  let progressData = preFetched?.progressData
-  let kotobaSubmissions = preFetched?.kotobaSubmissions
+  let progressData: any[] = preFetched?.progressData || []
+  let kotobaSubmissions: any[] = preFetched?.kotobaSubmissions || []
 
   if (!preFetched) {
     // Fetch lesson progress & kotoba submissions from Supabase if not pre-fetched
-    const [{ data: pData }, { data: kData }] = await Promise.all([
-      supabase
-        .from('lesson_progress')
-        .select('lesson_id, is_completed, replay_count, last_watched_at')
-        .eq('student_id', userId),
-      supabase
-        .from('user_kotoba_submissions')
-        .select('id')
-        .eq('user_id', userId),
-    ])
-    progressData = pData || []
-    kotobaSubmissions = kData || []
+    try {
+      const [{ data: pData }, { data: kData }] = await Promise.all([
+        supabase
+          .from('lesson_progress')
+          .select('lesson_id, is_completed, replay_count, last_watched_at')
+          .eq('student_id', userId),
+        supabase
+          .from('user_kotoba_submissions')
+          .select('id')
+          .eq('user_id', userId),
+      ])
+      progressData = pData || []
+      kotobaSubmissions = kData || []
+    } catch {}
+  }
+
+  // Merge with Local Storage backup
+  const localProgKey = `kaiwa_lesson_progress_${userId}`
+  const globalProgKey = `kaiwa_lesson_progress_active_global`
+  const savedProgRaw = localStorage.getItem(localProgKey) || localStorage.getItem(globalProgKey)
+  if (savedProgRaw) {
+    try {
+      const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedProgRaw)
+      const progMap = new Map<string, { is_completed: boolean; replay_count: number }>()
+      progressData.forEach(p => progMap.set(p.lesson_id, { is_completed: p.is_completed, replay_count: p.replay_count || 0 }))
+      parsedArr.forEach(([lId, val]) => {
+        const existing = progMap.get(lId)
+        progMap.set(lId, {
+          is_completed: val.is_completed || existing?.is_completed || false,
+          replay_count: Math.max(val.replay_count || 0, existing?.replay_count || 0),
+        })
+      })
+      progressData = Array.from(progMap.entries()).map(([lId, val]) => ({
+        lesson_id: lId,
+        is_completed: val.is_completed,
+        replay_count: val.replay_count,
+      }))
+    } catch {}
+  }
+
+  const localKotobaKey = `kaiwa_user_kotoba_${userId}`
+  const globalKotobaKey = `kaiwa_user_kotoba_active_global`
+  const savedKotobaRaw = localStorage.getItem(localKotobaKey) || localStorage.getItem(globalKotobaKey)
+  if (savedKotobaRaw) {
+    try {
+      const parsedKotoba: any[] = JSON.parse(savedKotobaRaw)
+      if (parsedKotoba.length > kotobaSubmissions.length) {
+        kotobaSubmissions = parsedKotoba
+      }
+    } catch {}
   }
 
   let actualReplays = 0

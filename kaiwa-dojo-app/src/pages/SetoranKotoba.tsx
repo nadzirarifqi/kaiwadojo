@@ -39,8 +39,9 @@ const SAMPLE_GUIDE_KOTOBA: UserKotoba = {
 type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_japanese_meaning'
 
 export default function SetoranKotobaPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { t } = useLanguage()
+  const effectiveUserId = profile?.id || user?.id || 'active_user'
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -78,44 +79,61 @@ export default function SetoranKotobaPage() {
     onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
   })
 
-  // Load Kotoba strictly from Database
+  // Load Kotoba from Database and Local Storage Backup
   useEffect(() => {
     loadKotobaList()
-  }, [user])
+  }, [user, profile?.id])
 
   async function loadKotobaList() {
     setLoading(true)
-    const storageKey = `kaiwa_user_kotoba_${user?.id || 'guest'}`
+    const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
+    const globalKey = `kaiwa_user_kotoba_active_global`
 
-    if (user) {
+    let dbItems: UserKotoba[] = []
+    if (user?.id || profile?.id) {
       const { data, error } = await supabase
         .from('user_kotoba_submissions')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
-        setKotobaList(data as UserKotoba[])
-        localStorage.setItem(storageKey, JSON.stringify(data))
-        setLoading(false)
-        return
+      if (!error && data && data.length > 0) {
+        dbItems = data as UserKotoba[]
       }
     }
 
-    // Fallback to local storage for guest / offline mode
-    const localData = localStorage.getItem(storageKey)
+    // Merge with local storage
+    const localData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+    let localItems: UserKotoba[] = []
     if (localData) {
-      setKotobaList(JSON.parse(localData))
-    } else {
-      setKotobaList([])
+      try {
+        localItems = JSON.parse(localData)
+      } catch {}
     }
+
+    const mergedMap = new Map<string, UserKotoba>()
+    dbItems.forEach(item => mergedMap.set(item.id, item))
+    localItems.forEach(item => {
+      if (!mergedMap.has(item.id)) {
+        mergedMap.set(item.id, item)
+      }
+    })
+
+    const finalItems = Array.from(mergedMap.values())
+    setKotobaList(finalItems)
+    localStorage.setItem(storageKey, JSON.stringify(finalItems))
+    localStorage.setItem(globalKey, JSON.stringify(finalItems))
     setLoading(false)
   }
 
   function saveToLocal(updatedList: UserKotoba[]) {
     setKotobaList(updatedList)
-    const storageKey = `kaiwa_user_kotoba_${user?.id || 'guest'}`
+    const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
+    const globalKey = `kaiwa_user_kotoba_active_global`
     localStorage.setItem(storageKey, JSON.stringify(updatedList))
+    localStorage.setItem(globalKey, JSON.stringify(updatedList))
+    window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
+    window.dispatchEvent(new Event('storage'))
   }
 
   function handleOpenCreateModal() {
