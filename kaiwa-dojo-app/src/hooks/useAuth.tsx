@@ -175,18 +175,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check browser session status
     const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
     if (!isBrowserSessionActive) {
-      // Browser was newly opened or closed — enforce fresh login
+      // Browser was newly opened or tab restarted — purge legacy tokens and enforce guest state
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && (k.startsWith('sb-') || k.includes('kaiwa_custom_profile'))) {
+          localStorage.removeItem(k)
+        }
+      }
       sessionStorage.removeItem('kaiwa_custom_profile')
       sessionStorage.removeItem('kaiwa_session_active')
-      localStorage.removeItem('kaiwa_custom_profile')
       localStorage.removeItem(LAST_ACTIVITY_KEY)
+      supabase.auth.signOut().catch(() => {})
       setSession(null)
       setProfile(null)
       setLoading(false)
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session)
-        if (session?.user) {
+        if (session?.user && sessionStorage.getItem('kaiwa_session_active') === 'true') {
+          setSession(session)
           fetchProfile(session.user.id)
         } else {
           // Only allow super admin local bypass profile
@@ -198,12 +204,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setProfile(parsed)
               } else {
                 setProfile(null)
+                setSession(null)
               }
             } catch {
               setProfile(null)
+              setSession(null)
             }
           } else {
             setProfile(null)
+            setSession(null)
           }
         }
         setLoading(false)
@@ -211,30 +220,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        sessionStorage.setItem('kaiwa_session_active', 'true')
+      const active = sessionStorage.getItem('kaiwa_session_active') === 'true'
+      if (active && session?.user) {
+        setSession(session)
         fetchProfile(session.user.id)
+      } else if (!active) {
+        // If not explicitly logged in during this browser tab session, ignore restored tokens
+        setSession(null)
+        setProfile(null)
       } else {
-        const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
-        if (!isBrowserSessionActive) {
-          setProfile(null)
-        } else {
-          const customStr = sessionStorage.getItem('kaiwa_custom_profile')
-          if (customStr) {
-            try {
-              const parsed = JSON.parse(customStr)
-              if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
-                setProfile(parsed)
-              } else {
-                setProfile(null)
-              }
-            } catch {
+        setSession(session)
+        const customStr = sessionStorage.getItem('kaiwa_custom_profile')
+        if (customStr) {
+          try {
+            const parsed = JSON.parse(customStr)
+            if (parsed?.role === 'admin' && parsed?.username === 'kaiwahiroshima') {
+              setProfile(parsed)
+            } else {
               setProfile(null)
             }
-          } else {
+          } catch {
             setProfile(null)
           }
+        } else {
+          setProfile(null)
         }
       }
     })
