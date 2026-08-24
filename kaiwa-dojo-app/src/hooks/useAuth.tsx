@@ -17,6 +17,7 @@ export interface Profile {
   bio: string | null
   role: UserRole
   streak_days: number
+  status?: 'approved' | 'pending' | 'rejected'
   last_active_at: string | null
   created_at: string
   updated_at: string

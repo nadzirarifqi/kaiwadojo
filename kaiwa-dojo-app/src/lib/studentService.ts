@@ -1,14 +1,18 @@
 import { supabase } from './supabaseClient'
 
+export type StudentStatus = 'approved' | 'pending' | 'rejected'
+
 export interface StudentAccount {
   id: string
   full_name: string
   username: string
   email: string
+  phone_number?: string
   role: 'pelajar'
   avatar_url?: string
   bio?: string
   streak_days: number
+  status: StudentStatus
   created_at: string
 }
 
@@ -24,6 +28,7 @@ export const INITIAL_STUDENTS: StudentAccount[] = [
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Budi',
     bio: 'Semangat belajar Bahasa Jepang untuk persiapan kerja & magang!',
     streak_days: 12,
+    status: 'approved',
     created_at: new Date().toISOString(),
   },
   {
@@ -35,6 +40,7 @@ export const INITIAL_STUDENTS: StudentAccount[] = [
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Siti',
     bio: 'Persiapan ujian JLPT N4 dan wawancara magang Jepang',
     streak_days: 8,
+    status: 'approved',
     created_at: new Date().toISOString(),
   },
   {
@@ -46,6 +52,7 @@ export const INITIAL_STUDENTS: StudentAccount[] = [
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmad',
     bio: 'Target kerja di Tokyo dalam 6 bulan',
     streak_days: 15,
+    status: 'approved',
     created_at: new Date().toISOString(),
   },
 ]
@@ -63,10 +70,12 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         full_name: p.full_name,
         username: p.username,
         email: p.email || `${p.username}@kaiwadojo.com`,
+        phone_number: p.phone_number,
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,
         streak_days: p.streak_days || 0,
+        status: (p.status as StudentStatus) || 'approved',
         created_at: p.created_at || new Date().toISOString(),
       }))
 
@@ -81,7 +90,11 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
   const local = localStorage.getItem(LOCAL_STUDENTS_KEY)
   if (local) {
     try {
-      return JSON.parse(local)
+      const parsed: StudentAccount[] = JSON.parse(local)
+      return parsed.map(std => ({
+        ...std,
+        status: std.status || 'approved',
+      }))
     } catch {
       // Fallback
     }
@@ -93,17 +106,21 @@ export async function createStudentAccount(data: {
   full_name: string
   username: string
   email: string
+  phone_number?: string
   bio?: string
+  status?: StudentStatus
 }): Promise<StudentAccount> {
   const newStudent: StudentAccount = {
     id: `std-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     full_name: data.full_name,
     username: data.username.toLowerCase().trim(),
     email: data.email.toLowerCase().trim(),
+    phone_number: data.phone_number,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
     streak_days: 0,
+    status: data.status || 'pending',
     created_at: new Date().toISOString(),
   }
 
@@ -117,16 +134,42 @@ export async function createStudentAccount(data: {
       full_name: newStudent.full_name,
       username: newStudent.username,
       email: newStudent.email,
+      phone_number: newStudent.phone_number,
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
       streak_days: 0,
+      status: newStudent.status,
     })
   } catch (e) {
     console.warn('DB createStudentAccount note:', e)
   }
 
   return newStudent
+}
+
+export async function approveStudentAccount(id: string): Promise<void> {
+  const current = await fetchStudents()
+  const updated = current.map(std => (std.id === id ? { ...std, status: 'approved' as const } : std))
+  localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+
+  try {
+    await supabase.from('profiles').update({ status: 'approved' }).eq('id', id)
+  } catch (e) {
+    console.warn('DB approveStudentAccount note:', e)
+  }
+}
+
+export async function rejectStudentAccount(id: string): Promise<void> {
+  const current = await fetchStudents()
+  const updated = current.map(std => (std.id === id ? { ...std, status: 'rejected' as const } : std))
+  localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+
+  try {
+    await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id)
+  } catch (e) {
+    console.warn('DB rejectStudentAccount note:', e)
+  }
 }
 
 export async function updateStudentAccount(
@@ -136,6 +179,7 @@ export async function updateStudentAccount(
     username: string
     email: string
     bio?: string
+    status?: StudentStatus
   }
 ): Promise<void> {
   const current = await fetchStudents()
@@ -147,6 +191,7 @@ export async function updateStudentAccount(
         username: data.username.toLowerCase().trim(),
         email: data.email.toLowerCase().trim(),
         bio: data.bio || std.bio,
+        status: data.status || std.status,
       }
     }
     return std
@@ -161,6 +206,7 @@ export async function updateStudentAccount(
         username: data.username.toLowerCase().trim(),
         email: data.email.toLowerCase().trim(),
         bio: data.bio,
+        status: data.status,
       })
       .eq('id', id)
   } catch (e) {

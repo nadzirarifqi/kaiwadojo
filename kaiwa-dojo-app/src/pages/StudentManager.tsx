@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   type StudentAccount,
+  type StudentStatus,
   fetchStudents,
   createStudentAccount,
   updateStudentAccount,
-  deleteStudentAccount
+  deleteStudentAccount,
+  approveStudentAccount,
+  rejectStudentAccount,
 } from '../lib/studentService'
+import { sendApprovalEmail } from '../lib/emailService'
+import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 
 export default function StudentManager() {
   const navigate = useNavigate()
@@ -15,6 +20,7 @@ export default function StudentManager() {
 
   const [students, setStudents] = useState<StudentAccount[]>([])
   const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all')
 
   // Add Modal State
   const [showAddModal, setShowAddModal] = useState(false)
@@ -27,6 +33,7 @@ export default function StudentManager() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [bio, setBio] = useState('')
+  const [status, setStatus] = useState<StudentStatus>('approved')
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -52,6 +59,7 @@ export default function StudentManager() {
     setUsername('')
     setEmail('')
     setBio('')
+    setStatus('approved')
     setShowAddModal(true)
   }
 
@@ -61,6 +69,41 @@ export default function StudentManager() {
     setUsername(std.username)
     setEmail(std.email)
     setBio(std.bio || '')
+    setStatus(std.status || 'approved')
+  }
+
+  async function handleApprove(std: StudentAccount) {
+    setSaving(true)
+    await approveStudentAccount(std.id)
+
+    // 1. Kirim Email Notifikasi Persetujuan via Resend
+    await sendApprovalEmail({
+      toEmail: std.email,
+      fullName: std.full_name,
+      username: std.username,
+    })
+
+    // 2. Kirim Notifikasi WhatsApp Persetujuan via Fonnte
+    if (std.phone_number) {
+      await sendWhatsAppApprovalNotice({
+        phoneNumber: std.phone_number,
+        fullName: std.full_name,
+        username: std.username,
+      })
+    }
+
+    setSaving(false)
+    showToastMsg(`Akun "${std.full_name}" berhasil disetujui! Notifikasi WA & Email telah dikirim. ✅`)
+    await loadData()
+  }
+
+  async function handleReject(std: StudentAccount) {
+    if (!confirm(`Apakah Anda yakin ingin menolak/menonaktifkan akun "${std.full_name}"?`)) return
+    setSaving(true)
+    await rejectStudentAccount(std.id)
+    setSaving(false)
+    showToastMsg(`Akun pelajar "${std.full_name}" telah ditolak/dinonaktifkan ❌`)
+    await loadData()
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -76,6 +119,7 @@ export default function StudentManager() {
       username,
       email,
       bio,
+      status,
     })
 
     setSaving(false)
@@ -98,6 +142,7 @@ export default function StudentManager() {
       username,
       email,
       bio,
+      status,
     })
 
     setSaving(false)
@@ -107,11 +152,12 @@ export default function StudentManager() {
   }
 
   async function handleDelete(std: StudentAccount) {
-    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus akun Pelajar "${std.full_name}" (@${std.username})? Action ini tidak dapat dibatalkan.`)
-    if (!confirmDelete) return
+    if (!confirm(`Apakah Anda yakin ingin menghapus akun pelajar "${std.full_name}" (@${std.username})?`)) return
 
+    setSaving(true)
     await deleteStudentAccount(std.id)
-    showToastMsg(`Akun Pelajar "${std.full_name}" telah dihapus!`)
+    setSaving(false)
+    showToastMsg(`Berhasil menghapus akun pelajar "${std.full_name}".`)
     await loadData()
   }
 
@@ -131,6 +177,15 @@ export default function StudentManager() {
     )
   }
 
+  const pendingCount = students.filter(s => s.status === 'pending').length
+  const approvedCount = students.filter(s => s.status === 'approved').length
+
+  const filteredStudents = students.filter(std => {
+    if (statusFilter === 'pending') return std.status === 'pending'
+    if (statusFilter === 'approved') return std.status === 'approved'
+    return true
+  })
+
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Toast Notification */}
@@ -144,19 +199,24 @@ export default function StudentManager() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
               👑 Menu Super Admin
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
-              {students.length} Pelajar Terdaftar
+              {approvedCount} Pelajar Terverifikasi
             </span>
+            {pendingCount > 0 && (
+              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black animate-pulse">
+                ⏳ {pendingCount} Menunggu Persetujuan
+              </span>
+            )}
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>🎓 Kelola & Manajemen Akun Pelajar / Siswa</span>
+            <span>🎓 Kelola & Verifikasi Akun Pelajar</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk **menambah, mengedit, dan menghapus** data akun Pelajar/Siswa Kaiwa Dojo.
+            Halaman khusus Admin untuk **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar Kaiwa Dojo.
           </p>
         </div>
 
@@ -170,20 +230,57 @@ export default function StudentManager() {
 
       {/* Students List Table */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-            <span>📋 Daftar Siswa / Pelajar Aktif</span>
-          </h3>
-          <span className="text-xs text-slate-400 font-bold">Total: {students.length} Siswa</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+              <span>📋 Daftar Akun Siswa / Pelajar</span>
+            </h3>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Semua ({students.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
+                statusFilter === 'pending'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-amber-500'
+              }`}
+            >
+              ⏳ Menunggu ({pendingCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter('approved')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
+                statusFilter === 'approved'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-emerald-600'
+              }`}
+            >
+              ✅ Terverifikasi ({approvedCount})
+            </button>
+          </div>
         </div>
 
         {loading ? (
           <div className="py-12 flex justify-center items-center">
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : students.length === 0 ? (
+        ) : filteredStudents.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-sm italic">
-            Belum ada akun pelajar yang terdaftar. Klik "+ Tambah Akun Pelajar Baru" di atas.
+            {statusFilter === 'pending'
+              ? 'Tidak ada akun pelajar yang sedang menunggu verifikasi.'
+              : 'Belum ada akun pelajar yang terdaftar dalam kategori ini.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -192,13 +289,13 @@ export default function StudentManager() {
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 px-2">Nama Siswa</th>
                   <th className="pb-3 px-2">Username & Email</th>
+                  <th className="pb-3 px-2">Status Verifikasi</th>
                   <th className="pb-3 px-2">Bio / Catatan</th>
-                  <th className="pb-3 px-2">Streak Belajar</th>
-                  <th className="pb-3 px-2 text-right">Aksi Admin</th>
+                  <th className="pb-3 px-2 text-right">Aksi Verifikasi Admin</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
-                {students.map(std => (
+                {filteredStudents.map(std => (
                   <tr key={std.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-3">
@@ -220,15 +317,59 @@ export default function StudentManager() {
                       <div className="text-[0.68rem] text-slate-400">{std.email}</div>
                     </td>
                     <td className="py-3 px-2">
-                      <div className="text-slate-600 dark:text-slate-300 text-[0.7rem] max-w-xs line-clamp-1">{std.bio || 'Siswa Kaiwa Dojo'}</div>
+                      {std.status === 'pending' ? (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[0.68rem] font-black border border-amber-300 dark:border-amber-800 animate-pulse">
+                          ⏳ Menunggu Verifikasi
+                        </span>
+                      ) : std.status === 'rejected' ? (
+                        <span className="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-[0.68rem] font-black border border-red-300 dark:border-red-800">
+                          ❌ Ditolak / Nonaktif
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800">
+                          ✅ Terverifikasi
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 text-xs font-black">
-                        🔥 {std.streak_days} Hari
-                      </span>
+                      <div className="text-slate-600 dark:text-slate-300 text-[0.7rem] max-w-xs line-clamp-1">{std.bio || 'Siswa Kaiwa Dojo'}</div>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {std.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => handleApprove(std)}
+                              disabled={saving}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black border-none cursor-pointer transition-all shadow-xs"
+                            >
+                              ✓ Setujui (Approve)
+                            </button>
+                            <button
+                              onClick={() => handleReject(std)}
+                              disabled={saving}
+                              className="px-2.5 py-1.5 rounded-xl bg-red-100 dark:bg-red-950 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                            >
+                              ✕ Tolak
+                            </button>
+                          </>
+                        ) : std.status === 'rejected' ? (
+                          <button
+                            onClick={() => handleApprove(std)}
+                            disabled={saving}
+                            className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold border-none cursor-pointer transition-colors"
+                          >
+                            ✓ Setujui Ulang
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReject(std)}
+                            disabled={saving}
+                            className="px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-800 dark:text-amber-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                          >
+                            🔒 Nonaktifkan
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditModal(std)}
                           className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
@@ -237,9 +378,9 @@ export default function StudentManager() {
                         </button>
                         <button
                           onClick={() => handleDelete(std)}
-                          className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                          className="px-2 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
                         >
-                          🗑️ Hapus
+                          🗑️
                         </button>
                       </div>
                     </td>

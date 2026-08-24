@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useAuth'
+import { fetchStudents } from '../../lib/studentService'
 import CustomAlertModal from '../../components/CustomAlertModal'
 
 export default function LoginPage() {
@@ -72,6 +73,7 @@ export default function LoginPage() {
           username: 'kaiwahiroshima',
           email: 'admin@kaiwadojo.com',
           role: 'admin',
+          status: 'approved',
           streak_days: 99,
           last_active_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
@@ -88,6 +90,7 @@ export default function LoginPage() {
             username: 'kaiwahiroshima',
             email: 'admin@kaiwadojo.com',
             role: 'admin',
+            status: 'approved',
           })
         } catch (e) {
           console.warn('Admin upsert note:', e)
@@ -108,6 +111,36 @@ export default function LoginPage() {
       }
     }
 
+    // Check student list cache / local DB for verification status
+    const allStudents = await fetchStudents()
+    const studentMatch = allStudents.find(
+      s => s.username.toLowerCase() === inputClean || s.email.toLowerCase() === inputClean
+    )
+
+    if (studentMatch) {
+      if (studentMatch.status === 'pending') {
+        setLoading(false)
+        showAlert(
+          '⏳ Akun Menunggu Verifikasi Admin',
+          `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum Anda dapat masuk ke Dashboard.`,
+          'warning',
+          'Mengerti'
+        )
+        return
+      }
+
+      if (studentMatch.status === 'rejected') {
+        setLoading(false)
+        showAlert(
+          '❌ Akun Ditolak / Nonaktif',
+          `Akun Anda ("${studentMatch.full_name}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo. Silakan hubungi tim pengelola jika terjadi kekeliruan.`,
+          'warning',
+          'Mengerti'
+        )
+        return
+      }
+    }
+
     // 2. Resolve Target Email from Username or Check if Profile Exists
     let targetEmail = inputClean
     let userFoundInDb = false
@@ -115,7 +148,7 @@ export default function LoginPage() {
     if (!inputClean.includes('@')) {
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('username, email')
+        .select('username, email, status, full_name')
         .eq('username', inputClean)
         .maybeSingle()
 
@@ -131,6 +164,28 @@ export default function LoginPage() {
           `Username "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan username Anda atau daftar akun baru jika belum memiliki akun.`,
           'warning',
           'Periksa Username'
+        )
+        return
+      }
+
+      if (userProfile.status === 'pending') {
+        setLoading(false)
+        showAlert(
+          '⏳ Akun Menunggu Verifikasi Admin',
+          `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          'warning',
+          'Mengerti'
+        )
+        return
+      }
+
+      if (userProfile.status === 'rejected') {
+        setLoading(false)
+        showAlert(
+          '❌ Akun Ditolak / Nonaktif',
+          `Akun Anda ("${userProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+          'warning',
+          'Mengerti'
         )
         return
       }
@@ -151,9 +206,32 @@ export default function LoginPage() {
       // Check if email exists in database
       const { data: emailProfile } = await supabase
         .from('profiles')
-        .select('email')
+        .select('email, status, full_name')
         .eq('email', inputClean)
         .maybeSingle()
+
+      if (emailProfile?.status === 'pending') {
+        setLoading(false)
+        showAlert(
+          '⏳ Akun Menunggu Verifikasi Admin',
+          `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          'warning',
+          'Mengerti'
+        )
+        return
+      }
+
+      if (emailProfile?.status === 'rejected') {
+        setLoading(false)
+        showAlert(
+          '❌ Akun Ditolak / Nonaktif',
+          `Akun Anda ("${emailProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+          'warning',
+          'Mengerti'
+        )
+        return
+      }
+
       userFoundInDb = Boolean(emailProfile)
     }
 
@@ -199,6 +277,28 @@ export default function LoginPage() {
           .select('*')
           .eq('id', authData.user.id)
           .maybeSingle()
+
+        if (profData?.status === 'pending') {
+          setLoading(false)
+          showAlert(
+            '⏳ Akun Menunggu Verifikasi Admin',
+            `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+            'warning',
+            'Mengerti'
+          )
+          return
+        }
+
+        if (profData?.status === 'rejected') {
+          setLoading(false)
+          showAlert(
+            '❌ Akun Ditolak / Nonaktif',
+            `Akun Anda ("${profData.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+            'warning',
+            'Mengerti'
+          )
+          return
+        }
 
         sessionStorage.setItem('kaiwa_session_active', 'true')
         if (profData) {

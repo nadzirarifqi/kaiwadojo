@@ -6,13 +6,10 @@
 Options -MultiViews
 RewriteEngine On
 
-# Force HTTPS (aktifkan setelah SSL sudah terpasang di Rumahweb)
-# RewriteCond %{HTTPS} off
-# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Redirect www ke non-www (opsional)
-# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
-# RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+# Force HTTPS (Rumahweb + Cloudflare + cPanel Compatible)
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # SPA Routing: semua request yang bukan file/folder nyata diarahkan ke index.html di folder ini
 RewriteCond %{REQUEST_FILENAME} !-f
