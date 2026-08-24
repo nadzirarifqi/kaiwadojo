@@ -58,6 +58,19 @@ export const INITIAL_STUDENTS: StudentAccount[] = [
 ]
 
 export async function fetchStudents(): Promise<StudentAccount[]> {
+  // 1. Ambil data lokal terlebih dahulu untuk membaca status yang pernah di-update
+  let localMap: Record<string, StudentAccount> = {}
+  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
+  if (localStr) {
+    try {
+      const parsed: StudentAccount[] = JSON.parse(localStr)
+      parsed.forEach(std => {
+        if (std.id) localMap[std.id] = std
+        if (std.username) localMap[std.username.toLowerCase()] = std
+      })
+    } catch {}
+  }
+
   try {
     const { data: profData, error } = await supabase
       .from('profiles')
@@ -65,19 +78,33 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
       .eq('role', 'pelajar')
 
     if (!error && profData && profData.length > 0) {
-      const students: StudentAccount[] = profData.map((p: any) => ({
-        id: p.id,
-        full_name: p.full_name,
-        username: p.username,
-        email: p.email || `${p.username}@kaiwadojo.com`,
-        phone_number: p.phone_number,
-        role: 'pelajar',
-        avatar_url: p.avatar_url,
-        bio: p.bio,
-        streak_days: p.streak_days || 0,
-        status: (p.status as StudentStatus) || 'approved',
-        created_at: p.created_at || new Date().toISOString(),
-      }))
+      const students: StudentAccount[] = profData.map((p: any) => {
+        // Prioritaskan status approved/rejected jika ada di local cache atau database
+        const localMatched = localMap[p.id] || localMap[p.username?.toLowerCase()]
+        let finalStatus: StudentStatus = 'pending'
+
+        if (p.status) {
+          finalStatus = p.status as StudentStatus
+        } else if (localMatched?.status) {
+          finalStatus = localMatched.status
+        } else {
+          finalStatus = 'approved' // Default untuk akun demo lama
+        }
+
+        return {
+          id: p.id,
+          full_name: p.full_name,
+          username: p.username,
+          email: p.email || `${p.username}@kaiwadojo.com`,
+          phone_number: p.phone_number,
+          role: 'pelajar',
+          avatar_url: p.avatar_url,
+          bio: p.bio,
+          streak_days: p.streak_days || 0,
+          status: finalStatus,
+          created_at: p.created_at || new Date().toISOString(),
+        }
+      })
 
       localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(students))
       return students
@@ -87,17 +114,14 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
   }
 
   // Local fallback
-  const local = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (local) {
+  if (localStr) {
     try {
-      const parsed: StudentAccount[] = JSON.parse(local)
+      const parsed: StudentAccount[] = JSON.parse(localStr)
       return parsed.map(std => ({
         ...std,
-        status: std.status || 'approved',
+        status: std.status || 'pending',
       }))
-    } catch {
-      // Fallback
-    }
+    } catch {}
   }
   return INITIAL_STUDENTS
 }
@@ -110,26 +134,33 @@ export async function createStudentAccount(data: {
   bio?: string
   status?: StudentStatus
 }): Promise<StudentAccount> {
+  const cleanUser = data.username.toLowerCase().trim()
+  const cleanEmail = data.email.toLowerCase().trim()
+  const targetStatus = data.status || 'pending'
+
   const newStudent: StudentAccount = {
     id: `std-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     full_name: data.full_name,
-    username: data.username.toLowerCase().trim(),
-    email: data.email.toLowerCase().trim(),
+    username: cleanUser,
+    email: cleanEmail,
     phone_number: data.phone_number,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
     streak_days: 0,
-    status: data.status || 'pending',
+    status: targetStatus,
     created_at: new Date().toISOString(),
   }
 
+  // Save Local Cache
   const current = await fetchStudents()
-  const updated = [newStudent, ...current]
+  const filtered = current.filter(s => s.username !== cleanUser && s.id !== newStudent.id)
+  const updated = [newStudent, ...filtered]
   localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
 
+  // Save DB Supabase
   try {
-    await supabase.from('profiles').insert({
+    const { error } = await supabase.from('profiles').upsert({
       id: newStudent.id,
       full_name: newStudent.full_name,
       username: newStudent.username,
@@ -139,34 +170,77 @@ export async function createStudentAccount(data: {
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
       streak_days: 0,
-      status: newStudent.status,
-    })
+      status: targetStatus,
+    }, { onConflict: 'username' })
+
+    if (error) {
+      console.warn('DB createStudentAccount note:', error.message)
+    }
   } catch (e) {
-    console.warn('DB createStudentAccount note:', e)
+    console.warn('DB createStudentAccount catch:', e)
   }
 
   return newStudent
 }
 
 export async function approveStudentAccount(id: string): Promise<void> {
-  const current = await fetchStudents()
-  const updated = current.map(std => (std.id === id ? { ...std, status: 'approved' as const } : std))
-  localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+  // 1. Update LocalStorage cache secara langsung
+  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
+  if (localStr) {
+    try {
+      const current: StudentAccount[] = JSON.parse(localStr)
+      const updated = current.map(std =>
+        std.id === id || std.username === id ? { ...std, status: 'approved' as const } : std
+      )
+      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+    } catch {}
+  }
 
+  // 2. Update Supabase Database
   try {
-    await supabase.from('profiles').update({ status: 'approved' }).eq('id', id)
+    const { error: errId } = await supabase
+      .from('profiles')
+      .update({ status: 'approved' })
+      .eq('id', id)
+
+    if (errId) {
+      // Coba update berdasarkan username jika ID tidak cocok
+      await supabase
+        .from('profiles')
+        .update({ status: 'approved' })
+        .eq('username', id)
+    }
   } catch (e) {
     console.warn('DB approveStudentAccount note:', e)
   }
 }
 
 export async function rejectStudentAccount(id: string): Promise<void> {
-  const current = await fetchStudents()
-  const updated = current.map(std => (std.id === id ? { ...std, status: 'rejected' as const } : std))
-  localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+  // 1. Update LocalStorage cache secara langsung
+  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
+  if (localStr) {
+    try {
+      const current: StudentAccount[] = JSON.parse(localStr)
+      const updated = current.map(std =>
+        std.id === id || std.username === id ? { ...std, status: 'rejected' as const } : std
+      )
+      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
+    } catch {}
+  }
 
+  // 2. Update Supabase Database
   try {
-    await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id)
+    const { error: errId } = await supabase
+      .from('profiles')
+      .update({ status: 'rejected' })
+      .eq('id', id)
+
+    if (errId) {
+      await supabase
+        .from('profiles')
+        .update({ status: 'rejected' })
+        .eq('username', id)
+    }
   } catch (e) {
     console.warn('DB rejectStudentAccount note:', e)
   }
