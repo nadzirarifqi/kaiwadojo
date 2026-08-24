@@ -196,19 +196,13 @@ export async function approveStudentAccount(id: string): Promise<void> {
     } catch {}
   }
 
-  // 2. Update Supabase Database
+  // 2. Update Supabase Database tanpa memicu Error 400 UUID Syntax
   try {
-    const { error: errId } = await supabase
-      .from('profiles')
-      .update({ status: 'approved' })
-      .eq('id', id)
-
-    if (errId) {
-      // Coba update berdasarkan username jika ID tidak cocok
-      await supabase
-        .from('profiles')
-        .update({ status: 'approved' })
-        .eq('username', id)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (isUuid) {
+      await supabase.from('profiles').update({ status: 'approved' }).eq('id', id)
+    } else {
+      await supabase.from('profiles').update({ status: 'approved' }).eq('username', id)
     }
   } catch (e) {
     console.warn('DB approveStudentAccount note:', e)
@@ -228,18 +222,13 @@ export async function rejectStudentAccount(id: string): Promise<void> {
     } catch {}
   }
 
-  // 2. Update Supabase Database
+  // 2. Update Supabase Database tanpa memicu Error 400 UUID Syntax
   try {
-    const { error: errId } = await supabase
-      .from('profiles')
-      .update({ status: 'rejected' })
-      .eq('id', id)
-
-    if (errId) {
-      await supabase
-        .from('profiles')
-        .update({ status: 'rejected' })
-        .eq('username', id)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (isUuid) {
+      await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id)
+    } else {
+      await supabase.from('profiles').update({ status: 'rejected' }).eq('username', id)
     }
   } catch (e) {
     console.warn('DB rejectStudentAccount note:', e)

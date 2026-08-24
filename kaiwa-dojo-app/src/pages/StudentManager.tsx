@@ -11,7 +11,6 @@ import {
   approveStudentAccount,
   rejectStudentAccount,
 } from '../lib/studentService'
-import { sendApprovalEmail } from '../lib/emailService'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 
 export default function StudentManager() {
@@ -80,7 +79,7 @@ export default function StudentManager() {
       prev.map(item => (item.id === std.id || item.username === std.username ? { ...item, status: 'approved' } : item))
     )
 
-    // 2. Simpan status 'approved' ke Supabase DB & LocalStorage
+    // 2. Simpan status 'approved' ke Supabase DB & LocalStorage tanpa Error 400 UUID
     await approveStudentAccount(std.id)
     if (std.username) {
       await approveStudentAccount(std.username)
@@ -94,16 +93,9 @@ export default function StudentManager() {
       username: std.username,
     })
 
-    // 4. Kirim Email Notifikasi Persetujuan (Background)
-    sendApprovalEmail({
-      toEmail: std.email,
-      fullName: std.full_name,
-      username: std.username,
-    }).catch(() => {})
-
     setSaving(false)
     if (waSent) {
-      showToastMsg(`Akun "${std.full_name}" Disetujui & Pesan WA Berhasil Terkirim! ✅`)
+      showToastMsg(`Akun "${std.full_name}" Disetujui & Pesan WA Berhasil Terkirim ke WA ${waTarget}! ✅`)
     } else {
       showToastMsg(`Akun "${std.full_name}" Disetujui! ✅`)
     }
