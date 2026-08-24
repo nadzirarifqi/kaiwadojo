@@ -74,16 +74,13 @@ export default function StudentManager() {
   async function handleApprove(std: StudentAccount) {
     setSaving(true)
 
-    // 1. Update React state secara instan (0ms badge UI update)
+    // 1. Update React state secara instan
     setStudents(prev =>
       prev.map(item => (item.id === std.id || item.username === std.username ? { ...item, status: 'approved' } : item))
     )
 
-    // 2. Simpan status 'approved' ke Supabase DB & LocalStorage tanpa Error 400 UUID
+    // 2. Simpan status 'approved' ke Supabase DB
     await approveStudentAccount(std.id)
-    if (std.username) {
-      await approveStudentAccount(std.username)
-    }
 
     // 3. Kirim Notifikasi WhatsApp Persetujuan via Fonnte API
     const waTarget = std.phone_number || std.username || ''
@@ -107,7 +104,7 @@ export default function StudentManager() {
     if (!confirm(`Apakah Anda yakin ingin menolak/menonaktifkan akun "${std.full_name}"?`)) return
     setSaving(true)
 
-    // 1. Update React state secara instan (0ms update)
+    // 1. Update React state secara instan
     setStudents(prev =>
       prev.map(item =>
         item.id === std.id || item.username.toLowerCase() === std.username.toLowerCase()
@@ -116,11 +113,8 @@ export default function StudentManager() {
       )
     )
 
-    // 2. Simpan status 'rejected' ke DB Supabase & LocalStorage
+    // 2. Simpan status 'rejected' ke DB Supabase
     await rejectStudentAccount(std.id)
-    if (std.username) {
-      await rejectStudentAccount(std.username)
-    }
 
     setSaving(false)
     showToastMsg(`Akun pelajar "${std.full_name}" telah dinonaktifkan ❌`)
@@ -145,7 +139,11 @@ export default function StudentManager() {
 
     setSaving(false)
     setShowAddModal(false)
-    showToastMsg(`Berhasil menambahkan akun Pelajar baru: ${created.full_name}!`)
+    if (created) {
+      showToastMsg(`Berhasil menambahkan akun Pelajar baru: ${created.full_name}!`)
+    } else {
+      showToastMsg(`Gagal menambahkan akun Pelajar. Periksa koneksi/DB! ❌`)
+    }
     await loadData()
   }
 
@@ -173,21 +171,22 @@ export default function StudentManager() {
   }
 
   async function handleDelete(std: StudentAccount) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus akun pelajar "${std.full_name}" (@${std.username})?`)) return
+    if (!confirm(`Apakah Anda yakin ingin menghapus akun pelajar "${std.full_name}" (@${std.username}) secara permanen?`)) return
 
     setSaving(true)
 
-    // 1. Hapus dari React state secara instan (0ms removal)
+    // 1. Hapus dari React state secara instan
     setStudents(prev => prev.filter(s => s.id !== std.id && s.username.toLowerCase() !== std.username.toLowerCase()))
 
-    // 2. Hapus dari Supabase DB & LocalStorage
-    await deleteStudentAccount(std.id)
-    if (std.username) {
-      await deleteStudentAccount(std.username)
-    }
+    // 2. Hapus dari Supabase DB
+    const success = await deleteStudentAccount(std.id)
 
     setSaving(false)
-    showToastMsg(`Berhasil menghapus akun pelajar "${std.full_name}". ✅`)
+    if (success) {
+      showToastMsg(`Berhasil menghapus akun pelajar "${std.full_name}". ✅`)
+    } else {
+      showToastMsg(`Gagal menghapus akun pelajar "${std.full_name}". ❌`)
+    }
     await loadData()
   }
 

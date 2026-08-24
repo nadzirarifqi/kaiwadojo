@@ -16,117 +16,47 @@ export interface StudentAccount {
   created_at: string
 }
 
-const LOCAL_STUDENTS_KEY = 'kaiwa_student_accounts_v1'
-
-export const INITIAL_STUDENTS: StudentAccount[] = [
-  {
-    id: 'user-demo-active',
-    full_name: 'Budi Santoso',
-    username: 'budisantoso',
-    email: 'budi@kaiwadojo.com',
-    role: 'pelajar',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Budi',
-    bio: 'Semangat belajar Bahasa Jepang untuk persiapan kerja & magang!',
-    streak_days: 12,
-    status: 'approved',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'std-102',
-    full_name: 'Siti Rahma',
-    username: 'sitirahma',
-    email: 'siti@kaiwadojo.com',
-    role: 'pelajar',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Siti',
-    bio: 'Persiapan ujian JLPT N4 dan wawancara magang Jepang',
-    streak_days: 8,
-    status: 'approved',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'std-103',
-    full_name: 'Ahmad Fauzi',
-    username: 'ahmadfauzi',
-    email: 'ahmad@kaiwadojo.com',
-    role: 'pelajar',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmad',
-    bio: 'Target kerja di Tokyo dalam 6 bulan',
-    streak_days: 15,
-    status: 'approved',
-    created_at: new Date().toISOString(),
-  },
-]
-
+/**
+ * Mengambil seluruh data akun pelajar langsung dari Supabase Database (profiles)
+ */
 export async function fetchStudents(): Promise<StudentAccount[]> {
-  // 1. Ambil data lokal terlebih dahulu sebagai fallback jika DB offline
-  let localMap: Record<string, StudentAccount> = {}
-  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (localStr) {
-    try {
-      const parsed: StudentAccount[] = JSON.parse(localStr)
-      parsed.forEach(std => {
-        if (std.id) localMap[std.id] = std
-        if (std.username) localMap[std.username.toLowerCase()] = std
-      })
-    } catch {}
-  }
-
   try {
     const { data: profData, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('role', 'pelajar')
+      .order('created_at', { ascending: false })
 
-    if (!error && profData && profData.length > 0) {
-      const students: StudentAccount[] = profData.map((p: any) => {
-        const cleanUser = (p.username || '').toLowerCase()
-        const localMatched = localMap[p.id] || localMap[cleanUser]
-        
-        // Priority 1: DB status if defined in database ('approved' | 'rejected' | 'pending')
-        let finalStatus: StudentStatus = 'pending'
-        if (p.status === 'approved' || p.status === 'rejected' || p.status === 'pending') {
-          finalStatus = p.status as StudentStatus
-        } else if (localMatched?.status) {
-          finalStatus = localMatched.status
-        } else if (cleanUser === 'budisantoso' || cleanUser === 'sitirahma' || cleanUser === 'ahmadfauzi') {
-          finalStatus = 'approved'
-        }
+    if (error) {
+      console.warn('DB fetchStudents error:', error.message)
+      return []
+    }
 
-        return {
-          id: p.id,
-          full_name: p.full_name,
-          username: p.username,
-          email: p.email || `${p.username}@kaiwadojo.com`,
-          phone_number: p.phone_number,
-          role: 'pelajar',
-          avatar_url: p.avatar_url,
-          bio: p.bio,
-          streak_days: p.streak_days || 0,
-          status: finalStatus,
-          created_at: p.created_at || new Date().toISOString(),
-        }
-      })
-
-      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(students))
-      return students
+    if (profData && profData.length > 0) {
+      return profData.map((p: any) => ({
+        id: p.id,
+        full_name: p.full_name,
+        username: p.username,
+        email: p.email || `${p.username}@kaiwadojo.com`,
+        phone_number: p.phone_number,
+        role: 'pelajar',
+        avatar_url: p.avatar_url,
+        bio: p.bio,
+        streak_days: p.streak_days || 0,
+        status: (p.status as StudentStatus) || 'approved',
+        created_at: p.created_at || new Date().toISOString(),
+      }))
     }
   } catch (e) {
-    console.warn('DB fetchStudents note:', e)
+    console.warn('DB fetchStudents catch:', e)
   }
 
-  // Local fallback
-  if (localStr) {
-    try {
-      const parsed: StudentAccount[] = JSON.parse(localStr)
-      return parsed.map(std => ({
-        ...std,
-        status: std.status || 'pending',
-      }))
-    } catch {}
-  }
-  return INITIAL_STUDENTS
+  return []
 }
 
+/**
+ * Menambahkan akun pelajar baru secara langsung ke Supabase Database
+ */
 export async function createStudentAccount(data: {
   full_name: string
   username: string
@@ -134,13 +64,14 @@ export async function createStudentAccount(data: {
   phone_number?: string
   bio?: string
   status?: StudentStatus
-}): Promise<StudentAccount> {
+}): Promise<StudentAccount | null> {
   const cleanUser = data.username.toLowerCase().trim()
   const cleanEmail = data.email.toLowerCase().trim()
-  const targetStatus = data.status || 'pending'
+  const targetStatus = data.status || 'approved'
+  const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`
 
   const newStudent: StudentAccount = {
-    id: `std-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    id: newId,
     full_name: data.full_name,
     username: cleanUser,
     email: cleanEmail,
@@ -153,15 +84,8 @@ export async function createStudentAccount(data: {
     created_at: new Date().toISOString(),
   }
 
-  // Save Local Cache
-  const current = await fetchStudents()
-  const filtered = current.filter(s => s.username !== cleanUser && s.id !== newStudent.id)
-  const updated = [newStudent, ...filtered]
-  localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
-
-  // Save DB Supabase
   try {
-    const { error } = await supabase.from('profiles').upsert({
+    const { error } = await supabase.from('profiles').insert({
       id: newStudent.id,
       full_name: newStudent.full_name,
       username: newStudent.username,
@@ -172,78 +96,71 @@ export async function createStudentAccount(data: {
       bio: newStudent.bio,
       streak_days: 0,
       status: targetStatus,
-    }, { onConflict: 'username' })
+    })
 
     if (error) {
-      console.warn('DB createStudentAccount note:', error.message)
+      console.error('DB createStudentAccount error:', error.message)
+      throw error
     }
-  } catch (e) {
-    console.warn('DB createStudentAccount catch:', e)
-  }
 
-  return newStudent
+    return newStudent
+  } catch (e) {
+    console.error('DB createStudentAccount catch:', e)
+    return null
+  }
 }
 
-export async function approveStudentAccount(id: string): Promise<void> {
-  const target = (id || '').toLowerCase().trim()
-  // 1. Update LocalStorage cache secara langsung (case-insensitive username & ID match)
-  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (localStr) {
-    try {
-      const current: StudentAccount[] = JSON.parse(localStr)
-      const updated = current.map(std =>
-        std.id === id || std.username.toLowerCase() === target ? { ...std, status: 'approved' as const } : std
-      )
-      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
-    } catch {}
-  }
-
-  // 2. Update Supabase Database
+/**
+ * Menyetujui (approve) akun pelajar langsung di Supabase Database
+ */
+export async function approveStudentAccount(id: string): Promise<boolean> {
   try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    const target = (id || '').trim()
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
+
     if (isUuid) {
-      const { error: err1 } = await supabase.from('profiles').update({ status: 'approved' }).eq('id', id)
-      if (err1) console.warn('DB approveStudentAccount by id error:', err1.message)
+      const { error } = await supabase.from('profiles').update({ status: 'approved' }).eq('id', target)
+      if (!error) return true
     }
+
     const { error: err2 } = await supabase.from('profiles').update({ status: 'approved' }).ilike('username', target)
-    if (err2) console.warn('DB approveStudentAccount by username error:', err2.message)
-    const { error: err3 } = await supabase.from('profiles').update({ status: 'approved' }).ilike('email', target)
-    if (err3) console.warn('DB approveStudentAccount by email error:', err3.message)
-  } catch (e) {
-    console.warn('DB approveStudentAccount note:', e)
-  }
-}
-
-export async function rejectStudentAccount(id: string): Promise<void> {
-  const target = (id || '').toLowerCase().trim()
-  // 1. Update LocalStorage cache secara langsung
-  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (localStr) {
-    try {
-      const current: StudentAccount[] = JSON.parse(localStr)
-      const updated = current.map(std =>
-        std.id === id || std.username.toLowerCase() === target ? { ...std, status: 'rejected' as const } : std
-      )
-      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
-    } catch {}
-  }
-
-  // 2. Update Supabase Database
-  try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-    if (isUuid) {
-      const { error: err1 } = await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id)
-      if (err1) console.warn('DB rejectStudentAccount by id error:', err1.message)
+    if (err2) {
+      await supabase.from('profiles').update({ status: 'approved' }).ilike('email', target)
     }
-    const { error: err2 } = await supabase.from('profiles').update({ status: 'rejected' }).ilike('username', target)
-    if (err2) console.warn('DB rejectStudentAccount by username error:', err2.message)
-    const { error: err3 } = await supabase.from('profiles').update({ status: 'rejected' }).ilike('email', target)
-    if (err3) console.warn('DB rejectStudentAccount by email error:', err3.message)
+    return true
   } catch (e) {
-    console.warn('DB rejectStudentAccount note:', e)
+    console.warn('DB approveStudentAccount catch:', e)
+    return false
   }
 }
 
+/**
+ * Menolak/menonaktifkan akun pelajar langsung di Supabase Database
+ */
+export async function rejectStudentAccount(id: string): Promise<boolean> {
+  try {
+    const target = (id || '').trim()
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
+
+    if (isUuid) {
+      const { error } = await supabase.from('profiles').update({ status: 'rejected' }).eq('id', target)
+      if (!error) return true
+    }
+
+    const { error: err2 } = await supabase.from('profiles').update({ status: 'rejected' }).ilike('username', target)
+    if (err2) {
+      await supabase.from('profiles').update({ status: 'rejected' }).ilike('email', target)
+    }
+    return true
+  } catch (e) {
+    console.warn('DB rejectStudentAccount catch:', e)
+    return false
+  }
+}
+
+/**
+ * Perbarui data akun pelajar langsung di Supabase Database
+ */
 export async function updateStudentAccount(
   id: string,
   data: {
@@ -253,36 +170,13 @@ export async function updateStudentAccount(
     bio?: string
     status?: StudentStatus
   }
-): Promise<void> {
-  const target = (id || '').toLowerCase().trim()
-  const cleanUser = data.username.toLowerCase().trim()
-  const cleanEmail = data.email.toLowerCase().trim()
-
-  // 1. Update LocalStorage cache
-  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (localStr) {
-    try {
-      const current: StudentAccount[] = JSON.parse(localStr)
-      const updated = current.map(std => {
-        if (std.id === id || std.username.toLowerCase() === target) {
-          return {
-            ...std,
-            full_name: data.full_name,
-            username: cleanUser,
-            email: cleanEmail,
-            bio: data.bio || std.bio,
-            status: data.status || std.status,
-          }
-        }
-        return std
-      })
-      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
-    } catch {}
-  }
-
-  // 2. Update Supabase Database
+): Promise<boolean> {
   try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    const target = (id || '').trim()
+    const cleanUser = data.username.toLowerCase().trim()
+    const cleanEmail = data.email.toLowerCase().trim()
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
+
     const payload = {
       full_name: data.full_name,
       username: cleanUser,
@@ -292,42 +186,51 @@ export async function updateStudentAccount(
     }
 
     if (isUuid) {
-      const { error: err1 } = await supabase.from('profiles').update(payload).eq('id', id)
-      if (err1) console.warn('DB updateStudentAccount by id error:', err1.message)
+      const { error } = await supabase.from('profiles').update(payload).eq('id', target)
+      if (!error) return true
     }
+
     const { error: err2 } = await supabase.from('profiles').update(payload).ilike('username', target)
-    if (err2) console.warn('DB updateStudentAccount by username error:', err2.message)
+    if (err2) {
+      console.warn('DB updateStudentAccount error:', err2.message)
+    }
+    return true
   } catch (e) {
-    console.warn('DB updateStudentAccount note:', e)
+    console.warn('DB updateStudentAccount catch:', e)
+    return false
   }
 }
 
-export async function deleteStudentAccount(id: string): Promise<void> {
-  const target = (id || '').toLowerCase().trim()
-
-  // 1. Hapus dari LocalStorage cache
-  const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
-  if (localStr) {
-    try {
-      const current: StudentAccount[] = JSON.parse(localStr)
-      const updated = current.filter(
-        std => std.id !== id && std.username.toLowerCase() !== target
-      )
-      localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
-    } catch {}
-  }
-
-  // 2. Hapus dari Supabase Database (by UUID jika UUID, atau by username / email)
+/**
+ * Menghapus akun pelajar secara permanen dari Supabase Database (profiles table)
+ */
+export async function deleteStudentAccount(id: string): Promise<boolean> {
   try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    const target = (id || '').trim()
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
+
     if (isUuid) {
-      await supabase.from('profiles').delete().eq('id', id)
+      const { error } = await supabase.from('profiles').delete().eq('id', target)
+      if (!error) {
+        return true
+      }
+      console.warn('DB deleteStudentAccount by id error:', error.message)
     }
-    // Hapus berdasarkan username di Supabase DB
-    await supabase.from('profiles').delete().ilike('username', target)
-    // Hapus berdasarkan email di Supabase DB
-    await supabase.from('profiles').delete().ilike('email', target)
+
+    // Try deleting by username
+    const { error: errUser } = await supabase.from('profiles').delete().ilike('username', target)
+    if (errUser) {
+      console.warn('DB deleteStudentAccount by username error:', errUser.message)
+      // Try deleting by email
+      const { error: errEmail } = await supabase.from('profiles').delete().ilike('email', target)
+      if (errEmail) {
+        console.error('DB deleteStudentAccount by email error:', errEmail.message)
+        return false
+      }
+    }
+    return true
   } catch (e) {
-    console.warn('DB deleteStudentAccount note:', e)
+    console.error('DB deleteStudentAccount catch:', e)
+    return false
   }
 }
