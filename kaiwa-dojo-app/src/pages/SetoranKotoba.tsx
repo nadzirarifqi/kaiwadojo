@@ -15,17 +15,6 @@ export interface UserKotoba {
   created_at?: string
 }
 
-// Single Sample Guide Card shown only as visual reference for new users
-const SAMPLE_GUIDE_KOTOBA: UserKotoba = {
-  id: 'sample-guide-1',
-  user_id: 'sample',
-  japanese: '食べる (たべる)',
-  romaji: 'taberu',
-  meaning: 'Makan (Kata Kerja)',
-  image_url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&auto=format&fit=crop&q=60',
-  is_mastered: true,
-}
-
 type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_japanese_meaning'
 
 export function detectJapaneseScript(text: string) {
@@ -600,33 +589,6 @@ export default function SetoranKotobaPage() {
             >
               ＋ Tambah Kosakata Pertama →
             </button>
-          </div>
-
-          {/* Sample Card Preview Guide */}
-          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
-            <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400 mb-3 flex items-center justify-between">
-              <span>💡 Contoh Tampilan Kartu Kosakata:</span>
-              <span className="text-[0.65rem] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">Contoh Referensi</span>
-            </div>
-            <div className="max-w-sm">
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-950/60 bg-emerald-50/30 shadow-sm flex flex-col gap-3">
-                <div className="relative h-32 w-full rounded-2xl overflow-hidden bg-slate-100">
-                  <img src={SAMPLE_GUIDE_KOTOBA.image_url} alt="Sample" className="size-full object-cover" />
-                  <span className="absolute top-2 right-2 bg-emerald-500 text-white px-2 py-0.5 rounded-lg text-[0.65rem] font-bold">
-                    ✅ Dikuasai
-                  </span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
-                    {SAMPLE_GUIDE_KOTOBA.japanese}
-                  </h4>
-                  <div className="text-xs font-bold text-amber-600 mt-0.5">{SAMPLE_GUIDE_KOTOBA.romaji}</div>
-                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200">
-                    🇮🇩 {SAMPLE_GUIDE_KOTOBA.meaning}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
