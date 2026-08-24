@@ -106,9 +106,24 @@ export default function StudentManager() {
   async function handleReject(std: StudentAccount) {
     if (!confirm(`Apakah Anda yakin ingin menolak/menonaktifkan akun "${std.full_name}"?`)) return
     setSaving(true)
+
+    // 1. Update React state secara instan (0ms update)
+    setStudents(prev =>
+      prev.map(item =>
+        item.id === std.id || item.username.toLowerCase() === std.username.toLowerCase()
+          ? { ...item, status: 'rejected' }
+          : item
+      )
+    )
+
+    // 2. Simpan status 'rejected' ke DB Supabase & LocalStorage
     await rejectStudentAccount(std.id)
+    if (std.username) {
+      await rejectStudentAccount(std.username)
+    }
+
     setSaving(false)
-    showToastMsg(`Akun pelajar "${std.full_name}" telah ditolak/dinonaktifkan ❌`)
+    showToastMsg(`Akun pelajar "${std.full_name}" telah dinonaktifkan ❌`)
     await loadData()
   }
 
@@ -161,9 +176,18 @@ export default function StudentManager() {
     if (!confirm(`Apakah Anda yakin ingin menghapus akun pelajar "${std.full_name}" (@${std.username})?`)) return
 
     setSaving(true)
+
+    // 1. Hapus dari React state secara instan (0ms removal)
+    setStudents(prev => prev.filter(s => s.id !== std.id && s.username.toLowerCase() !== std.username.toLowerCase()))
+
+    // 2. Hapus dari Supabase DB & LocalStorage
     await deleteStudentAccount(std.id)
+    if (std.username) {
+      await deleteStudentAccount(std.username)
+    }
+
     setSaving(false)
-    showToastMsg(`Berhasil menghapus akun pelajar "${std.full_name}".`)
+    showToastMsg(`Berhasil menghapus akun pelajar "${std.full_name}". ✅`)
     await loadData()
   }
 
