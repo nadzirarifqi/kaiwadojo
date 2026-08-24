@@ -79,16 +79,16 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
 
     if (!error && profData && profData.length > 0) {
       const students: StudentAccount[] = profData.map((p: any) => {
-        // Prioritaskan status approved/rejected jika ada di local cache atau database
-        const localMatched = localMap[p.id] || localMap[p.username?.toLowerCase()]
-        let finalStatus: StudentStatus = 'pending'
+        const cleanUser = (p.username || '').toLowerCase()
+        const localMatched = localMap[p.id] || localMap[cleanUser]
+        
+        let finalStatus: StudentStatus = (p.status as StudentStatus) || 'pending'
 
-        if (p.status) {
-          finalStatus = p.status as StudentStatus
-        } else if (localMatched?.status) {
+        // Jika local cache mencatat approved/rejected (misal dari tindakan admin di UI), utamakan status terbaru tersebut
+        if (localMatched?.status === 'approved' || localMatched?.status === 'rejected') {
           finalStatus = localMatched.status
-        } else {
-          finalStatus = 'approved' // Default untuk akun demo lama
+        } else if (!p.status && (cleanUser === 'budisantoso' || cleanUser === 'sitirahma' || cleanUser === 'ahmadfauzi')) {
+          finalStatus = 'approved'
         }
 
         return {
@@ -184,52 +184,53 @@ export async function createStudentAccount(data: {
 }
 
 export async function approveStudentAccount(id: string): Promise<void> {
-  // 1. Update LocalStorage cache secara langsung
+  const target = (id || '').toLowerCase().trim()
+  // 1. Update LocalStorage cache secara langsung (case-insensitive username & ID match)
   const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
   if (localStr) {
     try {
       const current: StudentAccount[] = JSON.parse(localStr)
       const updated = current.map(std =>
-        std.id === id || std.username === id ? { ...std, status: 'approved' as const } : std
+        std.id === id || std.username.toLowerCase() === target ? { ...std, status: 'approved' as const } : std
       )
       localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
     } catch {}
   }
 
-  // 2. Update Supabase Database tanpa memicu Error 400 UUID Syntax
+  // 2. Update Supabase Database tanpa Error 400 UUID
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
     if (isUuid) {
       await supabase.from('profiles').update({ status: 'approved' }).eq('id', id)
-    } else {
-      await supabase.from('profiles').update({ status: 'approved' }).eq('username', id)
     }
+    // Update berdasarkan username secara case-insensitive
+    await supabase.from('profiles').update({ status: 'approved' }).ilike('username', target)
   } catch (e) {
     console.warn('DB approveStudentAccount note:', e)
   }
 }
 
 export async function rejectStudentAccount(id: string): Promise<void> {
+  const target = (id || '').toLowerCase().trim()
   // 1. Update LocalStorage cache secara langsung
   const localStr = localStorage.getItem(LOCAL_STUDENTS_KEY)
   if (localStr) {
     try {
       const current: StudentAccount[] = JSON.parse(localStr)
       const updated = current.map(std =>
-        std.id === id || std.username === id ? { ...std, status: 'rejected' as const } : std
+        std.id === id || std.username.toLowerCase() === target ? { ...std, status: 'rejected' as const } : std
       )
       localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(updated))
     } catch {}
   }
 
-  // 2. Update Supabase Database tanpa memicu Error 400 UUID Syntax
+  // 2. Update Supabase Database
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
     if (isUuid) {
       await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id)
-    } else {
-      await supabase.from('profiles').update({ status: 'rejected' }).eq('username', id)
     }
+    await supabase.from('profiles').update({ status: 'rejected' }).ilike('username', target)
   } catch (e) {
     console.warn('DB rejectStudentAccount note:', e)
   }
