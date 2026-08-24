@@ -15,16 +15,6 @@ export interface UserKotoba {
   created_at?: string
 }
 
-// Preset images for easy selection if user doesn't have a custom image URL
-const PRESET_IMAGES = [
-  'https://images.unsplash.com/photo-1528164344705-47542687990d?w=400&auto=format&fit=crop&q=60', // Sakura / Japan
-  'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&auto=format&fit=crop&q=60', // Ramen
-  'https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=400&auto=format&fit=crop&q=60', // Tokyo St
-  'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=60', // Tea / Matcha
-  'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=400&auto=format&fit=crop&q=60', // Travel
-  'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&auto=format&fit=crop&q=60', // Mount Fuji
-]
-
 // Single Sample Guide Card shown only as visual reference for new users
 const SAMPLE_GUIDE_KOTOBA: UserKotoba = {
   id: 'sample-guide-1',
@@ -159,13 +149,36 @@ export default function SetoranKotobaPage() {
     window.dispatchEvent(new Event('storage'))
   }
 
+  function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Ukuran Gambar Terlalu Besar ⚠️',
+        message: 'Ukuran file gambar maksimal adalah 5 MB. Mohon pilih file foto dengan ukuran yang lebih kecil!',
+        type: 'warning',
+        buttonText: 'Mengerti',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setFormData(prev => ({ ...prev, image_url: reader.result as string }))
+    }
+    reader.readAsDataURL(file)
+  }
+
   function handleOpenCreateModal() {
     setEditingItem(null)
     setFormData({
       japanese: '',
       romaji: '',
       meaning: '',
-      image_url: PRESET_IMAGES[Math.floor(Math.random() * PRESET_IMAGES.length)],
+      image_url: '',
     })
     setIsModalOpen(true)
   }
@@ -467,7 +480,7 @@ export default function SetoranKotobaPage() {
               </div>
               <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
                 <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual</span>
-                URL Foto atau pilih gambar sampel yang pas
+                Upload file foto/gambar visual pendukung
               </div>
             </div>
           </div>
@@ -969,34 +982,30 @@ export default function SetoranKotobaPage() {
                 />
               </div>
 
-              {/* Field 4: Image URL & Presets */}
+              {/* Field 4: Image File Upload */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. {t('sk_input_image', 'URL Gambar Visual (Opsional)')}
+                  4. {t('sk_input_image', 'Upload File Gambar (Opsional)')}
                 </label>
                 <input
-                  type="url"
-                  placeholder={t('sk_input_image_ph', 'https://...')}
-                  value={formData.image_url}
-                  onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all mb-2"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
                 />
 
-                <div className="text-[0.65rem] text-slate-400 font-semibold mb-1.5">Atau pilih gambar sampel cepat:</div>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {PRESET_IMAGES.map((imgUrl, idx) => (
+                {formData.image_url && (
+                  <div className="mt-2.5 relative w-full h-36 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                    <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
                     <button
-                      key={idx}
                       type="button"
-                      onClick={() => setFormData({ ...formData, image_url: imgUrl })}
-                      className={`size-10 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                        formData.image_url === imgUrl ? 'border-amber-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                      className="absolute top-2 right-2 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-[0.68rem] font-extrabold rounded-xl border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs"
                     >
-                      <img src={imgUrl} alt="Sample" className="size-full object-cover" />
+                      ✕ Hapus Gambar
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
