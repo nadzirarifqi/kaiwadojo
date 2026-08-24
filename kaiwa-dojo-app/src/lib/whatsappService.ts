@@ -10,7 +10,7 @@ export interface SendWhatsAppOtpParams {
 }
 
 export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpParams): Promise<boolean> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || ''
+  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'PZCckEzvFtUmaZHuWp6y'
 
   // Format nomor HP agar standar (misal 081234... -> 6281234...)
   let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
@@ -62,7 +62,7 @@ export interface SendWhatsAppApprovalParams {
 }
 
 export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, username }: SendWhatsAppApprovalParams): Promise<boolean> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || ''
+  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'PZCckEzvFtUmaZHuWp6y'
 
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {
@@ -112,7 +112,7 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
  * Memeriksa apakah nomor telepon terdaftar & aktif di WhatsApp via Fonnte API /validate
  */
 export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isValid: boolean; message?: string }> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || ''
+  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'PZCckEzvFtUmaZHuWp6y'
 
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {

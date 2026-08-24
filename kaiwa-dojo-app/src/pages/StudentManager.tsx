@@ -74,26 +74,40 @@ export default function StudentManager() {
 
   async function handleApprove(std: StudentAccount) {
     setSaving(true)
-    await approveStudentAccount(std.id)
 
-    // 1. Kirim Email Notifikasi Persetujuan via Resend
-    await sendApprovalEmail({
-      toEmail: std.email,
+    // 1. Update React state secara instan (0ms badge UI update)
+    setStudents(prev =>
+      prev.map(item => (item.id === std.id || item.username === std.username ? { ...item, status: 'approved' } : item))
+    )
+
+    // 2. Simpan status 'approved' ke Supabase DB & LocalStorage
+    await approveStudentAccount(std.id)
+    if (std.username) {
+      await approveStudentAccount(std.username)
+    }
+
+    // 3. Kirim Notifikasi WhatsApp Persetujuan via Fonnte API
+    const waTarget = std.phone_number || std.username || ''
+    const waSent = await sendWhatsAppApprovalNotice({
+      phoneNumber: waTarget,
       fullName: std.full_name,
       username: std.username,
     })
 
-    // 2. Kirim Notifikasi WhatsApp Persetujuan via Fonnte
-    if (std.phone_number) {
-      await sendWhatsAppApprovalNotice({
-        phoneNumber: std.phone_number,
-        fullName: std.full_name,
-        username: std.username,
-      })
-    }
+    // 4. Kirim Email Notifikasi Persetujuan (Background)
+    sendApprovalEmail({
+      toEmail: std.email,
+      fullName: std.full_name,
+      username: std.username,
+    }).catch(() => {})
 
     setSaving(false)
-    showToastMsg(`Akun "${std.full_name}" berhasil disetujui! Notifikasi WA & Email telah dikirim. ✅`)
+    if (waSent) {
+      showToastMsg(`Akun "${std.full_name}" Disetujui & Pesan WA Berhasil Terkirim! ✅`)
+    } else {
+      showToastMsg(`Akun "${std.full_name}" Disetujui! ✅`)
+    }
+
     await loadData()
   }
 
