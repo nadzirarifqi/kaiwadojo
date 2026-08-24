@@ -30,7 +30,7 @@ interface AuthContextValue {
   loading: boolean
   sessionExpiredNotice: string | null
   clearSessionNotice: () => void
-  signOut: () => Promise<void>
+  signOut: (reason?: string) => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
@@ -42,7 +42,7 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   sessionExpiredNotice: null,
   clearSessionNotice: () => {},
-  signOut: async () => {},
+  signOut: async (_reason?: string) => {},
   refreshProfile: async () => {},
 })
 
@@ -101,6 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
     if (!error && data) {
+      if (data.role === 'pelajar' && (data.status === 'rejected' || data.status === 'pending')) {
+        signOut(data.status === 'rejected' ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin.' : 'Akun Anda masih dalam proses verifikasi Admin.')
+        return
+      }
       setProfile(data as Profile)
       sessionStorage.setItem('kaiwa_session_active', 'true')
       sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(data))

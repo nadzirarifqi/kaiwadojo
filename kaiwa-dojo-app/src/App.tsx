@@ -115,7 +115,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
 /* ── Protected Route ────────────────────────────── */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, loading, signOut } = useAuth()
 
   if (loading) {
     return <LoadingScreen message="Memeriksa Keamanan Sesi..." fullScreen={true} />
@@ -126,6 +126,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isBrowserActive || !hasValidSession || !profile) {
     return <Navigate to="/" replace />
+  }
+
+  // Gating status akun: Akun nonaktif/rejected atau pending dilarang masuk ke Dashboard
+  if (profile.role === 'pelajar' && (profile.status === 'rejected' || profile.status === 'pending')) {
+    const reasonMsg = profile.status === 'rejected'
+      ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin KaiwaDojo.'
+      : 'Akun Anda masih dalam proses verifikasi Admin.'
+    signOut(reasonMsg)
+    return <Navigate to="/login" replace />
   }
 
   return <>{children}</>
