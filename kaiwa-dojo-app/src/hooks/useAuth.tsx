@@ -112,10 +112,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function refreshProfile() {
-    const custom = sessionStorage.getItem('kaiwa_custom_profile')
+    const custom = sessionStorage.getItem('kaiwa_custom_profile') || localStorage.getItem('kaiwa_custom_profile')
     if (custom) {
       try {
-        setProfile(JSON.parse(custom))
+        const parsed = JSON.parse(custom)
+        if (parsed?.id) {
+          const { data: dbProf } = await supabase.from('profiles').select('*').eq('id', parsed.id).maybeSingle()
+          if (dbProf) {
+            const merged = { ...parsed, ...dbProf }
+            sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(merged))
+            localStorage.setItem('kaiwa_custom_profile', JSON.stringify(merged))
+            setProfile(merged)
+            return
+          }
+        }
+        setProfile(parsed)
         return
       } catch {}
     }

@@ -43,32 +43,55 @@ export default function AdminLoginPage() {
     const cleanUser = username.trim().toLowerCase()
 
     if (cleanUser === 'kaiwahiroshima' && password === 'inaconnextkaiwa6') {
-      const adminProf = {
-        id: '00000000-0000-0000-0000-000000000099',
+      const adminId = '00000000-0000-0000-0000-000000000099'
+      let adminProf = {
+        id: adminId,
         full_name: 'Admin Hiroshima',
         username: 'kaiwahiroshima',
         email: 'admin@kaiwadojo.com',
+        bio: '',
+        avatar_url: null as string | null,
         role: 'admin',
+        status: 'approved',
         streak_days: 99,
         last_active_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
-      sessionStorage.setItem('kaiwa_session_active', 'true')
-      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
-      window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
       try {
-        await supabase.from('profiles').upsert({
-          id: '00000000-0000-0000-0000-000000000099',
-          full_name: 'Admin Hiroshima',
-          username: 'kaiwahiroshima',
-          email: 'admin@kaiwadojo.com',
-          role: 'admin',
-        })
+        const { data: dbAdmin } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', adminId)
+          .maybeSingle()
+
+        if (dbAdmin) {
+          adminProf = {
+            ...adminProf,
+            full_name: dbAdmin.full_name || adminProf.full_name,
+            username: dbAdmin.username || adminProf.username,
+            bio: dbAdmin.bio || adminProf.bio,
+            avatar_url: dbAdmin.avatar_url || adminProf.avatar_url,
+          }
+        } else {
+          await supabase.from('profiles').upsert({
+            id: adminId,
+            full_name: 'Admin Hiroshima',
+            username: 'kaiwahiroshima',
+            email: 'admin@kaiwadojo.com',
+            role: 'admin',
+            status: 'approved',
+          })
+        }
       } catch (err) {
-        console.warn('Admin upsert note:', err)
+        console.warn('Admin DB fetch note:', err)
       }
+
+      sessionStorage.setItem('kaiwa_session_active', 'true')
+      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+      window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
       setLoading(false)
       navigate('/dashboard')

