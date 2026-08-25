@@ -37,16 +37,6 @@ interface ChapterItem {
   lessons: LessonItem[]
 }
 
-interface CommentItem {
-  id: string
-  body: string
-  created_at: string
-  user: {
-    full_name: string
-    avatar_url: string | null
-  } | null
-}
-
 /* ── Standard 5 Items for each Bab in Minna no Nihongo (3 Video + 2 Kuis) ── */
 const CHAPTER_ITEMS_CONFIG = [
   { num: 1, title: 'Video 1: Tata Bahasa Bagian 1 (Bunpou A)', icon: '📖', type: 'video' as const, duration: 15, badge: '🎥 Video 1' },
@@ -242,11 +232,6 @@ export default function MyCourses() {
 
   // Expanded bab accordions
   const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set([1, 26]))
-
-  // Comments
-  const [comments, setComments]                   = useState<CommentItem[]>([])
-  const [newComment, setNewComment]               = useState('')
-  const [submittingComment, setSubmittingComment] = useState(false)
 
   // Custom Alert Modal State
   const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
@@ -482,51 +467,6 @@ export default function MyCourses() {
       }
     }
   }, [chapters, searchParams])
-
-  // Fetch comments when active lesson changes
-  useEffect(() => {
-    if (!activeLesson || activeLesson.is_placeholder) {
-      setComments([])
-      return
-    }
-    fetchComments(activeLesson.id)
-  }, [activeLesson])
-
-  async function fetchComments(lessonId: string) {
-    const { data, error } = await supabase
-      .from('comments')
-      .select(`
-        id, body, created_at,
-        user:profiles!comments_user_id_fkey(full_name, avatar_url)
-      `)
-      .eq('lesson_id', lessonId)
-      .order('created_at', { ascending: true })
-
-    if (!error && data) {
-      setComments(data.map((item: any) => ({
-        ...item,
-        user: Array.isArray(item.user) ? item.user[0] : item.user,
-      })))
-    }
-  }
-
-  async function handlePostComment(e: React.FormEvent) {
-    e.preventDefault()
-    if (!user || !activeLesson || activeLesson.is_placeholder || !newComment.trim()) return
-    setSubmittingComment(true)
-
-    const { error } = await supabase.from('comments').insert({
-      lesson_id: activeLesson.id,
-      user_id: user.id,
-      body: newComment.trim(),
-    })
-
-    if (!error) {
-      setNewComment('')
-      fetchComments(activeLesson.id)
-    }
-    setSubmittingComment(false)
-  }
 
   async function handleToggleLessonComplete(lesson: LessonItem) {
     if (lesson.is_placeholder) return
@@ -1123,7 +1063,7 @@ export default function MyCourses() {
               </button>
             </div>
 
-            {/* Modal Body: Left Player & Comments | Right Lessons list */}
+            {/* Modal Body: Left Player | Right Lessons list */}
             {/* On mobile: stack with toggle button. On lg+: side-by-side columns */}
             <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
 
@@ -1350,58 +1290,6 @@ export default function MyCourses() {
                   )}
                 </div>
 
-                {/* Discussion / Comments */}
-                <div className="flex flex-col gap-4">
-                  <h4 className="font-bold text-slate-800 text-base">💬 Diskusi & Catatan Siswa ({comments.length})</h4>
-
-                  {activeLesson.is_placeholder ? (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                      📌 Diskusi akan dibuka setelah video materi ini dipublikasikan oleh pengajar.
-                    </div>
-                  ) : (
-                    <>
-                      <form onSubmit={handlePostComment} className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Tulis pertanyaan atau catatan..."
-                          value={newComment}
-                          onChange={e => setNewComment(e.target.value)}
-                          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-primary bg-slate-50"
-                        />
-                        <button
-                          type="submit"
-                          disabled={submittingComment}
-                          className="bg-primary text-white font-bold px-4 py-2.5 rounded-xl text-sm border-none cursor-pointer disabled:opacity-50"
-                        >
-                          Kirim
-                        </button>
-                      </form>
-
-                      <div className="flex flex-col gap-3">
-                        {comments.length === 0 ? (
-                          <p className="text-xs text-slate-400 py-2">Belum ada diskusi di materi ini. Jadi yang pertama berkomentar!</p>
-                        ) : (
-                          comments.map(item => (
-                            <div key={item.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex gap-3 text-sm">
-                              <div className="size-8 bg-primary/10 rounded-full flex items-center justify-center font-bold text-primary shrink-0 text-xs">
-                                {item.user?.full_name?.[0] || 'U'}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-800 text-xs">{item.user?.full_name || 'User'}</span>
-                                  <span className="text-[0.65rem] text-slate-400">
-                                    {new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className="text-slate-600 mt-1 text-xs leading-relaxed">{item.body}</p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
               </div>
 
               {/* Right Column: Playlist of 5 Videos in active Chapter (desktop only) */}
