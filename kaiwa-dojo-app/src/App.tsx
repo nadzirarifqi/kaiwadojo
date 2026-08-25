@@ -90,7 +90,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-slate-50 overflow-x-clip">
 
       {/* Mobile topbar */}
-      <MobileTopbar onMenuClick={() => setSidebarOpen(true)} />
+      <MobileTopbar onMenuClick={() => setSidebarOpen(prev => !prev)} />
 
       {/* Sidebar — drawer on mobile, fixed panel on desktop */}
       <Sidebar
