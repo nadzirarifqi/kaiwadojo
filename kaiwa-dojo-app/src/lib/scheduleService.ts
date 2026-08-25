@@ -438,7 +438,7 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
   // 1. Fetch from Supabase DB first (Source of truth)
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       const sortedData = sortSchedules(data as ClassSchedule[])
       localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
       return sortedData
@@ -447,7 +447,7 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
     console.warn('DB fetchSchedules warning:', e)
   }
 
-  // 2. Fallback to local storage if DB is empty or unreachable
+  // 2. Fallback to local storage if DB is unreachable
   const stored = localStorage.getItem(LOCAL_SCHEDULES_KEY)
   if (stored) {
     try {
@@ -570,26 +570,18 @@ export async function updateSchedule(scheduleId: string, scheduleData: Partial<C
   if (scheduleData.location !== undefined) updatePayload.location = scheduleData.location || null
   if (scheduleData.max_quota) updatePayload.max_quota = scheduleData.max_quota
 
-  // 1. Try DB update by targetId first
-  let { error } = await supabase
-    .from('class_schedules')
-    .update(updatePayload)
-    .eq('id', targetId)
+  // Update both raw targetId and mapped dbScheduleId in DB
+  const [{ error: err1 }, { error: err2 }] = await Promise.all([
+    supabase.from('class_schedules').update(updatePayload).eq('id', targetId),
+    supabase.from('class_schedules').update(updatePayload).eq('id', dbScheduleId),
+  ])
 
-  if (error) {
-    // Retry with dbScheduleId if targetId failed
-    const { error: error2 } = await supabase
-      .from('class_schedules')
-      .update(updatePayload)
-      .eq('id', dbScheduleId)
-
-    if (error2) {
-      console.error('updateSchedule Supabase DB error:', error2)
-      throw new Error(`Gagal memperbarui jadwal di database: ${error2.message || 'Error pada Supabase DB'}`)
-    }
+  if (err1 && err2) {
+    console.error('updateSchedule Supabase DB error:', err1 || err2)
+    throw new Error(`Gagal memperbarui jadwal di database: ${(err1 || err2)?.message || 'Error pada Supabase DB'}`)
   }
 
-  // 2. Refresh schedules from DB to update LocalStorage cache
+  // Refresh schedules from DB to update LocalStorage cache
   const refreshedSchedules = await fetchSchedules()
   const updatedItem = refreshedSchedules.find(s => matchScheduleId(s.id, targetId))
   if (updatedItem) return updatedItem
@@ -617,29 +609,40 @@ export async function deleteSchedule(scheduleId: string): Promise<void> {
   const targetId = scheduleId
   const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
 
-  // 1. Delete associated reservations in DB first
+  // 1. Delete associated reservations in DB for both ID variants
   try {
-    await supabase.from('class_reservations').delete().eq('schedule_id', targetId)
-    await supabase.from('class_reservations').delete().eq('schedule_id', dbScheduleId)
+    await Promise.all([
+      supabase.from('class_reservations').delete().eq('schedule_id', targetId),
+      supabase.from('class_reservations').delete().eq('schedule_id', dbScheduleId),
+    ])
   } catch (e) {
     console.warn('DB delete class_reservations note:', e)
   }
 
-  // 2. Delete schedule in DB by targetId or mapped dbScheduleId
-  const { error: error1 } = await supabase.from('class_schedules').delete().eq('id', targetId)
+  // 2. Delete schedule in DB for both raw targetId and mapped dbScheduleId unconditionally
+  const [{ error: err1 }, { error: err2 }] = await Promise.all([
+    supabase.from('class_schedules').delete().eq('id', targetId),
+    supabase.from('class_schedules').delete().eq('id', dbScheduleId),
+  ])
 
-  if (error1) {
-    const { error: error2 } = await supabase.from('class_schedules').delete().eq('id', dbScheduleId)
-    if (error2) {
-      console.error('deleteSchedule Supabase DB error:', error2)
-      throw new Error(`Gagal menghapus jadwal dari database: ${error2.message || 'Error pada Supabase DB'}`)
-    }
+  if (err1 && err2) {
+    console.error('deleteSchedule Supabase DB error:', err1 || err2)
+    throw new Error(`Gagal menghapus jadwal dari database: ${(err1 || err2)?.message || 'Error pada Supabase DB'}`)
   }
 
-  // 3. Sync LocalStorage cache after DB deletion succeeds
-  const current = await fetchSchedules()
-  const updated = current.filter(s => !matchScheduleId(s.id, targetId))
-  localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updated))
+  // 3. Re-query DB to sync local storage with actual database state
+  const { data: dbSchedules, error: fetchErr } = await supabase.from('class_schedules').select('*')
+  let updatedList: ClassSchedule[] = []
+
+  if (!fetchErr && dbSchedules) {
+    updatedList = sortSchedules(dbSchedules as ClassSchedule[])
+  } else {
+    const current = await fetchSchedules()
+    updatedList = current.filter(s => !matchScheduleId(s.id, targetId))
+  }
+
+  // 4. Sync LocalStorage cache after DB delete
+  localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updatedList))
 
   const reservations = await fetchReservations()
   const updatedRes = reservations.filter(r => !matchScheduleId(r.schedule_id, targetId))
