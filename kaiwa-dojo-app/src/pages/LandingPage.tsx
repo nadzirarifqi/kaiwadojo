@@ -308,11 +308,11 @@ export default function LandingPage() {
             {/* Card 3 */}
             <div className="bg-slate-50 dark:bg-slate-800/50 p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-3 sm:gap-4 hover:border-emerald-500/40 transition-all">
               <div className="size-12 sm:size-14 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl sm:text-3xl font-bold">
-                👥
+                ⛺
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Sesi Live Online & Offline</h3>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Kelas Live Online & Offline 3D2N</h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                Ikuti kelas langsung via Google Meet atau hadir di Kaiwa Dojo Center dengan kuota eksklusif maksimal 10 siswa per sesi.
+                Ikuti kelas online via Google Meet atau gabung kelas offline 3 hari 2 malam di Kaiwa Dojo Center dengan kuota eksklusif maksimal 10 siswa.
               </p>
             </div>
 

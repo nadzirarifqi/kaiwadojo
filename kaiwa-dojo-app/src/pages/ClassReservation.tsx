@@ -12,6 +12,7 @@ import {
   getMonthlyOnlineRequirementStatus,
   getWeekLabel,
   formatDateIndonesian,
+  formatDateRangeIndonesian,
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
 } from '../lib/scheduleService'
@@ -433,7 +434,10 @@ export default function ClassReservationPage() {
                 const { isLocked, reason } = checkLockStatus(sch)
                 const isFull = enrolledCount >= sch.max_quota
 
-                const formattedDate = formatDateIndonesian(sch.date, language)
+                const isOfflineMultiDay = sch.type === 'offline' || Boolean(sch.end_date && sch.end_date !== (sch.start_date || sch.date))
+                const sDateStr = sch.start_date || sch.date
+                const eDateStr = sch.end_date || sDateStr
+                const { formattedRange, badgeLabel } = formatDateRangeIndonesian(sDateStr, eDateStr, sch.start_time, sch.end_time, language)
 
                 return (
                   <div
@@ -455,9 +459,9 @@ export default function ClassReservationPage() {
                             : 'bg-emerald-600 text-white shadow-xs'
                           : sch.type === 'online'
                             ? 'bg-transparent border border-sky-400 text-sky-600 dark:text-sky-300 font-extrabold'
-                            : 'bg-transparent border border-emerald-400 text-emerald-600 dark:text-emerald-300 font-extrabold'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400 font-black'
                       }`}>
-                        {sch.type === 'online' ? '💻 ONLINE (G-Meet)' : '🏢 OFFLINE (Lokasi)'}
+                        {sch.type === 'online' ? '💻 ONLINE (G-Meet)' : `⛺ OFFLINE (${badgeLabel})`}
                       </span>
 
                       {/* Quota Badge */}
@@ -483,14 +487,31 @@ export default function ClassReservationPage() {
 
                       {/* Date & Time */}
                       <div className="mt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>📅</span>
-                          <span className="font-extrabold">{formattedDate}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span>⏰</span>
-                          <span>{sch.start_time} - {sch.end_time} WIB</span>
-                        </div>
+                        {isOfflineMultiDay ? (
+                          <>
+                            <div className="flex items-start gap-2 bg-emerald-50/80 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200">
+                              <span className="text-base shrink-0">⛺</span>
+                              <div className="text-[0.72rem] leading-snug">
+                                <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-[0.65rem] tracking-wider mb-0.5">
+                                  Jadwal 3 Hari 2 Malam:
+                                </div>
+                                <span className="font-extrabold">{formattedRange}</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span>📅</span>
+                              <span className="font-extrabold">{formatDateIndonesian(sDateStr, language)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span>⏰</span>
+                              <span>{sch.start_time} - {sch.end_time} WIB</span>
+                            </div>
+                          </>
+                        )}
+
                         <div className="flex items-center gap-2">
                           <span>👨‍🏫</span>
                           <span className="font-bold text-slate-700 dark:text-slate-200">{sch.instructor_name}</span>
@@ -505,7 +526,7 @@ export default function ClassReservationPage() {
                         ) : (
                           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold truncate pt-1">
                             <span>📍</span>
-                            <span className="truncate">{sch.location || 'Lokasi Dojo'}</span>
+                            <span className="truncate">{sch.location || 'Kaiwa Dojo Center'}</span>
                           </div>
                         )}
                       </div>

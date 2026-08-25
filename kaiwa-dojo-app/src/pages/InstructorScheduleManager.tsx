@@ -12,6 +12,7 @@ import {
   deleteSchedule,
   getWeekLabel,
   getMonthLabel,
+  formatDateRangeIndonesian,
   SCHEDULE_UPDATE_EVENT,
   RESERVATION_UPDATE_EVENT,
   subscribeToScheduleRealtime,
@@ -41,11 +42,24 @@ export default function InstructorScheduleManagerPage() {
   const [formSubtitle, setFormSubtitle] = useState('')
   const [formInstructorName, setFormInstructorName] = useState(instructorName)
   const [formDate, setFormDate] = useState('')
+  const [formEndDate, setFormEndDate] = useState('')
   const [formStartTime, setFormStartTime] = useState('19:00')
   const [formEndTime, setFormEndTime] = useState('20:30')
   const [formMeetUrl, setFormMeetUrl] = useState('https://meet.google.com/kaiwa-live-session')
-  const [formLocation, setFormLocation] = useState('Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
+  const [formLocation, setFormLocation] = useState('Kaiwa Dojo Center (Jl. Sudirman No. 12)')
   const [formMaxQuota, setFormMaxQuota] = useState(10)
+
+  function calculateDefaultEndDate(startDateStr: string): string {
+    if (!startDateStr) return ''
+    const parts = startDateStr.split('-').map(Number)
+    if (parts.length !== 3) return startDateStr
+    const d = new Date(parts[0], parts[1] - 1, parts[2])
+    d.setDate(d.getDate() + 2) // +2 days = 3 Days 2 Nights
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
 
   async function loadData() {
     setLoading(true)
@@ -86,7 +100,9 @@ export default function InstructorScheduleManagerPage() {
     setEditingSchedule(null)
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    setFormDate(d.toISOString().split('T')[0])
+    const startDateStr = d.toISOString().split('T')[0]
+    setFormDate(startDateStr)
+    setFormEndDate(calculateDefaultEndDate(startDateStr))
     setFormType('online')
     setFormTitle('')
     setFormSubtitle('')
@@ -105,7 +121,8 @@ export default function InstructorScheduleManagerPage() {
     setFormTitle(sch.title)
     setFormSubtitle(sch.subtitle_chapter)
     setFormInstructorName(sch.instructor_name)
-    setFormDate(sch.date)
+    setFormDate(sch.start_date || sch.date)
+    setFormEndDate(sch.end_date || sch.start_date || sch.date)
     setFormStartTime(sch.start_time)
     setFormEndTime(sch.end_time)
     setFormMeetUrl(sch.meet_url || 'https://meet.google.com/kaiwa-live-session')
@@ -123,13 +140,18 @@ export default function InstructorScheduleManagerPage() {
 
     setSubmitting(true)
     try {
+      const sDate = formDate
+      const eDate = formType === 'offline' ? (formEndDate || formDate) : formDate
+
       if (editingSchedule) {
         await updateSchedule(editingSchedule.id, {
           type: formType,
           title: formTitle.trim(),
           subtitle_chapter: formSubtitle.trim(),
           instructor_name: formInstructorName.trim() || instructorName,
-          date: formDate,
+          date: sDate,
+          start_date: sDate,
+          end_date: eDate,
           start_time: formStartTime,
           end_time: formEndTime,
           meet_url: formType === 'online' ? formMeetUrl : undefined,
@@ -144,7 +166,9 @@ export default function InstructorScheduleManagerPage() {
           subtitle_chapter: formSubtitle.trim(),
           instructor_id: instructorId,
           instructor_name: formInstructorName.trim() || instructorName,
-          date: formDate,
+          date: sDate,
+          start_date: sDate,
+          end_date: eDate,
           start_time: formStartTime,
           end_time: formEndTime,
           meet_url: formType === 'online' ? formMeetUrl : undefined,
@@ -379,14 +403,21 @@ export default function InstructorScheduleManagerPage() {
 
                   <button
                     type="button"
-                    onClick={() => setFormType('offline')}
+                    onClick={() => {
+                      setFormType('offline')
+                      if (!formEndDate || formEndDate === formDate) {
+                        setFormEndDate(calculateDefaultEndDate(formDate))
+                      }
+                      if (formStartTime === '19:00') setFormStartTime('14:00')
+                      if (formEndTime === '20:30') setFormEndTime('12:00')
+                    }}
                     className={`py-2.5 rounded-xl font-extrabold border cursor-pointer transition-all flex items-center justify-center gap-2 ${
                       formType === 'offline'
                         ? 'bg-emerald-600 text-white border-emerald-600'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <span>🏢 Offline (Lokasi Dojo)</span>
+                    <span>⛺ Offline (3 Hari 2 Malam)</span>
                   </button>
                 </div>
               </div>
@@ -435,47 +466,119 @@ export default function InstructorScheduleManagerPage() {
                 />
               </div>
 
-              {/* Date & Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                    Tanggal *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formDate}
-                    onChange={e => setFormDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                  />
-                </div>
+              {/* Date & Time Inputs */}
+              {formType === 'offline' ? (
+                <div className="flex flex-col gap-3 p-3.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/80">
+                  <div className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                    <span>⛺ Scheduling Kelas Offline 3 Hari 2 Malam</span>
+                  </div>
 
-                <div>
-                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                    Jam Mulai
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={formStartTime}
-                    onChange={e => setFormStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                  />
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
+                        Tanggal Check-in (Hari Ke-1) *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formDate}
+                        onChange={e => {
+                          const newStart = e.target.value
+                          setFormDate(newStart)
+                          setFormEndDate(calculateDefaultEndDate(newStart))
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                    Jam Selesai
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={formEndTime}
-                    onChange={e => setFormEndTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                  />
+                    <div>
+                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
+                        Jam Check-in (Mulai) *
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={formStartTime}
+                        onChange={e => setFormStartTime(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
+                        Tanggal Check-out (Hari Ke-3) *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formEndDate}
+                        onChange={e => setFormEndDate(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
+                        Jam Check-out (Selesai) *
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={formEndTime}
+                        onChange={e => setFormEndTime(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 p-2 rounded-xl border border-emerald-200/50">
+                    ℹ️ Total Durasi: {formatDateRangeIndonesian(formDate, formEndDate, formStartTime, formEndTime).badgeLabel}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      Tanggal *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formDate}
+                      onChange={e => setFormDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      Jam Mulai
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={formStartTime}
+                      onChange={e => setFormStartTime(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      Jam Selesai
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={formEndTime}
+                      onChange={e => setFormEndTime(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Location or Meet Link */}
               {formType === 'online' ? (

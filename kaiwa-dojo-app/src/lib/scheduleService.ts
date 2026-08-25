@@ -9,7 +9,9 @@ export interface ClassSchedule {
   subtitle_chapter: string
   instructor_id: string
   instructor_name: string
-  date: string // YYYY-MM-DD
+  date: string // YYYY-MM-DD (start_date fallback)
+  start_date?: string // YYYY-MM-DD (start of 3D2N offline or single day)
+  end_date?: string // YYYY-MM-DD (end of 3D2N offline or single day)
   start_time: string // HH:mm
   end_time: string // HH:mm
   week_range_id: string // e.g. 2026-W34
@@ -131,6 +133,39 @@ export function formatDateIndonesian(dateStr: string, lang: string = 'id'): stri
   const dateObj = new Date(parts[0], parts[1] - 1, parts[2])
   const locale = lang === 'ja' ? 'ja-JP' : lang === 'en' ? 'en-US' : 'id-ID'
   return dateObj.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+// Helper: Format Date Range for Multi-Day Schedules (e.g. 3 Hari 2 Malam)
+export function formatDateRangeIndonesian(
+  startDateStr: string,
+  endDateStr: string | undefined,
+  startTime: string,
+  endTime: string,
+  lang: string = 'id'
+): { formattedRange: string; badgeLabel: string; dayCount: number } {
+  if (!startDateStr) return { formattedRange: '', badgeLabel: '1 Hari', dayCount: 1 }
+
+  const startFormatted = formatDateIndonesian(startDateStr, lang)
+  if (!endDateStr || endDateStr === startDateStr) {
+    return {
+      formattedRange: `${startFormatted} (${startTime} - ${endTime} WIB)`,
+      badgeLabel: '1 Hari',
+      dayCount: 1,
+    }
+  }
+
+  const endFormatted = formatDateIndonesian(endDateStr, lang)
+  const d1 = new Date(startDateStr)
+  const d2 = new Date(endDateStr)
+  const diffTime = Math.abs(d2.getTime() - d1.getTime())
+  const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1)
+  const nights = Math.max(1, diffDays - 1)
+
+  return {
+    formattedRange: `${startFormatted} (${startTime} WIB) s/d ${endFormatted} (${endTime} WIB)`,
+    badgeLabel: `${diffDays} Hari ${nights} Malam`,
+    dayCount: diffDays,
+  }
 }
 
 // Helper: Get human readable week label (e.g. "Minggu ke-1 Agustus 2026")
@@ -488,6 +523,9 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
   const dbInstructorId = ensureUUID(scheduleData.instructor_id, '00000000-0000-0000-0000-')
   const createdAt = new Date().toISOString()
 
+  const startDate = scheduleData.start_date || scheduleData.date
+  const endDate = scheduleData.end_date || startDate
+
   const payload = {
     id: dbScheduleId,
     type: scheduleData.type,
@@ -495,7 +533,9 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
     subtitle_chapter: scheduleData.subtitle_chapter,
     instructor_id: dbInstructorId,
     instructor_name: scheduleData.instructor_name,
-    date: scheduleData.date,
+    date: startDate,
+    start_date: startDate,
+    end_date: endDate,
     start_time: scheduleData.start_time,
     end_time: scheduleData.end_time,
     week_range_id,
@@ -560,11 +600,14 @@ export async function updateSchedule(scheduleId: string, scheduleData: Partial<C
   if (scheduleData.title) updatePayload.title = scheduleData.title
   if (scheduleData.subtitle_chapter) updatePayload.subtitle_chapter = scheduleData.subtitle_chapter
   if (scheduleData.instructor_name) updatePayload.instructor_name = scheduleData.instructor_name
-  if (scheduleData.date) {
-    updatePayload.date = scheduleData.date
-    updatePayload.week_range_id = getWeekRangeId(scheduleData.date)
-    updatePayload.month_range_id = getMonthRangeId(scheduleData.date)
+  if (scheduleData.start_date || scheduleData.date) {
+    const sDate = scheduleData.start_date || scheduleData.date
+    updatePayload.date = sDate
+    updatePayload.start_date = sDate
+    updatePayload.week_range_id = getWeekRangeId(sDate!)
+    updatePayload.month_range_id = getMonthRangeId(sDate!)
   }
+  if (scheduleData.end_date) updatePayload.end_date = scheduleData.end_date
   if (scheduleData.start_time) updatePayload.start_time = scheduleData.start_time
   if (scheduleData.end_time) updatePayload.end_time = scheduleData.end_time
   if (scheduleData.meet_url !== undefined) updatePayload.meet_url = scheduleData.meet_url || null
