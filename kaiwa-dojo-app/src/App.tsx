@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './contexts/LanguageContext'
 import Sidebar from './components/Sidebar'
@@ -77,8 +77,14 @@ function MobileTopbar({ onMenuClick }: { onMenuClick: () => void }) {
    • Desktop → shift konten + lebar sidebar (buka/tutup)
    ─────────────────────────────────────────────── */
 function AppShell({ children }: { children: React.ReactNode }) {
-  // Default true = sidebar terbuka di desktop
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Default false = sidebar disembunyikan (hidden) secara default
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+
+  // Reset sidebar ke hidden setiap kali user berpindah halaman/rute
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
 
   return (
     <div className="flex min-h-screen bg-slate-50 overflow-x-clip">

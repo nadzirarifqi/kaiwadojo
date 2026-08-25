@@ -517,12 +517,12 @@ export default function CourseEditor() {
                 {/* Header Row: Bab Title + Visibility Toggle Switch */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`px-3 py-1.5 rounded-2xl flex items-center justify-center font-extrabold text-xs sm:text-sm shrink-0 shadow-xs ${
+                    <div className={`size-11 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs ${
                       chap.is_hidden
                         ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200'
                         : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/20'
                     }`}>
-                      第{babNum}課
+                      {babNum}
                     </div>
 
                     <div>

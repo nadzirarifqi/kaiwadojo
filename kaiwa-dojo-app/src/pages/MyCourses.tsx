@@ -880,8 +880,8 @@ export default function MyCourses() {
                   className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-all select-none"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="px-3 py-1.5 rounded-xl bg-primary/10 text-primary font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
-                      第{chap.bab_number}課
+                    <div className="size-10 sm:size-11 rounded-xl bg-primary/10 text-primary font-black text-sm sm:text-base flex items-center justify-center shrink-0">
+                      {chap.bab_number}
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
