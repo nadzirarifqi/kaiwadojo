@@ -390,8 +390,10 @@ export default function MyCourses() {
       })
 
       const finalTitle = adminSetting?.title
-        ? adminSetting.title.startsWith(`Bab ${bab}:`) ? adminSetting.title : `Bab ${bab}: ${adminSetting.title}`
-        : `Bab ${bab}: ${info.title}`
+        ? adminSetting.title.startsWith(`第${bab}課:`) || adminSetting.title.startsWith(`Bab ${bab}:`)
+          ? adminSetting.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')
+          : `第${bab}課: ${adminSetting.title}`
+        : `第${bab}課: ${info.title}`
 
       generatedChapters.push({
         bab_number: bab,
@@ -626,7 +628,8 @@ export default function MyCourses() {
     return (
       c.title.toLowerCase().includes(q) ||
       c.subtitle.toLowerCase().includes(q) ||
-      `bab ${c.bab_number}`.includes(q)
+      `bab ${c.bab_number}`.includes(q) ||
+      `第${c.bab_number}課`.toLowerCase().includes(q)
     )
   })
 
@@ -877,12 +880,12 @@ export default function MyCourses() {
                   className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-all select-none"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="size-10 sm:size-11 rounded-xl bg-primary/10 text-primary font-black text-sm sm:text-base flex items-center justify-center shrink-0">
-                      {chap.bab_number}
+                    <div className="px-3 py-1.5 rounded-xl bg-primary/10 text-primary font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
+                      第{chap.bab_number}課
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
-                        {language === 'ja' ? `第${chap.bab_number}課 ${chap.title.replace(/^Bab\s+\d+:\s*/i, '')}` : language === 'en' ? `Chapter ${chap.bab_number}: ${chap.title.replace(/^Bab\s+\d+:\s*/i, '')}` : chap.title}
+                        {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
                       </h3>
                       <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">
                         {chap.subtitle}

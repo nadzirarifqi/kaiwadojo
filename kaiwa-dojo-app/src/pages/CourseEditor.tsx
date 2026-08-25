@@ -517,18 +517,18 @@ export default function CourseEditor() {
                 {/* Header Row: Bab Title + Visibility Toggle Switch */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`size-11 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs ${
+                    <div className={`px-3 py-1.5 rounded-2xl flex items-center justify-center font-extrabold text-xs sm:text-sm shrink-0 shadow-xs ${
                       chap.is_hidden
                         ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200'
                         : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/20'
                     }`}>
-                      Bab {babNum}
+                      第{babNum}課
                     </div>
 
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-                          Bab {babNum}: {chap.title}
+                          第{babNum}課: {chap.title.replace(/^Bab\s+(\d+):\s*/i, '').replace(/^第\d+課:\s*/i, '')}
                         </h3>
                         <span className={`text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border ${
                           chap.is_hidden
