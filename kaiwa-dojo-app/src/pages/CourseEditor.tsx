@@ -9,6 +9,7 @@ import {
   saveCourseHeaderSettings,
   detectVideoDuration,
   CHAPTER_UPDATE_EVENT,
+  subscribeToChapterRealtime,
   type ChapterSetting,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
@@ -99,10 +100,12 @@ export default function CourseEditor() {
     const handleSync = () => loadData()
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
+    const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
 
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
+      unsubscribeRealtime()
     }
   }, [])
 

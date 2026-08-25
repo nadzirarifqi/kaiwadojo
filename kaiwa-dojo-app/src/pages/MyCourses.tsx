@@ -8,6 +8,7 @@ import {
   getCourseHeaderSettings,
   detectVideoDuration,
   CHAPTER_UPDATE_EVENT,
+  subscribeToChapterRealtime,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
@@ -264,6 +265,20 @@ export default function MyCourses() {
   /* ── Load Course Data from Supabase & Merge Placeholders ── */
   useEffect(() => {
     fetchCourseData()
+
+    const handleSync = () => {
+      fetchCourseData()
+    }
+
+    window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+    window.addEventListener('storage', handleSync)
+    const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
+
+    return () => {
+      window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+      window.removeEventListener('storage', handleSync)
+      unsubscribeRealtime()
+    }
   }, [user, selectedJilid])
 
   async function fetchCourseData() {

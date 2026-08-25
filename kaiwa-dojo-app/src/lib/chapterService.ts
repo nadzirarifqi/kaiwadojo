@@ -154,25 +154,31 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
 
 export const CHAPTER_UPDATE_EVENT = 'kaiwa_chapter_updated'
 
+export function notifyChapterChanged(detail?: any) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail }))
+  }
+}
+
+export function subscribeToChapterRealtime(onUpdate: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const channel = supabase
+    .channel('public_chapter_settings_realtime_channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chapter_settings' }, () => {
+      notifyChapterChanged()
+      onUpdate()
+    })
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
 /* ── Save Chapter Setting to LocalStorage & Supabase DB ── */
 export async function saveChapterSetting(setting: ChapterSetting): Promise<boolean> {
-  // 1. Save to LocalStorage immediately
-  try {
-    let map: Record<number, ChapterSetting> = {}
-    const localStr = localStorage.getItem(SETTINGS_KEY)
-    if (localStr) {
-      map = JSON.parse(localStr)
-    }
-    map[setting.bab_number] = setting
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
-
-    // Dispatch global custom event for instant local tab & role-switcher sync
-    window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail: setting }))
-  } catch (e) {
-    console.error('LocalStorage save error:', e)
-  }
-
-  // 2. Save to Supabase DB for cross-user / cross-device synchronization
+  // 1. Save to Supabase DB for ground truth cross-user / cross-device synchronization
   try {
     const { error } = await supabase.from('chapter_settings').upsert({
       bab_number: setting.bab_number,
@@ -190,36 +196,36 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
     }, { onConflict: 'bab_number' })
 
     if (error) {
-      console.warn('Supabase upsert note:', error.message)
+      console.error('Supabase chapter_settings upsert error:', error.message)
+      throw new Error(`Gagal menyimpan ke database Supabase: ${error.message}`)
     }
-  } catch (err) {
-    console.warn('Supabase save note:', err)
+  } catch (err: any) {
+    console.error('Supabase saveChapterSetting error:', err)
+    if (err?.message?.includes('database')) {
+      throw err
+    }
   }
 
-  return true
-}
-
-/* ── Save Multiple Chapter Settings in Batch (Publish All / Hide All) ── */
-export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): Promise<boolean> {
-  // 1. Save to LocalStorage immediately
+  // 2. Save to LocalStorage cache
   try {
     let map: Record<number, ChapterSetting> = {}
     const localStr = localStorage.getItem(SETTINGS_KEY)
     if (localStr) {
       map = JSON.parse(localStr)
     }
-    settingsList.forEach(s => {
-      map[s.bab_number] = s
-    })
+    map[setting.bab_number] = setting
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
-
-    // Dispatch global custom event for instant local tab & role-switcher sync
-    window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail: settingsList }))
   } catch (e) {
-    console.error('LocalStorage batch save error:', e)
+    console.error('LocalStorage save error:', e)
   }
 
-  // 2. Batch upsert into Supabase DB
+  notifyChapterChanged(setting)
+  return true
+}
+
+/* ── Save Multiple Chapter Settings in Batch (Publish All / Hide All) ── */
+export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): Promise<boolean> {
+  // 1. Batch upsert into Supabase DB
   try {
     const payload = settingsList.map(s => ({
       bab_number: s.bab_number,
@@ -238,12 +244,32 @@ export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): 
 
     const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
     if (error) {
-      console.warn('Supabase batch upsert note:', error.message)
+      console.error('Supabase batch upsert error:', error.message)
+      throw new Error(`Gagal batch update ke database Supabase: ${error.message}`)
     }
-  } catch (err) {
-    console.warn('Supabase batch save note:', err)
+  } catch (err: any) {
+    console.error('Supabase saveBatchChapterSettings error:', err)
+    if (err?.message?.includes('database')) {
+      throw err
+    }
   }
 
+  // 2. Save to LocalStorage cache
+  try {
+    let map: Record<number, ChapterSetting> = {}
+    const localStr = localStorage.getItem(SETTINGS_KEY)
+    if (localStr) {
+      map = JSON.parse(localStr)
+    }
+    settingsList.forEach(s => {
+      map[s.bab_number] = s
+    })
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
+  } catch (e) {
+    console.error('LocalStorage batch save error:', e)
+  }
+
+  notifyChapterChanged(settingsList)
   return true
 }
 
