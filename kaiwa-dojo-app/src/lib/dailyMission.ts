@@ -59,9 +59,9 @@ export function getDailyMission(userId: string, targetDate?: string): DailyMissi
 }
 
 export async function fetchDailyMission(userId: string, targetDate: string): Promise<DailyMissionData | null> {
-  const local = getDailyMission(userId, targetDate)
-  if (local) return local
+  if (!userId) return null
 
+  // 1. Try DB first for ground truth across devices
   try {
     const { data, error } = await supabase
       .from('daily_missions')
@@ -79,35 +79,24 @@ export async function fetchDailyMission(userId: string, targetDate: string): Pro
         targetKotobaCount: typeof data.target_kotoba_count === 'number' ? data.target_kotoba_count : 0,
       }
       localStorage.setItem(`kaiwa_daily_mission_${userId}_${targetDate}`, JSON.stringify(mission))
+      if (targetDate === getTodayDateString()) {
+        localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
+      }
       return mission
     }
   } catch (e) {
-    // Ignore DB error
+    console.warn('DB fetch error, falling back to local storage:', e)
   }
 
-  return null
+  // 2. Fallback to local storage if DB is unreachable or empty
+  return getDailyMission(userId, targetDate)
 }
 
 export async function fetchAllUserMissions(userId: string): Promise<Map<string, DailyMissionData>> {
   const missionMap = new Map<string, DailyMissionData>()
+  if (!userId) return missionMap
 
-  // 1. Load all local missions first
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith(`kaiwa_daily_mission_${userId}_`)) {
-        const raw = localStorage.getItem(key)
-        if (raw) {
-          const parsed: DailyMissionData = JSON.parse(raw)
-          if (parsed.date) missionMap.set(parsed.date, parsed)
-        }
-      }
-    }
-  } catch (e) {
-    // Ignore
-  }
-
-  // 2. Load DB missions
+  // 1. Load DB missions first (Source of Truth)
   try {
     const { data, error } = await supabase
       .from('daily_missions')
@@ -128,7 +117,27 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
       })
     }
   } catch (e) {
-    // Ignore DB fallback
+    console.warn('Fetch all DB missions warning:', e)
+  }
+
+  // 2. Load local storage as backup for offline dates not present in DB
+  try {
+    const prefix = `kaiwa_daily_mission_${userId}_`
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith(prefix)) {
+        const dateStr = key.replace(prefix, '')
+        if (!missionMap.has(dateStr)) {
+          const raw = localStorage.getItem(key)
+          if (raw) {
+            const parsed: DailyMissionData = JSON.parse(raw)
+            if (parsed.date) missionMap.set(parsed.date, parsed)
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore local storage error
   }
 
   return missionMap
@@ -145,28 +154,33 @@ export async function saveDailyMission(
     date: dateStr,
     targetReplayCount: data.selectedVideos.length * 3,
   }
+
+  if (!userId) {
+    throw new Error('ID pengguna tidak valid. Silakan login kembali.')
+  }
   
-  // 1. Save to LocalStorage immediately
+  // 1. Save to Supabase DB for persistent database storage across devices
+  const customId = `${userId}_${dateStr}`
+  const { error } = await supabase.from('daily_missions').upsert({
+    id: customId,
+    student_id: userId,
+    date: dateStr,
+    selected_videos: mission.selectedVideos,
+    target_replay_count: mission.targetReplayCount,
+    target_quiz_count: mission.targetQuizCount,
+    target_kotoba_count: mission.targetKotobaCount,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'student_id,date' })
+
+  if (error) {
+    console.error('Supabase saveDailyMission error:', error)
+    throw new Error(`Gagal menyimpan ke database: ${error.message || 'Error pada Supabase DB'}`)
+  }
+
+  // 2. Sync LocalStorage cache after successful DB write
   localStorage.setItem(`kaiwa_daily_mission_${userId}_${dateStr}`, JSON.stringify(mission))
   if (dateStr === getTodayDateString()) {
     localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
-  }
-
-  // 2. Save to Supabase DB for cross-device persistence
-  try {
-    const customId = `${userId}_${dateStr}`
-    await supabase.from('daily_missions').upsert({
-      id: customId,
-      student_id: userId,
-      date: dateStr,
-      selected_videos: mission.selectedVideos,
-      target_replay_count: mission.targetReplayCount,
-      target_quiz_count: mission.targetQuizCount,
-      target_kotoba_count: mission.targetKotobaCount,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'student_id,date' })
-  } catch (err) {
-    console.warn('Supabase saveDailyMission note:', err)
   }
   
   return mission

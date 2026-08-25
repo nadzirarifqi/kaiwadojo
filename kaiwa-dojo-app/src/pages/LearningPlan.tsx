@@ -70,7 +70,7 @@ function DailyMissionBuilderModal({
 }: {
   targetDate: string
   currentMission: DailyMissionData | null
-  onSave: (data: Omit<DailyMissionData, 'date'>, dateStr: string) => void
+  onSave: (data: Omit<DailyMissionData, 'date'>, dateStr: string) => Promise<void> | void
   onClose: () => void
 }) {
   const { profile } = useAuth()
@@ -80,6 +80,7 @@ function DailyMissionBuilderModal({
   const [missionDate, setMissionDate]     = useState<string>(targetDate)
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(currentMission?.selectedVideos?.[0]?.jilid || 1)
   const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
+  const [isSaving, setIsSaving]           = useState<boolean>(false)
 
   useEffect(() => {
     getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
@@ -89,7 +90,7 @@ function DailyMissionBuilderModal({
     window.addEventListener('kaiwa_chapter_updated', handleUpdate)
     return () => window.removeEventListener('kaiwa_chapter_updated', handleUpdate)
   }, [])
-  
+
   const startBab = selectedJilid === 1 ? 1 : 26
   const availableBabs = Array.from({ length: 25 }, (_, i) => startBab + i).filter(b => {
     if (!isStudent) return true
@@ -111,6 +112,16 @@ function DailyMissionBuilderModal({
   )
   const [targetQuiz, setTargetQuiz]       = useState<number>(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
   const [targetKotoba, setTargetKotoba]   = useState<number>(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
+
+  // Sync internal modal state whenever targetDate or currentMission props change
+  useEffect(() => {
+    setMissionDate(targetDate)
+    setSelectedJilid(currentMission?.selectedVideos?.[0]?.jilid || 1)
+    setSelectedVideos(currentMission?.selectedVideos || [])
+    setTargetQuiz(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
+    setTargetKotoba(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
+    setNoVideoPlan(currentMission ? currentMission.targetReplayCount === 0 : false)
+  }, [targetDate, currentMission])
 
   const currentBabSetting = chapterSettingsMap[selectedBab]
   const defaultInfo = selectedBab <= 25 ? DEFAULT_JILID_1[selectedBab] : DEFAULT_JILID_2[selectedBab]
@@ -144,8 +155,9 @@ function DailyMissionBuilderModal({
     onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
   })
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (isSaving) return
 
     const finalVideos = noVideoPlan ? [] : selectedVideos
     if (!noVideoPlan && finalVideos.length === 0 && targetQuiz === 0 && targetKotoba === 0) {
@@ -160,12 +172,27 @@ function DailyMissionBuilderModal({
       return
     }
 
-    onSave({
-      selectedVideos: finalVideos,
-      targetReplayCount: totalReplayTarget,
-      targetQuizCount: targetQuiz,
-      targetKotobaCount: targetKotoba,
-    }, missionDate)
+    setIsSaving(true)
+    try {
+      await onSave({
+        selectedVideos: finalVideos,
+        targetReplayCount: totalReplayTarget,
+        targetQuizCount: targetQuiz,
+        targetKotobaCount: targetKotoba,
+      }, missionDate)
+    } catch (err: any) {
+      console.error('Failed to save mission:', err)
+      setAlertConfig({
+        isOpen: true,
+        title: 'Gagal Menyimpan Misi ❌',
+        message: err?.message || 'Terjadi kesalahan saat menyimpan data ke database. Silakan coba lagi.',
+        type: 'warning',
+        buttonText: 'Mengerti',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -350,9 +377,17 @@ function DailyMissionBuilderModal({
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light text-white font-extrabold rounded-2xl border-none cursor-pointer text-sm shadow-md transition-all hover:-translate-y-0.5 mt-2"
+            disabled={isSaving}
+            className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold rounded-2xl border-none cursor-pointer text-sm shadow-md transition-all hover:-translate-y-0.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            🚀 {t('lp_save_mission', 'Simpan Misi Belajar')}
+            {isSaving ? (
+              <>
+                <span className="animate-spin text-lg">⏳</span>
+                <span>Menyimpan ke Database...</span>
+              </>
+            ) : (
+              <>🚀 {t('lp_save_mission', 'Simpan Misi Belajar')}</>
+            )}
           </button>
         </form>
         <CustomAlertModal {...alertConfig} />
@@ -763,11 +798,14 @@ export default function LearningPlanPage() {
   }
 
   async function handleSaveMission(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
-    if (!user) return
-    const saved = await saveDailyMission(user.id, data, dateStr)
+    const activeUserId = profile?.id || user?.id
+    if (!activeUserId) {
+      throw new Error('Sesi pengguna tidak terdeteksi. Silakan muat ulang halaman atau login kembali.')
+    }
+    const saved = await saveDailyMission(activeUserId, data, dateStr)
     setSelectedDateStr(dateStr)
     setSelectedMission(saved)
-    const prog = await calculateMissionProgress(user.id, saved)
+    const prog = await calculateMissionProgress(activeUserId, saved)
     setMissionProgress(prog)
     setShowMissionModal(false)
     await loadData()

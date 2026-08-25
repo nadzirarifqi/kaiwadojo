@@ -6,8 +6,11 @@ import {
   type DailyMissionData,
   type MissionProgress,
   getDailyMission,
+  fetchDailyMission,
+  fetchAllUserMissions,
   calculateMissionProgress,
   calculateStreakFromDates,
+  getTodayDateString,
 } from '../lib/dailyMission'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -164,31 +167,11 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
         setUserReservations(resList)
       }
 
-      // 2. Fetch all planned daily missions across dates from localStorage
-      const missionsList: { date: string; mission: DailyMissionData }[] = []
-      const prefix = `kaiwa_daily_mission_${userId}_`
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith(prefix)) {
-          const dateStr = key.replace(prefix, '')
-          try {
-            const m = JSON.parse(localStorage.getItem(key) || '')
-            if (m && m.selectedVideos) {
-              missionsList.push({ date: dateStr, mission: m })
-            }
-          } catch (e) {
-            // Ignore parse errors
-          }
-        }
-      }
-
-      // Ensure today's mission is included if generated
-      if (!missionsList.some(m => m.date === todayStr)) {
-        const tMission = getDailyMission(userId, todayStr)
-        if (tMission) {
-          missionsList.push({ date: todayStr, mission: tMission })
-        }
-      }
+      // 2. Fetch all planned daily missions across dates from DB & local cache
+      const missionsMap = await fetchAllUserMissions(userId)
+      const missionsList: { date: string; mission: DailyMissionData }[] = Array.from(missionsMap.entries()).map(
+        ([date, mission]) => ({ date, mission })
+      )
 
       missionsList.sort((a, b) => a.date.localeCompare(b.date))
       setUserMissions(missionsList)
@@ -528,8 +511,9 @@ export default function Dashboard() {
     async function loadDashboardData() {
       const effectiveUserId = profile?.id || user?.id || 'active_user'
 
-      // Daily Mission
-      const mission = getDailyMission(effectiveUserId)
+      // Daily Mission: Fetch from DB first (or local fallback)
+      const todayDate = getTodayDateString()
+      const mission = (await fetchDailyMission(effectiveUserId, todayDate)) || getDailyMission(effectiveUserId, todayDate)
       setDailyMission(mission)
       if (mission) {
         const prog = await calculateMissionProgress(effectiveUserId, mission)
