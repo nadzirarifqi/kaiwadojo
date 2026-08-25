@@ -45,6 +45,37 @@ export function detectJapaneseScript(text: string) {
   }
 }
 
+/* ── Image Compressor Helper for Fast DB Saves ── */
+async function compressImageDataUrl(dataUrl: string, maxWidth = 800, quality = 0.75): Promise<string> {
+  if (!dataUrl || !dataUrl.startsWith('data:image')) return dataUrl
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width)
+        width = maxWidth
+      }
+
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      } else {
+        resolve(dataUrl)
+      }
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
 export default function SetoranKotobaPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
@@ -92,10 +123,27 @@ export default function SetoranKotobaPage() {
   }, [user, profile?.id])
 
   async function loadKotobaList() {
-    setLoading(true)
     const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
     const globalKey = `kaiwa_user_kotoba_active_global`
 
+    // 1. Instant local cache render
+    const localData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+    let localItems: UserKotoba[] = []
+    if (localData) {
+      try {
+        localItems = JSON.parse(localData)
+        if (localItems.length > 0) {
+          setKotobaList(localItems)
+          setLoading(false)
+        }
+      } catch {}
+    }
+
+    if (!localItems.length) {
+      setLoading(true)
+    }
+
+    // 2. Fetch fresh DB records in background
     let dbItems: UserKotoba[] = []
     if (user?.id || profile?.id) {
       const { data, error } = await supabase
@@ -107,15 +155,6 @@ export default function SetoranKotobaPage() {
       if (!error && data && data.length > 0) {
         dbItems = data as UserKotoba[]
       }
-    }
-
-    // Merge with local storage
-    const localData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
-    let localItems: UserKotoba[] = []
-    if (localData) {
-      try {
-        localItems = JSON.parse(localData)
-      } catch {}
     }
 
     const mergedMap = new Map<string, UserKotoba>()
@@ -160,8 +199,10 @@ export default function SetoranKotobaPage() {
     }
 
     const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, image_url: reader.result as string }))
+    reader.onloadend = async () => {
+      const rawUrl = reader.result as string
+      const compressed = await compressImageDataUrl(rawUrl)
+      setFormData(prev => ({ ...prev, image_url: compressed }))
     }
     reader.readAsDataURL(file)
   }
@@ -217,6 +258,10 @@ export default function SetoranKotobaPage() {
 
     setSaving(true)
 
+    const processedImageUrl = formData.image_url.trim()
+      ? await compressImageDataUrl(formData.image_url.trim())
+      : undefined
+
     if (editingItem) {
       const updated = kotobaList.map(item =>
         item.id === editingItem.id
@@ -225,22 +270,25 @@ export default function SetoranKotobaPage() {
               japanese: formData.japanese.trim(),
               romaji: formData.romaji.trim(),
               meaning: formData.meaning.trim(),
-              image_url: formData.image_url.trim() || undefined,
+              image_url: processedImageUrl,
             }
           : item
       )
       saveToLocal(updated)
+      setIsModalOpen(false)
+      setSaving(false)
 
       if (user) {
-        await supabase
+        supabase
           .from('user_kotoba_submissions')
           .update({
             japanese: formData.japanese.trim(),
             romaji: formData.romaji.trim(),
             meaning: formData.meaning.trim(),
-            image_url: formData.image_url.trim() || null,
+            image_url: processedImageUrl || null,
           })
           .eq('id', editingItem.id)
+          .then(() => {})
       }
     } else {
       const newItem: UserKotoba = {
@@ -249,56 +297,56 @@ export default function SetoranKotobaPage() {
         japanese: formData.japanese.trim(),
         romaji: formData.romaji.trim(),
         meaning: formData.meaning.trim(),
-        image_url: formData.image_url.trim() || undefined,
+        image_url: processedImageUrl,
         is_mastered: false,
         created_at: new Date().toISOString(),
       }
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('user_kotoba_submissions')
-          .insert({
-            user_id: user.id,
-            japanese: formData.japanese.trim(),
-            romaji: formData.romaji.trim(),
-            meaning: formData.meaning.trim(),
-            image_url: formData.image_url.trim() || null,
-            is_mastered: false,
-          })
-          .select()
-          .single()
-
-        if (!error && data) {
-          newItem.id = data.id
-        }
-      }
-
+      // 1. Instant local render & instant modal close (0ms lag!)
       const updated = [newItem, ...kotobaList]
       saveToLocal(updated)
+      setIsModalOpen(false)
+      setSaving(false)
 
+      // 2. Non-blocking background DB insert & mission calculation
       if (user) {
-        const todayStr = new Date().toISOString().split('T')[0]
-        await supabase.from('lesson_progress').upsert({
-          student_id: user.id,
-          lesson_id: `user_kotoba_${newItem.id}`,
-          is_completed: true,
-          last_watched_at: new Date().toISOString(),
-        }, { onConflict: 'student_id,lesson_id' })
+        (async () => {
+          try {
+            const { data, error } = await supabase
+              .from('user_kotoba_submissions')
+              .insert({
+                user_id: user.id,
+                japanese: formData.japanese.trim(),
+                romaji: formData.romaji.trim(),
+                meaning: formData.meaning.trim(),
+                image_url: processedImageUrl || null,
+                is_mastered: false,
+              })
+              .select()
+              .single()
 
-        // Only add streak if daily mission overall progress reaches 100%
-        try {
-          const mission = (await fetchDailyMission(user.id, todayStr)) || getDailyMission(user.id, todayStr)
-          if (mission) {
-            await calculateMissionProgress(user.id, mission)
+            if (!error && data) {
+              newItem.id = data.id
+            }
+
+            await supabase.from('lesson_progress').upsert({
+              student_id: user.id,
+              lesson_id: `user_kotoba_${newItem.id}`,
+              is_completed: true,
+              last_watched_at: new Date().toISOString(),
+            }, { onConflict: 'student_id,lesson_id' })
+
+            const todayStr = new Date().toISOString().split('T')[0]
+            const mission = (await fetchDailyMission(user.id, todayStr)) || getDailyMission(user.id, todayStr)
+            if (mission) {
+              await calculateMissionProgress(user.id, mission)
+            }
+          } catch (e) {
+            console.warn('Background Kotoba DB sync note:', e)
           }
-        } catch (e) {
-          console.warn('SetoranKotoba streak 100% check note:', e)
-        }
+        })()
       }
     }
-
-    setSaving(false)
-    setIsModalOpen(false)
   }
 
   async function handleToggleMastered(item: UserKotoba) {
