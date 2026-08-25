@@ -25,6 +25,8 @@ import {
   bookClass,
   cancelClassBooking,
   calculateDateScheduleStatus,
+  isScheduleActiveOnDate,
+  formatDateRangeIndonesian,
   sortSchedules,
   RESERVATION_UPDATE_EVENT,
   SCHEDULE_UPDATE_EVENT,
@@ -423,7 +425,8 @@ function DateClassEnrollModal({
   onRefresh: () => Promise<void>
   onOpenMissionBuilder: () => void
 }) {
-  const daySchedules = sortSchedules(schedules.filter(s => s.date === dateStr))
+  const { language } = useLanguage()
+  const daySchedules = sortSchedules(schedules.filter(s => isScheduleActiveOnDate(s, dateStr)))
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
@@ -579,15 +582,40 @@ function DateClassEnrollModal({
                       {sch.subtitle_chapter}
                     </p>
 
-                    <div className="text-[0.75rem] text-slate-600 dark:text-slate-300 space-y-1 font-medium pt-1">
-                      <div>⏰ {sch.start_time} - {sch.end_time} WIB</div>
-                      <div>👨‍🏫 Instruktur: <strong>{sch.instructor_name}</strong></div>
-                      {sch.type === 'online' ? (
-                        <div className="text-sky-600 dark:text-sky-400 font-bold truncate">🔗 Google Meet Sesi Live</div>
-                      ) : (
-                        <div className="text-emerald-600 dark:text-emerald-400 font-bold truncate">📍 {sch.location || 'Lokasi Dojo'}</div>
-                      )}
-                    </div>
+                    {(() => {
+                      const sDateStr = sch.start_date || sch.date
+                      const eDateStr = sch.end_date || sDateStr
+                      const isOfflineMultiDay = sch.type === 'offline' || Boolean(sch.end_date && sch.end_date !== sDateStr)
+                      const { formattedRange, badgeLabel } = formatDateRangeIndonesian(sDateStr, eDateStr, sch.start_time, sch.end_time, language)
+
+                      return (
+                        <div className="text-[0.75rem] text-slate-600 dark:text-slate-300 space-y-1.5 font-medium pt-1">
+                          {isOfflineMultiDay ? (
+                            <div className="bg-emerald-50/80 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
+                              <span className="text-base shrink-0">⛺</span>
+                              <div className="text-[0.72rem] leading-snug">
+                                <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-[0.65rem] tracking-wider mb-0.5">
+                                  Jadwal 3 Hari 2 Malam ({badgeLabel}):
+                                </div>
+                                <span className="font-extrabold">{formattedRange}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div>📅 Tanggal: <strong className="font-extrabold">{formatDateIndonesian(sDateStr, language)}</strong></div>
+                              <div>⏰ Jam Sesi: <strong>{sch.start_time} - {sch.end_time} WIB</strong></div>
+                            </>
+                          )}
+
+                          <div>👨‍🏫 Instruktur: <strong>{sch.instructor_name}</strong></div>
+                          {sch.type === 'online' ? (
+                            <div className="text-sky-600 dark:text-sky-400 font-bold truncate">🔗 Google Meet Sesi Live</div>
+                          ) : (
+                            <div className="text-emerald-600 dark:text-emerald-400 font-bold truncate">📍 {sch.location || 'Kaiwa Dojo Center'}</div>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       {userRes ? (
@@ -1546,11 +1574,11 @@ export default function LearningPlanPage() {
             </button>
 
             {/* Live Class Sessions Card in Right Panel */}
-            {schedules.filter(s => s.date === selectedDateStr).length > 0 && (
+            {schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length > 0 && (
               <div className="p-4 rounded-2xl bg-sky-950/70 border border-sky-400/30 flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-extrabold text-sky-300">
-                    💻 Sesi Kelas Live ({schedules.filter(s => s.date === selectedDateStr).length} Sesi Jam)
+                    💻 Sesi Kelas Live ({schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length} Sesi)
                   </span>
                   <button
                     onClick={() => setShowClassModal(true)}
@@ -1561,7 +1589,7 @@ export default function LearningPlanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {schedules.filter(s => s.date === selectedDateStr).map(sch => {
+                  {schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).map(sch => {
                     const activeUserId = profile?.id || user?.id || ''
                     const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
                     const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
@@ -1603,10 +1631,17 @@ export default function LearningPlanPage() {
                     return (
                       <div key={sch.id} className="p-3 rounded-xl bg-white/10 border border-white/10 text-xs flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-[0.72rem]">
-                          <span className="font-extrabold text-sky-300">⏰ {sch.start_time} - {sch.end_time} WIB</span>
+                          <span className="font-extrabold text-sky-300">
+                            {sch.type === 'offline' ? '⛺ 3D2N Offline' : `⏰ ${sch.start_time} - ${sch.end_time} WIB`}
+                          </span>
                           <span className="text-white/70 font-semibold">{enrolledCount}/{sch.max_quota} Siswa</span>
                         </div>
                         <div className="font-extrabold text-white text-[0.82rem] leading-snug">{sch.title}</div>
+                        {sch.type === 'offline' && (
+                          <div className="text-[0.68rem] text-emerald-300 font-medium">
+                            📅 {formatDateRangeIndonesian(sch.start_date || sch.date, sch.end_date, sch.start_time, sch.end_time, language).formattedRange}
+                          </div>
+                        )}
                         <div className="text-[0.72rem] text-white/80">👨‍🏫 Instruktur: {sch.instructor_name}</div>
                         
                         <div className="mt-1 pt-1.5 border-t border-white/10 flex items-center justify-between">

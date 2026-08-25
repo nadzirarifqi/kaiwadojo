@@ -940,6 +940,14 @@ export async function getMonthlyOnlineRequirementStatus(userId: string, monthRan
   }
 }
 
+// Helper: Check if a schedule is active on a specific date (handles multi-day 3D2N offline classes)
+export function isScheduleActiveOnDate(sch: ClassSchedule, dateStr: string): boolean {
+  if (!sch || !dateStr) return false
+  const sDate = sch.start_date || sch.date
+  const eDate = sch.end_date || sDate
+  return dateStr >= sDate && dateStr <= eDate
+}
+
 // Calculate schedule status for a calendar date
 export function calculateDateScheduleStatus(
   dateStr: string,
@@ -947,7 +955,7 @@ export function calculateDateScheduleStatus(
   allSchedules: ClassSchedule[],
   allReservations: ClassReservation[]
 ): DateScheduleStatus {
-  const daySchedules = sortSchedules(allSchedules.filter(s => s.date === dateStr))
+  const daySchedules = sortSchedules(allSchedules.filter(s => isScheduleActiveOnDate(s, dateStr)))
 
   if (daySchedules.length === 0) {
     return {
