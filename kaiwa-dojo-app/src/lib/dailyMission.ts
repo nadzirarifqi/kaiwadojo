@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { ensureUUID } from './scheduleService'
 
 export interface SelectedVideoItem {
   id: string          // e.g. "bab_1_video_1"
@@ -367,7 +368,7 @@ export async function calculateMissionProgress(
   // Sync streak if fully completed on target date
   if (isFullyCompleted) {
     try {
-      const customId = `${userId}_${dateStr}`
+      const customId = ensureUUID(`${userId}_${dateStr}`, '00000000-0000-0000-0005-')
       await supabase.from('learning_streaks').upsert({
         id: customId,
         student_id: userId,

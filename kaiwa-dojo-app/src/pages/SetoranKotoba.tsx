@@ -309,13 +309,14 @@ export default function SetoranKotobaPage() {
       setSaving(false)
 
       // 2. Non-blocking background DB insert & mission calculation
-      if (user) {
+      const targetUid = profile?.id || user?.id
+      if (targetUid) {
         (async () => {
           try {
             const { data, error } = await supabase
               .from('user_kotoba_submissions')
               .insert({
-                user_id: user.id,
+                user_id: targetUid,
                 japanese: formData.japanese.trim(),
                 romaji: formData.romaji.trim(),
                 meaning: formData.meaning.trim(),
@@ -330,16 +331,16 @@ export default function SetoranKotobaPage() {
             }
 
             await supabase.from('lesson_progress').upsert({
-              student_id: user.id,
+              student_id: targetUid,
               lesson_id: `user_kotoba_${newItem.id}`,
               is_completed: true,
               last_watched_at: new Date().toISOString(),
             }, { onConflict: 'student_id,lesson_id' })
 
             const todayStr = new Date().toISOString().split('T')[0]
-            const mission = (await fetchDailyMission(user.id, todayStr)) || getDailyMission(user.id, todayStr)
+            const mission = (await fetchDailyMission(targetUid, todayStr)) || getDailyMission(targetUid, todayStr)
             if (mission) {
-              await calculateMissionProgress(user.id, mission)
+              await calculateMissionProgress(targetUid, mission)
             }
           } catch (e) {
             console.warn('Background Kotoba DB sync note:', e)

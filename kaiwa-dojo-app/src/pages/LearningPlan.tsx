@@ -872,7 +872,7 @@ export default function LearningPlanPage() {
     ? allMonthDays.filter(item => {
         const activeUserId = profile?.id || user?.id || ''
         const status = calculateDateScheduleStatus(item.dateStr, activeUserId, schedules, reservations)
-        const mission = user ? getDailyMission(user.id, item.dateStr) : null
+        const mission = userMissions.get(item.dateStr) || getDailyMission(activeUserId, item.dateStr)
         return status.hasSchedule || mission !== null
       })
     : allMonthDays
@@ -1036,10 +1036,10 @@ export default function LearningPlanPage() {
                   const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
                   const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
 
-                  const dateMission = user ? getDailyMission(user.id, dateStr) : null
+                  const activeUserId = profile?.id || user?.id || ''
+                  const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
                   const hasPlan = dateMission !== null
 
-                  const activeUserId = profile?.id || user?.id || ''
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
                   const daySchedules = dateStatus.schedules || []
                   const hasActivity = daySchedules.length > 0 || dateMission !== null
@@ -1336,10 +1336,10 @@ export default function LearningPlanPage() {
                   const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
                   const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
                   
-                  const dateMission = (user ? userMissions.get(dateStr) : null) || (user ? getDailyMission(user.id, dateStr) : null)
+                  const activeUserId = profile?.id || user?.id || ''
+                  const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
                   const hasPlan = dateMission !== null
 
-                  const activeUserId = profile?.id || user?.id || ''
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
 
                   const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0

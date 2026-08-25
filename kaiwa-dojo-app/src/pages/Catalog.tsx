@@ -22,7 +22,8 @@ interface CourseItem {
 
 export default function CatalogPage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const activeUserId = profile?.id || user?.id
   const [courses, setCourses] = useState<CourseItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -31,15 +32,13 @@ export default function CatalogPage() {
 
   async function fetchCourses() {
     setLoading(true)
-    // 1. Fetch published courses
+    // 1. Fetch courses
     const { data: coursesData, error } = await supabase
       .from('courses')
       .select(`
-        id, title, slug, description, level, category, thumbnail_url,
-        total_duration_minutes, total_lessons,
+        *,
         instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url)
       `)
-      .eq('is_published', true)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -50,11 +49,11 @@ export default function CatalogPage() {
 
     // 2. Fetch current user's enrollments if logged in
     let enrolledCourseIds = new Set<string>()
-    if (user) {
+    if (activeUserId) {
       const { data: enrollData } = await supabase
         .from('enrollments')
         .select('course_id')
-        .eq('student_id', user.id)
+        .eq('student_id', activeUserId)
 
       if (enrollData) {
         enrolledCourseIds = new Set(enrollData.map(e => e.course_id))
@@ -73,17 +72,17 @@ export default function CatalogPage() {
 
   useEffect(() => {
     fetchCourses()
-  }, [user])
+  }, [activeUserId])
 
   async function handleEnroll(courseId: string) {
-    if (!user) {
+    if (!activeUserId) {
       navigate('/login')
       return
     }
     setEnrollingId(courseId)
 
     const { error } = await supabase.from('enrollments').insert({
-      student_id: user.id,
+      student_id: activeUserId,
       course_id: courseId,
     })
 

@@ -81,12 +81,14 @@ export default function ProfilePage() {
     }
   }, [profile])
 
+  const activeUserId = profile?.id || user?.id
+
   // Fetch full data from database tables (profiles, enrollments, lesson_progress, quiz_attempts)
   useEffect(() => {
-    if (!user) return
+    if (!activeUserId) return
 
     async function loadDatabaseData() {
-      if (!user) return
+      if (!activeUserId) return
       setIsLoadingData(true)
 
       try {
@@ -109,7 +111,7 @@ export default function ProfilePage() {
               instructor_id
             )
           `)
-          .eq('student_id', user.id)
+          .eq('student_id', activeUserId)
           .order('enrolled_at', { ascending: false })
 
         const formattedEnrollments = (enrollData || []).map((e: any) => ({
@@ -126,7 +128,7 @@ export default function ProfilePage() {
         const { data: progressData } = await supabase
           .from('lesson_progress')
           .select('is_completed, watch_duration_seconds, replay_count')
-          .eq('student_id', user.id)
+          .eq('student_id', activeUserId)
 
         let completedLessonsCount = 0
         let totalSecs = 0
@@ -144,7 +146,7 @@ export default function ProfilePage() {
         const { data: quizData } = await supabase
           .from('quiz_attempts')
           .select('score, passed')
-          .eq('student_id', user.id)
+          .eq('student_id', activeUserId)
 
         let attempts = 0
         let passed = 0
