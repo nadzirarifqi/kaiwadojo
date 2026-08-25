@@ -209,16 +209,20 @@ export default function ProfilePage() {
   // Handle Save Profile updates
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
-    if (!user) return
+    const targetUserId = profile?.id || user?.id
+    if (!targetUserId) {
+      showToast('error', 'Sesi pengguna tidak valid. Silakan login kembali.')
+      return
+    }
 
     setIsSaving(true)
     let finalAvatarUrl = avatarUrl
 
     try {
-      // If a new local image file was picked, attempt Supabase Storage upload
+      // 1. If a new local image file was picked, attempt Supabase Storage upload
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        const fileName = `${targetUserId}-${Date.now()}.${fileExt}`
 
         const { error: uploadErr } = await supabase.storage
           .from('avatars')
@@ -238,20 +242,49 @@ export default function ProfilePage() {
         }
       }
 
-      // Update profiles table
+      // 2. Save directly to Supabase DB profiles table (only full_name, bio, avatar_url, updated_at)
+      const updateData = {
+        full_name: fullName.trim(),
+        bio: bio.trim(),
+        avatar_url: finalAvatarUrl.trim() || null,
+        updated_at: new Date().toISOString(),
+      }
+
       const { error: profileErr } = await supabase
         .from('profiles')
-        .update({
+        .update(updateData)
+        .eq('id', targetUserId)
+
+      if (profileErr) {
+        console.warn('Profile update warning, attempting upsert:', profileErr)
+        const { error: upsertErr } = await supabase.from('profiles').upsert({
+          id: targetUserId,
           full_name: fullName.trim(),
-          username: username.trim(),
+          username: (profile?.username || username).trim(),
           bio: bio.trim(),
           avatar_url: finalAvatarUrl.trim() || null,
-          role: 'pelajar',
+          role: profile?.role || 'pelajar',
+          status: profile?.status || 'approved',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id)
+        if (upsertErr) throw upsertErr
+      }
 
-      if (profileErr) throw profileErr
+      // 3. Immediately update active session profile in sessionStorage & localStorage for real-time UI refresh
+      const updatedProfileObj = {
+        ...profile,
+        id: targetUserId,
+        full_name: fullName.trim(),
+        username: (profile?.username || username).trim(),
+        bio: bio.trim(),
+        avatar_url: finalAvatarUrl.trim() || null,
+        role: profile?.role || 'pelajar',
+        updated_at: new Date().toISOString(),
+      }
+
+      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(updatedProfileObj))
+      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(updatedProfileObj))
+      window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
       await refreshProfile()
       setSelectedFile(null)
@@ -587,7 +620,7 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* Username */}
+                {/* Username (Read Only) */}
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                     {t('pf_input_username', 'Nama Pengguna (Username)')}
@@ -596,13 +629,12 @@ export default function ProfilePage() {
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
                     <input
                       type="text"
-                      required
+                      disabled
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder={t('pf_input_username_ph', 'Masukkan username...')}
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-semibold cursor-not-allowed"
                     />
                   </div>
+                  <p className="text-[0.7rem] text-slate-400 mt-1">Username bersifat permanen dan tidak dapat diubah.</p>
                 </div>
               </div>
 
