@@ -135,6 +135,16 @@ export function formatDateIndonesian(dateStr: string, lang: string = 'id'): stri
   return dateObj.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+// Helper: Format Time string from HH:mm:ss to HH:mm (e.g. "12:00:00" -> "12:00")
+export function formatTimeShort(timeStr: string | undefined): string {
+  if (!timeStr) return ''
+  const parts = timeStr.split(':')
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`
+  }
+  return timeStr
+}
+
 // Helper: Format Date Range for Multi-Day Schedules (e.g. 3 Hari 2 Malam)
 export function formatDateRangeIndonesian(
   startDateStr: string,
@@ -145,10 +155,13 @@ export function formatDateRangeIndonesian(
 ): { formattedRange: string; badgeLabel: string; dayCount: number } {
   if (!startDateStr) return { formattedRange: '', badgeLabel: '1 Hari', dayCount: 1 }
 
+  const cleanStartTime = formatTimeShort(startTime)
+  const cleanEndTime = formatTimeShort(endTime)
+
   const startFormatted = formatDateIndonesian(startDateStr, lang)
   if (!endDateStr || endDateStr === startDateStr) {
     return {
-      formattedRange: `${startFormatted} (${startTime} - ${endTime} WIB)`,
+      formattedRange: `${startFormatted} (${cleanStartTime} - ${cleanEndTime} WIB)`,
       badgeLabel: '1 Hari',
       dayCount: 1,
     }
@@ -162,7 +175,7 @@ export function formatDateRangeIndonesian(
   const nights = Math.max(1, diffDays - 1)
 
   return {
-    formattedRange: `${startFormatted} (${startTime} WIB) s/d ${endFormatted} (${endTime} WIB)`,
+    formattedRange: `${startFormatted} (${cleanStartTime} WIB) s/d ${endFormatted} (${cleanEndTime} WIB)`,
     badgeLabel: `${diffDays} Hari ${nights} Malam`,
     dayCount: diffDays,
   }
@@ -474,7 +487,12 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
     if (!error && data) {
-      const sortedData = sortSchedules(data as ClassSchedule[])
+      const cleanedData = (data as ClassSchedule[]).map(s => ({
+        ...s,
+        start_time: formatTimeShort(s.start_time),
+        end_time: formatTimeShort(s.end_time),
+      }))
+      const sortedData = sortSchedules(cleanedData)
       localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
       return sortedData
     }
@@ -486,7 +504,13 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
   const stored = localStorage.getItem(LOCAL_SCHEDULES_KEY)
   if (stored) {
     try {
-      return sortSchedules(JSON.parse(stored))
+      const parsed: ClassSchedule[] = JSON.parse(stored)
+      const cleaned = parsed.map(s => ({
+        ...s,
+        start_time: formatTimeShort(s.start_time),
+        end_time: formatTimeShort(s.end_time),
+      }))
+      return sortSchedules(cleaned)
     } catch {
       // Fallback
     }

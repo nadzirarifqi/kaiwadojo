@@ -27,6 +27,7 @@ import {
   calculateDateScheduleStatus,
   isScheduleActiveOnDate,
   formatDateRangeIndonesian,
+  formatTimeShort,
   sortSchedules,
   RESERVATION_UPDATE_EVENT,
   SCHEDULE_UPDATE_EVENT,
@@ -603,7 +604,7 @@ function DateClassEnrollModal({
                           ) : (
                             <>
                               <div>📅 Tanggal: <strong className="font-extrabold">{formatDateIndonesian(sDateStr, language)}</strong></div>
-                              <div>⏰ Jam Sesi: <strong>{sch.start_time} - {sch.end_time} WIB</strong></div>
+                              <div>⏰ Jam Sesi: <strong>{formatTimeShort(sch.start_time)} - {formatTimeShort(sch.end_time)} WIB</strong></div>
                             </>
                           )}
 
@@ -1632,7 +1633,7 @@ export default function LearningPlanPage() {
                       <div key={sch.id} className="p-3 rounded-xl bg-white/10 border border-white/10 text-xs flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-[0.72rem]">
                           <span className="font-extrabold text-sky-300">
-                            {sch.type === 'offline' ? '⛺ 3D2N Offline' : `⏰ ${sch.start_time} - ${sch.end_time} WIB`}
+                            {sch.type === 'offline' ? '⛺ 3D2N Offline' : `⏰ ${formatTimeShort(sch.start_time)} - ${formatTimeShort(sch.end_time)} WIB`}
                           </span>
                           <span className="text-white/70 font-semibold">{enrolledCount}/{sch.max_quota} Siswa</span>
                         </div>

@@ -13,6 +13,7 @@ import {
   getWeekLabel,
   formatDateIndonesian,
   formatDateRangeIndonesian,
+  formatTimeShort,
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
 } from '../lib/scheduleService'
@@ -507,7 +508,7 @@ export default function ClassReservationPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <span>⏰</span>
-                              <span>{sch.start_time} - {sch.end_time} WIB</span>
+                              <span>{formatTimeShort(sch.start_time)} - {formatTimeShort(sch.end_time)} WIB</span>
                             </div>
                           </>
                         )}
