@@ -435,16 +435,19 @@ export async function seedInitialSchedulesIfEmpty() {
 }
 
 export async function fetchSchedules(): Promise<ClassSchedule[]> {
+  // 1. Fetch from Supabase DB first (Source of truth)
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       const sortedData = sortSchedules(data as ClassSchedule[])
       localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
       return sortedData
     }
-  } catch {
-    // Fallback to local
+  } catch (e) {
+    console.warn('DB fetchSchedules warning:', e)
   }
+
+  // 2. Fallback to local storage if DB is empty or unreachable
   const stored = localStorage.getItem(LOCAL_SCHEDULES_KEY)
   if (stored) {
     try {
@@ -457,6 +460,7 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
 }
 
 export async function fetchReservations(): Promise<ClassReservation[]> {
+  // 1. Fetch from Supabase DB first (Source of truth)
   try {
     const { data, error } = await supabase.from('class_reservations').select('*')
     if (!error && data) {
@@ -466,9 +470,11 @@ export async function fetchReservations(): Promise<ClassReservation[]> {
       localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realData))
       return realData
     }
-  } catch {
-    // Fallback
+  } catch (e) {
+    console.warn('DB fetchReservations warning:', e)
   }
+
+  // 2. Fallback to local storage
   return getInitialReservations()
 }
 
@@ -476,64 +482,168 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
   const week_range_id = getWeekRangeId(scheduleData.date)
   const month_range_id = getMonthRangeId(scheduleData.date)
 
-  const rawId = `sch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
-  const newSchedule: ClassSchedule = {
-    ...scheduleData,
-    id: rawId,
+  const dbScheduleId = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : ensureUUID(`sch-${Date.now()}-${Math.random()}`, '00000000-0000-0000-0001-')
+  const dbInstructorId = ensureUUID(scheduleData.instructor_id, '00000000-0000-0000-0000-')
+  const createdAt = new Date().toISOString()
+
+  const payload = {
+    id: dbScheduleId,
+    type: scheduleData.type,
+    title: scheduleData.title,
+    subtitle_chapter: scheduleData.subtitle_chapter,
+    instructor_id: dbInstructorId,
+    instructor_name: scheduleData.instructor_name,
+    date: scheduleData.date,
+    start_time: scheduleData.start_time,
+    end_time: scheduleData.end_time,
     week_range_id,
     month_range_id,
-    created_at: new Date().toISOString(),
+    meet_url: scheduleData.meet_url || null,
+    location: scheduleData.location || null,
+    max_quota: scheduleData.max_quota,
+    created_at: createdAt,
   }
 
-  // Save to local
+  // 1. Save directly to Supabase DB
+  const { data: dbResult, error } = await supabase
+    .from('class_schedules')
+    .insert(payload)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('saveSchedule Supabase DB error:', error)
+    throw new Error(`Gagal menyimpan jadwal ke database: ${error.message || 'Error pada Supabase DB'}`)
+  }
+
+  const newSchedule: ClassSchedule = dbResult ? {
+    id: dbResult.id,
+    type: dbResult.type,
+    title: dbResult.title,
+    subtitle_chapter: dbResult.subtitle_chapter,
+    instructor_id: dbResult.instructor_id,
+    instructor_name: dbResult.instructor_name,
+    date: dbResult.date,
+    start_time: dbResult.start_time,
+    end_time: dbResult.end_time,
+    week_range_id: dbResult.week_range_id,
+    month_range_id: dbResult.month_range_id,
+    meet_url: dbResult.meet_url,
+    location: dbResult.location,
+    max_quota: dbResult.max_quota,
+    created_at: dbResult.created_at,
+  } : {
+    ...scheduleData,
+    id: dbScheduleId,
+    week_range_id,
+    month_range_id,
+    created_at: createdAt,
+  }
+
+  // 2. Sync LocalStorage cache after DB write
   const current = await fetchSchedules()
-  const updated = [newSchedule, ...current]
+  const updated = sortSchedules([newSchedule, ...current.filter(s => !matchScheduleId(s.id, newSchedule.id))])
   localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updated))
-
-  // Try DB insert async
-  try {
-    const dbScheduleId = ensureUUID(newSchedule.id, '00000000-0000-0000-0001-')
-    const dbInstructorId = ensureUUID(newSchedule.instructor_id, '00000000-0000-0000-0000-')
-    await supabase.from('class_schedules').insert({
-      id: dbScheduleId,
-      type: newSchedule.type,
-      title: newSchedule.title,
-      subtitle_chapter: newSchedule.subtitle_chapter,
-      instructor_id: dbInstructorId,
-      instructor_name: newSchedule.instructor_name,
-      date: newSchedule.date,
-      start_time: newSchedule.start_time,
-      end_time: newSchedule.end_time,
-      week_range_id: newSchedule.week_range_id,
-      month_range_id: newSchedule.month_range_id,
-      meet_url: newSchedule.meet_url || null,
-      location: newSchedule.location || null,
-      max_quota: newSchedule.max_quota,
-      created_at: newSchedule.created_at,
-    })
-  } catch (e) {
-    console.warn('saveSchedule DB catch:', e)
-  }
 
   return newSchedule
 }
 
+export async function updateSchedule(scheduleId: string, scheduleData: Partial<ClassSchedule>): Promise<ClassSchedule> {
+  const targetId = scheduleId
+  const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
+
+  const updatePayload: any = {}
+  if (scheduleData.type) updatePayload.type = scheduleData.type
+  if (scheduleData.title) updatePayload.title = scheduleData.title
+  if (scheduleData.subtitle_chapter) updatePayload.subtitle_chapter = scheduleData.subtitle_chapter
+  if (scheduleData.instructor_name) updatePayload.instructor_name = scheduleData.instructor_name
+  if (scheduleData.date) {
+    updatePayload.date = scheduleData.date
+    updatePayload.week_range_id = getWeekRangeId(scheduleData.date)
+    updatePayload.month_range_id = getMonthRangeId(scheduleData.date)
+  }
+  if (scheduleData.start_time) updatePayload.start_time = scheduleData.start_time
+  if (scheduleData.end_time) updatePayload.end_time = scheduleData.end_time
+  if (scheduleData.meet_url !== undefined) updatePayload.meet_url = scheduleData.meet_url || null
+  if (scheduleData.location !== undefined) updatePayload.location = scheduleData.location || null
+  if (scheduleData.max_quota) updatePayload.max_quota = scheduleData.max_quota
+
+  // 1. Try DB update by targetId first
+  let { error } = await supabase
+    .from('class_schedules')
+    .update(updatePayload)
+    .eq('id', targetId)
+
+  if (error) {
+    // Retry with dbScheduleId if targetId failed
+    const { error: error2 } = await supabase
+      .from('class_schedules')
+      .update(updatePayload)
+      .eq('id', dbScheduleId)
+
+    if (error2) {
+      console.error('updateSchedule Supabase DB error:', error2)
+      throw new Error(`Gagal memperbarui jadwal di database: ${error2.message || 'Error pada Supabase DB'}`)
+    }
+  }
+
+  // 2. Refresh schedules from DB to update LocalStorage cache
+  const refreshedSchedules = await fetchSchedules()
+  const updatedItem = refreshedSchedules.find(s => matchScheduleId(s.id, targetId))
+  if (updatedItem) return updatedItem
+
+  return {
+    id: targetId,
+    type: scheduleData.type || 'online',
+    title: scheduleData.title || '',
+    subtitle_chapter: scheduleData.subtitle_chapter || '',
+    instructor_id: scheduleData.instructor_id || 'inst-1',
+    instructor_name: scheduleData.instructor_name || '',
+    date: scheduleData.date || '',
+    start_time: scheduleData.start_time || '19:00',
+    end_time: scheduleData.end_time || '20:30',
+    week_range_id: scheduleData.date ? getWeekRangeId(scheduleData.date) : '',
+    month_range_id: scheduleData.date ? getMonthRangeId(scheduleData.date) : '',
+    meet_url: scheduleData.meet_url,
+    location: scheduleData.location,
+    max_quota: scheduleData.max_quota || 10,
+    created_at: new Date().toISOString(),
+  }
+}
+
 export async function deleteSchedule(scheduleId: string): Promise<void> {
+  const targetId = scheduleId
+  const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
+
+  // 1. Delete associated reservations in DB first
+  try {
+    await supabase.from('class_reservations').delete().eq('schedule_id', targetId)
+    await supabase.from('class_reservations').delete().eq('schedule_id', dbScheduleId)
+  } catch (e) {
+    console.warn('DB delete class_reservations note:', e)
+  }
+
+  // 2. Delete schedule in DB by targetId or mapped dbScheduleId
+  const { error: error1 } = await supabase.from('class_schedules').delete().eq('id', targetId)
+
+  if (error1) {
+    const { error: error2 } = await supabase.from('class_schedules').delete().eq('id', dbScheduleId)
+    if (error2) {
+      console.error('deleteSchedule Supabase DB error:', error2)
+      throw new Error(`Gagal menghapus jadwal dari database: ${error2.message || 'Error pada Supabase DB'}`)
+    }
+  }
+
+  // 3. Sync LocalStorage cache after DB deletion succeeds
   const current = await fetchSchedules()
-  const updated = current.filter(s => s.id !== scheduleId)
+  const updated = current.filter(s => !matchScheduleId(s.id, targetId))
   localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updated))
 
   const reservations = await fetchReservations()
-  const updatedRes = reservations.filter(r => r.schedule_id !== scheduleId)
+  const updatedRes = reservations.filter(r => !matchScheduleId(r.schedule_id, targetId))
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedRes))
-
-  try {
-    const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
-    await supabase.from('class_schedules').delete().eq('id', dbScheduleId)
-    await supabase.from('class_schedules').delete().eq('id', scheduleId)
-  } catch {
-    // Silent fallback
-  }
 }
 
 export const RESERVATION_UPDATE_EVENT = 'kaiwa_reservation_updated'

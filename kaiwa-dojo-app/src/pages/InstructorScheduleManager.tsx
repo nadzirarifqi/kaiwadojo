@@ -8,6 +8,7 @@ import {
   fetchSchedules,
   fetchReservations,
   saveSchedule,
+  updateSchedule,
   deleteSchedule,
   getWeekLabel,
   getMonthLabel,
@@ -25,6 +26,7 @@ export default function InstructorScheduleManagerPage() {
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null)
   const [viewParticipantsSchedule, setViewParticipantsSchedule] = useState<ClassSchedule | null>(null)
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -58,7 +60,39 @@ export default function InstructorScheduleManagerPage() {
     setTimeout(() => setToastMessage(null), 4000)
   }
 
-  async function handleCreateSchedule(e: React.FormEvent) {
+  function openCreateModal() {
+    setEditingSchedule(null)
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    setFormDate(d.toISOString().split('T')[0])
+    setFormType('online')
+    setFormTitle('')
+    setFormSubtitle('')
+    setFormInstructorName(instructorName)
+    setFormStartTime('19:00')
+    setFormEndTime('20:30')
+    setFormMeetUrl('https://meet.google.com/kaiwa-live-session')
+    setFormLocation('Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
+    setFormMaxQuota(10)
+    setShowCreateModal(true)
+  }
+
+  function openEditModal(sch: ClassSchedule) {
+    setEditingSchedule(sch)
+    setFormType(sch.type)
+    setFormTitle(sch.title)
+    setFormSubtitle(sch.subtitle_chapter)
+    setFormInstructorName(sch.instructor_name)
+    setFormDate(sch.date)
+    setFormStartTime(sch.start_time)
+    setFormEndTime(sch.end_time)
+    setFormMeetUrl(sch.meet_url || 'https://meet.google.com/kaiwa-live-session')
+    setFormLocation(sch.location || 'Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
+    setFormMaxQuota(sch.max_quota)
+    setShowCreateModal(true)
+  }
+
+  async function handleSaveScheduleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!formTitle.trim() || !formSubtitle.trim() || !formDate) {
       showToast('Harap lengkapi semua bidang yang wajib diisi!', 'error')
@@ -66,34 +100,61 @@ export default function InstructorScheduleManagerPage() {
     }
 
     setSubmitting(true)
-    await saveSchedule({
-      type: formType,
-      title: formTitle.trim(),
-      subtitle_chapter: formSubtitle.trim(),
-      instructor_id: instructorId,
-      instructor_name: formInstructorName.trim() || instructorName,
-      date: formDate,
-      start_time: formStartTime,
-      end_time: formEndTime,
-      meet_url: formType === 'online' ? formMeetUrl : undefined,
-      location: formType === 'offline' ? formLocation : undefined,
-      max_quota: formMaxQuota,
-    })
+    try {
+      if (editingSchedule) {
+        await updateSchedule(editingSchedule.id, {
+          type: formType,
+          title: formTitle.trim(),
+          subtitle_chapter: formSubtitle.trim(),
+          instructor_name: formInstructorName.trim() || instructorName,
+          date: formDate,
+          start_time: formStartTime,
+          end_time: formEndTime,
+          meet_url: formType === 'online' ? formMeetUrl : undefined,
+          location: formType === 'offline' ? formLocation : undefined,
+          max_quota: formMaxQuota,
+        })
+        showToast('Jadwal kelas berhasil diperbarui di database!')
+      } else {
+        await saveSchedule({
+          type: formType,
+          title: formTitle.trim(),
+          subtitle_chapter: formSubtitle.trim(),
+          instructor_id: instructorId,
+          instructor_name: formInstructorName.trim() || instructorName,
+          date: formDate,
+          start_time: formStartTime,
+          end_time: formEndTime,
+          meet_url: formType === 'online' ? formMeetUrl : undefined,
+          location: formType === 'offline' ? formLocation : undefined,
+          max_quota: formMaxQuota,
+        })
+        showToast('Jadwal kelas baru berhasil dibuat di database!')
+      }
 
-    setSubmitting(false)
-    setShowCreateModal(false)
-    showToast('Jadwal kelas baru berhasil dibuat!')
-    // Reset form
-    setFormTitle('')
-    setFormSubtitle('')
-    await loadData()
+      setShowCreateModal(false)
+      setEditingSchedule(null)
+      setFormTitle('')
+      setFormSubtitle('')
+      await loadData()
+    } catch (err: any) {
+      console.error('Save schedule error:', err)
+      showToast(err?.message || 'Gagal menyimpan jadwal ke database.', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function handleDelete(schId: string, title: string) {
     if (confirm(`Apakah Anda yakin ingin menghapus jadwal "${title}"?`)) {
-      await deleteSchedule(schId)
-      showToast('Jadwal berhasil dihapus.')
-      await loadData()
+      try {
+        await deleteSchedule(schId)
+        showToast('Jadwal kelas berhasil dihapus dari database!')
+        await loadData()
+      } catch (err: any) {
+        console.error('Delete schedule error:', err)
+        showToast(err?.message || 'Gagal menghapus jadwal dari database.', 'error')
+      }
     }
   }
 
@@ -132,13 +193,7 @@ export default function InstructorScheduleManagerPage() {
         </div>
 
         <button
-          onClick={() => {
-            // Set default date to tomorrow
-            const d = new Date()
-            d.setDate(d.getDate() + 1)
-            setFormDate(d.toISOString().split('T')[0])
-            setShowCreateModal(true)
-          }}
+          onClick={openCreateModal}
           className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 hover:-translate-y-0.5 flex items-center justify-center gap-2"
         >
           <span>+ Buat Jadwal Baru</span>
@@ -227,10 +282,10 @@ export default function InstructorScheduleManagerPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-200 dark:border-slate-700 pt-3 md:pt-0">
+                  <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-200 dark:border-slate-700 pt-3 md:pt-0">
                     <button
                       onClick={() => setViewParticipantsSchedule(sch)}
-                      className={`px-4 py-2.5 rounded-xl font-extrabold text-xs border-none cursor-pointer transition-all flex items-center gap-2 ${
+                      className={`px-3.5 py-2 rounded-xl font-extrabold text-xs border-none cursor-pointer transition-all flex items-center gap-1.5 ${
                         isFull
                           ? 'bg-red-500 text-white shadow-sm'
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
@@ -241,10 +296,17 @@ export default function InstructorScheduleManagerPage() {
                     </button>
 
                     <button
-                      onClick={() => handleDelete(sch.id, sch.title)}
-                      className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-bold text-xs border-none cursor-pointer"
+                      onClick={() => openEditModal(sch)}
+                      className="px-3 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-extrabold text-xs border border-amber-500/20 cursor-pointer transition-all"
                     >
-                      Hapus
+                      ✏️ Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(sch.id, sch.title)}
+                      className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-extrabold text-xs border border-red-200 dark:border-red-900/40 cursor-pointer transition-all"
+                    >
+                      🗑️ Hapus
                     </button>
                   </div>
                 </div>
@@ -254,7 +316,7 @@ export default function InstructorScheduleManagerPage() {
         )}
       </div>
 
-      {/* ── CREATE NEW SCHEDULE MODAL ───────────────────────── */}
+      {/* ── CREATE / EDIT SCHEDULE MODAL ───────────────────────── */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
@@ -262,10 +324,13 @@ export default function InstructorScheduleManagerPage() {
             <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between shrink-0">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-white/80">Panel Admin Pengajar</span>
-                <h3 className="text-lg font-extrabold">Buat Jadwal Kelas Baru</h3>
+                <h3 className="text-lg font-extrabold">{editingSchedule ? '⚙️ Edit Jadwal Kelas' : 'Buat Jadwal Kelas Baru'}</h3>
               </div>
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setEditingSchedule(null)
+                }}
                 className="size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-xl flex items-center justify-center"
               >
                 ×
@@ -273,7 +338,7 @@ export default function InstructorScheduleManagerPage() {
             </div>
 
             {/* Modal Body Form */}
-            <form onSubmit={handleCreateSchedule} className="p-6 overflow-y-auto space-y-4 text-xs">
+            <form onSubmit={handleSaveScheduleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
               
               {/* Type Switch */}
               <div>
@@ -439,7 +504,10 @@ export default function InstructorScheduleManagerPage() {
               <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setEditingSchedule(null)
+                  }}
                   className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-xs border-none cursor-pointer"
                 >
                   Batal
@@ -447,9 +515,11 @@ export default function InstructorScheduleManagerPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-xs border-none cursor-pointer transition-all shadow-md"
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-xs border-none cursor-pointer transition-all shadow-md disabled:opacity-50"
                 >
-                  {submitting ? 'Menyimpan...' : 'Simpan & Terbitkan Jadwal'}
+                  {submitting
+                    ? 'Menyimpan ke Database...'
+                    : (editingSchedule ? '💾 Simpan Perubahan Jadwal' : '🚀 Simpan & Terbitkan Jadwal')}
                 </button>
               </div>
 
