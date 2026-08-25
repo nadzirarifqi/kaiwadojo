@@ -205,9 +205,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center flex flex-col items-center">
           
           {/* Japanese Crimson Badge */}
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1 sm:py-1.5 rounded-full bg-primary/10 dark:bg-red-950/70 border border-primary/30 dark:border-red-900/60 text-primary dark:text-red-400 text-[0.7rem] sm:text-xs font-black uppercase tracking-wider mb-4 sm:mb-6 animate-fade-in shadow-xs backdrop-blur-md">
+          <div className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-primary/10 dark:bg-red-950/70 border border-primary/30 dark:border-red-900/60 text-primary dark:text-red-400 text-[0.6rem] sm:text-xs font-black uppercase tracking-wider mb-4 sm:mb-6 animate-fade-in shadow-xs backdrop-blur-md whitespace-nowrap max-w-full overflow-hidden">
             <span>🌸</span>
-            <span className="font-jp font-bold mr-0.5">日本語</span>
+            <span className="font-jp font-bold mr-0.5 shrink-0">日本語</span>
             <span>Platform Interaktif Belajar Bahasa Jepang</span>
           </div>
 
@@ -274,7 +274,7 @@ export default function LandingPage() {
               Mengapa Memilih KaiwaDojo?
             </span>
             <h2 className="text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              Metode Belajar Terbukti untuk Hasil Maksimal
+              Metode Belajar untuk Hasil Maksimal
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
               Dirancang khusus untuk memudahkan pemula dan persiapan kerja atau magang di Jepang.
@@ -288,7 +288,7 @@ export default function LandingPage() {
               <div className="size-12 sm:size-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 flex items-center justify-center text-2xl sm:text-3xl font-bold">
                 🎯
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Rencana Belajar 31-Hari</h3>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Rencana Belajar tiap hari</h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                 Pilih tanggal di kalender interaktif dan susun target misi video, kotoba, serta kuis harianmu tanpa rasa bingung.
               </p>
@@ -299,7 +299,7 @@ export default function LandingPage() {
               <div className="size-12 sm:size-14 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-2xl sm:text-3xl font-bold">
                 🧠
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Setoran Kotoba & Flashcard</h3>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Latihan Kotoba</h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                 Simpan kosakata baru lengkap dengan kanji, romaji, dan makna. Lakukan tes evaluasi mandiri kapan saja!
               </p>
