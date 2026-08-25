@@ -535,12 +535,12 @@ export default function CourseEditor() {
                   </div>
                 </div>
 
-                {/* Duration Form Fields: Video 1, 2, 3 Durations (Minutes.Seconds, e.g. 3.44) */}
-                <div className="flex flex-col gap-2.5 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                {/* Duration Form Fields: Video 1, 2, 3 Durations & Custom URLs */}
+                <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                       <span>⏱️ Durasi Video S1, S2, S3:</span>
-                      <span className="text-[0.68rem] text-slate-400 font-normal">(Terisi otomatis dari metadata file video)</span>
+                      <span className="text-[0.68rem] text-slate-400 font-normal">(Terintegrasi otomatis dengan file video)</span>
                     </span>
 
                     <button
@@ -551,6 +551,99 @@ export default function CourseEditor() {
                     >
                       <span>🔍 {detectingBab === babNum ? 'Mendeteksi File...' : 'Deteksi Otomatis Durasi dari File'}</span>
                     </button>
+                  </div>
+
+                  {/* Custom Video URLs (Optional overrides) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        🎥 URL Video 1 (S1) Custom
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Path default: /kaiwa-1-courses/..."
+                        value={chap.custom_video_s1 || ''}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], custom_video_s1: val },
+                          }))
+                        }}
+                        onBlur={async e => {
+                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S1.mov`
+                          try {
+                            const d = await detectVideoDuration(url)
+                            setChapterMap(prev => ({
+                              ...prev,
+                              [babNum]: { ...prev[babNum], duration_s1: d },
+                            }))
+                            showToast(`Durasi Video 1 terdeteksi: ${d} menit ⏱️`)
+                          } catch {}
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        🎥 URL Video 2 (S2) Custom
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Path default: /kaiwa-1-courses/..."
+                        value={chap.custom_video_s2 || ''}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], custom_video_s2: val },
+                          }))
+                        }}
+                        onBlur={async e => {
+                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S2.mov`
+                          try {
+                            const d = await detectVideoDuration(url)
+                            setChapterMap(prev => ({
+                              ...prev,
+                              [babNum]: { ...prev[babNum], duration_s2: d },
+                            }))
+                            showToast(`Durasi Video 2 terdeteksi: ${d} menit ⏱️`)
+                          } catch {}
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        🎥 URL Video 3 (S3) Custom
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Path default: /kaiwa-1-courses/..."
+                        value={chap.custom_video_s3 || ''}
+                        onChange={e => {
+                          const val = e.target.value
+                          setChapterMap(prev => ({
+                            ...prev,
+                            [babNum]: { ...prev[babNum], custom_video_s3: val },
+                          }))
+                        }}
+                        onBlur={async e => {
+                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S3.mov`
+                          try {
+                            const d = await detectVideoDuration(url)
+                            setChapterMap(prev => ({
+                              ...prev,
+                              [babNum]: { ...prev[babNum], duration_s3: d },
+                            }))
+                            showToast(`Durasi Video 3 terdeteksi: ${d} menit ⏱️`)
+                          } catch {}
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
