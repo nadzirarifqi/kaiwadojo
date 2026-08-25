@@ -274,6 +274,7 @@ export default function MyCourses() {
     const [adminChapterMap, adminHeader] = await Promise.all([
       getChapterSettingsMap(),
       getCourseHeaderSettings(),
+      new Promise(r => setTimeout(r, 1200)),
     ])
     setHeaderSettings(adminHeader)
 

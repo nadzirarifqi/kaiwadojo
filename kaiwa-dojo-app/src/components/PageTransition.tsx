@@ -19,7 +19,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
       const timer = setTimeout(() => {
         setDisplayLocation(location)
         setIsLoading(false)
-      }, 150)
+      }, 1200)
 
       return () => clearTimeout(timer)
     }

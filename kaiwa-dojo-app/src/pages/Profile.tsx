@@ -171,6 +171,7 @@ export default function ProfilePage() {
       } catch (err) {
         console.error('Gagal memuat data statistik profil dari database:', err)
       } finally {
+        await new Promise(r => setTimeout(r, 1200))
         setIsLoadingData(false)
       }
     }
