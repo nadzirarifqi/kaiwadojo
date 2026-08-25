@@ -873,7 +873,7 @@ export default function LearningPlanPage() {
         const activeUserId = profile?.id || user?.id || ''
         const status = calculateDateScheduleStatus(item.dateStr, activeUserId, schedules, reservations)
         const mission = userMissions.get(item.dateStr) || getDailyMission(activeUserId, item.dateStr)
-        return status.hasSchedule || mission !== null
+        return status.isBooked || mission !== null
       })
     : allMonthDays
 
@@ -1041,7 +1041,11 @@ export default function LearningPlanPage() {
                   const hasPlan = dateMission !== null
 
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
-                  const daySchedules = dateStatus.schedules || []
+                  const allDaySchedules = dateStatus.schedules || []
+                  const userReservedSchedules = allDaySchedules.filter(sch =>
+                    reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
+                  )
+                  const daySchedules = showOnlyActivities ? userReservedSchedules : allDaySchedules
                   const hasActivity = daySchedules.length > 0 || dateMission !== null
                   const isDateLocked = dateStatus.hasSchedule && !dateStatus.canEnroll && !dateStatus.isBooked
 
