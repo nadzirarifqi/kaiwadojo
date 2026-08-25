@@ -219,26 +219,54 @@ export default function ProfilePage() {
     let finalAvatarUrl = avatarUrl
 
     try {
-      // 1. If a new local image file was picked, attempt Supabase Storage upload
+      // 1. If a new local image file was picked, attempt Rumahweb server PHP upload first, then Supabase Storage fallback
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop()
-        const fileName = `${targetUserId}-${Date.now()}.${fileExt}`
+        let uploadedUrl: string | null = null
 
-        const { error: uploadErr } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, selectedFile, { upsert: true })
-
-        if (!uploadErr) {
-          const { data: publicUrlData } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName)
-          
-          if (publicUrlData?.publicUrl) {
-            finalAvatarUrl = publicUrlData.publicUrl
+        // Attempt PHP upload script on Rumahweb server
+        try {
+          const formData = new FormData()
+          formData.append('avatar', selectedFile)
+          const phpRes = await fetch('/upload_avatar.php', {
+            method: 'POST',
+            body: formData,
+          })
+          if (phpRes.ok) {
+            const json = await phpRes.json()
+            if (json.success && json.url) {
+              uploadedUrl = json.url
+            }
           }
-        } else {
-          console.warn('Storage upload error, using Data URL fallback:', uploadErr)
-          if (previewUrl) finalAvatarUrl = previewUrl
+        } catch (phpErr) {
+          console.warn('Rumahweb upload note, fallback to Supabase Storage:', phpErr)
+        }
+
+        // If Rumahweb PHP upload was not executed or failed, attempt Supabase Storage
+        if (!uploadedUrl) {
+          const fileExt = selectedFile.name.split('.').pop()
+          const fileName = `${targetUserId}-${Date.now()}.${fileExt}`
+
+          const { error: uploadErr } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, selectedFile, { upsert: true })
+
+          if (!uploadErr) {
+            const { data: publicUrlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(fileName)
+
+            if (publicUrlData?.publicUrl) {
+              uploadedUrl = publicUrlData.publicUrl
+            }
+          } else {
+            console.warn('Supabase Storage upload error, using Data URL fallback:', uploadErr)
+          }
+        }
+
+        if (uploadedUrl) {
+          finalAvatarUrl = uploadedUrl
+        } else if (previewUrl) {
+          finalAvatarUrl = previewUrl
         }
       }
 
