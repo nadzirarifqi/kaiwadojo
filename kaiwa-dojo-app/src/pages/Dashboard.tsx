@@ -607,7 +607,7 @@ export default function Dashboard() {
         }
       }
 
-      // Calculate Minna no Nihongo Jilid 1 & 2 Progress
+      // Calculate Minna no Nihongo Jilid 1 & 2 Progress (DB + Local Storage merge)
       let userLessonProgress: any[] = []
       if (user?.id || profile?.id) {
         const { data } = await supabase
@@ -618,19 +618,40 @@ export default function Dashboard() {
         userLessonProgress = data || []
       }
 
-      let j1Count = 0
-      let j2Count = 0
+      const completedSet = new Set<string>()
 
       if (userLessonProgress) {
         userLessonProgress.forEach((p: any) => {
-          const match = p.lesson_id?.match(/bab_(\d+)_/)
-          if (match) {
-            const babNum = parseInt(match[1], 10)
-            if (babNum >= 1 && babNum <= 25) j1Count++
-            else if (babNum >= 26 && babNum <= 50) j2Count++
-          }
+          if (p.lesson_id) completedSet.add(p.lesson_id)
         })
       }
+
+      // Merge with local storage progress cache
+      const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
+      const globalKey = `kaiwa_lesson_progress_active_global`
+      const localProgressData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+      if (localProgressData) {
+        try {
+          const parsed = JSON.parse(localProgressData)
+          Object.keys(parsed).forEach(lId => {
+            if (parsed[lId]?.is_completed) {
+              completedSet.add(lId)
+            }
+          })
+        } catch {}
+      }
+
+      let j1Count = 0
+      let j2Count = 0
+
+      completedSet.forEach(lId => {
+        const match = lId.match(/bab_(\d+)_/)
+        if (match) {
+          const babNum = parseInt(match[1], 10)
+          if (babNum >= 1 && babNum <= 25) j1Count++
+          else if (babNum >= 26 && babNum <= 50) j2Count++
+        }
+      })
 
       const totalItemsPerJilid = 125 // 25 Bab * 5 Items
       setBookProgress({
@@ -698,19 +719,28 @@ export default function Dashboard() {
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
     window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
     window.addEventListener('kaiwa_mission_progress_updated', handleSync)
+    window.addEventListener('kaiwa_lesson_progress_updated', handleSync)
     window.addEventListener('storage', handleSync)
 
     const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
     const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleSync)
+
+    // Realtime Supabase listener for lesson_progress DB updates
+    const lessonProgressChannel = supabase
+      .channel('dashboard_lesson_progress_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, handleSync)
+      .subscribe()
 
     return () => {
       window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
       window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
       window.removeEventListener('kaiwa_mission_progress_updated', handleSync)
+      window.removeEventListener('kaiwa_lesson_progress_updated', handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeScheduleRealtime()
       unsubscribeMissionRealtime()
+      supabase.removeChannel(lessonProgressChannel)
     }
   }, [user, profile])
 

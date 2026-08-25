@@ -253,7 +253,7 @@ export default function LandingPage() {
             </div>
 
             <div className="p-3 bg-slate-50/70 dark:bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-200/50 dark:border-slate-700/50 text-center">
-              <span className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">31 Hari</span>
+              <span className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">Setiap Hari</span>
               <span className="text-[0.65rem] sm:text-xs font-bold text-slate-500 dark:text-slate-400">Target Belajar Mandiri</span>
             </div>
 
