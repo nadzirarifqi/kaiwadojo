@@ -287,13 +287,13 @@ export function detectVideoDuration(url: string): Promise<string> {
 
     const tempVideo = document.createElement('video')
     tempVideo.preload = 'metadata'
-    tempVideo.crossOrigin = 'anonymous'
     tempVideo.src = url
 
     const timeout = setTimeout(() => {
-      tempVideo.src = ''
+      tempVideo.removeAttribute('src')
+      tempVideo.load()
       reject('Timeout detecting video metadata')
-    }, 10000)
+    }, 12000)
 
     tempVideo.onloadedmetadata = () => {
       clearTimeout(timeout)
@@ -303,17 +303,20 @@ export function detectVideoDuration(url: string): Promise<string> {
         const secs = Math.floor(totalSeconds % 60)
         const formattedSecs = String(secs).padStart(2, '0')
         const resultStr = `${mins}.${formattedSecs}`
-        tempVideo.src = ''
+        tempVideo.removeAttribute('src')
+        tempVideo.load()
         resolve(resultStr)
       } else {
-        tempVideo.src = ''
+        tempVideo.removeAttribute('src')
+        tempVideo.load()
         reject('Invalid duration')
       }
     }
 
     tempVideo.onerror = () => {
       clearTimeout(timeout)
-      tempVideo.src = ''
+      tempVideo.removeAttribute('src')
+      tempVideo.load()
       reject('Failed to load video metadata')
     }
   })

@@ -183,6 +183,61 @@ export default function CourseEditor() {
     )
   }
 
+  const [isDetectingAll, setIsDetectingAll] = useState(false)
+
+  async function handleBatchAutoDetectAll() {
+    setIsDetectingAll(true)
+    showToast(`Mulai mendeteksi durasi semua bab Jilid ${selectedJilid} dari server Rumahweb... ⏱️`)
+
+    const startBab = selectedJilid === 1 ? 1 : 26
+    const babs = Array.from({ length: 25 }, (_, i) => startBab + i)
+    const getHostedUrl = (b: number, s: number) => {
+      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mov`
+    }
+
+    let updatedMap = { ...chapterMap }
+    let successCount = 0
+
+    for (const b of babs) {
+      const chap = updatedMap[b] || { bab_number: b, title: `Bab ${b}`, is_hidden: false }
+      let d1 = chap.duration_s1
+      let d2 = chap.duration_s2
+      let d3 = chap.duration_s3
+
+      try {
+        const u1 = chap.custom_video_s1 || getHostedUrl(b, 1)
+        d1 = await detectVideoDuration(u1)
+        successCount++
+      } catch {}
+
+      try {
+        const u2 = chap.custom_video_s2 || getHostedUrl(b, 2)
+        d2 = await detectVideoDuration(u2)
+        successCount++
+      } catch {}
+
+      try {
+        const u3 = chap.custom_video_s3 || getHostedUrl(b, 3)
+        d3 = await detectVideoDuration(u3)
+        successCount++
+      } catch {}
+
+      updatedMap[b] = {
+        ...chap,
+        duration_s1: d1,
+        duration_s2: d2,
+        duration_s3: d3,
+      }
+    }
+
+    setChapterMap(updatedMap)
+    setIsDetectingAll(false)
+
+    const listToSave = babs.map(b => updatedMap[b]).filter(Boolean)
+    await saveBatchChapterSettings(listToSave)
+    showToast(`Selesai! Terdeteksi ${successCount} durasi video & tersimpan ke database! 🚀`)
+  }
+
   async function handleSaveBab(babNum: number) {
     const current = chapterMap[babNum] || {
       bab_number: babNum,
@@ -373,7 +428,15 @@ export default function CourseEditor() {
             <span className="text-slate-400 font-normal">Aktifkan atau sembunyikan 25 Bab sekaligus dalam 1 klik</span>
           </div>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            <button
+              onClick={handleBatchAutoDetectAll}
+              disabled={isDetectingAll}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>⏱️ {isDetectingAll ? 'Mendeteksi Semua Video...' : `Deteksi & Simpan Durasi Semua Bab Jilid ${selectedJilid}`}</span>
+            </button>
+
             <button
               onClick={() => handleBulkToggleVisibility(false)}
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
