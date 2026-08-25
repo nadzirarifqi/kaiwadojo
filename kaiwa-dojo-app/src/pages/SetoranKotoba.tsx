@@ -3,6 +3,11 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+import {
+  fetchDailyMission,
+  getDailyMission,
+  calculateMissionProgress,
+} from '../lib/dailyMission'
 
 export interface UserKotoba {
   id: string
@@ -280,10 +285,15 @@ export default function SetoranKotobaPage() {
           last_watched_at: new Date().toISOString(),
         }, { onConflict: 'student_id,lesson_id' })
 
-        await supabase.from('learning_streaks').upsert({
-          student_id: user.id,
-          date: todayStr,
-        }, { onConflict: 'student_id,date' })
+        // Only add streak if daily mission overall progress reaches 100%
+        try {
+          const mission = (await fetchDailyMission(user.id, todayStr)) || getDailyMission(user.id, todayStr)
+          if (mission) {
+            await calculateMissionProgress(user.id, mission)
+          }
+        } catch (e) {
+          console.warn('SetoranKotoba streak 100% check note:', e)
+        }
       }
     }
 

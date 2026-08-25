@@ -22,6 +22,28 @@ import {
 import { useLanguage } from '../contexts/LanguageContext'
 import { DashboardSkeleton } from '../components/Skeleton'
 
+function formatIndonesianFullDate(dateStr: string): string {
+  if (!dateStr) return ''
+  const clean = dateStr.split('T')[0]
+  const parts = clean.split('-')
+  if (parts.length !== 3) return dateStr
+
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10) - 1
+  const day = parseInt(parts[2], 10)
+
+  const dateObj = new Date(year, month, day)
+  if (isNaN(dateObj.getTime())) return dateStr
+
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ]
+
+  return `${days[dateObj.getDay()]}, ${day} ${months[dateObj.getMonth()]} ${year}`
+}
+
 /* ── Helpers ───────────────────────────────────────── */
 function getLast7DayLabels() {
   const labels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
@@ -312,7 +334,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                         )}
                       </span>
                       <span className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
-                        📅 {item.date} 🔍
+                        📅 {formatIndonesianFullDate(item.date)} 🔍
                       </span>
                     </div>
 
@@ -346,7 +368,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                         <span>{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
                       </span>
                       <span className="text-[0.68rem] font-semibold group-hover:underline">
-                        📅 {sch.date} ({sch.start_time} WIB) 🔍
+                        📅 {formatIndonesianFullDate(sch.date)} ({sch.start_time} WIB) 🔍
                       </span>
                     </div>
 
@@ -398,7 +420,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                 <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-900 flex flex-col gap-1.5">
                   <div className="font-extrabold text-amber-900 dark:text-amber-200 text-sm flex items-center gap-1.5">
                     <span>📅 Tanggal Pelaksanaan:</span>
-                    <span>{selectedScheduleItem.date}</span>
+                    <span>{formatIndonesianFullDate(selectedScheduleItem.date)}</span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                     Rencana belajar mandiri harian yang telah kamu susun untuk menguji pemahaman dan menjaga streak belajarmu.
@@ -455,7 +477,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                     <span className="text-[0.65rem] bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md shadow-2xs font-extrabold">✓ Terdaftar</span>
                   </div>
                   <div className="font-extrabold text-sm">
-                    📅 {selectedScheduleItem.schedule.date} ({selectedScheduleItem.schedule.start_time} - {selectedScheduleItem.schedule.end_time} WIB)
+                    📅 {formatIndonesianFullDate(selectedScheduleItem.schedule.date)} ({selectedScheduleItem.schedule.start_time} - {selectedScheduleItem.schedule.end_time} WIB)
                   </div>
                 </div>
 

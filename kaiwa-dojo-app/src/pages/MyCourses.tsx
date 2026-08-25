@@ -13,6 +13,12 @@ import {
 } from '../lib/chapterService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import { CourseCardSkeleton } from '../components/Skeleton'
+import {
+  getTodayDateString,
+  fetchDailyMission,
+  getDailyMission,
+  calculateMissionProgress,
+} from '../lib/dailyMission'
 
 /* ── Interfaces ───────────────────────────────────── */
 interface LessonItem {
@@ -538,12 +544,17 @@ export default function MyCourses() {
       console.warn('Course progress enrollments sync note:', e)
     }
 
-    // 5. Update learning streak
+    // 5. Update learning streak ONLY IF daily mission progress reaches 100%
     if (user?.id || profile?.id) {
-      await supabase.from('learning_streaks').upsert({
-        student_id: effectiveUserId,
-        date: new Date().toISOString().split('T')[0],
-      }, { onConflict: 'student_id,date' })
+      try {
+        const todayStr = getTodayDateString()
+        const mission = (await fetchDailyMission(effectiveUserId, todayStr)) || getDailyMission(effectiveUserId, todayStr)
+        if (mission) {
+          await calculateMissionProgress(effectiveUserId, mission)
+        }
+      } catch (e) {
+        console.warn('Streak 100% progress check note:', e)
+      }
     }
   }
 
