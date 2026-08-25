@@ -65,6 +65,18 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.7) 25%, rgba(241, 245, 249, 0.95) 50%, rgba(226, 232, 240, 0.7) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 25%, rgba(51, 65, 85, 0.95) 50%, rgba(30, 41, 59, 0.7) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
 /* =============================================
    BASE RESETS
    ============================================= */

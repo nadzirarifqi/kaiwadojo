@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { ProfileSkeleton } from '../components/Skeleton'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
@@ -503,7 +504,11 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── HERO BANNER & PROFILE HEADER ──────────────────────── */}
+      {isLoadingData ? (
+        <ProfileSkeleton />
+      ) : (
+        <>
+          {/* ── HERO BANNER & PROFILE HEADER ──────────────────────── */}
       <section className="relative rounded-3xl bg-gradient-to-r from-primary-dark via-primary to-primary-light text-white p-6 sm:p-8 md:p-10 shadow-lg overflow-hidden mb-8 border border-red-950/20">
         {/* Japanese Decorative Overlay pattern */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 size-80 rounded-full bg-white/5 blur-2xl pointer-events-none" />
@@ -1067,6 +1072,8 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </main>
   )

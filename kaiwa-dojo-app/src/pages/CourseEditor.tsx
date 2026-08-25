@@ -13,6 +13,7 @@ import {
   type ChapterSetting,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
+import { CourseCardSkeleton } from '../components/Skeleton'
 
 export default function CourseEditor() {
   const { profile } = useAuth()
@@ -486,10 +487,7 @@ export default function CourseEditor() {
 
       {/* Chapters Editor List */}
       {loading ? (
-        <div className="py-16 flex flex-col items-center justify-center gap-3">
-          <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-semibold text-slate-400">Memuat data bab...</span>
-        </div>
+        <CourseCardSkeleton count={5} />
       ) : filteredBabNumbers.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
           <span className="text-4xl">??</span>

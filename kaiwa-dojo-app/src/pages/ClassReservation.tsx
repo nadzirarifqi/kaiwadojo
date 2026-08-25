@@ -15,6 +15,7 @@ import {
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
 } from '../lib/scheduleService'
+import { ScheduleCardSkeleton } from '../components/Skeleton'
 
 
 export default function ClassReservationPage() {
@@ -411,10 +412,7 @@ export default function ClassReservationPage() {
       {activeTab !== 'my-schedules' && (
         <>
           {loading ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3">
-              <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm font-semibold text-slate-400">Memuat jadwal kelas...</span>
-            </div>
+            <ScheduleCardSkeleton count={6} />
           ) : filteredSchedules.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
               <span className="text-5xl">📅</span>

@@ -12,6 +12,7 @@ import {
   type CourseHeaderSettings,
 } from '../lib/chapterService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+import { CourseCardSkeleton } from '../components/Skeleton'
 
 /* ── Interfaces ───────────────────────────────────── */
 interface LessonItem {
@@ -840,14 +841,7 @@ export default function MyCourses() {
 
       {/* ── Chapters List (25 Bab Grid/Accordion) ── */}
       {loading ? (
-        <div className="flex flex-col gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 flex flex-col gap-3">
-              <div className="h-6 w-1/3 skeleton" />
-              <div className="h-4 w-1/2 skeleton" />
-            </div>
-          ))}
-        </div>
+        <CourseCardSkeleton count={5} />
       ) : filteredChapters.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 flex flex-col items-center gap-3">
           <span className="text-4xl">🔎</span>

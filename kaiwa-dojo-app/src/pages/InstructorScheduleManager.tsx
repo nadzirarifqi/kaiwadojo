@@ -16,6 +16,7 @@ import {
   RESERVATION_UPDATE_EVENT,
   subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
+import { ScheduleCardSkeleton } from '../components/Skeleton'
 
 
 export default function InstructorScheduleManagerPage() {
@@ -251,10 +252,7 @@ export default function InstructorScheduleManagerPage() {
         </h2>
 
         {loading ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3">
-            <div className="size-9 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-semibold text-slate-400">Memuat jadwal...</span>
-          </div>
+          <ScheduleCardSkeleton count={4} />
         ) : schedules.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-sm">
             Belum ada jadwal yang dibuat. Klik tombol "+ Buat Jadwal Baru" di atas untuk menambahkan jadwal.

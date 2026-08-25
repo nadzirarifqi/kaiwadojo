@@ -20,6 +20,7 @@ import {
   subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
 import { useLanguage } from '../contexts/LanguageContext'
+import { DashboardSkeleton } from '../components/Skeleton'
 
 /* ── Helpers ───────────────────────────────────────── */
 function getLast7DayLabels() {
@@ -513,6 +514,7 @@ export default function Dashboard() {
   const [dailyMission, setDailyMission]         = useState<DailyMissionData | null>(null)
   const [missionProgress, setMissionProgress] = useState<MissionProgress | null>(null)
   const [videoProgressMap, setVideoProgressMap] = useState<Map<string, number>>(new Map())
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -660,6 +662,7 @@ export default function Dashboard() {
       }))
 
       setStreakHistory(history)
+      setLoading(false)
     }
 
     loadDashboardData()
@@ -687,6 +690,10 @@ export default function Dashboard() {
       unsubscribeMissionRealtime()
     }
   }, [user, profile])
+
+  if (loading) {
+    return <DashboardSkeleton />
+  }
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
