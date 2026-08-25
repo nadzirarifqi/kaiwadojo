@@ -626,19 +626,32 @@ export default function Dashboard() {
         })
       }
 
-      // Merge with local storage progress cache
+      // Merge with local storage progress cache (handles both array-of-tuples and plain objects)
       const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
       const globalKey = `kaiwa_lesson_progress_active_global`
       const localProgressData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
       if (localProgressData) {
         try {
           const parsed = JSON.parse(localProgressData)
-          Object.keys(parsed).forEach(lId => {
-            if (parsed[lId]?.is_completed) {
-              completedSet.add(lId)
-            }
-          })
-        } catch {}
+          if (Array.isArray(parsed)) {
+            parsed.forEach(item => {
+              if (Array.isArray(item) && item.length >= 2) {
+                const [lId, val] = item
+                if (val?.is_completed && lId) {
+                  completedSet.add(String(lId))
+                }
+              }
+            })
+          } else if (parsed && typeof parsed === 'object') {
+            Object.entries(parsed).forEach(([lId, val]: [string, any]) => {
+              if (val?.is_completed && lId) {
+                completedSet.add(lId)
+              }
+            })
+          }
+        } catch (e) {
+          console.warn('Dashboard progress local parse note:', e)
+        }
       }
 
       let j1Count = 0
@@ -1075,7 +1088,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
-                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 125 Video Materi')}</span>
+                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
               <span className="text-sm font-black text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-2.5 py-1 rounded-xl">
@@ -1109,7 +1122,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
-                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 125 Video Materi')}</span>
+                  <span className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-300">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
               <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-xl">

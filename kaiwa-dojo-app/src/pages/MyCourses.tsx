@@ -785,7 +785,7 @@ export default function MyCourses() {
               {t('course_title_vol1', 'Bahasa Jepang Dasar (Jilid 1)')}
             </div>
             <div className={`text-xs font-semibold mt-1 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
-              {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 125 Video Materi')}
+              {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}
             </div>
           </div>
           {selectedJilid === 1 && (
@@ -814,7 +814,7 @@ export default function MyCourses() {
               {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
             </div>
             <div className={`text-xs font-semibold mt-1 ${selectedJilid === 2 ? 'text-white/90' : 'text-slate-500'}`}>
-              {t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 125 Video Materi')}
+              {t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}
             </div>
           </div>
           {selectedJilid === 2 && (
