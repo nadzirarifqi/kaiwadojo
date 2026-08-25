@@ -547,6 +547,7 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
   const updated = sortSchedules([newSchedule, ...current.filter(s => !matchScheduleId(s.id, newSchedule.id))])
   localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updated))
 
+  notifyScheduleChanged()
   return newSchedule
 }
 
@@ -583,6 +584,7 @@ export async function updateSchedule(scheduleId: string, scheduleData: Partial<C
 
   // Refresh schedules from DB to update LocalStorage cache
   const refreshedSchedules = await fetchSchedules()
+  notifyScheduleChanged()
   const updatedItem = refreshedSchedules.find(s => matchScheduleId(s.id, targetId))
   if (updatedItem) return updatedItem
 
@@ -647,9 +649,39 @@ export async function deleteSchedule(scheduleId: string): Promise<void> {
   const reservations = await fetchReservations()
   const updatedRes = reservations.filter(r => !matchScheduleId(r.schedule_id, targetId))
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedRes))
+
+  notifyScheduleChanged()
 }
 
 export const RESERVATION_UPDATE_EVENT = 'kaiwa_reservation_updated'
+export const SCHEDULE_UPDATE_EVENT = 'kaiwa_schedule_updated'
+
+export function notifyScheduleChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(SCHEDULE_UPDATE_EVENT))
+    window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT))
+  }
+}
+
+export function subscribeToScheduleRealtime(onUpdate: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const channel = supabase
+    .channel('public_schedules_realtime_channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, () => {
+      notifyScheduleChanged()
+      onUpdate()
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
+      notifyScheduleChanged()
+      onUpdate()
+    })
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
 
 export async function bookClass(
   schedule: ClassSchedule,

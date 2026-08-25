@@ -11,7 +11,14 @@ import {
   calculateMissionProgress,
   calculateStreakFromDates,
   getTodayDateString,
+  DAILY_MISSION_UPDATE_EVENT,
+  subscribeToDailyMissionRealtime,
 } from '../lib/dailyMission'
+import {
+  SCHEDULE_UPDATE_EVENT,
+  RESERVATION_UPDATE_EVENT,
+  subscribeToScheduleRealtime,
+} from '../lib/scheduleService'
 import { useLanguage } from '../contexts/LanguageContext'
 
 /* ── Helpers ───────────────────────────────────────── */
@@ -656,6 +663,29 @@ export default function Dashboard() {
     }
 
     loadDashboardData()
+
+    const handleSync = () => {
+      loadDashboardData()
+    }
+
+    window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
+    window.addEventListener('kaiwa_mission_progress_updated', handleSync)
+    window.addEventListener('storage', handleSync)
+
+    const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
+    const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleSync)
+
+    return () => {
+      window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
+      window.removeEventListener('kaiwa_mission_progress_updated', handleSync)
+      window.removeEventListener('storage', handleSync)
+      unsubscribeScheduleRealtime()
+      unsubscribeMissionRealtime()
+    }
   }, [user, profile])
 
   return (

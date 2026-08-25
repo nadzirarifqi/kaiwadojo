@@ -12,6 +12,9 @@ import {
   deleteSchedule,
   getWeekLabel,
   getMonthLabel,
+  SCHEDULE_UPDATE_EVENT,
+  RESERVATION_UPDATE_EVENT,
+  subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
 
 
@@ -53,6 +56,20 @@ export default function InstructorScheduleManagerPage() {
 
   useEffect(() => {
     loadData()
+
+    const handleSync = () => {
+      loadData()
+    }
+
+    window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    const unsubscribeRealtime = subscribeToScheduleRealtime(handleSync)
+
+    return () => {
+      window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      unsubscribeRealtime()
+    }
   }, [])
 
   function showToast(text: string, type: 'success' | 'error' = 'success') {

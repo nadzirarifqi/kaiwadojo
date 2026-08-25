@@ -11,7 +11,9 @@ import {
   calculateMissionProgress,
   fetchDailyMission,
   fetchAllUserMissions,
-  getTodayDateString
+  getTodayDateString,
+  DAILY_MISSION_UPDATE_EVENT,
+  subscribeToDailyMissionRealtime,
 } from '../lib/dailyMission'
 
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
@@ -25,6 +27,8 @@ import {
   calculateDateScheduleStatus,
   sortSchedules,
   RESERVATION_UPDATE_EVENT,
+  SCHEDULE_UPDATE_EVENT,
+  subscribeToScheduleRealtime,
   getWeekRangeId,
   getMonthRangeId,
   matchScheduleId,
@@ -692,24 +696,17 @@ export default function LearningPlanPage() {
     // 1. Instant local window event sync (for same browser / role switcher / multi-tabs)
     const handleSync = () => reloadSchedules()
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
 
     // 2. Supabase Realtime channel for cross-device sync
-    const channel = supabase
-      .channel('class_reservations_realtime_lp')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'class_reservations' },
-        () => {
-          reloadSchedules()
-        }
-      )
-      .subscribe()
+    const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
 
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
-      supabase.removeChannel(channel)
+      unsubscribeScheduleRealtime()
     }
   }, [])
 
@@ -723,11 +720,15 @@ export default function LearningPlanPage() {
       loadData()
     }
     window.addEventListener('kaiwa_mission_progress_updated', handleMissionSync)
+    window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleMissionSync)
     window.addEventListener('storage', handleMissionSync)
+    const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleMissionSync)
 
     return () => {
       window.removeEventListener('kaiwa_mission_progress_updated', handleMissionSync)
+      window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleMissionSync)
       window.removeEventListener('storage', handleMissionSync)
+      unsubscribeMissionRealtime()
     }
   }, [user, profile?.id, selectedDateStr, currentMonthDate])
 

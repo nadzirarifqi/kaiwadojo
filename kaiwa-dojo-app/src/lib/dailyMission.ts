@@ -183,7 +183,31 @@ export async function saveDailyMission(
     localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
   }
   
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(DAILY_MISSION_UPDATE_EVENT, { detail: mission }))
+  }
+
   return mission
+}
+
+export const DAILY_MISSION_UPDATE_EVENT = 'kaiwa_daily_mission_updated'
+
+export function subscribeToDailyMissionRealtime(onUpdate: () => void) {
+  if (typeof window === 'undefined') return () => {}
+
+  const channel = supabase
+    .channel('public_daily_missions_realtime_channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_missions' }, () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(DAILY_MISSION_UPDATE_EVENT))
+      }
+      onUpdate()
+    })
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
 }
 
 export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: string = getTodayDateString()): number {
