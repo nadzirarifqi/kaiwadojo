@@ -61,7 +61,7 @@ export default function AdminDashboard() {
   }, [])
 
   if (loading) {
-    return <LoadingScreen message="Memuat Dashboard Super Admin..." fullScreen={false} />
+    return <LoadingScreen message="Memuat Dashboard Admin..." fullScreen={false} />
   }
 
   const publishedCount = Object.values(chapterSettings).filter(c => !c.is_hidden).length
@@ -81,14 +81,14 @@ export default function AdminDashboard() {
             <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1">
               <span>👑</span>
               <span className="font-jp font-bold mr-1">管理者</span>
-              <span>Super Admin ({profile?.username || 'kaiwahiroshima'})</span>
+              <span>Admin ({profile?.username || 'kaiwahiroshima'})</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
               ● Akses Penuh Sistem
             </span>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Halo Admin, {profile?.full_name || 'Super Admin Hiroshima'}!</span>
+            <span>Halo Admin, {profile?.full_name || 'Admin Hiroshima'}!</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed font-medium">
             <span className="font-jp font-bold text-red-300 mr-1.5">システム管理</span>

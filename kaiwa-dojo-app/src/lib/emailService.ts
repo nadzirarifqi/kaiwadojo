@@ -41,7 +41,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
 
         <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">Halo <strong>${fullName}</strong>,</p>
         <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
-          Pendaftaran akun Anda di <strong>KaiwaDojo</strong> telah berhasil diverifikasi dan <strong>disetujui oleh Super Admin</strong>.
+          Pendaftaran akun Anda di <strong>KaiwaDojo</strong> telah berhasil diverifikasi dan <strong>disetujui oleh Admin</strong>.
         </p>
 
         <!-- Account Info Card -->

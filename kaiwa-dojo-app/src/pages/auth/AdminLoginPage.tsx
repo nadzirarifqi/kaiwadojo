@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
     if (cleanUser === 'kaiwahiroshima' && password === 'inaconnextkaiwa6') {
       const adminProf = {
         id: '00000000-0000-0000-0000-000000000099',
-        full_name: 'Super Admin Hiroshima',
+        full_name: 'Admin Hiroshima',
         username: 'kaiwahiroshima',
         email: 'admin@kaiwadojo.com',
         role: 'admin',
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
       try {
         await supabase.from('profiles').upsert({
           id: '00000000-0000-0000-0000-000000000099',
-          full_name: 'Super Admin Hiroshima',
+          full_name: 'Admin Hiroshima',
           username: 'kaiwahiroshima',
           email: 'admin@kaiwadojo.com',
           role: 'admin',

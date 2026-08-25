@@ -69,7 +69,7 @@ export default function LoginPage() {
       if (password === 'inaconnextkaiwa6') {
         const adminProf = {
           id: '00000000-0000-0000-0000-000000000099',
-          full_name: 'Super Admin Hiroshima',
+          full_name: 'Admin Hiroshima',
           username: 'kaiwahiroshima',
           email: 'admin@kaiwadojo.com',
           role: 'admin',
@@ -86,7 +86,7 @@ export default function LoginPage() {
         try {
           await supabase.from('profiles').upsert({
             id: '00000000-0000-0000-0000-000000000099',
-            full_name: 'Super Admin Hiroshima',
+            full_name: 'Admin Hiroshima',
             username: 'kaiwahiroshima',
             email: 'admin@kaiwadojo.com',
             role: 'admin',
@@ -103,7 +103,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '🔑 Password Salah',
-          `Password yang Anda masukkan untuk akun Super Admin "${username}" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi.`,
+          `Password yang Anda masukkan untuk akun Admin "${username}" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi.`,
           'lock',
           'Coba Password Lagi'
         )
@@ -122,7 +122,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum Anda dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum Anda dapat masuk ke Dashboard.`,
           'warning',
           'Mengerti'
         )
@@ -172,7 +172,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
           'warning',
           'Mengerti'
         )
@@ -214,7 +214,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
           'warning',
           'Mengerti'
         )
@@ -282,7 +282,7 @@ export default function LoginPage() {
           setLoading(false)
           showAlert(
             '⏳ Akun Menunggu Verifikasi Admin',
-            `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Super Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+            `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
             'warning',
             'Mengerti'
           )

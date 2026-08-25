@@ -191,11 +191,11 @@ export default function RegisterPage() {
             Menunggu Verifikasi Admin
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Selamat <span className="font-bold text-slate-800 dark:text-white">{fullName}</span>! Pendaftaran dan verifikasi OTP Anda telah berhasil. Akun Anda saat ini sedang dalam <span className="font-bold text-amber-600 dark:text-amber-400">proses peninjauan & verifikasi oleh Super Admin</span>.
+            Selamat <span className="font-bold text-slate-800 dark:text-white">{fullName}</span>! Pendaftaran dan verifikasi OTP Anda telah berhasil. Akun Anda saat ini sedang dalam <span className="font-bold text-amber-600 dark:text-amber-400">proses peninjauan & verifikasi oleh Admin</span>.
           </p>
 
           <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs font-semibold text-amber-800 dark:text-amber-300 mb-6 text-left leading-relaxed">
-            ℹ️ <span className="font-bold">Informasi:</span> Setelah Super Admin menyetujui akun Anda di panel kelola pelajar, Anda akan langsung dapat melakukan login dan masuk ke Dashboard KaiwaDojo.
+            ℹ️ <span className="font-bold">Informasi:</span> Setelah Admin menyetujui akun Anda di panel kelola pelajar, Anda akan langsung dapat melakukan login dan masuk ke Dashboard KaiwaDojo.
           </div>
 
           <button

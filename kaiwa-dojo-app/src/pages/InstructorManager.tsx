@@ -137,7 +137,7 @@ export default function InstructorManager() {
         <div className="text-4xl mb-2">🔒</div>
         <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
         <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
-          Halaman ini khusus diperuntukkan untuk Super Admin (kaiwahiroshima) untuk membuat, mengedit, dan menghapus akun Pemateri.
+          Halaman ini khusus diperuntukkan untuk Admin (kaiwahiroshima) untuk membuat, mengedit, dan menghapus akun Pemateri.
         </p>
         <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl border-none cursor-pointer">
           Kembali ke Dashboard
@@ -161,7 +161,7 @@ export default function InstructorManager() {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
-              👑 Menu Super Admin
+              👑 Menu Admin
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
               {instructors.length} Pemateri Terdaftar

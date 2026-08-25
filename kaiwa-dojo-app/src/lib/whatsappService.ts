@@ -74,7 +74,7 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
     return false
   }
 
-  const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Super Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
+  const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
 
   if (!fonnteToken) {
     console.warn(`[SIMULASI WA] Notifikasi persetujuan terkirim (simulasi) ke WA: ${formattedPhone}`)

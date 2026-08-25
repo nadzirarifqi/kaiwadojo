@@ -358,7 +358,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               <div className="text-[0.82rem] font-bold text-slate-800 dark:text-slate-100 truncate">{profile?.full_name ?? 'Memuat...'}</div>
               <div className="text-[0.7rem] text-slate-400 capitalize flex items-center gap-1">
                 <span className="font-semibold text-primary dark:text-red-400">
-                  {currentRole === 'pemateri' ? 'Admin Pengajar' : currentRole === 'admin' ? 'Superadmin' : 'Pelajar'}
+                  {currentRole === 'pemateri' ? 'Admin Pengajar' : currentRole === 'admin' ? 'Admin' : 'Pelajar'}
                 </span>
               </div>
             </div>
