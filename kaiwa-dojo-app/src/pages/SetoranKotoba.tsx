@@ -231,11 +231,11 @@ export default function SetoranKotobaPage() {
 
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim()) {
+    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim() || !formData.image_url.trim()) {
       setAlertConfig({
         isOpen: true,
         title: 'Formulir Belum Lengkap ⚠️',
-        message: 'Mohon isi 3 bidang wajib pada "Formulir Setoran Kotoba": Huruf Jepang, Romaji, dan Maknanya!',
+        message: 'Mohon isi seluruh 4 bidang wajib pada "Formulir Setoran Kotoba": Huruf Jepang, Romaji, Makna, dan Upload Gambar (Wajib)!',
         type: 'warning',
         buttonText: 'Lengkapi Data',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
@@ -527,7 +527,7 @@ export default function SetoranKotobaPage() {
                 Terjemahan Indonesia (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">Makan (Kata Kerja)</code>)
               </div>
               <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
-                <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual</span>
+                <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual (Wajib)</span>
                 Upload file foto/gambar visual pendukung
               </div>
             </div>
@@ -1006,11 +1006,12 @@ export default function SetoranKotobaPage() {
               {/* Field 4: Image File Upload */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. {t('sk_input_image', 'Upload File Gambar (Opsional)')}
+                  4. {t('sk_input_image', 'Upload Gambar')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="file"
                   accept="image/*"
+                  required={!formData.image_url}
                   onChange={handleImageFileChange}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
                 />
