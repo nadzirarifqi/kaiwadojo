@@ -213,32 +213,32 @@ export function subscribeToDailyMissionRealtime(onUpdate: () => void) {
 
 export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: string = getTodayDateString()): number {
   let streak = 0
-  const formatDateStr = (d: Date) => {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
+  const formatDateParts = (y: number, m: number, d: number) => {
+    const monthStr = String(m + 1).padStart(2, '0')
+    const dayStr = String(d).padStart(2, '0')
+    return `${y}-${monthStr}-${dayStr}`
   }
 
-  const checkDate = new Date(todayStr)
-  const todayFormatted = formatDateStr(checkDate)
+  const parts = todayStr.split('-').map(Number)
+  const y = parts[0] || new Date().getFullYear()
+  const m = (parts[1] || (new Date().getMonth() + 1)) - 1
+  const d = parts[2] || new Date().getDate()
+
+  const todayFormatted = formatDateParts(y, m, d)
   const hasToday = streakDatesSet.has(todayFormatted)
 
-  const yesterdayDate = new Date(todayStr)
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-  const yesterdayFormatted = formatDateStr(yesterdayDate)
+  const yesterdayDateObj = new Date(y, m, d - 1)
+  const yesterdayFormatted = formatDateParts(yesterdayDateObj.getFullYear(), yesterdayDateObj.getMonth(), yesterdayDateObj.getDate())
   const hasYesterday = streakDatesSet.has(yesterdayFormatted)
 
-  // If user hasn't completed today AND didn't complete yesterday, streak is broken -> 0
   if (!hasToday && !hasYesterday) {
     return 0
   }
 
-  // Start counting backward from today (if done today) or yesterday (if today not done yet)
-  let curr = hasToday ? new Date(todayStr) : yesterdayDate
+  let curr = hasToday ? new Date(y, m, d) : new Date(y, m, d - 1)
 
   while (true) {
-    const dStr = formatDateStr(curr)
+    const dStr = formatDateParts(curr.getFullYear(), curr.getMonth(), curr.getDate())
     if (streakDatesSet.has(dStr)) {
       streak++
       curr.setDate(curr.getDate() - 1)
@@ -261,9 +261,9 @@ export async function calculateMissionProgress(
   let kotobaSubmissions: any[] = preFetched?.kotobaSubmissions || []
 
   if (!preFetched) {
-    // Fetch lesson progress & kotoba submissions from Supabase if not pre-fetched
+    // Fetch lesson progress, quiz attempts & kotoba submissions from Supabase if not pre-fetched
     try {
-      const [{ data: pData }, { data: kData }] = await Promise.all([
+      const [{ data: pData }, { data: kData }, { data: qData }] = await Promise.all([
         supabase
           .from('lesson_progress')
           .select('lesson_id, is_completed, replay_count, last_watched_at')
@@ -272,9 +272,17 @@ export async function calculateMissionProgress(
           .from('user_kotoba_submissions')
           .select('id')
           .eq('user_id', userId),
+        supabase
+          .from('quiz_attempts')
+          .select('id, passed')
+          .eq('student_id', userId)
+          .eq('passed', true),
       ])
       progressData = pData || []
       kotobaSubmissions = kData || []
+      if (qData && qData.length > 0) {
+        actualQuizzes = Math.max(actualQuizzes, qData.length)
+      }
     } catch {}
   }
 
@@ -388,6 +396,9 @@ export async function calculateMissionProgress(
           .from('profiles')
           .update({ streak_days: streakCount, last_active_at: new Date().toISOString() })
           .eq('id', userId)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('kaiwa_profile_updated'))
+        }
       }
     } catch (e) {
       console.warn('Learning streak DB upsert note:', e)
