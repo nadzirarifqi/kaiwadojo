@@ -259,6 +259,9 @@ export async function calculateMissionProgress(
 
   let progressData: any[] = preFetched?.progressData || []
   let kotobaSubmissions: any[] = preFetched?.kotobaSubmissions || []
+  let actualReplays = 0
+  let actualQuizzes = 0
+  let actualKotoba  = 0
 
   if (!preFetched) {
     // Fetch lesson progress, quiz attempts & kotoba submissions from Supabase if not pre-fetched
@@ -322,9 +325,7 @@ export async function calculateMissionProgress(
     } catch {}
   }
 
-  let actualReplays = 0
-  let actualQuizzes = 0
-  let actualKotoba  = kotobaSubmissions ? kotobaSubmissions.length : 0
+  actualKotoba = kotobaSubmissions ? kotobaSubmissions.length : 0
 
   if (progressData) {
     // Generate all acceptable ID strings for each selected video
