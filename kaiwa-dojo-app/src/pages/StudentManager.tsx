@@ -31,6 +31,7 @@ export default function StudentManager() {
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [institution, setInstitution] = useState('')
   const [bio, setBio] = useState('')
   const [status, setStatus] = useState<StudentStatus>('approved')
 
@@ -57,6 +58,7 @@ export default function StudentManager() {
     setFullName('')
     setUsername('')
     setEmail('')
+    setInstitution('')
     setBio('')
     setStatus('approved')
     setShowAddModal(true)
@@ -67,6 +69,7 @@ export default function StudentManager() {
     setFullName(std.full_name)
     setUsername(std.username)
     setEmail(std.email)
+    setInstitution(std.institution || '')
     setBio(std.bio || '')
     setStatus(std.status || 'approved')
   }
@@ -133,6 +136,7 @@ export default function StudentManager() {
       full_name: fullName,
       username,
       email,
+      institution,
       bio,
       status,
     })
@@ -160,6 +164,7 @@ export default function StudentManager() {
       full_name: fullName,
       username,
       email,
+      institution,
       bio,
       status,
     })
@@ -318,6 +323,7 @@ export default function StudentManager() {
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 px-2">Nama Siswa</th>
                   <th className="pb-3 px-2">Username & Email</th>
+                  <th className="pb-3 px-2">Asal Lembaga / PT</th>
                   <th className="pb-3 px-2">Status Verifikasi</th>
                   <th className="pb-3 px-2">Bio / Catatan</th>
                   <th className="pb-3 px-2 text-right">Aksi Verifikasi Admin</th>
@@ -344,6 +350,9 @@ export default function StudentManager() {
                     <td className="py-3 px-2">
                       <div className="font-bold text-slate-700 dark:text-slate-200">@{std.username}</div>
                       <div className="text-[0.68rem] text-slate-400">{std.email}</div>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
                     </td>
                     <td className="py-3 px-2">
                       {std.status === 'pending' ? (
@@ -472,6 +481,17 @@ export default function StudentManager() {
               </div>
 
               <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
+                <input
+                  type="text"
+                  placeholder="contoh: Universitas Indonesia / LPK Sakura"
+                  value={institution}
+                  onChange={e => setInstitution(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bio / Deskripsi Siswa</label>
                 <input
                   type="text"
@@ -548,6 +568,17 @@ export default function StudentManager() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
+                <input
+                  type="text"
+                  placeholder="contoh: Universitas Indonesia / LPK Sakura"
+                  value={institution}
+                  onChange={e => setInstitution(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                />
               </div>
 
               <div>

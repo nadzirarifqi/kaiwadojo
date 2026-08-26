@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [institution, setInstitution] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -149,6 +150,7 @@ export default function RegisterPage() {
       username: username.trim().toLowerCase(),
       email: email.trim().toLowerCase(),
       phone_number: phoneNumber.trim(),
+      institution: institution.trim(),
       bio: 'Siswa Baru Kaiwa Dojo',
       status: 'pending',
     })
@@ -162,6 +164,7 @@ export default function RegisterPage() {
             full_name: fullName.trim(),
             username: username.trim().toLowerCase(),
             phone_number: phoneNumber.trim(),
+            institution: institution.trim(),
             role: 'pelajar',
             status: 'pending',
           },
@@ -299,6 +302,22 @@ export default function RegisterPage() {
                 required
                 value={phoneNumber}
                 onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+              />
+            </div>
+
+            {/* Asal Lembaga / Perguruan Tinggi */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reg-institution" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                Asal Lembaga / Perguruan Tinggi
+              </label>
+              <input
+                id="reg-institution"
+                type="text"
+                placeholder="Contoh: Universitas Indonesia / LPK Sakura"
+                required
+                value={institution}
+                onChange={e => setInstitution(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
               />
             </div>

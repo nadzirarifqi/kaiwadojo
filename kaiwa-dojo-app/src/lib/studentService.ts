@@ -8,6 +8,7 @@ export interface StudentAccount {
   username: string
   email: string
   phone_number?: string
+  institution?: string
   role: 'pelajar'
   avatar_url?: string
   bio?: string
@@ -39,6 +40,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         username: p.username,
         email: p.email || `${p.username}@kaiwadojo.com`,
         phone_number: p.phone_number,
+        institution: p.institution,
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,
@@ -62,6 +64,7 @@ export async function createStudentAccount(data: {
   username: string
   email: string
   phone_number?: string
+  institution?: string
   bio?: string
   status?: StudentStatus
 }): Promise<StudentAccount | null> {
@@ -76,6 +79,7 @@ export async function createStudentAccount(data: {
     username: cleanUser,
     email: cleanEmail,
     phone_number: data.phone_number,
+    institution: data.institution,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
@@ -91,6 +95,7 @@ export async function createStudentAccount(data: {
       username: newStudent.username,
       email: newStudent.email,
       phone_number: newStudent.phone_number,
+      institution: newStudent.institution,
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
@@ -167,6 +172,7 @@ export async function updateStudentAccount(
     full_name: string
     username: string
     email: string
+    institution?: string
     bio?: string
     status?: StudentStatus
   }
@@ -181,6 +187,7 @@ export async function updateStudentAccount(
       full_name: data.full_name,
       username: cleanUser,
       email: cleanEmail,
+      institution: data.institution,
       bio: data.bio,
       status: data.status,
     }

@@ -44,6 +44,7 @@ export default function ProfilePage() {
   // Form State
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
+  const [institution, setInstitution] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -76,6 +77,7 @@ export default function ProfilePage() {
     if (profile) {
       setFullName(profile.full_name || '')
       setUsername(profile.username || '')
+      setInstitution(profile.institution || '')
       setBio(profile.bio || '')
       setAvatarUrl(profile.avatar_url || '')
     }
@@ -274,9 +276,10 @@ export default function ProfilePage() {
         }
       }
 
-      // 2. Save directly to Supabase DB profiles table (only full_name, bio, avatar_url, updated_at)
+      // 2. Save directly to Supabase DB profiles table
       const updateData = {
         full_name: fullName.trim(),
+        institution: institution.trim(),
         bio: bio.trim(),
         avatar_url: finalAvatarUrl.trim() || null,
         updated_at: new Date().toISOString(),
@@ -293,6 +296,7 @@ export default function ProfilePage() {
           id: targetUserId,
           full_name: fullName.trim(),
           username: (profile?.username || username).trim(),
+          institution: institution.trim(),
           bio: bio.trim(),
           avatar_url: finalAvatarUrl.trim() || null,
           role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
@@ -308,6 +312,7 @@ export default function ProfilePage() {
         id: targetUserId,
         full_name: fullName.trim(),
         username: (profile?.username || username).trim(),
+        institution: institution.trim(),
         bio: bio.trim(),
         avatar_url: finalAvatarUrl.trim() || null,
         role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
@@ -688,6 +693,20 @@ export default function ProfilePage() {
                 <p className="text-xs text-slate-400 mt-1">Email dikelola langsung oleh sistem otentikasi Supabase.</p>
               </div>
 
+              {/* Asal Lembaga / Perguruan Tinggi */}
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                  Asal Lembaga / Perguruan Tinggi
+                </label>
+                <input
+                  type="text"
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                  placeholder="Contoh: Universitas Indonesia / LPK Sakura"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                />
+              </div>
+
               {/* Bio */}
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
@@ -738,6 +757,13 @@ export default function ProfilePage() {
                   <span className="text-slate-500 dark:text-slate-400 font-semibold">User ID</span>
                   <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md font-bold truncate max-w-[140px]">
                     {user?.id}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Asal Lembaga / PT</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]">
+                    {profile?.institution || '-'}
                   </span>
                 </div>
 
