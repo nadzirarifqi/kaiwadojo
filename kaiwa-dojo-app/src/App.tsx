@@ -23,6 +23,7 @@ import LandingPage from './pages/LandingPage'
 
 import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
+import WhatsAppWidget from './components/WhatsAppWidget'
 
 /* ── Role-Aware Dashboard Router ─────────────────── */
 function DashboardRoute() {
@@ -176,6 +177,7 @@ export function AppRoutes() {
 
             </Routes>
           </PageTransition>
+          <WhatsAppWidget />
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
