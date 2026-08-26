@@ -181,6 +181,31 @@ export function formatDateRangeIndonesian(
   }
 }
 
+// Helper: Get array of YYYY-MM-DD dates for a schedule (handles single day and multi-day classes)
+export function getScheduleDatesList(sch: ClassSchedule): string[] {
+  const startDate = sch.start_date || sch.date
+  const endDate = sch.end_date || startDate
+  if (!startDate) return []
+  if (startDate === endDate) return [startDate]
+
+  const dates: string[] = []
+  const current = new Date(startDate)
+  const end = new Date(endDate)
+  while (current <= end) {
+    const y = current.getFullYear()
+    const m = String(current.getMonth() + 1).padStart(2, '0')
+    const d = String(current.getDate()).padStart(2, '0')
+    dates.push(`${y}-${m}-${d}`)
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
+// Helper: Check if two date lists have any overlapping dates
+export function areDatesOverlapping(dates1: string[], dates2: string[]): boolean {
+  return dates1.some(d => dates2.includes(d))
+}
+
 // Helper: Get human readable week label (e.g. "Minggu ke-1 Agustus 2026")
 export function getWeekLabel(weekRangeIdOrDate: string, dateStr?: string): string {
   const monthNames = [
@@ -774,12 +799,43 @@ export async function bookClass(
     return { success: false, message: 'Anda sudah mendaftar di kelas ini.' }
   }
 
-  // 3. Conflict Check (weekly online / monthly offline)
+  // 3. Same-Day Conflict Check (Online vs Offline & Same Date)
+  const targetDates = getScheduleDatesList(schedule)
+  const userReservations = reservations.filter(r => r.user_id === userId)
+
+  for (const r of userReservations) {
+    const existingSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
+    if (!existingSch) continue
+
+    const existingDates = getScheduleDatesList(existingSch)
+    if (areDatesOverlapping(targetDates, existingDates)) {
+      if (schedule.type === 'online' && existingSch.type === 'offline') {
+        return {
+          success: false,
+          message: 'Anda tidak dapat mendaftar kelas online pada hari yang sama dengan kelas offline yang sudah Anda reservasi.',
+        }
+      }
+      if (schedule.type === 'offline' && existingSch.type === 'online') {
+        return {
+          success: false,
+          message: 'Anda tidak dapat mendaftar kelas offline pada hari yang sama dengan kelas online yang sudah Anda reservasi.',
+        }
+      }
+      if (schedule.type === existingSch.type) {
+        return {
+          success: false,
+          message: `Anda sudah memiliki reservasi kelas ${schedule.type === 'online' ? 'online' : 'offline'} pada tanggal tersebut.`,
+        }
+      }
+    }
+  }
+
+  // 4. Weekly Online / Monthly Offline Quota Constraint Check
   if (schedule.type === 'online') {
     const targetWeekId = schedule.week_range_id || getWeekRangeId(schedule.date)
     const userWeeklyOnlineBookings = reservations.filter(r => {
       if (r.user_id !== userId) return false
-      const targetSch = schedules.find(s => s.id === r.schedule_id || ensureUUID(s.id, '00000000-0000-0000-0001-') === r.schedule_id)
+      const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
       if (!targetSch || targetSch.type !== 'online') return false
       const schWeekId = targetSch.week_range_id || getWeekRangeId(targetSch.date)
       return schWeekId === targetWeekId
@@ -797,7 +853,7 @@ export async function bookClass(
     const targetMonthId = schedule.month_range_id || getMonthRangeId(schedule.date)
     const userMonthlyOfflineBookings = reservations.filter(r => {
       if (r.user_id !== userId) return false
-      const targetSch = schedules.find(s => s.id === r.schedule_id || ensureUUID(s.id, '00000000-0000-0000-0001-') === r.schedule_id)
+      const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
       if (!targetSch || targetSch.type !== 'offline') return false
       const schMonthId = targetSch.month_range_id || getMonthRangeId(targetSch.date)
       return schMonthId === targetMonthId
@@ -942,12 +998,12 @@ export async function getMonthlyOnlineRequirementStatus(userId: string, monthRan
 
   const userOnlineThisMonth = reservations.filter(r => {
     if (r.user_id !== userId) return false
-    const sch = schedules.find(s => s.id === r.schedule_id)
+    const sch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
     return sch && sch.type === 'online' && sch.month_range_id === currentMonth
   })
 
   const bookedCount = userOnlineThisMonth.length
-  const targetCount = 2
+  const targetCount = 4
 
   const dateObj = new Date()
   const monthNames = [

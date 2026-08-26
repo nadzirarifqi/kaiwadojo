@@ -16,6 +16,8 @@ import {
   formatTimeShort,
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
+  getScheduleDatesList,
+  areDatesOverlapping,
 } from '../lib/scheduleService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
@@ -53,7 +55,7 @@ export default function ClassReservationPage() {
     currentMonthLabel: string
   }>({
     bookedCount: 0,
-    targetCount: 2,
+    targetCount: 4,
     isFulfilled: false,
     currentMonthLabel: '',
   })
@@ -127,6 +129,28 @@ export default function ClassReservationPage() {
       return { isLocked: true, reason: 'Kuota Penuh' }
     }
 
+    // 1. Same-Day Date Conflict check (Online vs Offline or same date)
+    const targetDates = getScheduleDatesList(sch)
+    const userReservations = reservations.filter(r => r.user_id === userId)
+    for (const r of userReservations) {
+      const existingSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
+      if (!existingSch) continue
+
+      const existingDates = getScheduleDatesList(existingSch)
+      if (areDatesOverlapping(targetDates, existingDates)) {
+        if (sch.type === 'online' && existingSch.type === 'offline') {
+          return { isLocked: true, reason: 'Ada Kelas Offline di Hari Ini' }
+        }
+        if (sch.type === 'offline' && existingSch.type === 'online') {
+          return { isLocked: true, reason: 'Ada Kelas Online di Hari Ini' }
+        }
+        if (sch.type === existingSch.type) {
+          return { isLocked: true, reason: 'Sudah Reservasi Hari Ini' }
+        }
+      }
+    }
+
+    // 2. Weekly online limit (1 per week)
     if (sch.type === 'online') {
       const hasOtherOnlineInWeek = reservations.some(r => {
         if (r.user_id !== userId) return false
@@ -138,6 +162,7 @@ export default function ClassReservationPage() {
       }
     }
 
+    // 3. Monthly offline limit (1 per month)
     if (sch.type === 'offline') {
       const hasOtherOfflineInMonth = reservations.some(r => {
         if (r.user_id !== userId) return false
