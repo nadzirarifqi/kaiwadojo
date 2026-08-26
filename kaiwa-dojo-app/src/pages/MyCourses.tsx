@@ -59,9 +59,9 @@ function getHostedVideoUrl(babNumber: number, itemNum: number): string | null {
   if (itemNum > 3) return null
 
   const folderName = `BAB ${babNumber}`
-  const fileName = `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`
+  const fileNameMp4 = `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`
 
-  return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}`
+  return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileNameMp4)}`
 }
 
 /* ── Default Chapter Titles for Jilid 1 (Bab 1 - 25) ── */
@@ -1260,8 +1260,12 @@ export default function MyCourses() {
                           }
                         }}
                       >
-                        <source src={activeLesson.video_id} type="video/quicktime" />
-                        <source src={activeLesson.video_id} type="video/mp4" />
+                        {/* Primary MP4 format (HandBrake optimized) */}
+                        <source src={activeLesson.video_id.replace(/\.mov$/i, '.mp4')} type="video/mp4" />
+                        {/* MOV format fallback */}
+                        <source src={activeLesson.video_id.replace(/\.mp4$/i, '.mov')} type="video/quicktime" />
+                        {/* Generic fallback for server MIME type video/generic-x */}
+                        <source src={activeLesson.video_id} />
                         Browser kamu tidak mendukung pemutaran langsung file video ini.
                       </video>
                     </div>

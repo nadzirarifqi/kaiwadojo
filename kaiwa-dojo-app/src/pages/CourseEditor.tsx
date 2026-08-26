@@ -43,7 +43,7 @@ export default function CourseEditor() {
     setDetectingBab(babNum)
     const chap = chapterMap[babNum]
     const getHostedUrl = (b: number, s: number) => {
-      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mov`
+      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mp4`
     }
 
     let detectedCount = 0

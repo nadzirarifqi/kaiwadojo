@@ -340,6 +340,11 @@ export function detectVideoDuration(url: string): Promise<string> {
     }
 
     tempVideo.onerror = () => {
+      if (url.toLowerCase().endsWith('.mov')) {
+        url = url.replace(/\.mov$/i, '.mp4')
+        tempVideo.src = url
+        return
+      }
       clearTimeout(timeout)
       tempVideo.removeAttribute('src')
       tempVideo.load()
