@@ -226,21 +226,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Single Compact Theme Switch Button */}
-            <button
-              type="button"
-              onClick={() => handleThemeChange(isDark ? 'light' : 'dark')}
-              title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              aria-label="Toggle Theme"
-              className="size-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-all shrink-0"
-            >
-              {isDark ? (
-                <span className="text-sm">🌙</span>
-              ) : (
-                <span className="text-sm">☀️</span>
-              )}
-            </button>
-
             <button
               onClick={onToggle}
               aria-label="Toggle sidebar"
@@ -270,6 +255,20 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
         {/* User card & Popup Menu */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 relative">
+          {/* Theme Switch */}
+          <button
+            type="button"
+            onClick={() => handleThemeChange(isDark ? 'light' : 'dark')}
+            title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+            aria-label="Toggle Theme"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer transition-all mb-1"
+          >
+            <span className="size-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm shrink-0">
+              {isDark ? '🌙' : '☀️'}
+            </span>
+            <span>{isDark ? 'Mode Gelap' : 'Mode Terang'}</span>
+            <span className="ml-auto text-slate-400 text-[0.6rem]">Ganti</span>
+          </button>
           {/* User Menu Popover */}
           {userMenuOpen && (
             <>

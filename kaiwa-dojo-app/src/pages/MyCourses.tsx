@@ -64,6 +64,130 @@ function getHostedVideoUrl(babNumber: number, itemNum: number): string | null {
   return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileNameMp4)}`
 }
 
+function getVideoUrlCandidates(originalUrl: string | null, babNumber: number, itemNum: number): string[] {
+  const candidates: string[] = []
+
+  if (originalUrl) {
+    candidates.push(originalUrl)
+    if (originalUrl.toLowerCase().endsWith('.mov')) {
+      candidates.push(originalUrl.replace(/\.mov$/i, '.mp4'))
+      candidates.push(originalUrl.replace(/\.mov$/i, '.MP4'))
+      candidates.push(originalUrl.replace(/\.mov$/i, '.MOV'))
+    } else if (originalUrl.toLowerCase().endsWith('.mp4')) {
+      candidates.push(originalUrl.replace(/\.mp4$/i, '.MP4'))
+      candidates.push(originalUrl.replace(/\.mp4$/i, '.mov'))
+      candidates.push(originalUrl.replace(/\.mp4$/i, '.MOV'))
+    }
+  }
+
+  const folderName = `BAB ${babNumber}`
+  const encFolder = encodeURIComponent(folderName)
+
+  const names = [
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`,
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MP4`,
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`,
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MOV`,
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.Mp4`,
+  ]
+
+  names.forEach(name => {
+    const encUrl = `/kaiwa-1-courses/${encFolder}/${encodeURIComponent(name)}`
+    const rawUrl = `/kaiwa-1-courses/${folderName}/${name}`
+    if (!candidates.includes(encUrl)) candidates.push(encUrl)
+    if (!candidates.includes(rawUrl)) candidates.push(rawUrl)
+  })
+
+  return candidates
+}
+
+function SmartVideoPlayer({
+  lesson,
+  chapterBab,
+  onLoadedMetadata,
+  onEnded,
+}: {
+  lesson: LessonItem
+  chapterBab: number
+  onLoadedMetadata: (durationSecs: number) => void
+  onEnded: () => void
+}) {
+  const [candidates] = useState<string[]>(() =>
+    getVideoUrlCandidates(lesson.video_id, chapterBab, lesson.lesson_number)
+  )
+  const [candidateIdx, setCandidateIdx] = useState<number>(0)
+  const [hasFailedAll, setHasFailedAll] = useState<boolean>(false)
+
+  const currentUrl = candidates[candidateIdx] || lesson.video_id || ''
+
+  function handleError() {
+    if (candidateIdx < candidates.length - 1) {
+      setCandidateIdx(prev => prev + 1)
+    } else {
+      setHasFailedAll(true)
+    }
+  }
+
+  if (hasFailedAll) {
+    return (
+      <div className="w-full max-w-[340px] aspect-[9/16] rounded-2xl bg-slate-900 border-2 border-amber-500/50 p-5 text-white flex flex-col justify-center items-center text-center gap-3 overflow-y-auto">
+        <div className="size-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-black">
+          ⚠️
+        </div>
+        <h4 className="text-sm font-extrabold text-white leading-snug">
+          Format Video Perlu Penyesuaian
+        </h4>
+        <p className="text-xs text-slate-300 leading-relaxed">
+          Semua ekstensi (.mp4, .MP4, .mov) telah dicoba. Harap pastikan format HandBrake sesuai standar web browser:
+        </p>
+
+        <div className="w-full p-3 rounded-xl bg-black/60 border border-slate-800 text-[0.68rem] text-left flex flex-col gap-1 text-slate-300 font-mono">
+          <span className="font-bold text-amber-400">💡 Format HandBrake Wajib:</span>
+          <span>1. Format Container: <strong>MP4</strong></span>
+          <span>2. Video Codec: <strong>H.264 (x264)</strong> — <em>Bukan H.265/HEVC</em></span>
+          <span>3. Audio Codec: <strong>AAC</strong></span>
+          <span>4. Web Option: Centang <strong>"Web Optimized"</strong></span>
+          <span>5. Nama File Server: <code className="text-emerald-400">Kaiwa Dojo - BAB {chapterBab} S{lesson.lesson_number}.mp4</code></span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHasFailedAll(false)
+            setCandidateIdx(0)
+          }}
+          className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs border-none cursor-pointer hover:bg-primary-dark transition-all"
+        >
+          🔄 Coba Ulang Pemutaran
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <video
+      key={currentUrl}
+      src={currentUrl}
+      controls
+      controlsList="nodownload"
+      playsInline
+      preload="metadata"
+      className="w-full h-full object-contain bg-black"
+      onLoadedMetadata={e => {
+        const totalSecs = e.currentTarget.duration
+        if (totalSecs && !isNaN(totalSecs) && totalSecs > 0 && isFinite(totalSecs)) {
+          onLoadedMetadata(totalSecs)
+        }
+      }}
+      onEnded={onEnded}
+      onError={handleError}
+    >
+      <source src={currentUrl} />
+      Browser kamu tidak mendukung pemutaran langsung file video ini.
+    </video>
+  )
+}
+
 /* ── Default Chapter Titles for Jilid 1 (Bab 1 - 25) ── */
 const JILID_1_TITLES: { [key: number]: { title: string; subtitle: string; has_video?: boolean } } = {
   1:  { title: 'Perkenalan Diri', subtitle: 'わたしはエンジニアです (Saya adalah insinyur)', has_video: true },
@@ -667,7 +791,7 @@ export default function MyCourses() {
       )}
 
       {/* ⛩️ Hero Section: Japan Fun Facts Banner */}
-      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30">
+      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] px-6 py-8 sm:px-8 sm:py-10 lg:px-11 lg:py-12 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30">
         {/* Background Kanji Watermark */}
         <div className="absolute right-4 -bottom-6 text-[10rem] font-black text-rose-500/5 select-none pointer-events-none leading-none">
           {currentFact.kanji}
@@ -1234,23 +1358,16 @@ export default function MyCourses() {
 
                     {/* Portrait Phone Frame Container */}
                     <div className="w-full max-w-[340px] aspect-[9/16] max-h-[65vh] sm:max-h-[540px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group">
-                      <video
-                        key={activeLesson.video_id}
-                        controls
-                        controlsList="nodownload"
-                        playsInline
-                        preload="metadata"
-                        className="w-full h-full object-contain bg-black"
-                        onLoadedMetadata={e => {
-                          const totalSecs = e.currentTarget.duration
-                          if (totalSecs && !isNaN(totalSecs) && totalSecs > 0 && isFinite(totalSecs)) {
-                            const mins = Math.floor(totalSecs / 60)
-                            const secs = Math.floor(totalSecs % 60)
-                            const formatted = `${mins}.${String(secs).padStart(2, '0')}`
-                            if (activeLesson) {
-                              activeLesson.duration_text = formatted
-                              activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
-                            }
+                      <SmartVideoPlayer
+                        lesson={activeLesson}
+                        chapterBab={activeChapter?.bab_number || 1}
+                        onLoadedMetadata={totalSecs => {
+                          const mins = Math.floor(totalSecs / 60)
+                          const secs = Math.floor(totalSecs % 60)
+                          const formatted = `${mins}.${String(secs).padStart(2, '0')}`
+                          if (activeLesson) {
+                            activeLesson.duration_text = formatted
+                            activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
                           }
                         }}
                         onEnded={() => {
@@ -1259,15 +1376,7 @@ export default function MyCourses() {
                             handleToggleLessonComplete(activeLesson)
                           }
                         }}
-                      >
-                        {/* Primary MP4 format (HandBrake optimized) */}
-                        <source src={activeLesson.video_id.replace(/\.mov$/i, '.mp4')} type="video/mp4" />
-                        {/* MOV format fallback */}
-                        <source src={activeLesson.video_id.replace(/\.mp4$/i, '.mov')} type="video/quicktime" />
-                        {/* Generic fallback for server MIME type video/generic-x */}
-                        <source src={activeLesson.video_id} />
-                        Browser kamu tidak mendukung pemutaran langsung file video ini.
-                      </video>
+                      />
                     </div>
                   </div>
                 ) : (
