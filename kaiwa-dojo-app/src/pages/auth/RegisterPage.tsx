@@ -16,6 +16,9 @@ export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -74,6 +77,9 @@ export default function RegisterPage() {
   async function handleStartRegistration(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setUsernameError(null)
+    setPhoneError(null)
+    setEmailError(null)
     setLoading(true)
 
     if (password.length < 8) {
@@ -85,12 +91,13 @@ export default function RegisterPage() {
     // 1. Validasi Keaktifan & Format Nomor WhatsApp
     const waCheck = await validateWhatsAppNumber(phoneNumber)
     if (!waCheck.isValid) {
-      setError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif! Mohon periksa nomor Anda.')
+      setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif!')
       setLoading(false)
       return
     }
 
     // 2. Cek apakah Username, Email, atau Nomor WhatsApp SUDAH TERDAFTAR di database (SEBELUM KIRIM OTP)
+    let hasDuplicate = false
     try {
       const cleanUser = username.trim().toLowerCase()
       const cleanEmail = email.trim().toLowerCase()
@@ -98,28 +105,41 @@ export default function RegisterPage() {
       let formattedPhone = rawPhone.replace(/[^0-9]/g, '')
       if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.slice(1)
 
-      const { data: existingUser } = await supabase
+      const { data: matchedProfiles } = await supabase
         .from('profiles')
         .select('username, email, phone_number')
         .or(`username.eq.${cleanUser},email.eq.${cleanEmail},phone_number.eq.${rawPhone},phone_number.eq.${formattedPhone}`)
-        .maybeSingle()
 
-      if (existingUser) {
-        if (existingUser.username?.toLowerCase() === cleanUser) {
-          setError(`Username "@${cleanUser}" sudah terdaftar! Silakan gunakan username lain atau login.`)
-        } else if (existingUser.email?.toLowerCase() === cleanEmail) {
-          setError(`Email "${cleanEmail}" sudah terdaftar! Silakan gunakan email lain atau login.`)
-        } else {
-          setError(`Nomor WhatsApp "${phoneNumber}" sudah terdaftar! Silakan gunakan nomor lain atau login.`)
+      if (matchedProfiles && matchedProfiles.length > 0) {
+        for (const row of matchedProfiles) {
+          if (row.username && row.username.toLowerCase() === cleanUser) {
+            setUsernameError(`Username "@${cleanUser}" sudah terdaftar. Silakan gunakan username lain.`)
+            hasDuplicate = true
+          }
+          if (row.email && row.email.toLowerCase() === cleanEmail) {
+            setEmailError(`Email "${cleanEmail}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+            hasDuplicate = true
+          }
+          if (row.phone_number) {
+            const rowPhoneClean = row.phone_number.replace(/[^0-9]/g, '')
+            if (row.phone_number === rawPhone || rowPhoneClean === formattedPhone) {
+              setPhoneError(`Nomor WhatsApp "${phoneNumber}" sudah terdaftar. Silakan gunakan nomor lain.`)
+              hasDuplicate = true
+            }
+          }
         }
-        setLoading(false)
-        return
       }
-    } catch {
-      // Ignore DB network errors
+    } catch (dbErr) {
+      console.warn('DB dupe check note:', dbErr)
     }
 
-    // 3. Hanya jika Username, Email, dan No. WA belum pernah terdaftar -> Kirim OTP via WA & Buka Modal
+    if (hasDuplicate) {
+      setLoading(false)
+      setError('Terdapat data yang sudah terdaftar. Mohon periksa input yang ditandai merah di bawah.')
+      return
+    }
+
+    // 3. Hanya jika Username, Email, dan No. WA 100% belum pernah terdaftar -> Kirim OTP via WA & Buka Modal
     await generateNewOtp()
     setLoading(false)
     setShowOtpModal(true)
@@ -341,10 +361,22 @@ export default function RegisterPage() {
                   placeholder="budisantoso"
                   required
                   value={username}
-                  onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
-                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                  onChange={e => {
+                    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
+                    if (usernameError) setUsernameError(null)
+                  }}
+                  className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                    usernameError
+                      ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
+                  }`}
                 />
               </div>
+              {usernameError && (
+                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                  ⚠️ {usernameError}
+                </span>
+              )}
             </div>
 
             {/* No Telepon */}
@@ -358,9 +390,21 @@ export default function RegisterPage() {
                 placeholder="081234567890"
                 required
                 value={phoneNumber}
-                onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                onChange={e => {
+                  setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
+                  if (phoneError) setPhoneError(null)
+                }}
+                className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                  phoneError
+                    ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
+                }`}
               />
+              {phoneError && (
+                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                  ⚠️ {phoneError}
+                </span>
+              )}
             </div>
 
             {/* Asal Lembaga / Perguruan Tinggi */}
@@ -397,9 +441,21 @@ export default function RegisterPage() {
                 placeholder="nama@email.com"
                 required
                 value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                onChange={e => {
+                  setEmail(e.target.value)
+                  if (emailError) setEmailError(null)
+                }}
+                className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                  emailError
+                    ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
+                }`}
               />
+              {emailError && (
+                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                  ⚠️ {emailError}
+                </span>
+              )}
             </div>
 
             {/* Password */}
