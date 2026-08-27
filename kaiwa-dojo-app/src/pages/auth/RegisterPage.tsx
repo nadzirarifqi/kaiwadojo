@@ -212,8 +212,24 @@ export default function RegisterPage() {
 
   function handleOtpDigitChange(index: number, value: string) {
     const val = value.replace(/[^0-9]/g, '')
+    if (!val) {
+      const newDigits = [...otpDigits]
+      newDigits[index] = ''
+      setOtpDigits(newDigits)
+      setOtpError(null)
+      return
+    }
+
+    if (val.length === 6) {
+      const newDigits = val.split('')
+      setOtpDigits(newDigits)
+      setOtpError(null)
+      otpRefs[5].current?.focus()
+      return
+    }
+
     const newDigits = [...otpDigits]
-    newDigits[index] = val ? val[val.length - 1] : ''
+    newDigits[index] = val[val.length - 1]
     setOtpDigits(newDigits)
     setOtpError(null)
 
@@ -265,10 +281,25 @@ export default function RegisterPage() {
       })
 
       if (signUpErr) {
-        setVerifyingOtp(false)
         if (signUpErr.message.toLowerCase().includes('already registered')) {
+          const cleanEmail = email.trim().toLowerCase()
+          const { data: existingProf } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', cleanEmail)
+            .maybeSingle()
+
+          if (existingProf) {
+            setVerifyingOtp(false)
+            setShowOtpModal(false)
+            setDone(true)
+            return
+          }
+
+          setVerifyingOtp(false)
           setOtpError('Email ini sudah terdaftar di sistem! Silakan menuju halaman Login.')
         } else {
+          setVerifyingOtp(false)
           setOtpError(`Gagal daftar: ${signUpErr.message}`)
         }
         return
@@ -300,9 +331,18 @@ export default function RegisterPage() {
     })
 
     if (!newStudent) {
-      setVerifyingOtp(false)
-      setOtpError('Gagal menyimpan data akun ke database Supabase. Silakan coba lagi.')
-      return
+      // Check if DB trigger handle_new_user already created the profile in public.profiles
+      const { data: checkProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', authUserId)
+        .maybeSingle()
+
+      if (!checkProf) {
+        setVerifyingOtp(false)
+        setOtpError('Gagal menyimpan data akun ke database Supabase. Silakan coba lagi.')
+        return
+      }
     }
 
     setVerifyingOtp(false)
