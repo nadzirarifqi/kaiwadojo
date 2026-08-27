@@ -206,22 +206,22 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
       {/* Sidebar panel */}
       <aside
-        className={`w-[260px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col fixed top-0 left-0 h-screen z-50 shadow-sm transition-transform duration-300 ease-in-out ${
+        className={`w-[260px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col fixed top-0 left-0 h-[100dvh] max-h-[100dvh] h-screen z-50 shadow-sm transition-transform duration-300 ease-in-out overflow-hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo + Theme Switch + Toggle */}
-        <div className="px-5 pt-6 pb-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+        <div className="px-4 py-3.5 sm:px-5 sm:pt-6 sm:pb-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="size-10 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-              <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-8 object-contain" />
+            <div className="size-9 sm:size-10 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+              <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-7 sm:size-8 object-contain" />
             </div>
             <div className="min-h-0">
-              <div className="text-[1.05rem] font-extrabold text-primary dark:text-red-400 tracking-tight leading-tight truncate flex items-center gap-1">
+              <div className="text-[0.95rem] sm:text-[1.05rem] font-extrabold text-primary dark:text-red-400 tracking-tight leading-tight truncate flex items-center gap-1">
                 <span>KaiwaDoJo</span>
-                <span className="text-[0.6rem] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">会話</span>
+                <span className="text-[0.55rem] sm:text-[0.6rem] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">会話</span>
               </div>
-              <div className="text-[0.62rem] text-slate-400 font-semibold tracking-wider mt-0.5 font-jp">会話道場 ・ Bahasa Jepang</div>
+              <div className="text-[0.58rem] sm:text-[0.62rem] text-slate-400 font-semibold tracking-wider mt-0.5 font-jp">会話道場 ・ Bahasa Jepang</div>
             </div>
           </div>
 
@@ -238,8 +238,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
-          <p className="text-[0.6rem] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 pt-3 pb-1.5">Menu</p>
+        <nav className="flex-1 min-h-0 p-2.5 sm:p-3 flex flex-col gap-1 overflow-y-auto overscroll-contain">
+          <p className="text-[0.6rem] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 pt-2 pb-1">Menu</p>
           {navItems.map(item => (
             <NavLink
               key={item.to}
@@ -254,16 +254,16 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         </nav>
 
         {/* User card & Popup Menu */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 relative">
+        <div className="p-2.5 sm:p-3 pb-6 sm:pb-3 border-t border-slate-100 dark:border-slate-800 relative shrink-0">
           {/* Theme Switch */}
           <button
             type="button"
             onClick={() => handleThemeChange(isDark ? 'light' : 'dark')}
             title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
             aria-label="Toggle Theme"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer transition-all mb-1"
+            className="w-full flex items-center gap-3 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer transition-all mb-1"
           >
-            <span className="size-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm shrink-0">
+            <span className="size-6 sm:size-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm shrink-0">
               {isDark ? '🌙' : '☀️'}
             </span>
             <span>{isDark ? 'Mode Gelap' : 'Mode Terang'}</span>
@@ -278,7 +278,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                 onClick={() => setUserMenuOpen(false)}
               />
               
-              <div className="absolute bottom-full left-3 right-3 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 z-50 animate-scale-up space-y-1">
+              <div className="absolute bottom-full left-2 right-2 sm:left-3 sm:right-3 mb-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-1.5 z-50 animate-scale-up space-y-1 max-h-[60dvh] overflow-y-auto">
                 {/* 1. Lihat Profil */}
                 <button
                   type="button"
@@ -334,13 +334,13 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           {/* User Card Trigger */}
           <div
             onClick={() => setUserMenuOpen(prev => !prev)}
-            className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all border ${
+            className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all border ${
               userMenuOpen
                 ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                 : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="size-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+            <div className="size-8 sm:size-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -354,8 +354,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[0.82rem] font-bold text-slate-800 dark:text-slate-100 truncate">{profile?.full_name ?? 'Memuat...'}</div>
-              <div className="text-[0.7rem] text-slate-400 capitalize flex items-center gap-1">
+              <div className="text-[0.78rem] sm:text-[0.82rem] font-bold text-slate-800 dark:text-slate-100 truncate">{profile?.full_name ?? 'Memuat...'}</div>
+              <div className="text-[0.65rem] sm:text-[0.7rem] text-slate-400 capitalize flex items-center gap-1">
                 <span className="font-semibold text-primary dark:text-red-400">
                   {currentRole === 'pemateri' ? 'Admin Pengajar' : currentRole === 'admin' ? 'Admin' : 'Pelajar'}
                 </span>
