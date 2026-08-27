@@ -393,9 +393,9 @@ export default function ClassReservationPage() {
 
         {/* Search & Range Filters */}
         {activeTab !== 'my-schedules' && (
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col gap-3">
             {/* Search Input */}
-            <div className="flex-1 w-full relative">
+            <div className="w-full relative">
               <input
                 type="text"
                 placeholder={t('cr_search_placeholder', 'Cari judul bab, materi, atau instruktur...')}
@@ -406,37 +406,41 @@ export default function ClassReservationPage() {
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
             </div>
 
-            {/* Week Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-slate-400 shrink-0">{t('cr_filter_week_label', 'Filter Minggu:')}</span>
-              <select
-                value={selectedWeekFilter}
-                onChange={e => setSelectedWeekFilter(e.target.value)}
-                className="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
-              >
-                <option value="all">{t('cr_all_weeks', 'Semua Minggu')}</option>
-                {availableWeeks.map(w => (
-                  <option key={w} value={w}>{getWeekLabel(w)}</option>
-                ))}
-              </select>
-            </div>
+            {/* Week & Month Filter — 2 columns on mobile, inline on sm+ */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3">
+              {/* Week Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
+                <span className="text-[0.65rem] sm:text-xs font-bold text-slate-400 shrink-0">{t('cr_filter_week_label', 'Filter Minggu:')}</span>
+                <select
+                  value={selectedWeekFilter}
+                  onChange={e => setSelectedWeekFilter(e.target.value)}
+                  className="w-full min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[0.7rem] sm:text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none truncate"
+                >
+                  <option value="all">{t('cr_all_weeks', 'Semua Minggu')}</option>
+                  {availableWeeks.map(w => (
+                    <option key={w} value={w}>{getWeekLabel(w)}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Month Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-slate-400 shrink-0">Filter Bulan:</span>
-              <select
-                value={selectedMonthFilter}
-                onChange={e => setSelectedMonthFilter(e.target.value)}
-                className="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
-              >
-                <option value="all">Semua Bulan</option>
-                {availableMonths.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+              {/* Month Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
+                <span className="text-[0.65rem] sm:text-xs font-bold text-slate-400 shrink-0">Filter Bulan:</span>
+                <select
+                  value={selectedMonthFilter}
+                  onChange={e => setSelectedMonthFilter(e.target.value)}
+                  className="w-full min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[0.7rem] sm:text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none truncate"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {availableMonths.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         )}
+
       </div>
 
       {/* ── TAB 1, 2, 3: SCHEDULE CARDS GRID ─────────────────── */}

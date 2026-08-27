@@ -59,7 +59,7 @@ function getHostedVideoUrl(babNumber: number, itemNum: number): string | null {
   if (itemNum > 3) return null
 
   const folderName = `BAB ${babNumber}`
-  const fileNameMp4 = `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`
+  const fileNameMp4 = `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mp4`
 
   return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileNameMp4)}`
 }
@@ -84,6 +84,12 @@ function getVideoUrlCandidates(originalUrl: string | null, babNumber: number, it
   const encFolder = encodeURIComponent(folderName)
 
   const names = [
+    // Primary — matches actual uploaded files (lowercase "Bab")
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mp4`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MP4`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mov`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MOV`,
+    // Fallback — uppercase "BAB" variant
     `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`,
     `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MP4`,
     `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`,
@@ -194,12 +200,12 @@ const JILID_1_TITLES: { [key: number]: { title: string; subtitle: string; has_vi
   2:  { title: 'Benda-benda Sekitar', subtitle: 'これは本です (Ini adalah buku)', has_video: true },
   3:  { title: 'Tempat & Lokasi', subtitle: 'ここは教室です (Di sini adalah ruang kelas)', has_video: false },
   4:  { title: 'Waktu & Waktu Kerja', subtitle: '今何時ですか (Sekarang jam berapa?)', has_video: false },
-  5:  { title: 'Arah & Perpindahan', subtitle: 'どこへ行きますか (Pergi ke mana?)', has_video: false },
+  5:  { title: 'Arah & Perpindahan', subtitle: 'どこへ行きますか (Pergi ke mana?)', has_video: true },
   6:  { title: 'Kegiatan Sehari-hari', subtitle: '水を飲みます (Minum air)', has_video: false },
   7:  { title: 'Pemberian & Alat', subtitle: 'スプーンで食べます (Makan dengan sendok)', has_video: false },
   8:  { title: 'Kata Sifat (Adjective)', subtitle: '富士山は高いです (Gunung Fuji tinggi)', has_video: false },
   9:  { title: 'Kesukaan & Keahlian', subtitle: '日本語が好きです (Suka bahasa Jepang)', has_video: false },
-  10: { title: 'Keberadaan Benda/Orang', subtitle: '机の上に本があります (Ada buku di atas meja)', has_video: false },
+  10: { title: 'Keberadaan Benda/Orang', subtitle: '机の上に本があります (Ada buku di atas meja)', has_video: true },
   11: { title: 'Jumlah & Hitungan', subtitle: 'りんごを 5つください (Minta 5 buah apel)', has_video: false },
   12: { title: 'Bentuk Lampau & Perbandingan', subtitle: '昨日は雨でした (Kemarin hujan)', has_video: false },
   13: { title: 'Keinginan (Tai / Hoshii)', subtitle: '日本へ行きたいです (Ingin pergi ke Jepang)', has_video: false },
