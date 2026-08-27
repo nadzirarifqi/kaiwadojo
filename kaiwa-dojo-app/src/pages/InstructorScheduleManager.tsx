@@ -8,7 +8,7 @@ import {
   type ClassType,
   fetchSchedules,
   fetchReservations,
-  saveSchedule,
+  saveMultipleSchedules,
   updateSchedule,
   deleteSchedule,
   getWeekLabel,
@@ -20,6 +20,13 @@ import {
 } from '../lib/scheduleService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
+interface ScheduleSlotItem {
+  id: string
+  date: string
+  endDate?: string
+  startTime: string
+  endTime: string
+}
 
 export default function InstructorScheduleManagerPage() {
   const { profile } = useAuth()
@@ -42,14 +49,13 @@ export default function InstructorScheduleManagerPage() {
   const [formTitle, setFormTitle] = useState('')
   const [formSubtitle, setFormSubtitle] = useState('')
   const [formInstructorName, setFormInstructorName] = useState(instructorName)
-  const [formDate, setFormDate] = useState('')
-  const [formEndDate, setFormEndDate] = useState('')
-  const [formStartTime, setFormStartTime] = useState('19:00')
-  const [formEndTime, setFormEndTime] = useState('20:30')
   const [formMeetUrl, setFormMeetUrl] = useState('https://meet.google.com/kaiwa-live-session')
   const [formLocation, setFormLocation] = useState('Kaiwa Dojo Center (Jl. Sudirman No. 12)')
   const [formMaxQuota, setFormMaxQuota] = useState(10)
   const [formTargetGroup, setFormTargetGroup] = useState<string>('') // '' = semua siswa
+
+  // Multi-schedule slots state
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotItem[]>([])
 
   // Available groups from DB (kaiwa_groups table)
   const [availableGroups, setAvailableGroups] = useState<string[]>([])
@@ -119,18 +125,23 @@ export default function InstructorScheduleManagerPage() {
     const d = new Date()
     d.setDate(d.getDate() + 1)
     const startDateStr = d.toISOString().split('T')[0]
-    setFormDate(startDateStr)
-    setFormEndDate(calculateDefaultEndDate(startDateStr))
     setFormType('online')
     setFormTitle('')
     setFormSubtitle('')
     setFormInstructorName(instructorName)
-    setFormStartTime('19:00')
-    setFormEndTime('20:30')
     setFormMeetUrl('https://meet.google.com/kaiwa-live-session')
     setFormLocation('Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(10)
     setFormTargetGroup('')
+    setScheduleSlots([
+      {
+        id: 'slot-1',
+        date: startDateStr,
+        endDate: calculateDefaultEndDate(startDateStr),
+        startTime: '19:00',
+        endTime: '20:30',
+      }
+    ])
     setShowCreateModal(true)
   }
 
@@ -140,30 +151,86 @@ export default function InstructorScheduleManagerPage() {
     setFormTitle(sch.title)
     setFormSubtitle(sch.subtitle_chapter)
     setFormInstructorName(sch.instructor_name)
-    setFormDate(sch.start_date || sch.date)
-    setFormEndDate(sch.end_date || sch.start_date || sch.date)
-    setFormStartTime(sch.start_time)
-    setFormEndTime(sch.end_time)
     setFormMeetUrl(sch.meet_url || 'https://meet.google.com/kaiwa-live-session')
     setFormLocation(sch.location || 'Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(sch.max_quota)
     setFormTargetGroup(sch.target_group || '')
+    setScheduleSlots([
+      {
+        id: 'slot-1',
+        date: sch.start_date || sch.date,
+        endDate: sch.end_date || sch.start_date || sch.date,
+        startTime: sch.start_time,
+        endTime: sch.end_time,
+      }
+    ])
     setShowCreateModal(true)
+  }
+
+  function handleAddSlot() {
+    const lastSlot = scheduleSlots[scheduleSlots.length - 1]
+    let nextDate = ''
+    if (lastSlot?.date) {
+      const parts = lastSlot.date.split('-').map(Number)
+      if (parts.length === 3) {
+        const d = new Date(parts[0], parts[1] - 1, parts[2])
+        d.setDate(d.getDate() + (formType === 'online' ? 7 : 30))
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        nextDate = `${yyyy}-${mm}-${dd}`
+      }
+    }
+    if (!nextDate) {
+      const d = new Date()
+      d.setDate(d.getDate() + scheduleSlots.length + 1)
+      nextDate = d.toISOString().split('T')[0]
+    }
+
+    setScheduleSlots(prev => [
+      ...prev,
+      {
+        id: `slot-${Date.now()}-${Math.random()}`,
+        date: nextDate,
+        endDate: calculateDefaultEndDate(nextDate),
+        startTime: lastSlot?.startTime || (formType === 'offline' ? '14:00' : '19:00'),
+        endTime: lastSlot?.endTime || (formType === 'offline' ? '12:00' : '20:30'),
+      }
+    ])
+  }
+
+  function handleRemoveSlot(slotId: string) {
+    if (scheduleSlots.length <= 1) return
+    setScheduleSlots(prev => prev.filter(s => s.id !== slotId))
+  }
+
+  function handleUpdateSlot(slotId: string, updates: Partial<ScheduleSlotItem>) {
+    setScheduleSlots(prev =>
+      prev.map(s => {
+        if (s.id !== slotId) return s
+        const updated = { ...s, ...updates }
+        if (updates.date && formType === 'offline' && (!updated.endDate || updated.endDate === s.date)) {
+          updated.endDate = calculateDefaultEndDate(updates.date)
+        }
+        return updated
+      })
+    )
   }
 
   async function handleSaveScheduleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formTitle.trim() || !formSubtitle.trim() || !formDate) {
-      showToast('Harap lengkapi semua bidang yang wajib diisi!', 'error')
+    if (!formTitle.trim() || !formSubtitle.trim() || scheduleSlots.length === 0 || !scheduleSlots[0].date) {
+      showToast('Harap lengkapi semua bidang yang wajib diisi dan minimal 1 tanggal sesi!', 'error')
       return
     }
 
     setSubmitting(true)
     try {
-      const sDate = formDate
-      const eDate = formType === 'offline' ? (formEndDate || formDate) : formDate
-
       if (editingSchedule) {
+        const slot = scheduleSlots[0]
+        const sDate = slot.date
+        const eDate = formType === 'offline' ? (slot.endDate || slot.date) : slot.date
+
         await updateSchedule(editingSchedule.id, {
           type: formType,
           title: formTitle.trim(),
@@ -172,8 +239,8 @@ export default function InstructorScheduleManagerPage() {
           date: sDate,
           start_date: sDate,
           end_date: eDate,
-          start_time: formStartTime,
-          end_time: formEndTime,
+          start_time: slot.startTime,
+          end_time: slot.endTime,
           meet_url: formType === 'online' ? formMeetUrl : undefined,
           location: formType === 'offline' ? formLocation : undefined,
           max_quota: formMaxQuota,
@@ -181,23 +248,29 @@ export default function InstructorScheduleManagerPage() {
         })
         showToast('Jadwal kelas berhasil diperbarui di database!')
       } else {
-        await saveSchedule({
-          type: formType,
-          title: formTitle.trim(),
-          subtitle_chapter: formSubtitle.trim(),
-          instructor_id: instructorId,
-          instructor_name: formInstructorName.trim() || instructorName,
-          date: sDate,
-          start_date: sDate,
-          end_date: eDate,
-          start_time: formStartTime,
-          end_time: formEndTime,
-          meet_url: formType === 'online' ? formMeetUrl : undefined,
-          location: formType === 'offline' ? formLocation : undefined,
-          max_quota: formMaxQuota,
-          target_group: formTargetGroup || null,
+        const listToSave = scheduleSlots.map(slot => {
+          const sDate = slot.date
+          const eDate = formType === 'offline' ? (slot.endDate || slot.date) : slot.date
+          return {
+            type: formType,
+            title: formTitle.trim(),
+            subtitle_chapter: formSubtitle.trim(),
+            instructor_id: instructorId,
+            instructor_name: formInstructorName.trim() || instructorName,
+            date: sDate,
+            start_date: sDate,
+            end_date: eDate,
+            start_time: slot.startTime,
+            end_time: slot.endTime,
+            meet_url: formType === 'online' ? formMeetUrl : undefined,
+            location: formType === 'offline' ? formLocation : undefined,
+            max_quota: formMaxQuota,
+            target_group: formTargetGroup || null,
+          }
         })
-        showToast('Jadwal kelas baru berhasil dibuat di database!')
+
+        await saveMultipleSchedules(listToSave)
+        showToast(`🎉 Berhasil membuat ${listToSave.length} sesi jadwal kelas terpisah sekaligus di database!`)
       }
 
       setShowCreateModal(false)
@@ -393,27 +466,29 @@ export default function InstructorScheduleManagerPage() {
 
       {/* ── CREATE / EDIT SCHEDULE MODAL ───────────────────────── */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1.5 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[96dvh] border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between shrink-0">
+            <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between shrink-0">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-white/80">Panel Admin Pengajar</span>
-                <h3 className="text-lg font-extrabold">{editingSchedule ? '⚙️ Edit Jadwal Kelas' : 'Buat Jadwal Kelas Baru'}</h3>
+                <span className="text-[0.65rem] sm:text-xs font-bold uppercase tracking-wider text-white/80">Panel Admin Pengajar</span>
+                <h3 className="text-base sm:text-lg font-extrabold">
+                  {editingSchedule ? '⚙️ Edit Jadwal Kelas' : 'Buat Jadwal Kelas Baru (Multi-Schedule)'}
+                </h3>
               </div>
               <button
                 onClick={() => {
                   setShowCreateModal(false)
                   setEditingSchedule(null)
                 }}
-                className="size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-xl flex items-center justify-center"
+                className="size-8 sm:size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg sm:text-xl flex items-center justify-center"
               >
                 ×
               </button>
             </div>
 
             {/* Modal Body Form */}
-            <form onSubmit={handleSaveScheduleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
+            <form onSubmit={handleSaveScheduleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
               
               {/* Type Switch */}
               <div>
@@ -437,11 +512,14 @@ export default function InstructorScheduleManagerPage() {
                     type="button"
                     onClick={() => {
                       setFormType('offline')
-                      if (!formEndDate || formEndDate === formDate) {
-                        setFormEndDate(calculateDefaultEndDate(formDate))
-                      }
-                      if (formStartTime === '19:00') setFormStartTime('14:00')
-                      if (formEndTime === '20:30') setFormEndTime('12:00')
+                      setScheduleSlots(prev =>
+                        prev.map(slot => ({
+                          ...slot,
+                          endDate: slot.endDate || calculateDefaultEndDate(slot.date),
+                          startTime: slot.startTime === '19:00' ? '14:00' : slot.startTime,
+                          endTime: slot.endTime === '20:30' ? '12:00' : slot.endTime,
+                        }))
+                      )
                     }}
                     className={`py-2.5 rounded-xl font-extrabold border cursor-pointer transition-all flex items-center justify-center gap-2 ${
                       formType === 'offline'
@@ -498,125 +576,189 @@ export default function InstructorScheduleManagerPage() {
                 />
               </div>
 
-              {/* Date & Time Inputs */}
-              {formType === 'offline' ? (
-                <div className="flex flex-col gap-3 p-3.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/80">
-                  <div className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                    <span>⛺ Scheduling Kelas Offline 3 Hari 2 Malam</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Tanggal Check-in (Hari Ke-1) *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formDate}
-                        onChange={e => {
-                          const newStart = e.target.value
-                          setFormDate(newStart)
-                          setFormEndDate(calculateDefaultEndDate(newStart))
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Jam Check-in (Mulai) *
-                      </label>
-                      <input
-                        type="time"
-                        required
-                        value={formStartTime}
-                        onChange={e => setFormStartTime(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Tanggal Check-out (Hari Ke-3) *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formEndDate}
-                        onChange={e => setFormEndDate(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Jam Check-out (Selesai) *
-                      </label>
-                      <input
-                        type="time"
-                        required
-                        value={formEndTime}
-                        onChange={e => setFormEndTime(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 p-2 rounded-xl border border-emerald-200/50">
-                    ℹ️ Total Durasi: {formatDateRangeIndonesian(formDate, formEndDate, formStartTime, formEndTime).badgeLabel}
-                  </div>
+              {/* ── Multi-Schedule Date & Time Slots Section ── */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs">
+                    🗓️ Tanggal & Sesi Jadwal Kelas ({scheduleSlots.length} Sesi Terpisah) *
+                  </label>
+                  {!editingSchedule && (
+                    <button
+                      type="button"
+                      onClick={handleAddSlot}
+                      className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary dark:text-red-400 font-extrabold text-[0.7rem] border-none cursor-pointer flex items-center gap-1 transition-all"
+                    >
+                      <span>＋</span>
+                      <span>Tambah Sesi Tanggal Lain</span>
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                      Tanggal *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formDate}
-                      onChange={e => setFormDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                      Jam Mulai
-                    </label>
-                    <input
-                      type="time"
-                      required
-                      value={formStartTime}
-                      onChange={e => setFormStartTime(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                    />
-                  </div>
+                <div className="space-y-2.5">
+                  {scheduleSlots.map((slot, index) => {
+                    const isOffline = formType === 'offline'
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`p-3.5 rounded-2xl border flex flex-col gap-2.5 relative transition-all ${
+                          isOffline
+                            ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/80'
+                            : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[0.68rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                            isOffline
+                              ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300'
+                              : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400'
+                          }`}>
+                            Sesi #{index + 1} {isOffline ? '(Offline 3D2N)' : '(Online)'}
+                          </span>
 
-                  <div>
-                    <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                      Jam Selesai
-                    </label>
-                    <input
-                      type="time"
-                      required
-                      value={formEndTime}
-                      onChange={e => setFormEndTime(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
-                    />
-                  </div>
+                          {!editingSchedule && scheduleSlots.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSlot(slot.id)}
+                              className="px-2 py-0.5 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-200 text-[0.65rem] font-bold border-none cursor-pointer transition-all"
+                            >
+                              ✕ Hapus Sesi Ini
+                            </button>
+                          )}
+                        </div>
+
+                        {isOffline ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                  Tanggal Check-in (Hari Ke-1) *
+                                </label>
+                                <input
+                                  type="date"
+                                  required
+                                  value={slot.date}
+                                  onChange={e => handleUpdateSlot(slot.id, { date: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                  Jam Check-in (Mulai) *
+                                </label>
+                                <input
+                                  type="time"
+                                  required
+                                  value={slot.startTime}
+                                  onChange={e => handleUpdateSlot(slot.id, { startTime: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                  Tanggal Check-out (Hari Ke-3) *
+                                </label>
+                                <input
+                                  type="date"
+                                  required
+                                  value={slot.endDate || calculateDefaultEndDate(slot.date)}
+                                  onChange={e => handleUpdateSlot(slot.id, { endDate: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                  Jam Check-out (Selesai) *
+                                </label>
+                                <input
+                                  type="time"
+                                  required
+                                  value={slot.endTime}
+                                  onChange={e => handleUpdateSlot(slot.id, { endTime: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-emerald-200/50">
+                              ℹ️ Durasi: {formatDateRangeIndonesian(slot.date, slot.endDate || calculateDefaultEndDate(slot.date), slot.startTime, slot.endTime).badgeLabel}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                Tanggal *
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={slot.date}
+                                onChange={e => handleUpdateSlot(slot.id, { date: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                Jam Mulai *
+                              </label>
+                              <input
+                                type="time"
+                                required
+                                value={slot.startTime}
+                                onChange={e => handleUpdateSlot(slot.id, { startTime: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[0.68rem]">
+                                Jam Selesai *
+                              </label>
+                              <input
+                                type="time"
+                                required
+                                value={slot.endTime}
+                                onChange={e => handleUpdateSlot(slot.id, { endTime: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none text-xs"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
+
+                {!editingSchedule && (
+                  <button
+                    type="button"
+                    onClick={handleAddSlot}
+                    className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary dark:text-red-400 font-extrabold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <span>＋</span>
+                    <span>Tambah Slot Tanggal Lain untuk Kelas Ini</span>
+                  </button>
+                )}
+
+                {!editingSchedule && scheduleSlots.length > 1 && (
+                  <div className="p-2.5 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800 text-[0.68rem] text-sky-800 dark:text-sky-300 font-semibold flex items-center gap-2">
+                    <span>💡</span>
+                    <span>1 Kali Pengaturan ini akan otomatis menerbitkan <strong>{scheduleSlots.length} jadwal terpisah</strong> di sistem dan kalender siswa.</span>
+                  </div>
+                )}
+              </div>
 
               {/* Location or Meet Link */}
               {formType === 'online' ? (
                 <div>
                   <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                    Link Google Meet
+                    Link Google Meet / Zoom
                   </label>
                   <input
                     type="url"
@@ -693,7 +835,7 @@ export default function InstructorScheduleManagerPage() {
                 >
                   {submitting
                     ? 'Menyimpan ke Database...'
-                    : (editingSchedule ? '💾 Simpan Perubahan Jadwal' : '🚀 Simpan & Terbitkan Jadwal')}
+                    : (editingSchedule ? '💾 Simpan Perubahan Jadwal' : `🚀 Simpan & Terbitkan ${scheduleSlots.length > 1 ? `${scheduleSlots.length} Jadwal` : 'Jadwal'}`)}
                 </button>
               </div>
 

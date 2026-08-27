@@ -643,6 +643,86 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
   return newSchedule
 }
 
+export async function saveMultipleSchedules(
+  schedulesData: Array<Omit<ClassSchedule, 'id' | 'created_at' | 'week_range_id' | 'month_range_id'>>
+): Promise<ClassSchedule[]> {
+  if (schedulesData.length === 0) return []
+
+  const payloads = schedulesData.map(scheduleData => {
+    const startDate = scheduleData.start_date || scheduleData.date
+    const endDate = scheduleData.end_date || startDate
+    const week_range_id = getWeekRangeId(startDate)
+    const month_range_id = getMonthRangeId(startDate)
+
+    const dbScheduleId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : ensureUUID(`sch-${Date.now()}-${Math.random()}`, '00000000-0000-0000-0001-')
+    const dbInstructorId = ensureUUID(scheduleData.instructor_id, '00000000-0000-0000-0000-')
+    const createdAt = new Date().toISOString()
+
+    return {
+      id: dbScheduleId,
+      type: scheduleData.type,
+      title: scheduleData.title,
+      subtitle_chapter: scheduleData.subtitle_chapter,
+      instructor_id: dbInstructorId,
+      instructor_name: scheduleData.instructor_name,
+      date: startDate,
+      start_date: startDate,
+      end_date: endDate,
+      start_time: scheduleData.start_time,
+      end_time: scheduleData.end_time,
+      week_range_id,
+      month_range_id,
+      meet_url: scheduleData.meet_url || null,
+      location: scheduleData.location || null,
+      max_quota: scheduleData.max_quota,
+      target_group: scheduleData.target_group ?? null,
+      created_at: createdAt,
+    }
+  })
+
+  // 1. Batch Insert to Supabase
+  const { data: dbResults, error } = await supabase
+    .from('class_schedules')
+    .insert(payloads)
+    .select()
+
+  if (error) {
+    console.error('saveMultipleSchedules Supabase DB error:', error)
+    throw new Error(`Gagal menyimpan jadwal ke database: ${error.message || 'Error pada Supabase DB'}`)
+  }
+
+  const createdList: ClassSchedule[] = (dbResults || payloads).map((r: any) => ({
+    id: r.id,
+    type: r.type,
+    title: r.title,
+    subtitle_chapter: r.subtitle_chapter,
+    instructor_id: r.instructor_id,
+    instructor_name: r.instructor_name,
+    date: r.date,
+    start_date: r.start_date,
+    end_date: r.end_date,
+    start_time: r.start_time,
+    end_time: r.end_time,
+    week_range_id: r.week_range_id,
+    month_range_id: r.month_range_id,
+    meet_url: r.meet_url,
+    location: r.location,
+    max_quota: r.max_quota,
+    target_group: r.target_group ?? null,
+    created_at: r.created_at,
+  }))
+
+  // 2. Sync LocalStorage cache after DB write
+  const current = await fetchSchedules()
+  const updated = sortSchedules([...createdList, ...current.filter(s => !createdList.some(c => matchScheduleId(s.id, c.id)))])
+  localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(updated))
+
+  notifyScheduleChanged()
+  return createdList
+}
+
 export async function updateSchedule(scheduleId: string, scheduleData: Partial<ClassSchedule>): Promise<ClassSchedule> {
   const targetId = scheduleId
   const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
