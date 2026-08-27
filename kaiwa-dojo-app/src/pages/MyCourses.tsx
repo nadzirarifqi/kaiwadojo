@@ -607,11 +607,14 @@ export default function MyCourses() {
           const lessonObj = chap.lessons.find(item => item.lesson_number === itemNum)
           if (lessonObj) {
             setActiveLesson(lessonObj)
+            window.scrollTo({ top: 0, behavior: 'instant' })
           } else if (chap.lessons.length > 0) {
             setActiveLesson(chap.lessons[0])
+            window.scrollTo({ top: 0, behavior: 'instant' })
           }
         } else if (chap.lessons.length > 0) {
           setActiveLesson(chap.lessons[0])
+          window.scrollTo({ top: 0, behavior: 'instant' })
         }
       }
     }
@@ -1188,20 +1191,20 @@ export default function MyCourses() {
 
       {/* ── Video Player & Placeholder Modal ── */}
       {activeLesson && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-2 sm:p-6 animate-fade-in">
-          <div className="bg-white w-full max-w-5xl h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[500] flex items-center justify-center p-1.5 sm:p-6 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[96vh] sm:h-[92vh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
 
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-              <div className="min-w-0">
-                <span className="text-xs text-primary-lighter font-semibold uppercase">
+            <div className="px-4 py-2.5 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+              <div className="min-w-0 pr-2">
+                <span className="text-[0.65rem] sm:text-xs text-primary-lighter font-bold uppercase tracking-wider block truncate">
                   {activeChapter?.title || `Minna no Nihongo Jilid ${selectedJilid}`}
                 </span>
-                <h2 className="text-base sm:text-lg font-bold truncate">{activeLesson.title}</h2>
+                <h2 className="text-sm sm:text-lg font-bold truncate leading-tight">{activeLesson.title}</h2>
               </div>
               <button
                 onClick={() => { setActiveLesson(null); setActiveChapter(null) }}
-                className="size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-xl flex items-center justify-center"
+                className="size-8 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-lg sm:text-xl flex items-center justify-center shrink-0"
               >
                 ×
               </button>
@@ -1212,16 +1215,16 @@ export default function MyCourses() {
             <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
 
               {/* Left Column: Video Player / Kotoba View / Quiz View / Placeholder */}
-              <div className="flex flex-col overflow-y-auto p-3 sm:p-6 gap-4">
+              <div className="flex flex-col overflow-y-auto p-2 sm:p-6 gap-2 sm:gap-4 flex-1">
 
                 {/* Mobile-only: Toggle button for lesson list */}
-                <div className="lg:hidden flex items-center justify-between">
-                  <p className="text-xs text-slate-500 font-semibold">
+                <div className="lg:hidden flex items-center justify-between shrink-0 py-0.5 px-1">
+                  <p className="text-[0.7rem] text-slate-500 font-semibold truncate">
                     📚 {activeChapter?.lessons.length || 0} Materi di Bab Ini
                   </p>
                   <button
                     onClick={() => setShowLessonList(prev => !prev)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border-none cursor-pointer flex items-center gap-1.5"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[0.7rem] font-bold border-none cursor-pointer flex items-center gap-1 shrink-0"
                   >
                     <span>📋 Daftar Materi</span>
                     <span>{showLessonList ? '▲' : '▼'}</span>
@@ -1230,23 +1233,23 @@ export default function MyCourses() {
 
                 {/* Mobile-only: Collapsible lesson list (shows when toggled) */}
                 {showLessonList && (
-                  <div className="lg:hidden animate-slide-down bg-slate-50 rounded-2xl border border-slate-200 p-3 flex flex-col gap-2">
-                    <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider mb-1">
+                  <div className="lg:hidden animate-slide-down bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 p-2.5 flex flex-col gap-1.5 shrink-0">
+                    <h4 className="font-bold text-slate-700 dark:text-slate-300 text-[0.65rem] uppercase tracking-wider mb-0.5">
                       Materi {activeChapter?.title || 'Bab Ini'}
                     </h4>
                     {activeChapter?.lessons.map(l => (
                       <button
                         key={l.id}
                         onClick={() => { setActiveLesson(l); setShowLessonList(false) }}
-                        className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                        className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
                           activeLesson?.id === l.id
-                            ? 'bg-white border-primary shadow-sm text-primary'
-                            : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white'
+                            ? 'bg-white dark:bg-slate-900 border-primary shadow-xs text-primary'
+                            : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white'
                         }`}
                       >
                         <div className="min-w-0 flex-1 pr-2">
                           <div className="text-xs font-bold truncate">{l.title}</div>
-                          <div className="text-[0.7rem] text-slate-400 mt-0.5">
+                          <div className="text-[0.65rem] text-slate-400 mt-0.5">
                             ⏱️ {l.duration_minutes}m {l.is_placeholder ? '• ⏳ Segera Hadir' : ''}
                           </div>
                         </div>
@@ -1263,35 +1266,35 @@ export default function MyCourses() {
                 )}
                 {activeLesson.content_type === 'kotoba' ? (
                   /* 🔤 Setoran Kotoba Interactive Frame */
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-200 p-6 flex flex-col gap-4 shadow-sm shrink-0">
+                  <div className="w-full rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-200 p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 shadow-sm shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-md">
+                        <div className="size-10 sm:size-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black shadow-md">
                           🔤
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Setoran Kotoba</span>
-                          <h3 className="text-lg font-extrabold text-slate-800 leading-tight">
+                          <span className="text-[0.65rem] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">Setoran Kotoba</span>
+                          <h3 className="text-sm sm:text-lg font-extrabold text-slate-800 leading-tight">
                             Setoran Kosakata Bahasa Jepang — {activeChapter?.title}
                           </h3>
                         </div>
                       </div>
-                      <span className="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                      <span className="text-[0.65rem] sm:text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
                         ⏱️ Est. 10 Menit
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-[0.7rem] sm:text-xs text-slate-600 leading-relaxed">
                       Hafalkan kosakata dasar bab ini sebelum melanjutkan ke video tata bahasa. Kamu dapat mencocokkan kata Jepang dan artinya!
                     </p>
 
                     {/* Sample Interactive Vocabulary Card */}
-                    <div className="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-xs flex flex-col gap-3">
-                      <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                    <div className="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200/80 shadow-xs flex flex-col gap-2.5">
+                      <div className="text-[0.65rem] sm:text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1.5">
                         Daftar Kosakata Bab {activeChapter?.bab_number}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {[
                           { kana: 'わたし (watashi)', arti: 'Saya' },
                           { kana: 'あなた (anata)', arti: 'Anda / Kamu' },
@@ -1302,21 +1305,21 @@ export default function MyCourses() {
                           { kana: 'かいしゃいん (kaishain)', arti: 'Pegawai perusahaan' },
                           { kana: 'エンジニア (enjinia)', arti: 'Insinyur / Engineer' },
                         ].map((item, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 flex justify-between items-center text-xs">
-                            <span className="font-extrabold text-slate-800 text-sm">{item.kana}</span>
-                            <span className="font-bold text-amber-700 bg-white px-2.5 py-1 rounded-lg border border-amber-200">{item.arti}</span>
+                          <div key={idx} className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 flex justify-between items-center text-xs">
+                            <span className="font-extrabold text-slate-800 text-xs sm:text-sm">{item.kana}</span>
+                            <span className="font-bold text-amber-700 bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-[0.68rem]">{item.arti}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-xs font-semibold text-slate-500">
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[0.7rem] font-semibold text-slate-500">
                         {activeLesson.is_completed ? '🎉 Status: Sudah Disetor' : '⚡ Hafalkan lalu tandai selesai!'}
                       </span>
                       <button
                         onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
                           activeLesson.is_completed
                             ? 'bg-emerald-100 text-emerald-700'
                             : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
@@ -1328,28 +1331,28 @@ export default function MyCourses() {
                   </div>
                 ) : activeLesson.content_type === 'quiz' ? (
                   /* 🎯 Kuis Evaluasi Bab Frame (Coming Soon State) */
-                  <div className="w-full rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-800/60 p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-4 shadow-xl shrink-0 min-h-[420px] relative overflow-hidden">
+                  <div className="w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-800/60 p-4 sm:p-8 flex flex-col items-center justify-center text-center gap-3 sm:gap-4 shadow-xl shrink-0 min-h-[300px] relative overflow-hidden">
                     {/* Ambient Glow */}
                     <div className="absolute inset-0 bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-                    <div className="size-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-3xl shadow-lg relative z-10">
+                    <div className="size-12 sm:size-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-2xl sm:text-3xl shadow-lg relative z-10">
                       🎯
                     </div>
 
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-300 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[0.65rem] sm:text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-300 relative z-10">
                       <span>⏳ Fitur Kuis Coming Soon</span>
                     </div>
 
                     <div className="relative z-10 max-w-md">
-                      <h3 className="text-lg sm:text-xl font-extrabold text-white mb-2">
+                      <h3 className="text-base sm:text-xl font-extrabold text-white mb-1">
                         Kuis Evaluasi — {activeChapter?.title}
                       </h3>
-                      <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                      <p className="text-[0.7rem] sm:text-xs text-slate-300 leading-relaxed font-medium">
                         Soal kuis pilihan ganda untuk Bab ini sedang dalam tahap penyusunan & validasi oleh pengajar. Kamu bisa mempelajari video & setoran kotoba terlebih dahulu!
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-1 text-left">
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-[0.7rem] text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-0.5 text-left">
                       <span className="font-bold text-white flex items-center gap-1.5">
                         <span>💡 Info Pengajar:</span>
                       </span>
@@ -1357,18 +1360,21 @@ export default function MyCourses() {
                     </div>
                   </div>
                 ) : activeLesson.video_id ? (
-                  /* Real HTML5 Portrait Video Player — fills available screen on mobile */
-                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden" style={{ minHeight: 'min(65vh, 520px)' }}>
+                  /* Real HTML5 Portrait Video Player — optimized for 100% mobile fit */
+                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl sm:rounded-3xl p-2 sm:p-5 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden flex-1">
                     {/* Ambient Glow */}
                     <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
 
                     {/* Header Badge */}
-                    <div className="flex items-center gap-2 mb-3 z-10 text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                    <div className="flex items-center gap-1.5 mb-2 z-10 text-[0.65rem] sm:text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                       <span>📱 Format Video Mobile (Portrait 9:16)</span>
                     </div>
 
-                    {/* Portrait Phone Frame — on mobile takes up all available height */}
-                    <div className="w-full max-w-[320px] sm:max-w-[340px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group" style={{ aspectRatio: '9/16', maxHeight: 'min(60vh, 540px)' }}>
+                    {/* Portrait Phone Frame — scaled down on small mobile screens to fit 100% without scroll */}
+                    <div
+                      className="w-full max-w-[270px] xs:max-w-[300px] sm:max-w-[340px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group"
+                      style={{ aspectRatio: '9/16', maxHeight: 'min(48vh, 520px)' }}
+                    >
                       <SmartVideoPlayer
                         lesson={activeLesson}
                         chapterBab={activeChapter?.bab_number || 1}
