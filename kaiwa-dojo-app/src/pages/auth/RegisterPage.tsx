@@ -90,15 +90,23 @@ export default function RegisterPage() {
       return
     }
 
-    // 2. Cek username unik sebelum daftar
+    // 2. Cek username & email unik sebelum daftar
     try {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('username', username.trim().toLowerCase())
+      const cleanUser = username.trim().toLowerCase()
+      const cleanEmail = email.trim().toLowerCase()
 
-      if ((count ?? 0) > 0) {
-        setError('Username sudah dipakai. Coba username lain.')
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('username, email')
+        .or(`username.eq.${cleanUser},email.eq.${cleanEmail}`)
+        .maybeSingle()
+
+      if (existingUser) {
+        if (existingUser.username?.toLowerCase() === cleanUser) {
+          setError(`Username "@${cleanUser}" sudah terdaftar! Silakan gunakan username lain atau login.`)
+        } else {
+          setError(`Email "${cleanEmail}" sudah terdaftar! Silakan gunakan email lain atau login.`)
+        }
         setLoading(false)
         return
       }
@@ -152,7 +160,7 @@ export default function RegisterPage() {
 
     try {
       const { data: authData, error: signUpErr } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
@@ -165,12 +173,28 @@ export default function RegisterPage() {
           },
         },
       })
+
       if (signUpErr) {
-        console.warn('Supabase auth signup error:', signUpErr.message)
+        setVerifyingOtp(false)
+        if (signUpErr.message.toLowerCase().includes('already registered')) {
+          setOtpError('Email ini sudah terdaftar di sistem! Silakan menuju halaman Login.')
+        } else {
+          setOtpError(`Gagal daftar: ${signUpErr.message}`)
+        }
+        return
       }
+
       authUserId = authData?.user?.id
-    } catch (e) {
-      console.warn('Supabase auth signup catch:', e)
+    } catch (e: any) {
+      setVerifyingOtp(false)
+      setOtpError(`Gagal menghubungi server pendaftaran: ${e?.message || 'Error'}`)
+      return
+    }
+
+    if (!authUserId) {
+      setVerifyingOtp(false)
+      setOtpError('Gagal memperoleh ID pendaftaran dari Supabase. Silakan coba lagi.')
+      return
     }
 
     // Simpan/Upsert Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
