@@ -265,7 +265,7 @@ export default function RegisterPage() {
     let authUserId: string | undefined
 
     try {
-      const { data: authData, error: signUpErr } = await supabase.auth.signUp({
+      let { data: authData, error: signUpErr } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
@@ -279,6 +279,25 @@ export default function RegisterPage() {
           },
         },
       })
+
+      // Fallback: If full metadata caused DB trigger failure in Supabase, retry with minimal metadata
+      if (signUpErr && signUpErr.message.toLowerCase().includes('database error saving new user')) {
+        console.warn('Full metadata signUp failed DB trigger. Retrying minimal metadata signUp...')
+        const fallbackSignUp = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              username: username.trim().toLowerCase(),
+            },
+          },
+        })
+        if (!fallbackSignUp.error) {
+          authData = fallbackSignUp.data
+          signUpErr = null
+        }
+      }
 
       if (signUpErr) {
         if (signUpErr.message.toLowerCase().includes('already registered')) {
@@ -300,7 +319,7 @@ export default function RegisterPage() {
           setOtpError('Email ini sudah terdaftar di sistem! Silakan menuju halaman Login.')
         } else if (signUpErr.message.toLowerCase().includes('database error saving new user')) {
           setVerifyingOtp(false)
-          setOtpError('Kendala Trigger Database Supabase. Jalankan file Migration 020 di Supabase SQL Editor untuk memperbarui fungsi handle_new_user.')
+          setOtpError('Kendala Trigger Database Supabase. Silakan jalankan file Migration 020 di Supabase SQL Editor untuk memperbarui fungsi handle_new_user.')
         } else {
           setVerifyingOtp(false)
           setOtpError(`Gagal daftar: ${signUpErr.message}`)
