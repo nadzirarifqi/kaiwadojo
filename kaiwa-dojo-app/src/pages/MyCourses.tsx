@@ -632,6 +632,13 @@ export default function MyCourses() {
     }
   }, [chapters, searchParams])
 
+  // Automatically scroll to top whenever a lesson/video modal opens
+  useEffect(() => {
+    if (activeLesson) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [activeLesson])
+
   async function handleToggleLessonComplete(lesson: LessonItem) {
     if (lesson.is_placeholder) return
     const newStatus = !lesson.is_completed

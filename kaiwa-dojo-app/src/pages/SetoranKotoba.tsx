@@ -464,18 +464,18 @@ export default function SetoranKotobaPage() {
   const activeTestItem = testItems[currentTestIndex]
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
+    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header Banner */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-8 mb-6 text-white shadow-xl animate-fade-in">
+      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-2xl sm:rounded-3xl p-4 sm:p-8 mb-4 sm:mb-6 text-white shadow-xl animate-fade-in">
         <div className="absolute -top-12 -right-12 size-56 bg-white/10 rounded-full pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-black uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full backdrop-blur-xs">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <span className="text-[0.65rem] sm:text-xs font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full backdrop-blur-xs">
                 🔤 Catatan Kosakata Mandiri
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight mb-1 sm:mb-2">
               {t('sk_title', 'Jurnal Kosakata (Kotoba) Saya')}
             </h1>
             <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
@@ -483,17 +483,17 @@ export default function SetoranKotobaPage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={handleStartTest}
-              className="px-5 py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+              className="px-4 py-2.5 sm:px-5 sm:py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
             >
               <span>{t('sk_test_btn', '🧠 Uji Hafalan Kosakata')}</span>
             </button>
 
             <button
               onClick={handleOpenCreateModal}
-              className="px-6 py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="px-4 py-2.5 sm:px-6 sm:py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
             >
               <span className="text-base">＋</span>
               <span>{t('sk_add_btn', 'Tambah Kosakata Baru')}</span>
@@ -504,37 +504,37 @@ export default function SetoranKotobaPage() {
 
       {/* Guide Banner: Panduan Cara Mengisi */}
       {showGuide && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-3xl p-5 mb-6 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row gap-5 justify-between items-start">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-sm">
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row gap-3 sm:gap-5 justify-between items-start">
+          <div className="space-y-1.5 sm:space-y-2 flex-1">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-xs sm:text-sm">
               <span>{t('sk_guide_title', '💡 Panduan Menambah & Menguji Kosakata')}</span>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300">
+            <p className="text-[0.72rem] sm:text-xs text-slate-600 dark:text-slate-300">
               1. Catat kata baru dengan tombol <strong>"Tambah Kosakata Baru"</strong>.<br />
-              2. Tekan <strong>"🧠 Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri (tebak gambar/romaji/makna dan periksa kunci jawabannya!).
+              2. Tekan <strong>"🧠 Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-1">
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-amber-950 text-[0.68rem] sm:text-xs">
                 <span className="font-extrabold text-amber-600 block mb-0.5">1. Huruf Jepang</span>
-                Kanji / Katakana / Hiragana (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">食べる</code> atau <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">たべる</code>)
+                Kanji / Kana (e.g. <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">食べる</code>)
               </div>
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
-                <span className="font-extrabold text-amber-600 block mb-0.5">2. Cara Baca (Romaji)</span>
-                Pelafalan latin (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">taberu</code>)
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-amber-950 text-[0.68rem] sm:text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">2. Romaji</span>
+                Pelafalan latin (e.g. <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">taberu</code>)
               </div>
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-amber-950 text-[0.68rem] sm:text-xs">
                 <span className="font-extrabold text-amber-600 block mb-0.5">3. Makna / Arti</span>
-                Terjemahan Indonesia (contoh: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">Makan (Kata Kerja)</code>)
+                Terjemahan (e.g. <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">Makan</code>)
               </div>
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-amber-100 dark:border-amber-950 text-xs">
-                <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual (Wajib)</span>
-                Upload file foto/gambar visual pendukung
+              <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-amber-950 text-[0.68rem] sm:text-xs">
+                <span className="font-extrabold text-amber-600 block mb-0.5">4. Gambar Visual</span>
+                Foto visual pendukung
               </div>
             </div>
           </div>
           <button
             onClick={() => setShowGuide(false)}
-            className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0"
+            className="text-[0.68rem] sm:text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0"
           >
             {t('sk_guide_hide', 'Sembunyikan ✕')}
           </button>
@@ -542,42 +542,42 @@ export default function SetoranKotobaPage() {
       )}
 
       {/* Stats Summary Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
-          <div className="size-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold shrink-0">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
             🔤
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">{totalCount}</div>
-            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_total', 'Kosakata Tersimpan')}</div>
+            <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{totalCount}</div>
+            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_total', 'Total Kosakata')}</div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
-          <div className="size-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold shrink-0">
+        <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
             ✅
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">{masteredCount}</div>
-            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_mastered', 'Kosakata Dikuasai')}</div>
+            <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{masteredCount}</div>
+            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_mastered', 'Dikuasai')}</div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
-          <div className="size-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold shrink-0">
+        <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
             🔥
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">
+            <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
               {totalCount > 0 ? `${Math.round((masteredCount / totalCount) * 100)}%` : '0%'}
             </div>
-            <div className="text-xs text-slate-400 font-medium">{t('sk_stat_memorization', 'Tingkat Hafalan')}</div>
+            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_memorization', 'Tingkat Hafal')}</div>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
         {/* Filter Pills */}
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto">
           <button
@@ -744,8 +744,8 @@ export default function SetoranKotobaPage() {
 
       {/* Flashcard Test Modal Screen */}
       {isTestActive && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up my-auto max-h-[92dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-2 sm:pt-0 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[96dvh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
@@ -921,21 +921,21 @@ export default function SetoranKotobaPage() {
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up my-auto max-h-[92dvh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white">
+        <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-2 sm:pt-0 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[96dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
                 {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold"
+                className="size-7 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-xs sm:text-sm"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-4">
+            <form onSubmit={handleSubmitForm} className="space-y-3 sm:space-y-4">
               {/* Field 1: Kanji / Katakana / Hiragana */}
               <div>
                 <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
@@ -943,7 +943,7 @@ export default function SetoranKotobaPage() {
                     1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
                   </label>
                   {formData.japanese.trim() && (
-                    <span className={`text-[0.65rem] font-bold px-2.5 py-0.5 rounded-full border transition-all ${
+                    <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all ${
                       detectJapaneseScript(formData.japanese).isValid
                         ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
                         : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
@@ -960,7 +960,7 @@ export default function SetoranKotobaPage() {
                   placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
                   value={formData.japanese}
                   onChange={e => setFormData({ ...formData, japanese: e.target.value })}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium ${
+                  className={`w-full px-3 py-2 sm:py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium ${
                     formData.japanese.trim()
                       ? detectJapaneseScript(formData.japanese).isValid
                         ? 'border-emerald-400 focus:border-emerald-500'
@@ -968,7 +968,7 @@ export default function SetoranKotobaPage() {
                       : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
                   }`}
                 />
-                <p className="text-[0.68rem] text-slate-400 font-medium mt-1">
+                <p className="text-[0.62rem] sm:text-[0.68rem] text-slate-400 font-medium mt-0.5 sm:mt-1">
                   Sistem otomatis memverifikasi karakter Hiragana (あ), Katakana (ア), atau Kanji (日).
                 </p>
               </div>
@@ -984,7 +984,7 @@ export default function SetoranKotobaPage() {
                   placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
                   value={formData.romaji}
                   onChange={e => setFormData({ ...formData, romaji: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                  className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
                 />
               </div>
 
@@ -999,7 +999,7 @@ export default function SetoranKotobaPage() {
                   placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
                   value={formData.meaning}
                   onChange={e => setFormData({ ...formData, meaning: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+                  className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
                 />
               </div>
 
@@ -1013,16 +1013,16 @@ export default function SetoranKotobaPage() {
                   accept="image/*"
                   required={!formData.image_url}
                   onChange={handleImageFileChange}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
+                  className="w-full px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[0.68rem] file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
                 />
 
                 {formData.image_url && (
-                  <div className="mt-2.5 relative w-full h-36 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                  <div className="mt-2 relative w-full h-24 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                     <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
-                      className="absolute top-2 right-2 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-[0.68rem] font-extrabold rounded-xl border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs"
+                      className="absolute top-1.5 right-1.5 px-2 py-0.5 bg-red-600/90 hover:bg-red-700 text-white text-[0.62rem] font-extrabold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs"
                     >
                       ✕ Hapus Gambar
                     </button>
@@ -1031,18 +1031,18 @@ export default function SetoranKotobaPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 border-none cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 border-none cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md"
                 >
                   {saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : '＋ Simpan Kosakata'}
                 </button>

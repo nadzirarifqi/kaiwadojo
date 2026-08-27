@@ -739,6 +739,12 @@ export default function LearningPlanPage() {
     }
   }, [])
 
+  // Automatically scroll to top whenever mission modal or class modal opens
+  useEffect(() => {
+    if (showMissionModal || showClassModal) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [showMissionModal, showClassModal])
 
   const activeUserId = profile?.id || user?.id || 'active_user'
 
