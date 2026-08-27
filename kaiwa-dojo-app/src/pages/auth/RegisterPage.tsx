@@ -49,18 +49,22 @@ export default function RegisterPage() {
     }
   }, [showOtpModal, otpTimer])
 
-  function generateNewOtp() {
+  async function generateNewOtp() {
     const code = Math.floor(100000 + Math.random() * 900000).toString()
     setGeneratedOtp(code)
     setOtpDigits(['', '', '', '', '', ''])
     setOtpError(null)
     setOtpTimer(60)
 
-    // Kirim Kode OTP 6-Digit via WhatsApp
-    sendWhatsAppOtp({
+    // Kirim Kode OTP 6-Digit via WhatsApp (Token Terpusat)
+    const res = await sendWhatsAppOtp({
       phoneNumber: phoneNumber || '081234567890',
       otpCode: code,
     })
+
+    if (!res.success) {
+      setOtpError(`⚠️ Kendala WA Gateway: ${res.reason || 'Gagal mengirim OTP'}. Silakan periksa status perangkat Fonnte.`)
+    }
 
     setTimeout(() => {
       otpRefs[0].current?.focus()

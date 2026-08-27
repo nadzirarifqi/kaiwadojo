@@ -1,16 +1,29 @@
 /**
  * Service khusus pengiriman Kode OTP 6-Digit via WhatsApp API (Fonnte Gateway).
  * 
- * Fonnte (fonnte.com) adalah penyedia WhatsApp Gateway populer & murah di Indonesia.
+ * Fonnte (fonnte.com) adalah penyedia WhatsApp Gateway di Indonesia.
  */
+
+/**
+ * Token Fonnte Terpusat (Single Source of Truth)
+ */
+export const DEFAULT_FONNTE_TOKEN = 'zhrUJEgA6bNS8EH3P2bb'
+
+export function getFonnteToken(): string {
+  const envToken = import.meta.env.VITE_FONNTE_TOKEN
+  if (envToken && typeof envToken === 'string' && envToken.trim().length > 0) {
+    return envToken.trim()
+  }
+  return DEFAULT_FONNTE_TOKEN
+}
 
 export interface SendWhatsAppOtpParams {
   phoneNumber: string
   otpCode: string
 }
 
-export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpParams): Promise<boolean> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'zhrUJEgA6bNS8EH3P2bb'
+export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpParams): Promise<{ success: boolean; reason?: string }> {
+  const fonnteToken = getFonnteToken()
 
   // Format nomor HP agar standar (misal 081234... -> 6281234...)
   let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
@@ -20,17 +33,11 @@ export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpP
 
   const messageText = `[KaiwaDojo] Kode OTP Pendaftaran Akun Anda adalah: ${otpCode}\n\nMasukkan kode ini pada aplikasi KaiwaDojo untuk memverifikasi pendaftaran. Jangan berikan kode ini kepada siapapun.`
 
-  if (!fonnteToken) {
-    console.warn(
-      `[SIMULASI WA] Token Fonnte belum diset. OTP ${otpCode} terkirim (simulasi) ke WhatsApp: ${formattedPhone}`
-    )
-    return true
-  }
-
   try {
     const formData = new FormData()
     formData.append('target', formattedPhone)
     formData.append('message', messageText)
+    formData.append('countryCode', '62')
 
     const res = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
@@ -43,15 +50,15 @@ export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpP
     const data = await res.json()
 
     if (data.status) {
-      console.log('OTP WhatsApp berhasil terkirim via Fonnte ke:', formattedPhone)
-      return true
+      console.log('OTP WhatsApp berhasil terkirim via Fonnte ke:', formattedPhone, 'menggunakan token:', `${fonnteToken.slice(0, 6)}...`)
+      return { success: true }
     } else {
       console.warn('Fonnte API response note:', data.reason || data)
-      return false
+      return { success: false, reason: data.reason || 'Perangkat Fonnte tidak terhubung/offline.' }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error sending WA OTP via Fonnte:', err)
-    return false
+    return { success: false, reason: err?.message || 'Gagal terhubung ke server Fonnte.' }
   }
 }
 
@@ -62,7 +69,7 @@ export interface SendWhatsAppApprovalParams {
 }
 
 export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, username }: SendWhatsAppApprovalParams): Promise<boolean> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'zhrUJEgA6bNS8EH3P2bb'
+  const fonnteToken = getFonnteToken()
 
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {
@@ -75,11 +82,6 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
   }
 
   const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
-
-  if (!fonnteToken) {
-    console.warn(`[SIMULASI WA] Notifikasi persetujuan terkirim (simulasi) ke WA: ${formattedPhone}`)
-    return true
-  }
 
   try {
     const formData = new FormData()
@@ -112,7 +114,7 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
  * Memeriksa apakah nomor telepon terdaftar & aktif di WhatsApp via Fonnte API /validate
  */
 export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isValid: boolean; message?: string }> {
-  const fonnteToken = import.meta.env.VITE_FONNTE_TOKEN || 'zhrUJEgA6bNS8EH3P2bb'
+  const fonnteToken = getFonnteToken()
 
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {
@@ -121,10 +123,6 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isV
 
   if (!formattedPhone || formattedPhone.length < 9) {
     return { isValid: false, message: 'Nomor WhatsApp minimal 9 digit angka (contoh: 081234567890).' }
-  }
-
-  if (!fonnteToken) {
-    return { isValid: true }
   }
 
   try {
