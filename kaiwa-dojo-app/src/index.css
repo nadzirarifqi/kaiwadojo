@@ -32,7 +32,7 @@
 
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 @keyframes fadeIn {
@@ -42,7 +42,7 @@
 
 @keyframes scaleUp {
   from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  to   { opacity: 1; transform: none; }
 }
 
 @keyframes scrollLeft {
@@ -62,7 +62,7 @@
 
 @keyframes slideFade {
   from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 .skeleton-shimmer {
@@ -364,11 +364,11 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
 @keyframes pageSlideUp {
   0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.995);
+    transform: translateY(12px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none;
   }
 }
 
@@ -379,7 +379,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
   }
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 
@@ -390,7 +390,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
   }
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 
@@ -422,7 +422,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
 /* Slide down reveal for collapsible panels */
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 .animate-slide-down {

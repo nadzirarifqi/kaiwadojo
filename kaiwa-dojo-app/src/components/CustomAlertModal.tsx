@@ -80,8 +80,8 @@ export default function CustomAlertModal({
   const currentStyle = typeStyles[type] || typeStyles.warning
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center gap-4 animate-scale-up relative overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center gap-4 animate-scale-up relative overflow-hidden my-auto max-h-[92dvh] overflow-y-auto">
         {/* Decorative Top Accent Line */}
         <div className={`absolute top-0 left-0 right-0 h-1.5 ${currentStyle.btn.split(' ')[0]}`} />
 
