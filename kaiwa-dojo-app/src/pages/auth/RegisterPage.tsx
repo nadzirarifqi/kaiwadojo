@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { createStudentAccount } from '../../lib/studentService'
-import { sendWhatsAppOtp, validateWhatsAppNumber } from '../../lib/whatsappService'
+import { sendWhatsAppOtp, validateWhatsAppNumber, getAdminWhatsAppUrl } from '../../lib/whatsappService'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -198,16 +198,27 @@ export default function RegisterPage() {
           </p>
 
           <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs font-semibold text-amber-800 dark:text-amber-300 mb-6 text-left leading-relaxed">
-            ℹ️ <span className="font-bold">Informasi:</span> Setelah Admin menyetujui akun Anda di panel kelola pelajar, Anda akan langsung dapat melakukan login dan masuk ke Dashboard KaiwaDojo.
+            ℹ️ <span className="font-bold">Informasi:</span> Silakan hubungi Admin via WhatsApp untuk mempercepat proses konfirmasi verifikasi akun Anda.
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/login')}
-            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 no-underline shadow-md border-none cursor-pointer"
-          >
-            Ke Halaman Login →
-          </button>
+          <div className="flex flex-col gap-3">
+            <a
+              href={getAdminWhatsAppUrl(username)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 no-underline shadow-md cursor-pointer"
+            >
+              <span>💬 Konfirmasi ke WhatsApp Admin</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-2 border-none cursor-pointer"
+            >
+              Ke Halaman Login →
+            </button>
+          </div>
         </div>
       </div>
     )

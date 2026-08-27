@@ -153,3 +153,18 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isV
     return { isValid: true }
   }
 }
+
+/**
+ * Menghasilkan URL direct link WhatsApp ke Admin dengan pre-filled text pendaftaran
+ */
+export function getAdminWhatsAppUrl(username: string): string {
+  const adminWa = import.meta.env.VITE_ADMIN_WA_NUMBER || '087875018001'
+  let formatted = adminWa.replace(/[^0-9]/g, '')
+  if (formatted.startsWith('0')) {
+    formatted = '62' + formatted.slice(1)
+  }
+  const cleanUser = (username || '').replace(/^@/, '')
+  const messageText = `Halo Admin KaiwaDojo, akun saya @${cleanUser} sudah registrasi.`
+  return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
+}
+

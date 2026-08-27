@@ -4,6 +4,8 @@ export interface AlertModalConfig {
   message: string
   type?: 'lock' | 'warning' | 'info' | 'success'
   buttonText?: string
+  actionUrl?: string
+  actionText?: string
   onClose: () => void
 }
 
@@ -46,6 +48,8 @@ export default function CustomAlertModal({
   message,
   type = 'warning',
   buttonText = 'Mengerti',
+  actionUrl,
+  actionText,
   onClose,
 }: AlertModalConfig) {
   if (!isOpen) return null
@@ -94,13 +98,30 @@ export default function CustomAlertModal({
           {renderFormattedText(message)}
         </div>
 
-        {/* Action Button */}
-        <button
-          onClick={onClose}
-          className={`w-full py-3 rounded-2xl text-xs sm:text-sm font-extrabold border-none cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${currentStyle.btn}`}
-        >
-          {buttonText}
-        </button>
+        {/* Action Buttons */}
+        <div className="w-full flex flex-col gap-2.5">
+          {actionUrl && (
+            <a
+              href={actionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3 rounded-2xl text-xs sm:text-sm font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white text-center no-underline shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            >
+              {actionText || '💬 Hubungi Admin via WhatsApp'}
+            </a>
+          )}
+
+          <button
+            onClick={onClose}
+            className={`w-full py-3 rounded-2xl text-xs sm:text-sm font-extrabold border-none cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${
+              actionUrl
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                : currentStyle.btn
+            }`}
+          >
+            {buttonText}
+          </button>
+        </div>
       </div>
     </div>
   )

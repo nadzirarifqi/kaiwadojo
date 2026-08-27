@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useAuth'
 import { fetchStudents } from '../../lib/studentService'
+import { getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import CustomAlertModal from '../../components/CustomAlertModal'
 
 export default function LoginPage() {
@@ -21,6 +22,8 @@ export default function LoginPage() {
     message: string
     type?: 'lock' | 'warning' | 'info' | 'success'
     buttonText?: string
+    actionUrl?: string
+    actionText?: string
   }>({
     isOpen: false,
     title: '',
@@ -33,7 +36,9 @@ export default function LoginPage() {
     title: string,
     message: string,
     type: 'lock' | 'warning' | 'info' | 'success' = 'warning',
-    buttonText = 'Mengerti'
+    buttonText = 'Mengerti',
+    actionUrl?: string,
+    actionText?: string
   ) {
     setAlertModal({
       isOpen: true,
@@ -41,6 +46,8 @@ export default function LoginPage() {
       message,
       type,
       buttonText,
+      actionUrl,
+      actionText,
     })
   }
 
@@ -143,9 +150,11 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum Anda dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
-          'Mengerti'
+          'Tutup',
+          getAdminWhatsAppUrl(studentMatch.username),
+          '💬 Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -193,9 +202,11 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
-          'Mengerti'
+          'Tutup',
+          getAdminWhatsAppUrl(userProfile.username || username),
+          '💬 Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -235,9 +246,11 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           '⏳ Akun Menunggu Verifikasi Admin',
-          `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+          `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
-          'Mengerti'
+          'Tutup',
+          getAdminWhatsAppUrl(username),
+          '💬 Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -303,9 +316,11 @@ export default function LoginPage() {
           setLoading(false)
           showAlert(
             '⏳ Akun Menunggu Verifikasi Admin',
-            `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan tunggu persetujuan Admin sebelum dapat masuk ke Dashboard.`,
+            `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
             'warning',
-            'Mengerti'
+            'Tutup',
+            getAdminWhatsAppUrl(profData.username || username),
+            '💬 Konfirmasi ke WhatsApp Admin'
           )
           return
         }
@@ -490,6 +505,8 @@ export default function LoginPage() {
         message={alertModal.message}
         type={alertModal.type}
         buttonText={alertModal.buttonText}
+        actionUrl={alertModal.actionUrl}
+        actionText={alertModal.actionText}
         onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
