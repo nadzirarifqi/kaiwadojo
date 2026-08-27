@@ -314,13 +314,24 @@ export default function RegisterPage() {
               <input
                 id="reg-institution"
                 type="text"
-                placeholder="Contoh: Universitas Indonesia / LPK Sakura"
+                placeholder="Contoh: VIVA Legacy | STAI DT"
                 required
                 value={institution}
                 onChange={e => setInstitution(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
               />
+              <div className="text-[0.68rem] text-slate-400 dark:text-slate-500 leading-relaxed bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800">
+                <span className="font-bold text-slate-500 dark:text-slate-400">Format:</span>{' '}
+                <code className="text-primary dark:text-red-400 font-bold">Nama Grup</code> atau{' '}
+                <code className="text-primary dark:text-red-400 font-bold">Nama Grup | Asal Perguruan Tinggi</code>
+                <div className="mt-1 flex flex-col gap-0.5">
+                  <span>• <strong>VIVA Legacy</strong> — belum menjadi mahasiswa</span>
+                  <span>• <strong>VIVA Legacy | STAI DT</strong> — mahasiswa STAI DT</span>
+                  <span>• <strong>VIVA Legacy | Universitas Lain</strong> — mahasiswa PT lain</span>
+                </div>
+              </div>
             </div>
+
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">

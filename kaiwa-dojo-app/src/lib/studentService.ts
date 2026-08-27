@@ -9,12 +9,24 @@ export interface StudentAccount {
   email: string
   phone_number?: string
   institution?: string
+  group_name?: string  // Extracted from institution (text before '|'), normalized
   role: 'pelajar'
   avatar_url?: string
   bio?: string
   streak_days: number
   status: StudentStatus
   created_at: string
+}
+
+/**
+ * Ekstrak nama grup dari field institution.
+ * Case-insensitive dan whitespace-insensitive.
+ * Contoh: "VIVA Legacy | STAI DT" → "viva legacy"
+ * Contoh: "  viva legacy  " → "viva legacy"
+ */
+export function normalizeGroup(raw: string | null | undefined): string {
+  if (!raw) return ''
+  return raw.split('|')[0].trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 /**
@@ -41,6 +53,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         email: p.email || `${p.username}@kaiwadojo.com`,
         phone_number: p.phone_number,
         institution: p.institution,
+        group_name: p.group_name || normalizeGroup(p.institution),
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,
@@ -96,6 +109,7 @@ export async function createStudentAccount(data: {
       email: newStudent.email,
       phone_number: newStudent.phone_number,
       institution: newStudent.institution,
+      group_name: normalizeGroup(newStudent.institution),
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
@@ -188,6 +202,7 @@ export async function updateStudentAccount(
       username: cleanUser,
       email: cleanEmail,
       institution: data.institution,
+      group_name: normalizeGroup(data.institution),
       bio: data.bio,
       status: data.status,
     }

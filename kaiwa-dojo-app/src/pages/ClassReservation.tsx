@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { supabase } from '../lib/supabaseClient'
+import { normalizeGroup } from '../lib/studentService'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -215,10 +216,23 @@ export default function ClassReservationPage() {
   const availableWeeks = Array.from(new Set(schedules.map(s => s.week_range_id))).sort()
   const availableMonths = Array.from(new Set(schedules.map(s => s.month_range_id))).sort()
 
+  // Group-based visibility:
+  // - userGroupName comes from DB field group_name ONLY (no institution fallback)
+  //   so old users (group_name = null) only see 'Semua Siswa' classes
+  const userGroupName = normalizeGroup((profile as any)?.group_name)
+
   const filteredSchedules = schedules.filter(sch => {
     // Type tab
     if (activeTab === 'online' && sch.type !== 'online') return false
     if (activeTab === 'offline' && sch.type !== 'offline') return false
+
+    // Group visibility filter:
+    // - if schedule has no target_group → visible to all
+    // - if schedule has target_group → only visible if user's group matches (case+space insensitive)
+    if (sch.target_group) {
+      const schedGroup = normalizeGroup(sch.target_group)
+      if (!userGroupName || userGroupName !== schedGroup) return false
+    }
 
     // Week filter
     if (selectedWeekFilter !== 'all' && sch.week_range_id !== selectedWeekFilter) return false

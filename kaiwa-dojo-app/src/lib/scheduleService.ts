@@ -20,6 +20,7 @@ export interface ClassSchedule {
   location?: string
   max_quota: number
   created_at: string
+  target_group?: string | null // null = semua siswa, string = nama grup tertentu
 }
 
 export interface ClassReservation {
@@ -592,6 +593,7 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
     meet_url: scheduleData.meet_url || null,
     location: scheduleData.location || null,
     max_quota: scheduleData.max_quota,
+    target_group: scheduleData.target_group ?? null,
     created_at: createdAt,
   }
 
@@ -622,6 +624,7 @@ export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'cre
     meet_url: dbResult.meet_url,
     location: dbResult.location,
     max_quota: dbResult.max_quota,
+    target_group: dbResult.target_group ?? null,
     created_at: dbResult.created_at,
   } : {
     ...scheduleData,
@@ -662,6 +665,8 @@ export async function updateSchedule(scheduleId: string, scheduleData: Partial<C
   if (scheduleData.meet_url !== undefined) updatePayload.meet_url = scheduleData.meet_url || null
   if (scheduleData.location !== undefined) updatePayload.location = scheduleData.location || null
   if (scheduleData.max_quota) updatePayload.max_quota = scheduleData.max_quota
+  // Allow explicit null to clear group restriction
+  if ('target_group' in scheduleData) updatePayload.target_group = scheduleData.target_group ?? null
 
   // Update both raw targetId and mapped dbScheduleId in DB
   const [{ error: err1 }, { error: err2 }] = await Promise.all([

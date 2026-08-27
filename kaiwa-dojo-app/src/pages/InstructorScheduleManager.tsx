@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import AdaptiveIcon from '../components/AdaptiveIcon'
+import { supabase } from '../lib/supabaseClient'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -48,6 +49,10 @@ export default function InstructorScheduleManagerPage() {
   const [formMeetUrl, setFormMeetUrl] = useState('https://meet.google.com/kaiwa-live-session')
   const [formLocation, setFormLocation] = useState('Kaiwa Dojo Center (Jl. Sudirman No. 12)')
   const [formMaxQuota, setFormMaxQuota] = useState(10)
+  const [formTargetGroup, setFormTargetGroup] = useState<string>('') // '' = semua siswa
+
+  // Available groups from DB (kaiwa_groups table)
+  const [availableGroups, setAvailableGroups] = useState<string[]>([])
 
   function calculateDefaultEndDate(startDateStr: string): string {
     if (!startDateStr) return ''
@@ -73,8 +78,21 @@ export default function InstructorScheduleManagerPage() {
     setLoading(false)
   }
 
+  async function loadGroups() {
+    try {
+      const { data } = await supabase
+        .from('kaiwa_groups')
+        .select('name')
+        .order('name', { ascending: true })
+      if (data) setAvailableGroups(data.map((g: any) => g.name))
+    } catch {
+      setAvailableGroups([])
+    }
+  }
+
   useEffect(() => {
     loadData()
+    loadGroups()
 
     const handleSync = () => {
       loadData()
@@ -112,6 +130,7 @@ export default function InstructorScheduleManagerPage() {
     setFormMeetUrl('https://meet.google.com/kaiwa-live-session')
     setFormLocation('Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(10)
+    setFormTargetGroup('')
     setShowCreateModal(true)
   }
 
@@ -128,6 +147,7 @@ export default function InstructorScheduleManagerPage() {
     setFormMeetUrl(sch.meet_url || 'https://meet.google.com/kaiwa-live-session')
     setFormLocation(sch.location || 'Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(sch.max_quota)
+    setFormTargetGroup(sch.target_group || '')
     setShowCreateModal(true)
   }
 
@@ -157,6 +177,7 @@ export default function InstructorScheduleManagerPage() {
           meet_url: formType === 'online' ? formMeetUrl : undefined,
           location: formType === 'offline' ? formLocation : undefined,
           max_quota: formMaxQuota,
+          target_group: formTargetGroup || null,
         })
         showToast('Jadwal kelas berhasil diperbarui di database!')
       } else {
@@ -174,6 +195,7 @@ export default function InstructorScheduleManagerPage() {
           meet_url: formType === 'online' ? formMeetUrl : undefined,
           location: formType === 'offline' ? formLocation : undefined,
           max_quota: formMaxQuota,
+          target_group: formTargetGroup || null,
         })
         showToast('Jadwal kelas baru berhasil dibuat di database!')
       }
@@ -309,6 +331,15 @@ export default function InstructorScheduleManagerPage() {
                       <span className="text-xs text-slate-400 font-bold">
                         {sch.type === 'online' ? getWeekLabel(sch.week_range_id, sch.date) : getMonthLabel(sch.month_range_id)}
                       </span>
+
+                      {/* Target Group Badge */}
+                      <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black ${
+                        sch.target_group
+                          ? 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                      }`}>
+                        {sch.target_group ? `👥 ${sch.target_group}` : '🌐 Semua Siswa'}
+                      </span>
                     </div>
 
                     <h3 className="text-base font-extrabold text-slate-800 dark:text-white truncate">
@@ -324,6 +355,7 @@ export default function InstructorScheduleManagerPage() {
                       <span>👨‍🏫 Instruktur: <strong>{sch.instructor_name}</strong></span>
                     </div>
                   </div>
+
 
                   <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-200 dark:border-slate-700 pt-3 md:pt-0">
                     <button
@@ -620,6 +652,26 @@ export default function InstructorScheduleManagerPage() {
                   onChange={e => setFormMaxQuota(parseInt(e.target.value, 10) || 10)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-extrabold text-slate-800 dark:text-slate-200 focus:outline-none"
                 />
+              </div>
+
+              {/* Target Group */}
+              <div className="p-3.5 bg-violet-50/60 dark:bg-violet-950/20 rounded-2xl border border-violet-200/80 dark:border-violet-800/50">
+                <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                  👥 Target Grup Siswa
+                </label>
+                <select
+                  value={formTargetGroup}
+                  onChange={e => setFormTargetGroup(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-violet-200 dark:border-violet-800 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500 text-xs"
+                >
+                  <option value="">🌐 Semua Siswa (Tidak Dibatasi)</option>
+                  {availableGroups.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <p className="text-[0.68rem] text-slate-400 mt-1.5">
+                  Hanya siswa dalam grup ini yang dapat melihat dan mendaftar kelas ini. Pilih "Semua Siswa" untuk kelas terbuka.
+                </p>
               </div>
 
               {/* Form Buttons */}

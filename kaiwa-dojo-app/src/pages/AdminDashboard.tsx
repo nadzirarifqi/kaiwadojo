@@ -20,6 +20,47 @@ export default function AdminDashboard() {
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [loading, setLoading] = useState(true)
 
+  // Group management state
+  const [groups, setGroups] = useState<{ id: string; name: string }[]>([])
+  const [newGroupName, setNewGroupName] = useState('')
+  const [groupLoading, setGroupLoading] = useState(false)
+  const [groupToast, setGroupToast] = useState<string | null>(null)
+
+  function showGroupToast(msg: string) {
+    setGroupToast(msg)
+    setTimeout(() => setGroupToast(null), 3000)
+  }
+
+  async function loadGroups() {
+    const { data } = await supabase.from('kaiwa_groups').select('id, name').order('name')
+    if (data) setGroups(data)
+  }
+
+  async function handleAddGroup() {
+    const name = newGroupName.trim()
+    if (!name) return
+    setGroupLoading(true)
+    const { error } = await supabase.from('kaiwa_groups').insert({ name })
+    if (!error) {
+      setNewGroupName('')
+      await loadGroups()
+      showGroupToast(`Grup "${name}" berhasil ditambahkan!`)
+    } else {
+      showGroupToast(`Gagal: ${error.message}`)
+    }
+    setGroupLoading(false)
+  }
+
+  async function handleDeleteGroup(id: string, name: string) {
+    if (!confirm(`Hapus grup "${name}"? Kelas yang menggunakan grup ini akan jadi terbuka untuk semua.`)) return
+    setGroupLoading(true)
+    await supabase.from('kaiwa_groups').delete().eq('id', id)
+    await loadGroups()
+    showGroupToast(`Grup "${name}" dihapus.`)
+    setGroupLoading(false)
+  }
+
+
   async function loadData() {
     setLoading(true)
     const [instData, stdData, schData, resData, chapData] = await Promise.all([
@@ -39,6 +80,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadData()
+    loadGroups()
 
     const handleReservationSync = () => {
       loadData()
@@ -304,6 +346,73 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+      </div>
+      {/* ── KELOLA GRUP ─────────────────────────────────────── */}
+      <div className="mt-6 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+          <div>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+              <span>👥 Kelola Nama Grup</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Nama grup digunakan untuk membatasi visibilitas kelas. Matching bersifat case-insensitive dan mengabaikan spasi berlebih.
+            </p>
+          </div>
+          {groupToast && (
+            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              ✅ {groupToast}
+            </span>
+          )}
+        </div>
+
+        {/* Add Group */}
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            placeholder="Nama grup baru, cth: VIVA Legacy"
+            value={newGroupName}
+            onChange={e => setNewGroupName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddGroup()}
+            className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500 font-medium"
+          />
+          <button
+            type="button"
+            onClick={handleAddGroup}
+            disabled={groupLoading || !newGroupName.trim()}
+            className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all disabled:opacity-50 shrink-0"
+          >
+            + Tambah
+          </button>
+        </div>
+
+        {/* Group List */}
+        {groups.length === 0 ? (
+          <p className="text-xs text-slate-400 italic text-center py-6">Belum ada grup terdaftar.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {groups.map(g => (
+              <div
+                key={g.id}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800"
+              >
+                <div>
+                  <div className="text-sm font-extrabold text-slate-800 dark:text-white">{g.name}</div>
+                  <div className="text-[0.65rem] text-slate-400 font-mono">
+                    key: "{g.name.trim().toLowerCase().replace(/\s+/g, ' ')}"
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteGroup(g.id, g.name)}
+                  disabled={groupLoading}
+                  className="size-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-900/40 cursor-pointer transition-all text-xs font-black flex items-center justify-center disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   )
