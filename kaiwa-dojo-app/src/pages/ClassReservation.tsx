@@ -734,8 +734,8 @@ export default function ClassReservationPage() {
 
       {/* ── CONFIRMATION MODAL ──────────────────────────────── */}
       {confirmModalType && targetSchedule && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-5 animate-scale-up">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-8 sm:pt-0 animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 sm:gap-5 animate-scale-up my-auto max-h-[90dvh] overflow-y-auto">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">

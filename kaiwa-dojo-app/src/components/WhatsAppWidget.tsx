@@ -3,7 +3,7 @@ import { useState } from 'react'
 export default function WhatsAppWidget() {
   const [isOpen, setIsOpen] = useState(false)
 
-  const rawAdminNumber = import.meta.env.VITE_ADMIN_WA_NUMBER || '6281234567890'
+  const rawAdminNumber = import.meta.env.VITE_ADMIN_WA_NUMBER || '6287875018001'
   let adminWaNumber = rawAdminNumber.replace(/[^0-9]/g, '')
   if (adminWaNumber.startsWith('0')) {
     adminWaNumber = '62' + adminWaNumber.slice(1)
@@ -49,7 +49,7 @@ export default function WhatsAppWidget() {
       {isOpen && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up text-center relative overflow-hidden">
-            
+
             {/* Header Icon */}
             <div className="size-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-200 dark:border-emerald-800/80">
               💬
@@ -73,7 +73,7 @@ export default function WhatsAppWidget() {
                 <span>💬</span>
                 <span>Buka Chat WhatsApp →</span>
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}

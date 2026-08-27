@@ -1199,20 +1199,20 @@ export default function MyCourses() {
 
       {/* ── Video Player & Placeholder Modal ── */}
       {activeLesson && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[500] flex items-center justify-center p-1.5 sm:p-6 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[96vh] sm:h-[92vh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[98dvh] sm:h-[92vh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
 
             {/* Modal Header */}
-            <div className="px-4 py-2.5 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+            <div className="px-3.5 py-2 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
               <div className="min-w-0 pr-2">
                 <span className="text-[0.65rem] sm:text-xs text-primary-lighter font-bold uppercase tracking-wider block truncate">
                   {activeChapter?.title || `Minna no Nihongo Jilid ${selectedJilid}`}
                 </span>
-                <h2 className="text-sm sm:text-lg font-bold truncate leading-tight">{activeLesson.title}</h2>
+                <h2 className="text-xs sm:text-lg font-bold truncate leading-tight">{activeLesson.title}</h2>
               </div>
               <button
                 onClick={() => { setActiveLesson(null); setActiveChapter(null) }}
-                className="size-8 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-lg sm:text-xl flex items-center justify-center shrink-0"
+                className="size-7 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-base sm:text-xl flex items-center justify-center shrink-0"
               >
                 ×
               </button>
@@ -1223,16 +1223,16 @@ export default function MyCourses() {
             <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
 
               {/* Left Column: Video Player / Kotoba View / Quiz View / Placeholder */}
-              <div className="flex flex-col overflow-y-auto p-2 sm:p-6 gap-2 sm:gap-4 flex-1">
+              <div className="flex flex-col overflow-y-auto p-1.5 sm:p-6 gap-1.5 sm:gap-4 flex-1">
 
                 {/* Mobile-only: Toggle button for lesson list */}
                 <div className="lg:hidden flex items-center justify-between shrink-0 py-0.5 px-1">
-                  <p className="text-[0.7rem] text-slate-500 font-semibold truncate">
+                  <p className="text-[0.68rem] text-slate-500 font-semibold truncate">
                     📚 {activeChapter?.lessons.length || 0} Materi di Bab Ini
                   </p>
                   <button
                     onClick={() => setShowLessonList(prev => !prev)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[0.7rem] font-bold border-none cursor-pointer flex items-center gap-1 shrink-0"
+                    className="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[0.68rem] font-bold border-none cursor-pointer flex items-center gap-1 shrink-0"
                   >
                     <span>📋 Daftar Materi</span>
                     <span>{showLessonList ? '▲' : '▼'}</span>
@@ -1241,7 +1241,7 @@ export default function MyCourses() {
 
                 {/* Mobile-only: Collapsible lesson list (shows when toggled) */}
                 {showLessonList && (
-                  <div className="lg:hidden animate-slide-down bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 p-2.5 flex flex-col gap-1.5 shrink-0">
+                  <div className="lg:hidden animate-slide-down bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 p-2 flex flex-col gap-1 shrink-0">
                     <h4 className="font-bold text-slate-700 dark:text-slate-300 text-[0.65rem] uppercase tracking-wider mb-0.5">
                       Materi {activeChapter?.title || 'Bab Ini'}
                     </h4>
@@ -1249,7 +1249,7 @@ export default function MyCourses() {
                       <button
                         key={l.id}
                         onClick={() => { setActiveLesson(l); setShowLessonList(false) }}
-                        className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                        className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
                           activeLesson?.id === l.id
                             ? 'bg-white dark:bg-slate-900 border-primary shadow-xs text-primary'
                             : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white'
@@ -1368,20 +1368,20 @@ export default function MyCourses() {
                     </div>
                   </div>
                 ) : activeLesson.video_id ? (
-                  /* Real HTML5 Portrait Video Player — optimized for 100% mobile fit */
-                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl sm:rounded-3xl p-2 sm:p-5 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden flex-1">
+                  /* Real HTML5 Portrait Video Player — prominently placed without extra top padding */
+                  <div className="w-full bg-slate-950 sm:bg-gradient-to-b sm:from-slate-950 sm:via-slate-900 sm:to-slate-950 rounded-2xl sm:rounded-3xl p-1.5 sm:p-5 flex flex-col items-center justify-start sm:justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden">
                     {/* Ambient Glow */}
                     <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
 
-                    {/* Header Badge */}
-                    <div className="flex items-center gap-1.5 mb-2 z-10 text-[0.65rem] sm:text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                    {/* Header Badge (Hidden on mobile to save vertical space) */}
+                    <div className="hidden sm:flex items-center gap-1.5 mb-2 z-10 text-[0.65rem] sm:text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                       <span>📱 Format Video Mobile (Portrait 9:16)</span>
                     </div>
 
-                    {/* Portrait Phone Frame — scaled down on small mobile screens to fit 100% without scroll */}
+                    {/* Portrait Phone Frame */}
                     <div
-                      className="w-full max-w-[270px] xs:max-w-[300px] sm:max-w-[340px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group"
-                      style={{ aspectRatio: '9/16', maxHeight: 'min(48vh, 520px)' }}
+                      className="w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[340px] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-2xl border sm:border-4 border-slate-800 relative z-10 group"
+                      style={{ aspectRatio: '9/16', maxHeight: 'min(58vh, 540px)' }}
                     >
                       <SmartVideoPlayer
                         lesson={activeLesson}
