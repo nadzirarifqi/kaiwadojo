@@ -507,15 +507,14 @@ export default function MyCourses() {
 
         const videoUrl = customVideoOverride || dbLesson?.video_url || hostedUrl
 
-        let baseTitle = ''
-        if (item.num === 1 && adminSetting?.video1_title) baseTitle = adminSetting.video1_title
-        else if (item.num === 2 && adminSetting?.video2_title) baseTitle = adminSetting.video2_title
-        else if (item.num === 3 && adminSetting?.video3_title) baseTitle = adminSetting.video3_title
-        else if (dbLesson?.title) baseTitle = dbLesson.title
+        let customVideoTitle = ''
+        if (item.num === 1 && adminSetting?.video1_title) customVideoTitle = adminSetting.video1_title
+        else if (item.num === 2 && adminSetting?.video2_title) customVideoTitle = adminSetting.video2_title
+        else if (item.num === 3 && adminSetting?.video3_title) customVideoTitle = adminSetting.video3_title
 
         let lessonTitle = ''
-        if (baseTitle) {
-          lessonTitle = /part\s*\d+/i.test(baseTitle) ? baseTitle : `${baseTitle} - Part ${item.num <= 3 ? item.num : item.num - 3}`
+        if (customVideoTitle && !customVideoTitle.toLowerCase().startsWith('video ')) {
+          lessonTitle = /part\s*\d+/i.test(customVideoTitle) ? customVideoTitle : `${customVideoTitle} - Part ${item.num <= 3 ? item.num : item.num - 3}`
         } else if (item.type === 'quiz') {
           lessonTitle = `Kuis Evaluasi ${cleanBabTitle} - Part ${item.num - 3}`
         } else {
