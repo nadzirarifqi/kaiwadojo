@@ -298,6 +298,9 @@ export default function RegisterPage() {
 
           setVerifyingOtp(false)
           setOtpError('Email ini sudah terdaftar di sistem! Silakan menuju halaman Login.')
+        } else if (signUpErr.message.toLowerCase().includes('database error saving new user')) {
+          setVerifyingOtp(false)
+          setOtpError('Kendala Trigger Database Supabase. Jalankan file Migration 020 di Supabase SQL Editor untuk memperbarui fungsi handle_new_user.')
         } else {
           setVerifyingOtp(false)
           setOtpError(`Gagal daftar: ${signUpErr.message}`)
