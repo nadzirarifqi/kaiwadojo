@@ -516,8 +516,6 @@ export default function MyCourses() {
         let lessonTitle = ''
         if (baseTitle) {
           lessonTitle = /part\s*\d+/i.test(baseTitle) ? baseTitle : `${baseTitle} - Part ${item.num <= 3 ? item.num : item.num - 3}`
-        } else if (item.type === 'video') {
-          lessonTitle = `${cleanBabTitle} - Part ${item.num}`
         } else if (item.type === 'quiz') {
           lessonTitle = `Kuis Evaluasi ${cleanBabTitle} - Part ${item.num - 3}`
         } else {
