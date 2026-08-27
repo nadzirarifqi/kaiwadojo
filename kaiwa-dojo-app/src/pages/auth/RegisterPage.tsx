@@ -82,7 +82,7 @@ export default function RegisterPage() {
       return
     }
 
-    // 1. Validasi Keaktifan Nomor WhatsApp via Fonnte API /validate
+    // 1. Validasi Keaktifan & Format Nomor WhatsApp
     const waCheck = await validateWhatsAppNumber(phoneNumber)
     if (!waCheck.isValid) {
       setError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif! Mohon periksa nomor Anda.')
@@ -90,33 +90,38 @@ export default function RegisterPage() {
       return
     }
 
-    // 2. Cek username & email unik sebelum daftar
+    // 2. Cek apakah Username, Email, atau Nomor WhatsApp SUDAH TERDAFTAR di database (SEBELUM KIRIM OTP)
     try {
       const cleanUser = username.trim().toLowerCase()
       const cleanEmail = email.trim().toLowerCase()
+      const rawPhone = phoneNumber.trim()
+      let formattedPhone = rawPhone.replace(/[^0-9]/g, '')
+      if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.slice(1)
 
       const { data: existingUser } = await supabase
         .from('profiles')
-        .select('username, email')
-        .or(`username.eq.${cleanUser},email.eq.${cleanEmail}`)
+        .select('username, email, phone_number')
+        .or(`username.eq.${cleanUser},email.eq.${cleanEmail},phone_number.eq.${rawPhone},phone_number.eq.${formattedPhone}`)
         .maybeSingle()
 
       if (existingUser) {
         if (existingUser.username?.toLowerCase() === cleanUser) {
           setError(`Username "@${cleanUser}" sudah terdaftar! Silakan gunakan username lain atau login.`)
-        } else {
+        } else if (existingUser.email?.toLowerCase() === cleanEmail) {
           setError(`Email "${cleanEmail}" sudah terdaftar! Silakan gunakan email lain atau login.`)
+        } else {
+          setError(`Nomor WhatsApp "${phoneNumber}" sudah terdaftar! Silakan gunakan nomor lain atau login.`)
         }
         setLoading(false)
         return
       }
     } catch {
-      // Ignore
+      // Ignore DB network errors
     }
 
+    // 3. Hanya jika Username, Email, dan No. WA belum pernah terdaftar -> Kirim OTP via WA & Buka Modal
+    await generateNewOtp()
     setLoading(false)
-    // Pemicu OTP Modal
-    generateNewOtp()
     setShowOtpModal(true)
   }
 
