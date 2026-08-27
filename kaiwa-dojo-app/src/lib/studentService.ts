@@ -123,19 +123,25 @@ export async function createStudentAccount(data: {
     let { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
 
     if (error) {
-      console.warn('DB createStudentAccount primary error:', error.message)
-      // Fallback: If group_name column doesn't exist in Supabase DB profiles table yet, retry without group_name
-      if (error.message?.toLowerCase().includes('group_name') || error.code === 'PGRST204' || (error as any).status === 400) {
-        delete payload.group_name
-        const retry = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
-        if (retry.error) {
-          console.error('DB createStudentAccount fallback error:', retry.error.message)
+      console.warn('DB createStudentAccount primary error:', error.message, error)
+      
+      // Fallback 1: If group_name column doesn't exist in Supabase DB profiles table yet, retry without group_name
+      delete payload.group_name
+      const retry1 = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
+      
+      if (retry1.error) {
+        console.warn('DB createStudentAccount fallback 1 error:', retry1.error.message)
+        // Fallback 2: Try simple insert if upsert fails
+        const retry2 = await supabase.from('profiles').insert(payload)
+        if (retry2.error) {
+          console.error('DB createStudentAccount fallback 2 error:', retry2.error.message)
+          return null
         }
       }
     }
 
     return newStudent
-  } catch (e) {
+  } catch (e: any) {
     console.error('DB createStudentAccount catch:', e)
     return null
   }

@@ -174,7 +174,7 @@ export default function RegisterPage() {
     }
 
     // Simpan/Upsert Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
-    await createStudentAccount({
+    const newStudent = await createStudentAccount({
       id: authUserId,
       full_name: fullName.trim(),
       username: username.trim().toLowerCase(),
@@ -184,6 +184,12 @@ export default function RegisterPage() {
       bio: 'Siswa Baru Kaiwa Dojo',
       status: 'pending',
     })
+
+    if (!newStudent) {
+      setVerifyingOtp(false)
+      setOtpError('Gagal menyimpan data akun ke database Supabase. Silakan coba lagi.')
+      return
+    }
 
     setVerifyingOtp(false)
     setShowOtpModal(false)
