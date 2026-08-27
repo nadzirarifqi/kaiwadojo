@@ -485,6 +485,7 @@ export default function RegisterPage() {
                 <input
                   id="reg-username"
                   type="text"
+                  autoComplete="username"
                   placeholder="budisantoso"
                   required
                   value={username}
