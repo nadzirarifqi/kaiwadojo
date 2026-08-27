@@ -74,6 +74,91 @@ export default function RegisterPage() {
     }, 100)
   }
 
+  async function performDuplicateCheck(u: string, e: string, p: string) {
+    const cleanUser = u.trim().toLowerCase()
+    const cleanEmail = e.trim().toLowerCase()
+    const rawPhone = p.trim()
+    let cleanPhoneNum = rawPhone.replace(/[^0-9]/g, '')
+    let formattedPhone = cleanPhoneNum
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.slice(1)
+    }
+
+    let isUserDupe = false
+    let isEmailDupe = false
+    let isPhoneDupe = false
+
+    // 1. Try RPC check_user_duplicates (checks both auth.users and public.profiles)
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('check_user_duplicates', {
+        p_username: cleanUser,
+        p_email: cleanEmail,
+        p_phone: rawPhone,
+      })
+
+      if (!rpcErr && rpcData && rpcData.length > 0) {
+        isUserDupe = !!rpcData[0].username_exists
+        isEmailDupe = !!rpcData[0].email_exists
+        isPhoneDupe = !!rpcData[0].phone_exists
+        return { isUserDupe, isEmailDupe, isPhoneDupe, hasDuplicate: isUserDupe || isEmailDupe || isPhoneDupe }
+      }
+    } catch (rpcEx) {
+      console.warn('RPC check_user_duplicates fallback:', rpcEx)
+    }
+
+    // 2. Direct Query Fallback to profiles table
+    try {
+      const { data: matchedProfiles } = await supabase
+        .from('profiles')
+        .select('username, email, phone_number')
+
+      if (matchedProfiles && matchedProfiles.length > 0) {
+        for (const row of matchedProfiles) {
+          if (cleanUser && row.username && row.username.toLowerCase() === cleanUser) {
+            isUserDupe = true
+          }
+          if (cleanEmail && row.email && row.email.toLowerCase() === cleanEmail) {
+            isEmailDupe = true
+          }
+          if (rawPhone && row.phone_number) {
+            const rowPhoneClean = row.phone_number.replace(/[^0-9]/g, '')
+            if (row.phone_number === rawPhone || (cleanPhoneNum && rowPhoneClean === cleanPhoneNum) || (formattedPhone && rowPhoneClean === formattedPhone)) {
+              isPhoneDupe = true
+            }
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn('DB dupe check fallback error:', dbErr)
+    }
+
+    return { isUserDupe, isEmailDupe, isPhoneDupe, hasDuplicate: isUserDupe || isEmailDupe || isPhoneDupe }
+  }
+
+  async function handleCheckUsernameOnBlur() {
+    if (!username.trim()) return
+    const res = await performDuplicateCheck(username, '', '')
+    if (res.isUserDupe) {
+      setUsernameError(`Username "@${username.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan username lain.`)
+    }
+  }
+
+  async function handleCheckPhoneOnBlur() {
+    if (!phoneNumber.trim()) return
+    const res = await performDuplicateCheck('', '', phoneNumber)
+    if (res.isPhoneDupe) {
+      setPhoneError(`Nomor WhatsApp "${phoneNumber.trim()}" sudah terdaftar. Silakan gunakan nomor lain.`)
+    }
+  }
+
+  async function handleCheckEmailOnBlur() {
+    if (!email.trim()) return
+    const res = await performDuplicateCheck('', email, '')
+    if (res.isEmailDupe) {
+      setEmailError(`Email "${email.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+    }
+  }
+
   async function handleStartRegistration(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -88,54 +173,34 @@ export default function RegisterPage() {
       return
     }
 
-    // 1. Validasi Keaktifan & Format Nomor WhatsApp
-    const waCheck = await validateWhatsAppNumber(phoneNumber)
-    if (!waCheck.isValid) {
-      setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif!')
-      setLoading(false)
-      return
-    }
+    // 1. Cek Duplikasi (Username, Email, No. WhatsApp) SEBELUM Validasi WA & Kirim OTP
+    const dupeRes = await performDuplicateCheck(username, email, phoneNumber)
 
-    // 2. Cek apakah Username, Email, atau Nomor WhatsApp SUDAH TERDAFTAR di database (SEBELUM KIRIM OTP)
     let hasDuplicate = false
-    try {
-      const cleanUser = username.trim().toLowerCase()
-      const cleanEmail = email.trim().toLowerCase()
-      const rawPhone = phoneNumber.trim()
-      let formattedPhone = rawPhone.replace(/[^0-9]/g, '')
-      if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.slice(1)
-
-      const { data: matchedProfiles } = await supabase
-        .from('profiles')
-        .select('username, email, phone_number')
-        .or(`username.eq.${cleanUser},email.eq.${cleanEmail},phone_number.eq.${rawPhone},phone_number.eq.${formattedPhone}`)
-
-      if (matchedProfiles && matchedProfiles.length > 0) {
-        for (const row of matchedProfiles) {
-          if (row.username && row.username.toLowerCase() === cleanUser) {
-            setUsernameError(`Username "@${cleanUser}" sudah terdaftar. Silakan gunakan username lain.`)
-            hasDuplicate = true
-          }
-          if (row.email && row.email.toLowerCase() === cleanEmail) {
-            setEmailError(`Email "${cleanEmail}" sudah terdaftar. Silakan gunakan email lain atau login.`)
-            hasDuplicate = true
-          }
-          if (row.phone_number) {
-            const rowPhoneClean = row.phone_number.replace(/[^0-9]/g, '')
-            if (row.phone_number === rawPhone || rowPhoneClean === formattedPhone) {
-              setPhoneError(`Nomor WhatsApp "${phoneNumber}" sudah terdaftar. Silakan gunakan nomor lain.`)
-              hasDuplicate = true
-            }
-          }
-        }
-      }
-    } catch (dbErr) {
-      console.warn('DB dupe check note:', dbErr)
+    if (dupeRes.isUserDupe) {
+      setUsernameError(`Username "@${username.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan username lain.`)
+      hasDuplicate = true
+    }
+    if (dupeRes.isEmailDupe) {
+      setEmailError(`Email "${email.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+      hasDuplicate = true
+    }
+    if (dupeRes.isPhoneDupe) {
+      setPhoneError(`Nomor WhatsApp "${phoneNumber.trim()}" sudah terdaftar. Silakan gunakan nomor lain.`)
+      hasDuplicate = true
     }
 
     if (hasDuplicate) {
       setLoading(false)
-      setError('Terdapat data yang sudah terdaftar. Mohon periksa input yang ditandai merah di bawah.')
+      setError('Terdapat data yang sudah terdaftar (Username, Email, atau No. WhatsApp). Silakan periksa input yang ditandai merah di bawah.')
+      return
+    }
+
+    // 2. Validasi Keaktifan & Format Nomor WhatsApp
+    const waCheck = await validateWhatsAppNumber(phoneNumber)
+    if (!waCheck.isValid) {
+      setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif!')
+      setLoading(false)
       return
     }
 
@@ -365,6 +430,7 @@ export default function RegisterPage() {
                     setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
                     if (usernameError) setUsernameError(null)
                   }}
+                  onBlur={handleCheckUsernameOnBlur}
                   className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
                     usernameError
                       ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
@@ -394,6 +460,7 @@ export default function RegisterPage() {
                   setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
                   if (phoneError) setPhoneError(null)
                 }}
+                onBlur={handleCheckPhoneOnBlur}
                 className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
                   phoneError
                     ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
@@ -445,6 +512,7 @@ export default function RegisterPage() {
                   setEmail(e.target.value)
                   if (emailError) setEmailError(null)
                 }}
+                onBlur={handleCheckEmailOnBlur}
                 className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
                   emailError
                     ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
