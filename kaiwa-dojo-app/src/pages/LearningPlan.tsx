@@ -203,11 +203,11 @@ function DailyMissionBuilderModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-4 sm:pt-0 animate-fade-in overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[92dvh] border border-slate-200 dark:border-slate-800 my-auto">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1.5 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[96dvh] border border-slate-200 dark:border-slate-800">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-primary via-primary-dark to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-primary via-primary-dark to-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shrink-0">
               🎯
@@ -220,7 +220,7 @@ function DailyMissionBuilderModal({
           <button onClick={onClose} className="size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-xl flex items-center justify-center">×</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex flex-col gap-3.5 sm:gap-5 overflow-y-auto">
 
           {/* Target Date Selector inside Modal */}
           <div className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
@@ -461,8 +461,8 @@ function DateClassEnrollModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-4 sm:pt-0 animate-fade-in overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[92dvh] border border-slate-200 dark:border-slate-800 my-auto">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1.5 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[96dvh] border border-slate-200 dark:border-slate-800">
         
         {/* Toast inside modal */}
         {toast && (
@@ -472,7 +472,7 @@ function DateClassEnrollModal({
         )}
 
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-sky-600 to-primary text-white flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-sky-600 to-primary text-white flex items-center justify-between shrink-0">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-wider text-white/80">Jadwal Kelas & Reservasi</span>
             <h3 className="text-lg font-black text-white">📅 {formatDateIndonesian(dateStr)}</h3>
@@ -481,7 +481,7 @@ function DateClassEnrollModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
               Sesi Kelas Live Tersedia ({daySchedules.length})
