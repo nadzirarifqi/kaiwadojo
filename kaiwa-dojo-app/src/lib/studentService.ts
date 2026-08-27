@@ -73,6 +73,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
  * Menambahkan akun pelajar baru secara langsung ke Supabase Database
  */
 export async function createStudentAccount(data: {
+  id?: string
   full_name: string
   username: string
   email: string
@@ -84,7 +85,7 @@ export async function createStudentAccount(data: {
   const cleanUser = data.username.toLowerCase().trim()
   const cleanEmail = data.email.toLowerCase().trim()
   const targetStatus = data.status || 'approved'
-  const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`
+  const newId = data.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`)
 
   const newStudent: StudentAccount = {
     id: newId,
@@ -93,6 +94,7 @@ export async function createStudentAccount(data: {
     email: cleanEmail,
     phone_number: data.phone_number,
     institution: data.institution,
+    group_name: normalizeGroup(data.institution),
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
@@ -102,27 +104,42 @@ export async function createStudentAccount(data: {
   }
 
   try {
-    const { error } = await supabase.from('profiles').insert({
+    const payload: any = {
       id: newStudent.id,
       full_name: newStudent.full_name,
       username: newStudent.username,
       email: newStudent.email,
       phone_number: newStudent.phone_number,
       institution: newStudent.institution,
-      group_name: normalizeGroup(newStudent.institution),
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
       streak_days: 0,
       status: targetStatus,
-    })
+    }
+    const grp = normalizeGroup(newStudent.institution)
+    if (grp) payload.group_name = grp
+
+    let { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
 
     if (error) {
-      console.error('DB createStudentAccount error:', error.message)
-      throw error
+      console.warn('DB createStudentAccount primary error:', error.message)
+      // Fallback: If group_name column doesn't exist in Supabase DB profiles table yet, retry without group_name
+      if (error.message?.toLowerCase().includes('group_name') || error.code === 'PGRST204' || (error as any).status === 400) {
+        delete payload.group_name
+        const retry = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
+        if (retry.error) {
+          console.error('DB createStudentAccount fallback error:', retry.error.message)
+        }
+      }
     }
 
     return newStudent
+  } catch (e) {
+    console.error('DB createStudentAccount catch:', e)
+    return null
+  }
+}
   } catch (e) {
     console.error('DB createStudentAccount catch:', e)
     return null

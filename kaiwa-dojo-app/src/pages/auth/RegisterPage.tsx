@@ -144,19 +144,10 @@ export default function RegisterPage() {
 
     setVerifyingOtp(true)
 
-    // Simpan Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
-    await createStudentAccount({
-      full_name: fullName.trim(),
-      username: username.trim().toLowerCase(),
-      email: email.trim().toLowerCase(),
-      phone_number: phoneNumber.trim(),
-      institution: institution.trim(),
-      bio: 'Siswa Baru Kaiwa Dojo',
-      status: 'pending',
-    })
+    let authUserId: string | undefined
 
     try {
-      await supabase.auth.signUp({
+      const { data: authData, error: signUpErr } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -170,9 +161,25 @@ export default function RegisterPage() {
           },
         },
       })
+      if (signUpErr) {
+        console.warn('Supabase auth signup error:', signUpErr.message)
+      }
+      authUserId = authData?.user?.id
     } catch (e) {
-      console.warn('Supabase auth signup note:', e)
+      console.warn('Supabase auth signup catch:', e)
     }
+
+    // Simpan/Upsert Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
+    await createStudentAccount({
+      id: authUserId,
+      full_name: fullName.trim(),
+      username: username.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
+      phone_number: phoneNumber.trim(),
+      institution: institution.trim(),
+      bio: 'Siswa Baru Kaiwa Dojo',
+      status: 'pending',
+    })
 
     setVerifyingOtp(false)
     setShowOtpModal(false)
