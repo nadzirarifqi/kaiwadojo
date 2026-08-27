@@ -140,11 +140,6 @@ export async function createStudentAccount(data: {
     return null
   }
 }
-  } catch (e) {
-    console.error('DB createStudentAccount catch:', e)
-    return null
-  }
-}
 
 /**
  * Menyetujui (approve) akun pelajar langsung di Supabase Database
