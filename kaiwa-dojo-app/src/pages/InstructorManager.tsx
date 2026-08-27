@@ -8,6 +8,7 @@ import {
   updateInstructorAccount,
   deleteInstructorAccount
 } from '../lib/instructorService'
+import { calculateUserPresence } from '../lib/presenceUtils'
 
 export default function InstructorManager() {
   const navigate = useNavigate()
@@ -42,6 +43,13 @@ export default function InstructorManager() {
 
   useEffect(() => {
     loadData()
+
+    // Auto-refresh presence every 30 seconds
+    const refreshInterval = setInterval(() => {
+      fetchInstructors().then(data => setInstructors(data))
+    }, 30000)
+
+    return () => clearInterval(refreshInterval)
   }, [])
 
   function showToastMsg(msg: string) {
@@ -112,23 +120,26 @@ export default function InstructorManager() {
       username,
       email,
       bio,
-      expertise: expArr.length > 0 ? expArr : editingInst.expertise,
+      expertise: expArr.length > 0 ? expArr : ['Kaiwa', 'Japanese'],
     })
 
     setSaving(false)
     setEditingInst(null)
-    showToastMsg(`Berhasil memperbarui data akun Pemateri: ${fullName}!`)
+    showToastMsg(`Berhasil memperbarui data Pemateri: ${fullName}!`)
     await loadData()
   }
 
   async function handleDelete(inst: InstructorAccount) {
-    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus akun Pemateri "${inst.full_name}" (@${inst.username})? Action ini tidak dapat dibatalkan.`)
-    if (!confirmDelete) return
+    if (!confirm(`Apakah Anda yakin ingin menghapus akun pemateri "${inst.full_name}" (@${inst.username})? Tindakan ini tidak dapat dibatalkan.`)) return
 
+    setSaving(true)
     await deleteInstructorAccount(inst.id)
-    showToastMsg(`Akun Pemateri "${inst.full_name}" telah dihapus!`)
+    setSaving(false)
+    showToastMsg(`Berhasil menghapus akun pemateri "${inst.full_name}".`)
     await loadData()
   }
+
+  const onlineCount = instructors.filter(i => calculateUserPresence(i.last_active_at).isOnline).length
 
   // Security check: Only admin can access
   if (profile?.role !== 'admin') {
@@ -137,7 +148,7 @@ export default function InstructorManager() {
         <div className="text-4xl mb-2">🔒</div>
         <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
         <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
-          Halaman ini khusus diperuntukkan untuk Admin (kaiwahiroshima) untuk membuat, mengedit, dan menghapus akun Pemateri.
+          Halaman ini khusus diperuntukkan untuk Admin untuk mengelola akun Pemateri/Pengajar.
         </p>
         <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl border-none cursor-pointer">
           Kembali ke Dashboard
@@ -159,11 +170,15 @@ export default function InstructorManager() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
               👑 Menu Admin
             </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
+            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{onlineCount} Sensei Online</span>
+            </span>
+            <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black">
               {instructors.length} Pemateri Terdaftar
             </span>
           </div>
@@ -171,7 +186,7 @@ export default function InstructorManager() {
             <span>👨‍🏫 Manajemen Full Kontrol Akun Pemateri</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk **menambah, mengedit, dan menghapus** akun Pemateri/Pengajar.
+            Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menambah, mengedit, dan menghapus** akun Pemateri/Pengajar.
           </p>
         </div>
 
@@ -206,6 +221,7 @@ export default function InstructorManager() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 px-2">Sensei / Pengajar</th>
+                  <th className="pb-3 px-2">Status Online</th>
                   <th className="pb-3 px-2">Username & Email</th>
                   <th className="pb-3 px-2">No. WhatsApp</th>
                   <th className="pb-3 px-2">Bidang Keahlian</th>
@@ -214,72 +230,107 @@ export default function InstructorManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
-                {instructors.map(inst => (
-                  <tr key={inst.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={inst.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.username}`}
-                          alt={inst.full_name}
-                          className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover shrink-0"
-                        />
-                        <div>
-                          <div className="font-extrabold text-slate-800 dark:text-white">{inst.full_name}</div>
-                          <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1">{inst.bio || 'Pengajar KaiwaDojo'}</div>
+                {instructors.map(inst => {
+                  const presence = calculateUserPresence(inst.last_active_at)
+                  return (
+                    <tr key={inst.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            <img
+                              src={inst.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.username}`}
+                              alt={inst.full_name}
+                              className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
+                            />
+                            <span
+                              title={presence.isOnline ? '🟢 Online (Sedang Aktif)' : `⚪ ${presence.relativeTime}`}
+                              className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white dark:border-slate-900 ${
+                                presence.isOnline ? 'bg-emerald-500 shadow-sm animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
+                              }`}
+                            />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-slate-800 dark:text-white">{inst.full_name}</div>
+                            <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1">{inst.bio || 'Pengajar KaiwaDojo'}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="font-bold text-slate-700 dark:text-slate-200">@{inst.username}</div>
-                      <div className="text-[0.68rem] text-slate-400">{inst.email}</div>
-                    </td>
-                    <td className="py-3 px-2">
-                      {inst.phone_number ? (
-                        <a
-                          href={`https://wa.me/${inst.phone_number.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
-                        >
-                          <span>📱</span>
-                          <span>{inst.phone_number}</span>
-                        </a>
-                      ) : (
-                        <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="flex flex-wrap gap-1">
-                        {inst.expertise.map((exp, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[0.65rem] font-bold">
-                            {exp}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
-                        👨‍🏫 Pemateri
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => openEditModal(inst)}
-                          className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(inst)}
-                          className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
-                        >
-                          🗑️ Hapus
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Status Online Column */}
+                      <td className="py-3 px-2">
+                        {presence.isOnline ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800 w-fit shadow-2xs">
+                              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>🟢 Online</span>
+                            </span>
+                            <span className="text-[0.62rem] text-emerald-600 dark:text-emerald-400 font-bold">Sedang aktif</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-bold border border-slate-200 dark:border-slate-700 w-fit">
+                              <span className="size-1.5 rounded-full bg-slate-400" />
+                              <span>Offline</span>
+                            </span>
+                            <span className="text-[0.62rem] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
+                              {presence.relativeTime}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-2">
+                        <div className="font-bold text-slate-700 dark:text-slate-200">@{inst.username}</div>
+                        <div className="text-[0.68rem] text-slate-400">{inst.email}</div>
+                      </td>
+                      <td className="py-3 px-2">
+                        {inst.phone_number ? (
+                          <a
+                            href={`https://wa.me/${inst.phone_number.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                          >
+                            <span>📱</span>
+                            <span>{inst.phone_number}</span>
+                          </a>
+                        ) : (
+                          <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="flex flex-wrap gap-1">
+                          {inst.expertise.map((exp, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[0.65rem] font-bold">
+                              {exp}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
+                          👨‍🏫 Pemateri
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEditModal(inst)}
+                            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(inst)}
+                            className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

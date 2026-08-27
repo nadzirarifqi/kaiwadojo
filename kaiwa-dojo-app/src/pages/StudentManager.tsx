@@ -12,6 +12,7 @@ import {
   rejectStudentAccount,
   normalizeGroup,
 } from '../lib/studentService'
+import { calculateUserPresence } from '../lib/presenceUtils'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
 
@@ -54,6 +55,13 @@ export default function StudentManager() {
   useEffect(() => {
     loadData()
     loadGroups()
+
+    // Auto-refresh presence every 30 seconds
+    const refreshInterval = setInterval(() => {
+      fetchStudents().then(data => setStudents(data))
+    }, 30000)
+
+    return () => clearInterval(refreshInterval)
   }, [])
 
   async function loadGroups() {
@@ -249,6 +257,7 @@ export default function StudentManager() {
 
   const pendingCount = students.filter(s => s.status === 'pending').length
   const approvedCount = students.filter(s => s.status === 'approved').length
+  const onlineCount = students.filter(s => calculateUserPresence(s.last_active_at).isOnline).length
 
   const filteredStudents = students.filter(std => {
     if (statusFilter === 'pending') return std.status === 'pending'
@@ -273,7 +282,11 @@ export default function StudentManager() {
             <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
               👑 Menu Admin
             </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">
+            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{onlineCount} Sedang Online</span>
+            </span>
+            <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black">
               {approvedCount} Pelajar Terverifikasi
             </span>
             {pendingCount > 0 && (
@@ -286,7 +299,7 @@ export default function StudentManager() {
             <span>🎓 Kelola & Verifikasi Akun Pelajar</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar Kaiwa Dojo.
+            Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar Kaiwa Dojo.
           </p>
         </div>
 
@@ -358,6 +371,7 @@ export default function StudentManager() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 px-2">Nama Siswa</th>
+                  <th className="pb-3 px-2">Status Online</th>
                   <th className="pb-3 px-2">Username & Email</th>
                   <th className="pb-3 px-2">No. WhatsApp</th>
                   <th className="pb-3 px-2">Asal Lembaga / PT</th>
@@ -367,55 +381,106 @@ export default function StudentManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
-                {filteredStudents.map(std => (
-                  <tr key={std.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={std.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${std.username}`}
-                          alt={std.full_name}
-                          className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover shrink-0"
-                        />
-                        <div>
-                          <div className="font-extrabold text-slate-800 dark:text-white">{std.full_name}</div>
-                          <span className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[0.65rem] font-black uppercase">
-                            🎓 Pelajar
-                          </span>
+                {filteredStudents.map(std => {
+                  const presence = calculateUserPresence(std.last_active_at)
+                  return (
+                    <tr key={std.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            <img
+                              src={std.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${std.username}`}
+                              alt={std.full_name}
+                              className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
+                            />
+                            <span
+                              title={presence.isOnline ? '🟢 Online (Sedang Aktif)' : `⚪ ${presence.relativeTime}`}
+                              className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white dark:border-slate-900 ${
+                                presence.isOnline ? 'bg-emerald-500 shadow-sm animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
+                              }`}
+                            />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-slate-800 dark:text-white">{std.full_name}</div>
+                            <span className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[0.65rem] font-black uppercase">
+                              🎓 Pelajar
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="font-bold text-slate-700 dark:text-slate-200">@{std.username}</div>
-                      <div className="text-[0.68rem] text-slate-400">{std.email}</div>
-                    </td>
-                    <td className="py-3 px-2">
-                      {std.phone_number ? (
-                        <a
-                          href={`https://wa.me/${std.phone_number.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
-                        >
-                          <span>📱</span>
-                          <span>{std.phone_number}</span>
-                        </a>
-                      ) : (
-                        <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
-                    </td>
-                    {/* Grup Column */}
-                    <td className="py-3 px-2">
-                      {std.group_name ? (
-                        <span className="px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[0.65rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                          👥 {std.group_name}
-                        </span>
-                      ) : (
-                        <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
-                      )}
-                    </td>
+                      </td>
+
+                      {/* Status Online Column */}
+                      <td className="py-3 px-2">
+                        {presence.isOnline ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800 w-fit shadow-2xs">
+                              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>🟢 Online</span>
+                            </span>
+                            <span className="text-[0.62rem] text-emerald-600 dark:text-emerald-400 font-bold">Sedang aktif</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-bold border border-slate-200 dark:border-slate-700 w-fit">
+                              <span className="size-1.5 rounded-full bg-slate-400" />
+                              <span>Offline</span>
+                            </span>
+                            <span className="text-[0.62rem] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
+                              {presence.relativeTime}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-2">
+                        <div className="font-bold text-slate-700 dark:text-slate-200">@{std.username}</div>
+                        <div className="text-[0.68rem] text-slate-400">{std.email}</div>
+                      </td>
+                      <td className="py-3 px-2">
+                        {std.phone_number ? (
+                          <a
+                            href={`https://wa.me/${std.phone_number.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                          >
+                            <span>📱</span>
+                            <span>{std.phone_number}</span>
+                          </a>
+                        ) : (
+                          <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
+                      </td>
+                      {/* Grup Column */}
+                      <td className="py-3 px-2">
+                        {std.group_name ? (
+                          <span className="px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[0.65rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
+                            👥 {std.group_name}
+                          </span>
+                        ) : (
+                          <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                        )}
+                      </td>
+
+                      {/* Status Verifikasi Column */}
+                      <td className="py-3 px-2">
+                        {std.status === 'approved' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
+                            ✅ Terverifikasi
+                          </span>
+                        ) : std.status === 'pending' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[0.65rem] font-black uppercase animate-pulse">
+                            ⏳ Menunggu
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[0.65rem] font-black uppercase">
+                            ✕ Ditolak
+                          </span>
+                        )}
+                      </td>
                     <td className="py-3 px-2 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         {std.status === 'pending' ? (
@@ -467,7 +532,8 @@ export default function StudentManager() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

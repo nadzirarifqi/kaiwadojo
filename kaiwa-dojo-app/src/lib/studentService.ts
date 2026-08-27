@@ -15,6 +15,7 @@ export interface StudentAccount {
   bio?: string
   streak_days: number
   status: StudentStatus
+  last_active_at?: string | null
   created_at: string
 }
 
@@ -63,6 +64,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         bio: p.bio,
         streak_days: p.streak_days || 0,
         status: (p.status as StudentStatus) || 'approved',
+        last_active_at: p.last_active_at || null,
         created_at: p.created_at || new Date().toISOString(),
       }))
     }

@@ -84,6 +84,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSessionExpiredNotice(null)
   }
 
+  const LAST_HEARTBEAT_KEY = 'kaiwa_last_presence_heartbeat'
+
+  // Send presence heartbeat to Supabase DB to track online status
+  const sendPresenceHeartbeat = async (userId: string) => {
+    if (!userId) return
+    const now = Date.now()
+    const lastHbStr = sessionStorage.getItem(LAST_HEARTBEAT_KEY)
+    const lastHb = lastHbStr ? parseInt(lastHbStr, 10) : 0
+
+    // Throttle heartbeat to at most once per 60 seconds
+    if (now - lastHb < 60000) return
+
+    sessionStorage.setItem(LAST_HEARTBEAT_KEY, now.toString())
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', userId)
+    } catch {}
+  }
+
   // Update activity timestamp in local storage
   const updateActivity = () => {
     const now = Date.now()
@@ -92,6 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Throttle to update at most once every 5 seconds
     if (now - stored > 5000) {
       localStorage.setItem(LAST_ACTIVITY_KEY, now.toString())
+    }
+
+    // Also trigger throttled presence heartbeat for active profile
+    if (profile?.id) {
+      sendPresenceHeartbeat(profile.id)
     }
   }
 
@@ -267,11 +293,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
+    // Periodic presence heartbeat every 2 minutes while tab is open
+    const heartbeatInterval = setInterval(() => {
+      const customStr = sessionStorage.getItem('kaiwa_custom_profile')
+      if (customStr) {
+        try {
+          const parsed = JSON.parse(customStr)
+          if (parsed?.id) {
+            sendPresenceHeartbeat(parsed.id)
+          }
+        } catch {}
+      }
+    }, 120000)
+
     return () => {
       activityEvents.forEach(evt => {
         window.removeEventListener(evt, handleUserActivity)
       })
       clearInterval(interval)
+      clearInterval(heartbeatInterval)
       window.removeEventListener('kaiwa_profile_updated', handleProfileUpdate)
       listener.subscription.unsubscribe()
     }

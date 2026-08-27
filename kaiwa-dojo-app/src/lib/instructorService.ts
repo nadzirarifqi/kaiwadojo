@@ -11,6 +11,7 @@ export interface InstructorAccount {
   bio?: string
   expertise: string[]
   total_students: number
+  last_active_at?: string | null
   created_at: string
 }
 
@@ -74,6 +75,7 @@ export async function fetchInstructors(): Promise<InstructorAccount[]> {
         bio: p.bio,
         expertise: ['Japanese', 'Kaiwa'],
         total_students: 50,
+        last_active_at: p.last_active_at || null,
         created_at: p.created_at || new Date().toISOString(),
       }))
 
