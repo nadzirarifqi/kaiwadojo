@@ -5,6 +5,7 @@ export interface InstructorAccount {
   full_name: string
   username: string
   email: string
+  phone_number?: string
   role: 'pemateri'
   avatar_url?: string
   bio?: string
@@ -67,6 +68,7 @@ export async function fetchInstructors(): Promise<InstructorAccount[]> {
         full_name: p.full_name,
         username: p.username,
         email: p.email || `${p.username}@kaiwadojo.com`,
+        phone_number: p.phone_number || undefined,
         role: 'pemateri',
         avatar_url: p.avatar_url,
         bio: p.bio,

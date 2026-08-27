@@ -207,6 +207,7 @@ export default function InstructorManager() {
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 px-2">Sensei / Pengajar</th>
                   <th className="pb-3 px-2">Username & Email</th>
+                  <th className="pb-3 px-2">No. WhatsApp</th>
                   <th className="pb-3 px-2">Bidang Keahlian</th>
                   <th className="pb-3 px-2">Role Status</th>
                   <th className="pb-3 px-2 text-right">Aksi Admin</th>
@@ -231,6 +232,21 @@ export default function InstructorManager() {
                     <td className="py-3 px-2">
                       <div className="font-bold text-slate-700 dark:text-slate-200">@{inst.username}</div>
                       <div className="text-[0.68rem] text-slate-400">{inst.email}</div>
+                    </td>
+                    <td className="py-3 px-2">
+                      {inst.phone_number ? (
+                        <a
+                          href={`https://wa.me/${inst.phone_number.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                        >
+                          <span>📱</span>
+                          <span>{inst.phone_number}</span>
+                        </a>
+                      ) : (
+                        <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                      )}
                     </td>
                     <td className="py-3 px-2">
                       <div className="flex flex-wrap gap-1">

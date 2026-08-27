@@ -367,8 +367,8 @@ export default function MyCourses() {
   // Mobile toggle for lesson list panel
   const [showLessonList, setShowLessonList] = useState(false)
 
-  // Expanded bab accordions
-  const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set([1, 26]))
+  // Expanded bab accordions — all collapsed by default, user clicks to expand
+  const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set())
 
   // Custom Alert Modal State
   const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
@@ -1207,7 +1207,7 @@ export default function MyCourses() {
             <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
 
               {/* Left Column: Video Player / Kotoba View / Quiz View / Placeholder */}
-              <div className="flex flex-col overflow-y-auto p-4 sm:p-6 gap-5">
+              <div className="flex flex-col overflow-y-auto p-3 sm:p-6 gap-4">
 
                 {/* Mobile-only: Toggle button for lesson list */}
                 <div className="lg:hidden flex items-center justify-between">
@@ -1352,8 +1352,8 @@ export default function MyCourses() {
                     </div>
                   </div>
                 ) : activeLesson.video_id ? (
-                  /* Real HTML5 Portrait Video Player (Mobile 9:16 Responsive Container) */
-                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 min-h-[460px] sm:min-h-[580px] relative overflow-hidden">
+                  /* Real HTML5 Portrait Video Player — fills available screen on mobile */
+                  <div className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden" style={{ minHeight: 'min(65vh, 520px)' }}>
                     {/* Ambient Glow */}
                     <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
 
@@ -1362,8 +1362,8 @@ export default function MyCourses() {
                       <span>📱 Format Video Mobile (Portrait 9:16)</span>
                     </div>
 
-                    {/* Portrait Phone Frame Container */}
-                    <div className="w-full max-w-[340px] aspect-[9/16] max-h-[65vh] sm:max-h-[540px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group">
+                    {/* Portrait Phone Frame — on mobile takes up all available height */}
+                    <div className="w-full max-w-[320px] sm:max-w-[340px] rounded-2xl overflow-hidden bg-black shadow-2xl border-2 sm:border-4 border-slate-800 relative z-10 group" style={{ aspectRatio: '9/16', maxHeight: 'min(60vh, 540px)' }}>
                       <SmartVideoPlayer
                         lesson={activeLesson}
                         chapterBab={activeChapter?.bab_number || 1}
