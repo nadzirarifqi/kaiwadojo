@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { ProfileSkeleton } from '../components/Skeleton'
+import { normalizeGroup } from '../lib/studentService'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
@@ -280,6 +281,7 @@ export default function ProfilePage() {
       const updateData = {
         full_name: fullName.trim(),
         institution: institution.trim(),
+        group_name: normalizeGroup(institution.trim()),
         bio: bio.trim(),
         avatar_url: finalAvatarUrl.trim() || null,
         updated_at: new Date().toISOString(),
@@ -297,6 +299,7 @@ export default function ProfilePage() {
           full_name: fullName.trim(),
           username: (profile?.username || username).trim(),
           institution: institution.trim(),
+          group_name: normalizeGroup(institution.trim()),
           bio: bio.trim(),
           avatar_url: finalAvatarUrl.trim() || null,
           role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
@@ -313,6 +316,7 @@ export default function ProfilePage() {
         full_name: fullName.trim(),
         username: (profile?.username || username).trim(),
         institution: institution.trim(),
+        group_name: normalizeGroup(institution.trim()),
         bio: bio.trim(),
         avatar_url: finalAvatarUrl.trim() || null,
         role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),

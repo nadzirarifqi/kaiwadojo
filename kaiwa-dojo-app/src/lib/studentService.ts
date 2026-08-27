@@ -26,7 +26,11 @@ export interface StudentAccount {
  */
 export function normalizeGroup(raw: string | null | undefined): string {
   if (!raw) return ''
-  return raw.split('|')[0].trim().toLowerCase().replace(/\s+/g, ' ')
+  const extracted = raw.split('|')[0].trim()
+  if (extracted.toLowerCase().includes('viva legacy')) {
+    return 'VIVA Legacy'
+  }
+  return extracted
 }
 
 /**

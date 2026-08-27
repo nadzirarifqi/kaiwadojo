@@ -414,23 +414,29 @@ export default function MyCourses() {
     ])
     setHeaderSettings(adminHeader)
 
-    // 1. Fetch user's progress from local storage & Supabase
-    const effectiveUserId = profile?.id || user?.id || 'active_user'
-    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
-    const globalKey = `kaiwa_lesson_progress_active_global`
+    // 1. Fetch user's progress — DB is source of truth, scoped strictly per user ID
+    const effectiveUserId = profile?.id || user?.id || null
+    // NEVER use a shared 'active_global' key for logged-in users — it leaks
+    // progress from previous users on the same device/browser.
+    const storageKey = effectiveUserId
+      ? `kaiwa_lesson_progress_${effectiveUserId}`
+      : null
 
     let userProgress = new Map<string, { is_completed: boolean; replay_count: number }>()
 
-    // Load from local storage backup first
-    const savedLocal = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
-    if (savedLocal) {
-      try {
-        const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedLocal)
-        parsedArr.forEach(([lId, val]) => userProgress.set(lId, val))
-      } catch {}
+    // Load from user-specific local storage (fast initial render)
+    if (storageKey) {
+      const savedLocal = localStorage.getItem(storageKey)
+      if (savedLocal) {
+        try {
+          const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedLocal)
+          parsedArr.forEach(([lId, val]) => userProgress.set(lId, val))
+        } catch {}
+      }
     }
 
-    if (user?.id || profile?.id) {
+    if (effectiveUserId) {
+      // DB always wins — override stale localStorage values
       const { data: progressData } = await supabase
         .from('lesson_progress')
         .select('lesson_id, is_completed, replay_count')
@@ -438,16 +444,19 @@ export default function MyCourses() {
 
       if (progressData) {
         progressData.forEach((p: any) => {
-          const existing = userProgress.get(p.lesson_id)
-          const mergedCompleted = p.is_completed || existing?.is_completed || false
-          const mergedReplay = Math.max(p.replay_count || 0, existing?.replay_count || 0)
-          userProgress.set(p.lesson_id, { is_completed: mergedCompleted, replay_count: mergedReplay })
+          const local = userProgress.get(p.lesson_id)
+          userProgress.set(p.lesson_id, {
+            is_completed: p.is_completed || false,
+            replay_count: Math.max(p.replay_count || 0, local?.replay_count || 0),
+          })
         })
       }
     }
     setProgressMap(userProgress)
-    localStorage.setItem(storageKey, JSON.stringify(Array.from(userProgress.entries())))
-    localStorage.setItem(globalKey, JSON.stringify(Array.from(userProgress.entries())))
+    // Persist back only to user-specific key (never shared global key)
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(userProgress.entries())))
+    }
 
     // 2. Fetch real database lessons from Supabase (if available)
     const { data: realLessons } = await supabase
@@ -611,11 +620,10 @@ export default function MyCourses() {
   async function handleToggleLessonComplete(lesson: LessonItem) {
     if (lesson.is_placeholder) return
     const newStatus = !lesson.is_completed
-    const effectiveUserId = profile?.id || user?.id || 'active_user'
+    const effectiveUserId = profile?.id || user?.id || null
 
-    // 1. Update local progress map & local storage
-    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
-    const globalKey = `kaiwa_lesson_progress_active_global`
+    // 1. Update local progress map & local storage (per-user key only)
+    const storageKey = effectiveUserId ? `kaiwa_lesson_progress_${effectiveUserId}` : null
 
     setProgressMap(prev => {
       const next = new Map(prev)
@@ -624,8 +632,7 @@ export default function MyCourses() {
         is_completed: newStatus,
         replay_count: existing?.replay_count || lesson.replay_count || 0,
       })
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
-      localStorage.setItem(globalKey, JSON.stringify(Array.from(next.entries())))
+      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
       return next
     })
 
@@ -647,7 +654,7 @@ export default function MyCourses() {
     window.dispatchEvent(new Event('storage'))
 
     // 3. Update lesson_progress in Supabase if logged in
-    if (user?.id || profile?.id) {
+    if (effectiveUserId) {
       await supabase.from('lesson_progress').upsert({
         student_id: effectiveUserId,
         lesson_id: lesson.id,
@@ -664,7 +671,7 @@ export default function MyCourses() {
       )
       const newProgressPct = Math.min(100, Math.round((updatedCompletedCount / (25 * 5)) * 100))
 
-      if (user?.id || profile?.id) {
+      if (effectiveUserId) {
         await supabase.from('enrollments').upsert({
           student_id: effectiveUserId,
           course_id: courseId,
@@ -677,7 +684,7 @@ export default function MyCourses() {
     }
 
     // 5. Update learning streak ONLY IF daily mission progress reaches 100%
-    if (user?.id || profile?.id) {
+    if (effectiveUserId) {
       try {
         const todayStr = getTodayDateString()
         const mission = (await fetchDailyMission(effectiveUserId, todayStr)) || getDailyMission(effectiveUserId, todayStr)
@@ -694,11 +701,10 @@ export default function MyCourses() {
     if (lesson.is_placeholder) return
     const currentReplay = lesson.replay_count || 0
     const newReplayCount = currentReplay + 1
-    const effectiveUserId = profile?.id || user?.id || 'active_user'
+    const effectiveUserId = profile?.id || user?.id || null
 
-    // 1. Update local progress map & local storage
-    const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
-    const globalKey = `kaiwa_lesson_progress_active_global`
+    // 1. Update local progress map & local storage (per-user key only)
+    const storageKey = effectiveUserId ? `kaiwa_lesson_progress_${effectiveUserId}` : null
 
     setProgressMap(prev => {
       const next = new Map(prev)
@@ -707,8 +713,7 @@ export default function MyCourses() {
         is_completed: existing?.is_completed || lesson.is_completed || false,
         replay_count: newReplayCount,
       })
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
-      localStorage.setItem(globalKey, JSON.stringify(Array.from(next.entries())))
+      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(Array.from(next.entries())))
       return next
     })
 
@@ -728,7 +733,7 @@ export default function MyCourses() {
     window.dispatchEvent(new Event('storage'))
 
     // 3. Update lesson_progress in Supabase if logged in
-    if (user?.id || profile?.id) {
+    if (effectiveUserId) {
       await supabase.from('lesson_progress').upsert({
         student_id: effectiveUserId,
         lesson_id: lesson.id,

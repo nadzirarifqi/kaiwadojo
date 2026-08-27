@@ -217,9 +217,8 @@ export default function ClassReservationPage() {
   const availableMonths = Array.from(new Set(schedules.map(s => s.month_range_id))).sort()
 
   // Group-based visibility:
-  // - userGroupName comes from DB field group_name ONLY (no institution fallback)
-  //   so old users (group_name = null) only see 'Semua Siswa' classes
-  const userGroupName = normalizeGroup((profile as any)?.group_name)
+  // - userGroupName comes from DB field group_name or fallback to institution
+  const userGroupName = normalizeGroup((profile as any)?.group_name || (profile as any)?.institution)
 
   const filteredSchedules = schedules.filter(sch => {
     // Type tab
@@ -231,7 +230,7 @@ export default function ClassReservationPage() {
     // - if schedule has target_group → only visible if user's group matches (case+space insensitive)
     if (sch.target_group) {
       const schedGroup = normalizeGroup(sch.target_group)
-      if (!userGroupName || userGroupName !== schedGroup) return false
+      if (!userGroupName || userGroupName.toLowerCase() !== schedGroup.toLowerCase()) return false
     }
 
     // Week filter
