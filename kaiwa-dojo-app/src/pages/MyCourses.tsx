@@ -486,6 +486,9 @@ export default function MyCourses() {
         ? (adminChapterMap as any).get(bab)
         : (adminChapterMap as any)?.[bab]
 
+      const rawBabTitle = adminSetting?.title || info.title
+      const cleanBabTitle = rawBabTitle.replace(/^(第\d+課|Bab\s+\d+):\s*/i, '').trim()
+
       const lessons: LessonItem[] = CHAPTER_ITEMS_CONFIG.map(item => {
         const lessonCode = `bab_${bab}_item_${item.num}`
         const dbLesson   = realLessonMap.get(lessonCode) || realLessonMap.get(`bab_${bab}_video_${item.num}`) || realLessonMap.get(`lesson_bab_${bab}_${item.num}`)
@@ -504,10 +507,22 @@ export default function MyCourses() {
 
         const videoUrl = customVideoOverride || dbLesson?.video_url || hostedUrl
 
-        const lessonTitle = item.num === 1 && adminSetting?.video1_title ? adminSetting.video1_title
-          : item.num === 2 && adminSetting?.video2_title ? adminSetting.video2_title
-          : item.num === 3 && adminSetting?.video3_title ? adminSetting.video3_title
-          : dbLesson?.title || item.title
+        let baseTitle = ''
+        if (item.num === 1 && adminSetting?.video1_title) baseTitle = adminSetting.video1_title
+        else if (item.num === 2 && adminSetting?.video2_title) baseTitle = adminSetting.video2_title
+        else if (item.num === 3 && adminSetting?.video3_title) baseTitle = adminSetting.video3_title
+        else if (dbLesson?.title) baseTitle = dbLesson.title
+
+        let lessonTitle = ''
+        if (baseTitle) {
+          lessonTitle = /part\s*\d+/i.test(baseTitle) ? baseTitle : `${baseTitle} - Part ${item.num <= 3 ? item.num : item.num - 3}`
+        } else if (item.type === 'video') {
+          lessonTitle = `${cleanBabTitle} - Part ${item.num}`
+        } else if (item.type === 'quiz') {
+          lessonTitle = `Kuis Evaluasi ${cleanBabTitle} - Part ${item.num - 3}`
+        } else {
+          lessonTitle = `${cleanBabTitle} - Part ${item.num}`
+        }
 
         let durationText = item.duration.toString()
         if (item.num === 1 && adminSetting?.duration_s1) durationText = String(adminSetting.duration_s1)
@@ -1134,12 +1149,8 @@ export default function MyCourses() {
                           {/* Card Content */}
                           <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
                             <div>
-                              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-snug line-clamp-2 mb-1">
-                                {isQuiz
-                                  ? (language === 'ja' ? `評価クイズ ${lesson.lesson_number - 3}` : language === 'en' ? `Evaluation Quiz ${lesson.lesson_number - 3}` : `Kuis Evaluasi ${lesson.lesson_number - 3}`)
-                                  : isKotoba
-                                    ? (language === 'ja' ? `第${chap.bab_number}課 単語提出` : language === 'en' ? `Chapter ${chap.bab_number} Vocabulary` : `Setoran Kotoba Bab ${chap.bab_number}`)
-                                    : (language === 'ja' ? `第${chap.bab_number}課 パート${lesson.lesson_number}` : language === 'en' ? `Chapter ${chap.bab_number} Part ${lesson.lesson_number}` : `Bab ${chap.bab_number} Part ${lesson.lesson_number}`)}
+                              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-1">
+                                {lesson.title}
                               </h4>
                               <p className="text-[0.7rem] text-slate-400 font-medium">
                                 {isQuizLocked
