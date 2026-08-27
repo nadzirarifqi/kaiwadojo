@@ -314,7 +314,7 @@ export default function RegisterPage() {
               <input
                 id="reg-institution"
                 type="text"
-                placeholder="Contoh: VIVA Legacy | STAI DT"
+                placeholder="Contoh: Nama Group | Institusi"
                 required
                 value={institution}
                 onChange={e => setInstitution(e.target.value)}
@@ -322,13 +322,8 @@ export default function RegisterPage() {
               />
               <div className="text-[0.68rem] text-slate-400 dark:text-slate-500 leading-relaxed bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800">
                 <span className="font-bold text-slate-500 dark:text-slate-400">Format:</span>{' '}
-                <code className="text-primary dark:text-red-400 font-bold">Nama Grup</code> atau{' '}
-                <code className="text-primary dark:text-red-400 font-bold">Nama Grup | Asal Perguruan Tinggi</code>
-                <div className="mt-1 flex flex-col gap-0.5">
-                  <span>• <strong>VIVA Legacy</strong> — belum menjadi mahasiswa</span>
-                  <span>• <strong>VIVA Legacy | STAI DT</strong> — mahasiswa STAI DT</span>
-                  <span>• <strong>VIVA Legacy | Universitas Lain</strong> — mahasiswa PT lain</span>
-                </div>
+                <code className="text-primary dark:text-red-400 font-bold">Nama Group | Institusi</code>{' '}
+                <span className="text-slate-400">(atau cukup <code className="text-primary dark:text-red-400 font-bold">Nama Group</code> jika belum ada institusi)</span>
               </div>
             </div>
 

@@ -512,7 +512,7 @@ export default function StudentManager() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
                 <input
                   type="text"
-                  placeholder="contoh: VIVA Legacy | STAI DT"
+                  placeholder="contoh: Nama Group | Institusi"
                   value={institution}
                   onChange={e => setInstitution(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
@@ -620,7 +620,7 @@ export default function StudentManager() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
                 <input
                   type="text"
-                  placeholder="contoh: VIVA Legacy | STAI DT"
+                  placeholder="contoh: Nama Group | Institusi"
                   value={institution}
                   onChange={e => setInstitution(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
