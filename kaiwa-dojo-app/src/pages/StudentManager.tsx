@@ -10,8 +10,10 @@ import {
   deleteStudentAccount,
   approveStudentAccount,
   rejectStudentAccount,
+  normalizeGroup,
 } from '../lib/studentService'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
+import { supabase } from '../lib/supabaseClient'
 
 export default function StudentManager() {
   const navigate = useNavigate()
@@ -34,9 +36,13 @@ export default function StudentManager() {
   const [institution, setInstitution] = useState('')
   const [bio, setBio] = useState('')
   const [status, setStatus] = useState<StudentStatus>('approved')
+  const [groupName, setGroupName] = useState('') // normalized group
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+
+  // Available groups from kaiwa_groups table
+  const [availableGroups, setAvailableGroups] = useState<string[]>([])
 
   async function loadData() {
     setLoading(true)
@@ -47,7 +53,20 @@ export default function StudentManager() {
 
   useEffect(() => {
     loadData()
+    loadGroups()
   }, [])
+
+  async function loadGroups() {
+    try {
+      const { data } = await supabase
+        .from('kaiwa_groups')
+        .select('name')
+        .order('name', { ascending: true })
+      if (data) setAvailableGroups(data.map((g: any) => g.name))
+    } catch {
+      setAvailableGroups([])
+    }
+  }
 
   function showToastMsg(msg: string) {
     setToast(msg)
@@ -61,6 +80,7 @@ export default function StudentManager() {
     setInstitution('')
     setBio('')
     setStatus('approved')
+    setGroupName('')
     setShowAddModal(true)
   }
 
@@ -72,6 +92,8 @@ export default function StudentManager() {
     setInstitution(std.institution || '')
     setBio(std.bio || '')
     setStatus(std.status || 'approved')
+    // Use stored group_name if available, else extract from institution
+    setGroupName(std.group_name || normalizeGroup(std.institution))
   }
 
   async function handleApprove(std: StudentAccount) {
@@ -141,6 +163,14 @@ export default function StudentManager() {
       status,
     })
 
+    // If admin manually picked a group different from institution-derived one, override
+    if (created && groupName) {
+      await supabase
+        .from('profiles')
+        .update({ group_name: groupName })
+        .eq('id', created.id)
+    }
+
     setSaving(false)
     setShowAddModal(false)
     if (created) {
@@ -168,6 +198,12 @@ export default function StudentManager() {
       bio,
       status,
     })
+
+    // Update group_name override (admin manual assignment)
+    await supabase
+      .from('profiles')
+      .update({ group_name: groupName || null })
+      .eq('id', editingStudent.id)
 
     setSaving(false)
     setEditingStudent(null)
@@ -324,8 +360,8 @@ export default function StudentManager() {
                   <th className="pb-3 px-2">Nama Siswa</th>
                   <th className="pb-3 px-2">Username & Email</th>
                   <th className="pb-3 px-2">Asal Lembaga / PT</th>
+                  <th className="pb-3 px-2">Grup</th>
                   <th className="pb-3 px-2">Status Verifikasi</th>
-                  <th className="pb-3 px-2">Bio / Catatan</th>
                   <th className="pb-3 px-2 text-right">Aksi Verifikasi Admin</th>
                 </tr>
               </thead>
@@ -354,23 +390,15 @@ export default function StudentManager() {
                     <td className="py-3 px-2">
                       <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
                     </td>
+                    {/* Grup Column */}
                     <td className="py-3 px-2">
-                      {std.status === 'pending' ? (
-                        <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[0.68rem] font-black border border-amber-300 dark:border-amber-800 animate-pulse">
-                          ⏳ Menunggu Verifikasi
-                        </span>
-                      ) : std.status === 'rejected' ? (
-                        <span className="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-[0.68rem] font-black border border-red-300 dark:border-red-800">
-                          ❌ Ditolak / Nonaktif
+                      {std.group_name ? (
+                        <span className="px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[0.65rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
+                          👥 {std.group_name}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800">
-                          ✅ Terverifikasi
-                        </span>
+                        <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
                       )}
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="text-slate-600 dark:text-slate-300 text-[0.7rem] max-w-xs line-clamp-1">{std.bio || 'Siswa Kaiwa Dojo'}</div>
                     </td>
                     <td className="py-3 px-2 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
@@ -484,11 +512,29 @@ export default function StudentManager() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
                 <input
                   type="text"
-                  placeholder="contoh: Universitas Indonesia / LPK Sakura"
+                  placeholder="contoh: VIVA Legacy | STAI DT"
                   value={institution}
                   onChange={e => setInstitution(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                 />
+              </div>
+
+              {/* Group Dropdown */}
+              <div className="p-3 bg-violet-50/70 dark:bg-violet-950/20 rounded-xl border border-violet-200 dark:border-violet-800">
+                <label className="text-xs font-black text-violet-700 dark:text-violet-300 block mb-1">
+                  👥 Grup Siswa <span className="font-bold text-slate-400 normal-case">(Admin Override)</span>
+                </label>
+                <select
+                  value={groupName}
+                  onChange={e => setGroupName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-violet-500"
+                >
+                  <option value="">— Tidak ada grup (user biasa)</option>
+                  {availableGroups.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <p className="text-[0.65rem] text-slate-400 mt-1">Jika kosong, user hanya dapat melihat kelas "Semua Siswa".</p>
               </div>
 
               <div>
@@ -574,11 +620,29 @@ export default function StudentManager() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
                 <input
                   type="text"
-                  placeholder="contoh: Universitas Indonesia / LPK Sakura"
+                  placeholder="contoh: VIVA Legacy | STAI DT"
                   value={institution}
                   onChange={e => setInstitution(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                 />
+              </div>
+
+              {/* Group Dropdown - Admin Override */}
+              <div className="p-3 bg-violet-50/70 dark:bg-violet-950/20 rounded-xl border border-violet-200 dark:border-violet-800">
+                <label className="text-xs font-black text-violet-700 dark:text-violet-300 block mb-1">
+                  👥 Grup Siswa <span className="font-bold text-slate-400 normal-case">(Admin Override)</span>
+                </label>
+                <select
+                  value={groupName}
+                  onChange={e => setGroupName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-violet-500"
+                >
+                  <option value="">— Tidak ada grup (user biasa)</option>
+                  {availableGroups.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <p className="text-[0.65rem] text-slate-400 mt-1">Pilih grup untuk menentukan kelas apa yang bisa dilihat user ini.</p>
               </div>
 
               <div>
