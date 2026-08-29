@@ -319,12 +319,14 @@ export function detectVideoDuration(
 
     if (babNumber && partNumber) {
       const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
-      // Standard Rumahweb naming format: "Kaiwa Dojo - BAB {n} S{p}.mp4"
+      // Standard Rumahweb naming format: "Kaiwa Dojo - BAB {n} S{p}.mov"
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MOV`)
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mov`)
+      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)}`)
+      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MOV`)}`)
       candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`)
       candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`)
-      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`)}`)
-      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`)}`)
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)
     }
 
     if (urlOrBase && urlOrBase.trim()) {

@@ -53,15 +53,16 @@ const CHAPTER_ITEMS_CONFIG = [
   { num: 5, title: 'Kuis Evaluasi 2: Pemahaman & Kaiwa',     icon: '🎯', type: 'quiz'  as const, duration: 10, badge: '🎯 Kuis 2'  },
 ]
 
-/* ── Helper to map hosted video files in /kaiwa-1-courses/ ── */
+/* ── Helper to map hosted video files in /kaiwa-1-courses/ or /kaiwa-2-courses/ ── */
 function getHostedVideoUrl(babNumber: number, itemNum: number): string | null {
   // Only items 1, 2, 3 are video lessons (S1, S2, S3)
   if (itemNum > 3) return null
 
+  const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
   const folderName = `BAB ${babNumber}`
-  const fileNameMp4 = `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mp4`
+  const fileNameMov = `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`
 
-  return `/kaiwa-1-courses/${encodeURIComponent(folderName)}/${encodeURIComponent(fileNameMp4)}`
+  return `${jilidPath}/${encodeURIComponent(folderName)}/${encodeURIComponent(fileNameMov)}`
 }
 
 function getVideoUrlCandidates(originalUrl: string | null, babNumber: number, itemNum: number): string[] {
@@ -70,36 +71,36 @@ function getVideoUrlCandidates(originalUrl: string | null, babNumber: number, it
   if (originalUrl) {
     candidates.push(originalUrl)
     if (originalUrl.toLowerCase().endsWith('.mov')) {
+      candidates.push(originalUrl.replace(/\.mov$/i, '.MOV'))
       candidates.push(originalUrl.replace(/\.mov$/i, '.mp4'))
       candidates.push(originalUrl.replace(/\.mov$/i, '.MP4'))
-      candidates.push(originalUrl.replace(/\.mov$/i, '.MOV'))
     } else if (originalUrl.toLowerCase().endsWith('.mp4')) {
-      candidates.push(originalUrl.replace(/\.mp4$/i, '.MP4'))
       candidates.push(originalUrl.replace(/\.mp4$/i, '.mov'))
       candidates.push(originalUrl.replace(/\.mp4$/i, '.MOV'))
+      candidates.push(originalUrl.replace(/\.mp4$/i, '.MP4'))
     }
   }
 
+  const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
   const folderName = `BAB ${babNumber}`
   const encFolder = encodeURIComponent(folderName)
 
   const names = [
-    // Primary — matches actual uploaded files (lowercase "Bab")
-    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mp4`,
-    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MP4`,
-    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mov`,
-    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MOV`,
-    // Fallback — uppercase "BAB" variant
-    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`,
-    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MP4`,
+    // Primary — exact standard name (.mov / uppercase "BAB")
     `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mov`,
     `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MOV`,
-    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.Mp4`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mov`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MOV`,
+    // Fallback — mp4 variant
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.mp4`,
+    `Kaiwa Dojo - BAB ${babNumber} S${itemNum}.MP4`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.mp4`,
+    `Kaiwa Dojo - Bab ${babNumber} S${itemNum}.MP4`,
   ]
 
   names.forEach(name => {
-    const encUrl = `/kaiwa-1-courses/${encFolder}/${encodeURIComponent(name)}`
-    const rawUrl = `/kaiwa-1-courses/${folderName}/${name}`
+    const encUrl = `${jilidPath}/${encFolder}/${encodeURIComponent(name)}`
+    const rawUrl = `${jilidPath}/${folderName}/${name}`
     if (!candidates.includes(encUrl)) candidates.push(encUrl)
     if (!candidates.includes(rawUrl)) candidates.push(rawUrl)
   })

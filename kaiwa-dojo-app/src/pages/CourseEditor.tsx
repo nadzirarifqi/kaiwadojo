@@ -681,7 +681,7 @@ export default function CourseEditor() {
                     <AdaptiveIcon src="/video.png" alt="Video Path" className="size-4 object-contain shrink-0" />
                     <span>File Video di Hosting:</span>
                     <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
-                      {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mp4, S2.mp4, S3.mp4
+                      {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mov, S2.mov, S3.mov
                     </code>
                   </div>
 
