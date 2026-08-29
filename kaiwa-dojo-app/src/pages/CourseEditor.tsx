@@ -597,125 +597,32 @@ export default function CourseEditor() {
                   </div>
                 </div>
 
-                {/* Duration Form Fields: Video 1, 2, 3 Durations & Custom URLs */}
+                {/* Duration Form Fields: Video 1, 2, 3 Durations */}
                 <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                      <span>⏱️ Durasi Video S1, S2, S3:</span>
-                      <span className="text-[0.68rem] text-slate-400 font-normal">(Terintegrasi otomatis dengan file video)</span>
+                      <span>⏱️ Durasi Video Pembelajaran (S1, S2, S3):</span>
+                      <span className="text-[0.68rem] text-slate-400 font-normal">(Format standar hosting Rumahweb)</span>
                     </span>
 
                     <button
                       type="button"
                       onClick={() => handleAutoDetectDurations(babNum)}
                       disabled={detectingBab === babNum}
-                      className="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[0.68rem] font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1 shrink-0 self-start sm:self-auto"
+                      className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto disabled:opacity-50"
                     >
-                      <span>🔍 {detectingBab === babNum ? 'Mendeteksi File...' : 'Deteksi Otomatis Durasi dari File'}</span>
+                      <span>{detectingBab === babNum ? '⏳ Mendeteksi Video...' : '🔍 Deteksi Otomatis Durasi dari File'}</span>
                     </button>
-                  </div>
-
-                  {/* Custom Video URLs (Optional overrides) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 URL Video 1 (S1) Custom
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Path default: /kaiwa-1-courses/..."
-                        value={chap.custom_video_s1 || ''}
-                        onChange={e => {
-                          const val = e.target.value
-                          setChapterMap(prev => ({
-                            ...prev,
-                            [babNum]: { ...prev[babNum], custom_video_s1: val },
-                          }))
-                        }}
-                        onBlur={async e => {
-                          const url = e.target.value
-                          try {
-                            const d = await detectVideoDuration(url, babNum, 1)
-                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
-                            const updated = { ...current, custom_video_s1: url, duration_s1: d }
-                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
-                            await saveChapterSetting(updated)
-                            showToast(`Durasi Video 1 terdeteksi: ${d} menit ⏱️`)
-                          } catch {}
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 URL Video 2 (S2) Custom
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Path default: /kaiwa-1-courses/..."
-                        value={chap.custom_video_s2 || ''}
-                        onChange={e => {
-                          const val = e.target.value
-                          setChapterMap(prev => ({
-                            ...prev,
-                            [babNum]: { ...prev[babNum], custom_video_s2: val },
-                          }))
-                        }}
-                        onBlur={async e => {
-                          const url = e.target.value
-                          try {
-                            const d = await detectVideoDuration(url, babNum, 2)
-                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
-                            const updated = { ...current, custom_video_s2: url, duration_s2: d }
-                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
-                            await saveChapterSetting(updated)
-                            showToast(`Durasi Video 2 terdeteksi: ${d} menit ⏱️`)
-                          } catch {}
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 URL Video 3 (S3) Custom
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Path default: /kaiwa-1-courses/..."
-                        value={chap.custom_video_s3 || ''}
-                        onChange={e => {
-                          const val = e.target.value
-                          setChapterMap(prev => ({
-                            ...prev,
-                            [babNum]: { ...prev[babNum], custom_video_s3: val },
-                          }))
-                        }}
-                        onBlur={async e => {
-                          const url = e.target.value
-                          try {
-                            const d = await detectVideoDuration(url, babNum, 3)
-                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
-                            const updated = { ...current, custom_video_s3: url, duration_s3: d }
-                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
-                            await saveChapterSetting(updated)
-                            showToast(`Durasi Video 3 terdeteksi: ${d} menit ⏱️`)
-                          } catch {}
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
-                      />
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div>
                       <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        ⏱️ Durasi Video 1 (S1)
+                        🎥 Durasi Video 1 (S1)
                       </label>
                       <input
                         type="text"
-                        placeholder="Otomatis terdeteksi"
+                        placeholder="Contoh: 15.00"
                         value={chap.duration_s1 ?? '15.00'}
                         onChange={e => {
                           const val = e.target.value
@@ -724,17 +631,17 @@ export default function CourseEditor() {
                             [babNum]: { ...prev[babNum], duration_s1: val },
                           }))
                         }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary text-xs"
                       />
                     </div>
 
                     <div>
                       <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        ⏱️ Durasi Video 2 (S2)
+                        🎥 Durasi Video 2 (S2)
                       </label>
                       <input
                         type="text"
-                        placeholder="Otomatis terdeteksi"
+                        placeholder="Contoh: 15.00"
                         value={chap.duration_s2 ?? '15.00'}
                         onChange={e => {
                           const val = e.target.value
@@ -743,17 +650,17 @@ export default function CourseEditor() {
                             [babNum]: { ...prev[babNum], duration_s2: val },
                           }))
                         }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary text-xs"
                       />
                     </div>
 
                     <div>
                       <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        ⏱️ Durasi Video 3 (S3)
+                        🎥 Durasi Video 3 (S3)
                       </label>
                       <input
                         type="text"
-                        placeholder="Otomatis terdeteksi"
+                        placeholder="Contoh: 12.00"
                         value={chap.duration_s3 ?? '12.00'}
                         onChange={e => {
                           const val = e.target.value
@@ -762,28 +669,28 @@ export default function CourseEditor() {
                             [babNum]: { ...prev[babNum], duration_s3: val },
                           }))
                         }}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary text-xs"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Video File Auto-Path Preview Info */}
+                {/* Video File Auto-Path Preview Info & Save Bab Button */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[0.72rem]">
                   <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                     <AdaptiveIcon src="/video.png" alt="Video Path" className="size-4 object-contain shrink-0" />
-                    <span>Path File Video Otomatis di Hosting:</span>
+                    <span>File Video di Hosting:</span>
                     <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
-                      {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - Bab {babNum} S1.mp4 (S1, S2, S3)
+                      {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mp4, S2.mp4, S3.mp4
                     </code>
                   </div>
 
                   <button
                     onClick={() => handleSaveBab(babNum)}
                     disabled={savingBab === babNum}
-                    className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all self-end sm:self-auto shrink-0 shadow-2xs"
+                    className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all self-end sm:self-auto shrink-0 shadow-2xs disabled:opacity-50"
                   >
-                    {savingBab === babNum ? 'Menyimpan...' : '?? Simpan Bab Ini'}
+                    {savingBab === babNum ? 'Menyimpan...' : '💾 Simpan Bab Ini'}
                   </button>
                 </div>
               </div>

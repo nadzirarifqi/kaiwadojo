@@ -317,39 +317,20 @@ export function detectVideoDuration(
 
     const candidateUrls: string[] = []
 
+    if (babNumber && partNumber) {
+      const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
+      // Standard Rumahweb naming format: "Kaiwa Dojo - BAB {n} S{p}.mp4"
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`)
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`)
+      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`)}`)
+      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`)}`)
+      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)
+    }
+
     if (urlOrBase && urlOrBase.trim()) {
       const cleanUrl = urlOrBase.trim()
       candidateUrls.push(cleanUrl)
       candidateUrls.push(encodeURI(cleanUrl))
-      if (cleanUrl.toLowerCase().endsWith('.mov')) {
-        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.mp4'))
-        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.MP4'))
-        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.MOV'))
-      } else if (cleanUrl.toLowerCase().endsWith('.mp4')) {
-        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.MP4'))
-        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.mov'))
-        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.MOV'))
-      }
-    }
-
-    if (babNumber && partNumber) {
-      const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
-      const folderVariants = [`BAB ${babNumber}`, `Bab ${babNumber}`, `bab ${babNumber}`]
-      const fileVariants = [
-        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`,
-        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MP4`,
-        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mov`,
-        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MOV`,
-        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`,
-        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`,
-      ]
-
-      for (const folder of folderVariants) {
-        for (const file of fileVariants) {
-          candidateUrls.push(`${jilidPath}/${folder}/${file}`)
-          candidateUrls.push(`${jilidPath}/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`)
-        }
-      }
     }
 
     const uniqueUrls = Array.from(new Set(candidateUrls.filter(Boolean)))
@@ -392,7 +373,7 @@ export function detectVideoDuration(
 
       timeoutId = setTimeout(() => {
         tryNextUrl()
-      }, 4000)
+      }, 3500)
 
       tempVideo.onloadedmetadata = () => {
         const totalSeconds = tempVideo?.duration || 0
