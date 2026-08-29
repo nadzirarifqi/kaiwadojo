@@ -550,59 +550,9 @@ export default function Dashboard() {
         const prog = await calculateMissionProgress(effectiveUserId, mission)
         setMissionProgress(prog)
 
-        if (mission.selectedVideos.length > 0) {
-          let progData: any[] = []
-          if (user?.id || profile?.id) {
-            const { data } = await supabase
-              .from('lesson_progress')
-              .select('lesson_id, is_completed, replay_count')
-              .eq('student_id', effectiveUserId)
-            progData = data || []
-          }
-
-          // Merge local progress map
-          const localProgKey = `kaiwa_lesson_progress_${effectiveUserId}`
-          const globalProgKey = `kaiwa_lesson_progress_active_global`
-          const savedProgRaw = localStorage.getItem(localProgKey) || localStorage.getItem(globalProgKey)
-          if (savedProgRaw) {
-            try {
-              const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedProgRaw)
-              const progMap = new Map<string, { is_completed: boolean; replay_count: number }>()
-              progData.forEach(p => progMap.set(p.lesson_id, { is_completed: p.is_completed, replay_count: p.replay_count || 0 }))
-              parsedArr.forEach(([lId, val]) => {
-                const existing = progMap.get(lId)
-                progMap.set(lId, {
-                  is_completed: val.is_completed || existing?.is_completed || false,
-                  replay_count: Math.max(val.replay_count || 0, existing?.replay_count || 0),
-                })
-              })
-              progData = Array.from(progMap.entries()).map(([lId, val]) => ({
-                lesson_id: lId,
-                is_completed: val.is_completed,
-                replay_count: val.replay_count,
-              }))
-            } catch {}
-          }
-
+        if (prog.videoProgressMap) {
           const map = new Map<string, number>()
-          mission.selectedVideos.forEach(v => {
-            const patterns = [
-              v.id.toLowerCase(),
-              `bab_${v.bab}_video_${v.videoNum}`.toLowerCase(),
-              `bab_${v.bab}_item_${v.videoNum}`.toLowerCase(),
-              `lesson_bab_${v.bab}_${v.videoNum}`.toLowerCase(),
-            ]
-            let count = 0
-            if (progData) {
-              progData.forEach((p: any) => {
-                const idLower = (p.lesson_id || '').toLowerCase()
-                if (patterns.some(pat => idLower.includes(pat))) {
-                  count += p.replay_count && p.replay_count > 0 ? p.replay_count : (p.is_completed ? 1 : 0)
-                }
-              })
-            }
-            map.set(v.id, count)
-          })
+          Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
           setVideoProgressMap(map)
         }
       }
