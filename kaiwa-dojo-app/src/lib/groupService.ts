@@ -255,33 +255,19 @@ export async function updateGroup(
     ? updates.keywords.split(',').map(k => k.trim()).filter(Boolean).join(', ')
     : undefined
 
-  // 1. Update in-memory & local storage instantly
+  // 1. Update in-memory & local storage instantly (REPLACE, not append!)
   const currentGroups = await fetchGroups(false)
-  let found = false
-  const updatedGroups = currentGroups.map(g => {
-    if (g.id === id || g.name.toLowerCase() === oldName.toLowerCase()) {
-      found = true
-      return {
-        ...g,
-        name: newName,
-        keywords: cleanKeywords !== undefined ? cleanKeywords : g.keywords,
-        description: updates.description !== undefined ? updates.description.trim() : g.description,
-        updated_at: new Date().toISOString(),
-      }
-    }
-    return g
-  })
-
-  if (!found) {
-    updatedGroups.push({
-      id: id || `${Date.now()}`,
-      name: newName,
-      keywords: cleanKeywords || newName.toLowerCase(),
-      description: updates.description ? updates.description.trim() : '',
-      updated_at: new Date().toISOString(),
-    })
+  const otherGroups = currentGroups.filter(
+    g => g.name.toLowerCase() !== oldName.toLowerCase() && g.id !== id
+  )
+  const updatedObj: KaiwaGroup = {
+    id: id || `${Date.now()}`,
+    name: newName,
+    keywords: cleanKeywords !== undefined ? cleanKeywords : newName.toLowerCase(),
+    description: updates.description !== undefined ? updates.description.trim() : '',
+    updated_at: new Date().toISOString(),
   }
-
+  const updatedGroups = [...otherGroups, updatedObj]
   cachedGroups = updatedGroups
   saveLocalGroups(updatedGroups)
 
@@ -307,13 +293,13 @@ export async function updateGroup(
 
     // If not updated by id, try update by oldName
     if (!updatedInDb && oldName) {
-      const { error, data } = await supabase.from('kaiwa_groups').update(payload).eq('name', oldName).select()
+      const { error, data } = await supabase.from('kaiwa_groups').update(payload).ilike('name', oldName).select()
       if (!error && data && data.length > 0) {
         updatedInDb = true
       }
     }
 
-    // If still not updated, upsert by name
+    // If still not updated (e.g. row didn't exist yet), insert the new group
     if (!updatedInDb) {
       const upsertPayload: any = {
         name: newName,
@@ -326,10 +312,13 @@ export async function updateGroup(
       }
     }
 
-    // 3. Cascade update student profiles & class schedules in Supabase DB
-    if (oldName && newName && oldName !== newName) {
-      await supabase.from('profiles').update({ group_name: newName }).eq('group_name', oldName)
-      await supabase.from('class_schedules').update({ target_group: newName }).eq('target_group', oldName)
+    // 3. CRITICAL: If name changed, delete any remaining row for oldName to avoid duplicate groups!
+    if (oldName && newName && oldName.toLowerCase() !== newName.toLowerCase()) {
+      await supabase.from('kaiwa_groups').delete().ilike('name', oldName)
+
+      // Cascade update student profiles & class schedules in Supabase DB
+      await supabase.from('profiles').update({ group_name: newName }).ilike('group_name', oldName)
+      await supabase.from('class_schedules').update({ target_group: newName }).ilike('target_group', oldName)
     }
   } catch (err: any) {
     console.warn('updateGroup DB catch:', err)
