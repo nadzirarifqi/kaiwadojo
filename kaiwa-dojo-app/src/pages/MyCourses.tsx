@@ -823,62 +823,65 @@ export default function MyCourses() {
         </div>
       )}
 
-      {/* ⛩️ Hero Section: Japan Fun Facts Banner */}
-      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] px-6 py-8 sm:px-8 sm:py-10 lg:px-11 lg:py-12 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30">
+      {/* ⛩️ Hero Section: Japan Fun Facts Banner (Fixed Height on Mobile) */}
+      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] p-4.5 sm:p-7 lg:p-9 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30 min-h-[255px] sm:min-h-[200px] md:min-h-[175px] flex flex-col justify-between">
         {/* Background Kanji Watermark */}
-        <div className="absolute right-4 -bottom-6 text-[10rem] font-black text-rose-500/5 select-none pointer-events-none leading-none">
+        <div className="absolute right-3 -bottom-4 sm:right-4 sm:-bottom-6 text-[8rem] sm:text-[10rem] font-black text-rose-500/5 select-none pointer-events-none leading-none">
           {currentFact.kanji}
         </div>
         <div className="absolute -left-10 -top-10 size-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 min-w-0">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-6 flex-1">
+          <div className="flex-1 min-w-0 w-full">
             {/* Tag Badge */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[0.65rem] font-black uppercase tracking-widest bg-rose-500/80 text-white px-3 py-1 rounded-full shadow-xs">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[0.62rem] sm:text-[0.65rem] font-black uppercase tracking-widest bg-rose-500/80 text-white px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs">
                 {t('mc_trivia_title', '⛩️ Japan Trivia & Fun Fact')}
               </span>
-              <span className="text-[0.68rem] font-bold text-rose-200/80 bg-white/10 px-2.5 py-0.5 rounded-full">
+              <span className="text-[0.65rem] sm:text-[0.68rem] font-bold text-rose-200/80 bg-white/10 px-2 py-0.5 rounded-full">
                 {currentFact.tag}
               </span>
             </div>
 
-            {/* Kanji & Title */}
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl sm:text-4xl shrink-0 animate-bounce">{currentFact.icon}</span>
-              <div>
-                <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-                  {currentFact.title} <span className="text-rose-300 font-serif text-base ml-2">({currentFact.kanji})</span>
-                </h2>
-              </div>
+            {/* Kanji & Title (Fixed min-height to avoid jump) */}
+            <div className="flex items-center gap-2.5 mb-1.5 min-h-[28px] sm:min-h-[32px]">
+              <span className="text-2xl sm:text-3xl shrink-0 animate-bounce">{currentFact.icon}</span>
+              <h2 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-tight truncate">
+                {currentFact.title} <span className="text-rose-300 font-serif text-sm sm:text-base ml-1.5 font-normal">({currentFact.kanji})</span>
+              </h2>
             </div>
 
-            {/* Fact Text */}
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-2xl mt-2 bg-black/20 p-3.5 rounded-2xl border border-white/10">
-              "{currentFact.fact}"
-            </p>
+            {/* Fact Text (Fixed min-height to maintain 100% stable box size) */}
+            <div className="bg-black/25 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-white/10 min-h-[66px] sm:min-h-[54px] flex items-center">
+              <p className="text-[0.72rem] sm:text-xs lg:text-sm text-slate-200 leading-relaxed max-w-2xl line-clamp-3 sm:line-clamp-2">
+                "{currentFact.fact}"
+              </p>
+            </div>
           </div>
 
-          {/* Fact Nav Controls */}
-          <div className="flex flex-col items-end gap-3 shrink-0 self-stretch md:self-center justify-between">
+          {/* Fact Nav Controls & Dots (Fixed row on mobile, column on desktop) */}
+          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2.5 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
             <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => setFunFactIndex(prev => (prev === 0 ? JAPAN_FUN_FACTS.length - 1 : prev - 1))}
-                className="size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-bold transition-all"
+                className="size-8 sm:size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-bold transition-all"
                 title="Fun Fact Sebelumnya"
               >
                 ◄
               </button>
               <button
+                type="button"
                 onClick={() => setFunFactIndex(Math.floor(Math.random() * JAPAN_FUN_FACTS.length))}
-                className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-xs font-black transition-all shadow-md flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-[0.7rem] sm:text-xs font-black transition-all shadow-md flex items-center gap-1"
                 title="Acak Fun Fact"
               >
                 🎲 Acak Fact
               </button>
               <button
+                type="button"
                 onClick={() => setFunFactIndex(prev => (prev + 1) % JAPAN_FUN_FACTS.length)}
-                className="size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-bold transition-all"
+                className="size-8 sm:size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-bold transition-all"
                 title="Fun Fact Selanjutnya"
               >
                 ►
@@ -886,13 +889,14 @@ export default function MyCourses() {
             </div>
 
             {/* Dots Indicator */}
-            <div className="flex items-center gap-1.5 self-center md:self-end">
+            <div className="flex items-center gap-1.5">
               {JAPAN_FUN_FACTS.map((_, idx) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => setFunFactIndex(idx)}
-                  className={`size-2 rounded-full border-none cursor-pointer transition-all ${
-                    idx === funFactIndex ? 'bg-rose-400 w-5' : 'bg-white/30 hover:bg-white/60'
+                  className={`h-1.5 rounded-full border-none cursor-pointer transition-all ${
+                    idx === funFactIndex ? 'bg-rose-400 w-4.5 sm:w-5' : 'bg-white/30 hover:bg-white/60 w-1.5'
                   }`}
                 />
               ))}

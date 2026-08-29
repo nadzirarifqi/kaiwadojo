@@ -24,12 +24,13 @@ ALTER TABLE public.kaiwa_groups ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ 
 ALTER TABLE public.kaiwa_groups ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can view groups" ON public.kaiwa_groups;
-CREATE POLICY "Public can view groups" ON public.kaiwa_groups
-  FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Authenticated can manage groups" ON public.kaiwa_groups;
-CREATE POLICY "Authenticated can manage groups" ON public.kaiwa_groups
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public full access to groups" ON public.kaiwa_groups;
+
+CREATE POLICY "Allow public full access to groups" ON public.kaiwa_groups
+  FOR ALL USING (true) WITH CHECK (true);
+
+GRANT ALL ON TABLE public.kaiwa_groups TO anon, authenticated, service_role;
 
 -- ────────────────────────────────────────────────────────────
 -- BAGIAN 2: Daftarkan & Update Grup 'VLI2608' dengan Keywords
