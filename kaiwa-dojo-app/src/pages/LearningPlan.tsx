@@ -286,7 +286,6 @@ function DailyMissionBuilderModal({
                           return b <= 2
                         })
                         setSelectedBab(newAvail[0] || newStartBab)
-                        setSelectedVideos([])
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
@@ -300,7 +299,6 @@ function DailyMissionBuilderModal({
                       value={selectedBab}
                       onChange={e => {
                         setSelectedBab(Number(e.target.value))
-                        setSelectedVideos([])
                       }}
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                     >
@@ -325,7 +323,7 @@ function DailyMissionBuilderModal({
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 mb-3">
                   {currentBabVideos.map(vItem => {
                     const isSelected = selectedVideos.some(v => v.id === vItem.id)
                     return (
@@ -349,6 +347,47 @@ function DailyMissionBuilderModal({
                     )
                   })}
                 </div>
+
+                {/* 📌 Ringkasan Video yang Dipilih (Selected Videos Summary Box) */}
+                {selectedVideos.length > 0 && (
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
+                      <span className="flex items-center gap-1.5">
+                        <span>🎬</span>
+                        <span>Daftar Video Terpilih ({selectedVideos.length} Video • {totalReplayTarget}x Target Replay)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVideos([])}
+                        className="text-[0.68rem] text-red-600 hover:text-red-700 dark:text-red-400 font-extrabold bg-transparent border-none cursor-pointer underline"
+                      >
+                        Reset Semua
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+                      {selectedVideos.map(v => (
+                        <span
+                          key={v.id}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-800 text-[0.7rem] font-bold text-slate-800 dark:text-slate-200 shadow-2xs"
+                        >
+                          <span>🎥 J{v.jilid}·Bab {v.bab} (P{v.videoNum})</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleVideoSelection(v)
+                            }}
+                            className="size-4 rounded-full bg-slate-150 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 text-[0.6rem] font-black flex items-center justify-center border-none cursor-pointer transition-colors"
+                            title="Hapus video ini"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
