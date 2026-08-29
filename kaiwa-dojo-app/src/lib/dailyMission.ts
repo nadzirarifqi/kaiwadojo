@@ -53,17 +53,28 @@ export function getTodayDateString(): string {
 
 export function getDailyMission(userId: string, targetDate?: string): DailyMissionData | null {
   const dateStr = targetDate || getTodayDateString()
-  const raw = localStorage.getItem(`kaiwa_daily_mission_${userId}_${dateStr}`) || 
-              (dateStr === getTodayDateString() ? localStorage.getItem(`kaiwa_daily_mission_${userId}`) : null)
-  
-  if (!raw) return null
-  try {
-    const parsed: DailyMissionData = JSON.parse(raw)
-    if (parsed.date === dateStr) return parsed
-    return null
-  } catch {
-    return null
+  const possibleKeys = [
+    `kaiwa_daily_mission_${userId}_${dateStr}`,
+    `kaiwa_daily_mission_active_user_${dateStr}`,
+  ]
+  if (dateStr === getTodayDateString()) {
+    possibleKeys.push(`kaiwa_daily_mission_${userId}`)
+    possibleKeys.push(`kaiwa_daily_mission_active_user`)
   }
+
+  for (const key of possibleKeys) {
+    const raw = localStorage.getItem(key)
+    if (raw) {
+      try {
+        const parsed: DailyMissionData = JSON.parse(raw)
+        const cleanDate = parsed.date ? (typeof parsed.date === 'string' ? parsed.date.split('T')[0] : String(parsed.date)) : dateStr
+        if (cleanDate === dateStr) {
+          return { ...parsed, date: dateStr }
+        }
+      } catch {}
+    }
+  }
+  return null
 }
 
 export async function fetchDailyMission(userId: string, targetDate: string): Promise<DailyMissionData | null> {
@@ -79,16 +90,17 @@ export async function fetchDailyMission(userId: string, targetDate: string): Pro
       .maybeSingle()
 
     if (!error && data) {
+      const cleanDate = typeof data.date === 'string' ? data.date.split('T')[0] : String(data.date)
       const mission: DailyMissionData = {
-        date: data.date,
+        date: cleanDate,
         selectedVideos: data.selected_videos || [],
         targetReplayCount: typeof data.target_replay_count === 'number' ? data.target_replay_count : (data.selected_videos?.length ? data.selected_videos.length * 3 : 0),
         targetQuizCount: typeof data.target_quiz_count === 'number' ? data.target_quiz_count : 0,
         targetKotobaCount: typeof data.target_kotoba_count === 'number' ? data.target_kotoba_count : 0,
         baseline: data.baseline_snapshot || undefined,
       }
-      localStorage.setItem(`kaiwa_daily_mission_${userId}_${targetDate}`, JSON.stringify(mission))
-      if (targetDate === getTodayDateString()) {
+      localStorage.setItem(`kaiwa_daily_mission_${userId}_${cleanDate}`, JSON.stringify(mission))
+      if (cleanDate === getTodayDateString()) {
         localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
       }
       return mission
@@ -114,16 +126,17 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
 
     if (!error && data && data.length > 0) {
       data.forEach((row: any) => {
+        const cleanDate = typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date)
         const mission: DailyMissionData = {
-          date: row.date,
+          date: cleanDate,
           selectedVideos: row.selected_videos || [],
           targetReplayCount: typeof row.target_replay_count === 'number' ? row.target_replay_count : (row.selected_videos?.length ? row.selected_videos.length * 3 : 0),
           targetQuizCount: typeof row.target_quiz_count === 'number' ? row.target_quiz_count : 0,
           targetKotobaCount: typeof row.target_kotoba_count === 'number' ? row.target_kotoba_count : 0,
           baseline: row.baseline_snapshot || undefined,
         }
-        missionMap.set(row.date, mission)
-        localStorage.setItem(`kaiwa_daily_mission_${userId}_${row.date}`, JSON.stringify(mission))
+        missionMap.set(cleanDate, mission)
+        localStorage.setItem(`kaiwa_daily_mission_${userId}_${cleanDate}`, JSON.stringify(mission))
       })
     }
   } catch (e) {
@@ -132,16 +145,22 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
 
   // 2. Load local storage as backup for offline dates not present in DB
   try {
-    const prefix = `kaiwa_daily_mission_${userId}_`
+    const prefixes = [`kaiwa_daily_mission_${userId}_`, `kaiwa_daily_mission_active_user_`, `kaiwa_daily_mission_`]
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key && key.startsWith(prefix)) {
-        const dateStr = key.replace(prefix, '')
-        if (!missionMap.has(dateStr)) {
+      if (!key) continue
+      for (const prefix of prefixes) {
+        if (key.startsWith(prefix)) {
+          const dateStr = key.replace(prefix, '')
           const raw = localStorage.getItem(key)
           if (raw) {
-            const parsed: DailyMissionData = JSON.parse(raw)
-            if (parsed.date) missionMap.set(parsed.date, parsed)
+            try {
+              const parsed: DailyMissionData = JSON.parse(raw)
+              const cleanDate = parsed.date ? (typeof parsed.date === 'string' ? parsed.date.split('T')[0] : String(parsed.date)) : (dateStr.match(/^\d{4}-\d{2}-\d{2}$/) ? dateStr : null)
+              if (cleanDate && !missionMap.has(cleanDate)) {
+                missionMap.set(cleanDate, { ...parsed, date: cleanDate })
+              }
+            } catch {}
           }
         }
       }

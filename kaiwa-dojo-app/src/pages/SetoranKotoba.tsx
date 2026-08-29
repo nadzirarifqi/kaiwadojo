@@ -994,12 +994,9 @@ export default function SetoranKotobaPage() {
 
               {/* Field 4: Image File Upload (Optional) */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    4. {t('sk_input_image', 'Upload Gambar (Opsional)')}
-                  </label>
-                  <span className="text-[0.65rem] text-slate-400 font-medium">Boleh dikosongkan</span>
-                </div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  4. {t('sk_input_image', 'Upload Gambar (Opsional)')}
+                </label>
                 <input
                   type="file"
                   accept="image/*"

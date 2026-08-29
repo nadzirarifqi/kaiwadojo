@@ -841,6 +841,11 @@ export default function LearningPlanPage() {
     const saved = await saveDailyMission(activeUserId, data, dateStr)
     setSelectedDateStr(dateStr)
     setSelectedMission(saved)
+    setUserMissions(prev => {
+      const next = new Map(prev)
+      next.set(dateStr, saved)
+      return next
+    })
     const prog = await calculateMissionProgress(activeUserId, saved)
     setMissionProgress(prog)
     setShowMissionModal(false)
@@ -1129,8 +1134,20 @@ export default function LearningPlanPage() {
                                 </span>
                               )}
                               {dateMission && (
-                                <span className="px-2 py-0.2 rounded-md bg-primary/5 dark:bg-primary/20 text-primary dark:text-red-300 font-semibold border border-primary/20">
-                                  🎯 {dateMission.selectedVideos.length} Video Misi
+                                <span className={`px-2 py-0.2 rounded-md font-semibold border ${
+                                  isNoPlan
+                                    ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                                    : 'bg-primary/5 dark:bg-primary/20 text-primary dark:text-red-300 border-primary/20'
+                                }`}>
+                                  {isNoPlan
+                                    ? '🚫 Tidak Ada Rencana (Cap Biru)'
+                                    : dateMission.selectedVideos.length > 0
+                                      ? `🎯 ${dateMission.selectedVideos.length} Video Misi`
+                                      : (dateMission.targetQuizCount || 0) > 0
+                                        ? `🎯 ${dateMission.targetQuizCount} Kuis Misi`
+                                        : (dateMission.targetKotobaCount || 0) > 0
+                                          ? `🔤 ${dateMission.targetKotobaCount} Kotoba Misi`
+                                          : '🎯 Misi Mandiri'}
                                 </span>
                               )}
                               {!daySchedules.length && !dateMission && (
@@ -1465,10 +1482,20 @@ export default function LearningPlanPage() {
                           </span>
                         )}
                         {!isPast && dateMission && (
-                          <span className="text-[0.58rem] sm:text-[0.68rem] font-extrabold bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300 px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate text-center sm:text-left">
-                            🎯 {dateMission.selectedVideos.length > 0
-                              ? dateMission.selectedVideos.map(v => `Bab ${v.bab} P${v.videoNum}`).join(', ')
-                              : 'Misi Mandiri'}
+                          <span className={`text-[0.58rem] sm:text-[0.68rem] font-extrabold px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate text-center sm:text-left ${
+                            isNoPlan
+                              ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60'
+                              : 'bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300'
+                          }`}>
+                            {isNoPlan
+                              ? '🚫 Tidak Ada Rencana'
+                              : dateMission.selectedVideos.length > 0
+                                ? `🎯 ${dateMission.selectedVideos.map(v => `Bab ${v.bab} P${v.videoNum}`).join(', ')}`
+                                : (dateMission.targetQuizCount || 0) > 0
+                                  ? `🎯 ${dateMission.targetQuizCount} Kuis`
+                                  : (dateMission.targetKotobaCount || 0) > 0
+                                    ? `🔤 ${dateMission.targetKotobaCount} Kotoba`
+                                    : '🎯 Misi Mandiri'}
                           </span>
                         )}
                       </div>
@@ -1817,7 +1844,7 @@ export default function LearningPlanPage() {
       {showMissionModal && (
         <DailyMissionBuilderModal
           targetDate={selectedDateStr}
-          currentMission={selectedMission}
+          currentMission={userMissions.get(selectedDateStr) || getDailyMission(activeUserId, selectedDateStr) || selectedMission}
           onSave={handleSaveMission}
           onClose={() => setShowMissionModal(false)}
         />
