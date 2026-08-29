@@ -41,57 +41,72 @@ export default function CourseEditor() {
 
   async function handleAutoDetectDurations(babNum: number) {
     setDetectingBab(babNum)
-    const chap = chapterMap[babNum]
-    const getHostedUrl = (b: number, s: number) => {
-      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mp4`
-    }
+    const chap = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
 
     let detectedCount = 0
+    let d1 = chap.duration_s1
+    let d2 = chap.duration_s2
+    let d3 = chap.duration_s3
 
     // S1
     try {
-      const urlS1 = chap?.custom_video_s1 || getHostedUrl(babNum, 1)
-      const d1 = await detectVideoDuration(urlS1)
-      setChapterMap(prev => ({
-        ...prev,
-        [babNum]: { ...prev[babNum], duration_s1: d1 },
-      }))
+      const res1 = await detectVideoDuration(chap.custom_video_s1 || '', babNum, 1)
+      d1 = res1
       detectedCount++
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     // S2
     try {
-      const urlS2 = chap?.custom_video_s2 || getHostedUrl(babNum, 2)
-      const d2 = await detectVideoDuration(urlS2)
-      setChapterMap(prev => ({
-        ...prev,
-        [babNum]: { ...prev[babNum], duration_s2: d2 },
-      }))
+      const res2 = await detectVideoDuration(chap.custom_video_s2 || '', babNum, 2)
+      d2 = res2
       detectedCount++
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     // S3
     try {
-      const urlS3 = chap?.custom_video_s3 || getHostedUrl(babNum, 3)
-      const d3 = await detectVideoDuration(urlS3)
-      setChapterMap(prev => ({
-        ...prev,
-        [babNum]: { ...prev[babNum], duration_s3: d3 },
-      }))
+      const res3 = await detectVideoDuration(chap.custom_video_s3 || '', babNum, 3)
+      d3 = res3
       detectedCount++
-    } catch {
-      // fallback
+    } catch {}
+
+    const updated: ChapterSetting = {
+      ...chap,
+      duration_s1: d1,
+      duration_s2: d2,
+      duration_s3: d3,
     }
+
+    setChapterMap(prev => ({
+      ...prev,
+      [babNum]: updated,
+    }))
+
+    // Save directly to Supabase so students get the live duration immediately
+    await saveChapterSetting(updated)
 
     setDetectingBab(null)
     if (detectedCount > 0) {
-      showToast(`Berhasil mendeteksi ${detectedCount} durasi video secara otomatis dari file! ⏱️`)
+      showToast(`Berhasil mendeteksi ${detectedCount} durasi video & tersimpan ke database! ⏱️`)
     } else {
-      showToast(`Video metadata belum siap atau durasi dapat terdeteksi otomatis saat diputar.`, 'error')
+      showToast(`Video belum siap di server Rumahweb atau periksa nama/lokasi file video.`, 'error')
+    }
+  }
+
+  async function handleSaveBab(babNum: number) {
+    setSavingBab(babNum)
+    try {
+      const chap = chapterMap[babNum] || {
+        bab_number: babNum,
+        title: `Bab ${babNum}`,
+        subtitle: '',
+        is_hidden: false,
+      }
+      await saveChapterSetting(chap)
+      showToast(`Pengaturan & durasi Bab ${babNum} berhasil disimpan ke database! 💾`)
+    } catch (err: any) {
+      showToast(`Gagal menyimpan Bab ${babNum}: ${err?.message || 'Error'}`, 'error')
+    } finally {
+      setSavingBab(null)
     }
   }
 
@@ -196,10 +211,6 @@ export default function CourseEditor() {
 
     const startBab = selectedJilid === 1 ? 1 : 26
     const babs = Array.from({ length: 25 }, (_, i) => startBab + i)
-    const getHostedUrl = (b: number, s: number) => {
-      return `/kaiwa-1-courses/BAB ${b}/Kaiwa Dojo - BAB ${b} S${s}.mov`
-    }
-
     let updatedMap = { ...chapterMap }
     let successCount = 0
 
@@ -210,20 +221,20 @@ export default function CourseEditor() {
       let d3 = chap.duration_s3
 
       try {
-        const u1 = chap.custom_video_s1 || getHostedUrl(b, 1)
-        d1 = await detectVideoDuration(u1)
+        const r1 = await detectVideoDuration(chap.custom_video_s1 || '', b, 1)
+        d1 = r1
         successCount++
       } catch {}
 
       try {
-        const u2 = chap.custom_video_s2 || getHostedUrl(b, 2)
-        d2 = await detectVideoDuration(u2)
+        const r2 = await detectVideoDuration(chap.custom_video_s2 || '', b, 2)
+        d2 = r2
         successCount++
       } catch {}
 
       try {
-        const u3 = chap.custom_video_s3 || getHostedUrl(b, 3)
-        d3 = await detectVideoDuration(u3)
+        const r3 = await detectVideoDuration(chap.custom_video_s3 || '', b, 3)
+        d3 = r3
         successCount++
       } catch {}
 
@@ -241,20 +252,6 @@ export default function CourseEditor() {
     const listToSave = babs.map(b => updatedMap[b]).filter(Boolean)
     await saveBatchChapterSettings(listToSave)
     showToast(`Selesai! Terdeteksi ${successCount} durasi video & tersimpan ke database! 🚀`)
-  }
-
-  async function handleSaveBab(babNum: number) {
-    const current = chapterMap[babNum] || {
-      bab_number: babNum,
-      title: `Bab ${babNum}`,
-      subtitle: '',
-      is_hidden: false,
-    }
-
-    setSavingBab(babNum)
-    await saveChapterSetting(current)
-    setSavingBab(null)
-    showToast(`Pengaturan Bab ${babNum} berhasil disimpan! ✅`)
   }
 
   async function handleSaveHeader() {
@@ -636,13 +633,13 @@ export default function CourseEditor() {
                           }))
                         }}
                         onBlur={async e => {
-                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S1.mov`
+                          const url = e.target.value
                           try {
-                            const d = await detectVideoDuration(url)
-                            setChapterMap(prev => ({
-                              ...prev,
-                              [babNum]: { ...prev[babNum], duration_s1: d },
-                            }))
+                            const d = await detectVideoDuration(url, babNum, 1)
+                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
+                            const updated = { ...current, custom_video_s1: url, duration_s1: d }
+                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
+                            await saveChapterSetting(updated)
                             showToast(`Durasi Video 1 terdeteksi: ${d} menit ⏱️`)
                           } catch {}
                         }}
@@ -666,13 +663,13 @@ export default function CourseEditor() {
                           }))
                         }}
                         onBlur={async e => {
-                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S2.mov`
+                          const url = e.target.value
                           try {
-                            const d = await detectVideoDuration(url)
-                            setChapterMap(prev => ({
-                              ...prev,
-                              [babNum]: { ...prev[babNum], duration_s2: d },
-                            }))
+                            const d = await detectVideoDuration(url, babNum, 2)
+                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
+                            const updated = { ...current, custom_video_s2: url, duration_s2: d }
+                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
+                            await saveChapterSetting(updated)
                             showToast(`Durasi Video 2 terdeteksi: ${d} menit ⏱️`)
                           } catch {}
                         }}
@@ -696,13 +693,13 @@ export default function CourseEditor() {
                           }))
                         }}
                         onBlur={async e => {
-                          const url = e.target.value || `/kaiwa-1-courses/BAB ${babNum}/Kaiwa Dojo - BAB ${babNum} S3.mov`
+                          const url = e.target.value
                           try {
-                            const d = await detectVideoDuration(url)
-                            setChapterMap(prev => ({
-                              ...prev,
-                              [babNum]: { ...prev[babNum], duration_s3: d },
-                            }))
+                            const d = await detectVideoDuration(url, babNum, 3)
+                            const current = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
+                            const updated = { ...current, custom_video_s3: url, duration_s3: d }
+                            setChapterMap(prev => ({ ...prev, [babNum]: updated }))
+                            await saveChapterSetting(updated)
                             showToast(`Durasi Video 3 terdeteksi: ${d} menit ⏱️`)
                           } catch {}
                         }}
@@ -777,7 +774,7 @@ export default function CourseEditor() {
                     <AdaptiveIcon src="/video.png" alt="Video Path" className="size-4 object-contain shrink-0" />
                     <span>Path File Video Otomatis di Hosting:</span>
                     <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
-                      /kaiwa-1-courses/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mov (S1, S2, S3)
+                      {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - Bab {babNum} S1.mp4 (S1, S2, S3)
                     </code>
                   </div>
 

@@ -304,51 +304,117 @@ export async function saveCourseHeaderSettings(header: CourseHeaderSettings): Pr
 }
 
 /* ── Auto Detect Video Duration from File Metadata ── */
-export function detectVideoDuration(url: string): Promise<string> {
+export function detectVideoDuration(
+  urlOrBase: string,
+  babNumber?: number,
+  partNumber?: number
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!url) {
-      reject('No URL provided')
+    if (!urlOrBase && !babNumber) {
+      reject('No URL or Bab provided')
       return
     }
 
-    const tempVideo = document.createElement('video')
-    tempVideo.preload = 'metadata'
-    tempVideo.src = url
+    const candidateUrls: string[] = []
 
-    const timeout = setTimeout(() => {
-      tempVideo.removeAttribute('src')
-      tempVideo.load()
-      reject('Timeout detecting video metadata')
-    }, 12000)
-
-    tempVideo.onloadedmetadata = () => {
-      clearTimeout(timeout)
-      const totalSeconds = tempVideo.duration
-      if (!isNaN(totalSeconds) && totalSeconds > 0 && isFinite(totalSeconds)) {
-        const mins = Math.floor(totalSeconds / 60)
-        const secs = Math.floor(totalSeconds % 60)
-        const formattedSecs = String(secs).padStart(2, '0')
-        const resultStr = `${mins}.${formattedSecs}`
-        tempVideo.removeAttribute('src')
-        tempVideo.load()
-        resolve(resultStr)
-      } else {
-        tempVideo.removeAttribute('src')
-        tempVideo.load()
-        reject('Invalid duration')
+    if (urlOrBase && urlOrBase.trim()) {
+      const cleanUrl = urlOrBase.trim()
+      candidateUrls.push(cleanUrl)
+      candidateUrls.push(encodeURI(cleanUrl))
+      if (cleanUrl.toLowerCase().endsWith('.mov')) {
+        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.mp4'))
+        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.MP4'))
+        candidateUrls.push(cleanUrl.replace(/\.mov$/i, '.MOV'))
+      } else if (cleanUrl.toLowerCase().endsWith('.mp4')) {
+        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.MP4'))
+        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.mov'))
+        candidateUrls.push(cleanUrl.replace(/\.mp4$/i, '.MOV'))
       }
     }
 
-    tempVideo.onerror = () => {
-      if (url.toLowerCase().endsWith('.mov')) {
-        url = url.replace(/\.mov$/i, '.mp4')
-        tempVideo.src = url
+    if (babNumber && partNumber) {
+      const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
+      const folderVariants = [`BAB ${babNumber}`, `Bab ${babNumber}`, `bab ${babNumber}`]
+      const fileVariants = [
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MP4`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mov`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MOV`,
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`,
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`,
+      ]
+
+      for (const folder of folderVariants) {
+        for (const file of fileVariants) {
+          candidateUrls.push(`${jilidPath}/${folder}/${file}`)
+          candidateUrls.push(`${jilidPath}/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`)
+        }
+      }
+    }
+
+    const uniqueUrls = Array.from(new Set(candidateUrls.filter(Boolean)))
+    if (uniqueUrls.length === 0) {
+      reject('No valid candidate URLs')
+      return
+    }
+
+    let currentIndex = 0
+    let tempVideo: HTMLVideoElement | null = null
+    let timeoutId: any = null
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      if (tempVideo) {
+        tempVideo.onloadedmetadata = null
+        tempVideo.onerror = null
+        tempVideo.removeAttribute('src')
+        tempVideo.load()
+        tempVideo = null
+      }
+    }
+
+    const tryNextUrl = () => {
+      cleanup()
+
+      if (currentIndex >= uniqueUrls.length) {
+        reject('File video belum ditemukan di server atau metadata belum siap.')
         return
       }
-      clearTimeout(timeout)
-      tempVideo.removeAttribute('src')
-      tempVideo.load()
-      reject('Failed to load video metadata')
+
+      const targetUrl = uniqueUrls[currentIndex]
+      currentIndex++
+
+      tempVideo = document.createElement('video')
+      tempVideo.preload = 'metadata'
+
+      timeoutId = setTimeout(() => {
+        tryNextUrl()
+      }, 4000)
+
+      tempVideo.onloadedmetadata = () => {
+        const totalSeconds = tempVideo?.duration || 0
+        if (!isNaN(totalSeconds) && totalSeconds > 0 && isFinite(totalSeconds)) {
+          const mins = Math.floor(totalSeconds / 60)
+          const secs = Math.floor(totalSeconds % 60)
+          const formattedSecs = String(secs).padStart(2, '0')
+          const resultStr = `${mins}.${formattedSecs}`
+          cleanup()
+          resolve(resultStr)
+        } else {
+          tryNextUrl()
+        }
+      }
+
+      tempVideo.onerror = () => {
+        tryNextUrl()
+      }
+
+      tempVideo.src = targetUrl
     }
+
+    tryNextUrl()
   })
 }
