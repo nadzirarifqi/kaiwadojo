@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { ProfileSkeleton } from '../components/Skeleton'
 import { normalizeGroup } from '../lib/studentService'
+import { getDailyMission, isNoPlanMission } from '../lib/dailyMission'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth()
   const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const isFreezeToday = isNoPlanMission(getDailyMission(profile?.id || user?.id || ''))
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'achievements' | 'stats'>('overview')
@@ -575,9 +577,15 @@ export default function ProfilePage() {
 
             {/* Quick Stats Badges Bar */}
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 pt-1">
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
-                <span className="text-base animate-flame">🔥</span>
-                <span>{profile?.streak_days || 0} Hari Streak</span>
+              <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
+                isFreezeToday
+                  ? 'bg-sky-500/20 backdrop-blur-md border-sky-400/40 text-sky-200 shadow-xs'
+                  : 'bg-white/10 backdrop-blur-md border-white/15 text-white'
+              }`}>
+                <span className={`text-base ${isFreezeToday ? 'animate-pulse' : 'animate-flame'}`}>
+                  {isFreezeToday ? '🧊' : '🔥'}
+                </span>
+                <span>{profile?.streak_days || 0} Hari Streak {isFreezeToday ? '(Freeze)' : ''}</span>
               </div>
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
                 <span>📚</span>
@@ -780,8 +788,8 @@ export default function ProfilePage() {
 
                 <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktifkan Streak</span>
-                  <span className="font-extrabold text-orange-500 flex items-center gap-1">
-                    🔥 {profile?.streak_days || 0} Hari
+                  <span className={`font-extrabold flex items-center gap-1 ${isFreezeToday ? 'text-sky-500' : 'text-orange-500'}`}>
+                    {isFreezeToday ? '🧊' : '🔥'} {profile?.streak_days || 0} Hari {isFreezeToday ? '(Freeze)' : ''}
                   </span>
                 </div>
               </div>

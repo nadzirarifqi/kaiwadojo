@@ -320,6 +320,14 @@ export function subscribeToDailyMissionRealtime(onUpdate: () => void) {
   }
 }
 
+export function isNoPlanMission(mission: DailyMissionData | null | undefined): boolean {
+  if (!mission) return false
+  const hasVideos = (mission.selectedVideos?.length || 0) > 0 && (mission.targetReplayCount || 0) > 0
+  const hasQuiz = (mission.targetQuizCount || 0) > 0
+  const hasKotoba = (mission.targetKotobaCount || 0) > 0
+  return !hasVideos && !hasQuiz && !hasKotoba
+}
+
 export function calculateStreakFromDates(streakDatesSet: Set<string>, todayStr: string = getTodayDateString()): number {
   let streak = 0
   const formatDateParts = (y: number, m: number, d: number) => {
@@ -506,38 +514,43 @@ export async function calculateMissionProgress(
   const kotobaBaseline = mission.baseline?.kotobaCount || 0
   const actualKotoba = Math.max(0, totalKotobaDone - kotobaBaseline)
 
-  // Check if mission has active targets
-  const hasAnyTarget = (mission.selectedVideos && mission.selectedVideos.length > 0 && mission.targetReplayCount > 0) ||
-    mission.targetQuizCount > 0 ||
-    mission.targetKotobaCount > 0
+  // Determine active planned targets & Rest Day / Freeze status
+  const isNoPlan = isNoPlanMission(mission)
+  const hasVideos = (mission.selectedVideos && mission.selectedVideos.length > 0 && mission.targetReplayCount > 0)
+  const hasQuiz   = (mission.targetQuizCount || 0) > 0
+  const hasKotoba = (mission.targetKotobaCount || 0) > 0
+  const hasAnyTarget = hasVideos || hasQuiz || hasKotoba
 
-  const videoCompleted = mission.targetReplayCount === 0 || actualReplays >= mission.targetReplayCount
-  const quizCompleted  = mission.targetQuizCount === 0 || actualQuizzes >= mission.targetQuizCount
-  const kotobaCompleted = mission.targetKotobaCount === 0 || actualKotoba  >= mission.targetKotobaCount
+  const videoCompleted  = !hasVideos || actualReplays >= mission.targetReplayCount
+  const quizCompleted   = !hasQuiz || actualQuizzes >= mission.targetQuizCount
+  const kotobaCompleted = !hasKotoba || actualKotoba >= mission.targetKotobaCount
 
-  const videoPct  = mission.targetReplayCount === 0 ? 100 : Math.min(100, (actualReplays / mission.targetReplayCount) * 100)
-  const quizPct   = mission.targetQuizCount === 0 ? 100 : Math.min(100, (actualQuizzes / mission.targetQuizCount) * 100)
-  const kotobaPct = mission.targetKotobaCount === 0 ? 100 : Math.min(100, (actualKotoba / mission.targetKotobaCount) * 100)
+  const videoPct  = !hasVideos ? 100 : Math.min(100, (actualReplays / mission.targetReplayCount) * 100)
+  const quizPct   = !hasQuiz ? 100 : Math.min(100, (actualQuizzes / mission.targetQuizCount) * 100)
+  const kotobaPct = !hasKotoba ? 100 : Math.min(100, (actualKotoba / mission.targetKotobaCount) * 100)
 
   // Overall percentage strictly based on planned active targets
   let targetComponentsCount = 0
   let targetPctSum = 0
-  if (mission.targetReplayCount > 0) {
+  if (hasVideos) {
     targetComponentsCount++
     targetPctSum += videoPct
   }
-  if (mission.targetQuizCount > 0) {
+  if (hasQuiz) {
     targetComponentsCount++
     targetPctSum += quizPct
   }
-  if (mission.targetKotobaCount > 0) {
+  if (hasKotoba) {
     targetComponentsCount++
     targetPctSum += kotobaPct
   }
 
-  const overallPct = targetComponentsCount > 0 ? Math.round(targetPctSum / targetComponentsCount) : 0
-  // Streak is ONLY earned when user has planned targets AND reached exactly 100% across all of them
-  const isFullyCompleted = hasAnyTarget && videoCompleted && quizCompleted && kotobaCompleted && overallPct === 100
+  const overallPct = isNoPlan ? 100 : (targetComponentsCount > 0 ? Math.round(targetPctSum / targetComponentsCount) : 0)
+  
+  // Streak is earned if:
+  // 1) Explicit rest day ("Tidak Ada Rencana" / Freeze Cap Biru), OR
+  // 2) User set specific targets and all of them are completed 100%
+  const isFullyCompleted = isNoPlan || (hasAnyTarget && videoCompleted && quizCompleted && kotobaCompleted && overallPct === 100)
 
   // Sync streak if fully completed on target date
   if (isFullyCompleted) {

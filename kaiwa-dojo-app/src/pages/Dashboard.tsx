@@ -10,6 +10,7 @@ import {
   fetchAllUserMissions,
   calculateMissionProgress,
   calculateStreakFromDates,
+  isNoPlanMission,
   getTodayDateString,
   DAILY_MISSION_UPDATE_EVENT,
   subscribeToDailyMissionRealtime,
@@ -55,13 +56,29 @@ function getLast7DayLabels() {
   })
 }
 
+export interface StreakDayHistory {
+  date: string
+  done: boolean
+  isFreeze?: boolean
+}
+
 /* ── StreakCard Component ───────────────────────────── */
-function StreakCard({ streakDays, history }: { streakDays: number; history: boolean[] }) {
+function StreakCard({
+  streakDays,
+  history,
+  isFreezeToday,
+}: {
+  streakDays: number
+  history: StreakDayHistory[]
+  isFreezeToday?: boolean
+}) {
   const navigate = useNavigate()
   const dayLabels = getLast7DayLabels()
   const nextMilestone = streakDays < 7 ? 7 : streakDays < 30 ? 30 : 100
   const pct = Math.min(Math.round((streakDays / nextMilestone) * 100), 100)
-  const todayDone = history[history.length - 1] || false
+  const todayItem = history[history.length - 1]
+  const todayDone = todayItem?.done || false
+  const isTodayFreeze = isFreezeToday || todayItem?.isFreeze || false
 
   const milestones = [
     { days: 7,   icon: '🌱', label: '7 Hari' },
@@ -73,17 +90,28 @@ function StreakCard({ streakDays, history }: { streakDays: number; history: bool
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">🔥 Streak Belajar</h2>
-        <span className="text-xs sm:text-sm text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-          Level: {streakDays >= 30 ? 'Pakar' : streakDays >= 7 ? 'Aktif' : 'Pemula'}
+        <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+          <span>{isTodayFreeze ? '🧊' : '🔥'}</span>
+          <span>{isTodayFreeze ? 'Streak Freeze (Istirahat)' : 'Streak Belajar'}</span>
+        </h2>
+        <span className={`text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-full ${
+          isTodayFreeze
+            ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-300/60'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+        }`}>
+          {isTodayFreeze ? '🧊 Freeze Aktif' : `Level: ${streakDays >= 30 ? 'Pakar' : streakDays >= 7 ? 'Aktif' : 'Pemula'}`}
         </span>
       </div>
 
-      {/* Flame + calendar */}
+      {/* Flame / Freeze + calendar */}
       <div className="flex items-center gap-5 sm:gap-7">
         <div className="flex flex-col items-center shrink-0">
-          <span className="text-[3.5rem] sm:text-[4.5rem] leading-none animate-flame select-none">🔥</span>
-          <div className="text-[2.8rem] sm:text-[3.5rem] font-black text-orange-500 leading-none -mt-1">
+          <span className={`text-[3.5rem] sm:text-[4.5rem] leading-none select-none ${isTodayFreeze ? 'animate-pulse' : 'animate-flame'}`}>
+            {isTodayFreeze ? '🧊' : '🔥'}
+          </span>
+          <div className={`text-[2.8rem] sm:text-[3.5rem] font-black leading-none -mt-1 ${
+            isTodayFreeze ? 'text-sky-500' : 'text-orange-500'
+          }`}>
             {streakDays}
           </div>
           <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold mt-1 text-center whitespace-nowrap">
@@ -94,14 +122,16 @@ function StreakCard({ streakDays, history }: { streakDays: number; history: bool
         <div className="flex-1 min-w-0">
           {/* 7-day dots */}
           <div className="flex gap-1 mb-3">
-            {history.map((done, i) => (
+            {history.map((item, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div className={`w-full aspect-square max-w-[34px] rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  done
-                    ? 'bg-gradient-to-br from-orange-400 to-red-400 text-white shadow-sm'
+                  item.done
+                    ? item.isFreeze
+                      ? 'bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-sm ring-2 ring-sky-200'
+                      : 'bg-gradient-to-br from-orange-400 to-red-400 text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
                 }`}>
-                  {done ? '🔥' : ''}
+                  {item.done ? (item.isFreeze ? '🧊' : '🔥') : ''}
                 </div>
                 <span className="text-[0.65rem] sm:text-[0.72rem] text-slate-400 font-bold">{dayLabels[i]}</span>
               </div>
@@ -112,11 +142,17 @@ function StreakCard({ streakDays, history }: { streakDays: number; history: bool
           <div>
             <div className="flex justify-between text-xs sm:text-sm font-semibold mb-1.5">
               <span className="text-slate-500 dark:text-slate-400">Target {nextMilestone} hari 🎯</span>
-              <span className="text-orange-500 font-bold">{streakDays}/{nextMilestone}</span>
+              <span className={isTodayFreeze ? 'text-sky-500 font-bold' : 'text-orange-500 font-bold'}>
+                {streakDays}/{nextMilestone}
+              </span>
             </div>
             <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full transition-all duration-700"
+                className={`h-full rounded-full transition-all duration-700 ${
+                  isTodayFreeze
+                    ? 'bg-gradient-to-r from-sky-400 to-cyan-500'
+                    : 'bg-gradient-to-r from-orange-400 to-red-400'
+                }`}
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -142,11 +178,17 @@ function StreakCard({ streakDays, history }: { streakDays: number; history: bool
 
       {/* Today status & guide */}
       <div className={`p-3.5 rounded-xl text-sm font-semibold border flex items-center justify-between gap-3 ${
-        todayDone
-          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
-          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+        isTodayFreeze
+          ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+          : todayDone
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
+            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900'
       }`}>
-        {todayDone ? (
+        {isTodayFreeze ? (
+          <div className="flex items-center gap-2">
+            <span>🧊 Hari istirahat terencana (Cap Biru)! Streak Freeze aktif & angka streak tetap aman bertambah.</span>
+          </div>
+        ) : todayDone ? (
           <span>🎉 Keren! Misi hari ini selesai dan streak menyala! 🔥</span>
         ) : (
           <div className="flex justify-between items-center w-full">
@@ -522,7 +564,7 @@ export default function Dashboard() {
     completedCoursesCount: 0,
     streakDays: 0,
   })
-  const [streakHistory, setStreakHistory] = useState<boolean[]>([false, false, false, false, false, false, false])
+  const [streakHistory, setStreakHistory] = useState<StreakDayHistory[]>([])
 
   // Minna no Nihongo Jilid 1 & 2 Book Progress
   const [bookProgress, setBookProgress] = useState({
@@ -652,12 +694,21 @@ export default function Dashboard() {
       const streakDates = new Set(streaksData.map((s: any) => s.date))
       const liveStreakCount = calculateStreakFromDates(streakDates)
 
+      const allMissionsMap = await fetchAllUserMissions(effectiveUserId)
+
       const today = new Date()
-      const history = Array.from({ length: 7 }, (_, i) => {
+      const history: StreakDayHistory[] = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today)
         d.setDate(today.getDate() - (6 - i))
         const dateStr = d.toISOString().split('T')[0]
-        return streakDates.has(dateStr)
+        const done = streakDates.has(dateStr)
+        const dayMission = allMissionsMap.get(dateStr) || (dateStr === todayDate ? mission : getDailyMission(effectiveUserId, dateStr))
+        const isFreeze = isNoPlanMission(dayMission)
+        return {
+          date: dateStr,
+          done,
+          isFreeze,
+        }
       })
 
       setStats(prev => ({
@@ -969,7 +1020,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-5 mb-6 items-stretch">
         {/* Streak Card & Updated Quick Shortcuts */}
         <div className="flex flex-col gap-5">
-          <StreakCard streakDays={stats.streakDays} history={streakHistory} />
+          <StreakCard
+            streakDays={stats.streakDays}
+            history={streakHistory}
+            isFreezeToday={isNoPlanMission(dailyMission)}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             {/* Shortcut 1: Jurnal Kosakata (Kotoba) */}
