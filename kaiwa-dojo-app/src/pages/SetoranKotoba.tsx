@@ -186,22 +186,10 @@ export default function SetoranKotobaPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.size > 5 * 1024 * 1024) {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Ukuran Gambar Terlalu Besar ⚠️',
-        message: 'Ukuran file gambar maksimal adalah 5 MB. Mohon pilih file foto dengan ukuran yang lebih kecil!',
-        type: 'warning',
-        buttonText: 'Mengerti',
-        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-      })
-      return
-    }
-
     const reader = new FileReader()
     reader.onloadend = async () => {
       const rawUrl = reader.result as string
-      const compressed = await compressImageDataUrl(rawUrl)
+      const compressed = await compressImageDataUrl(rawUrl, 900, 0.8)
       setFormData(prev => ({ ...prev, image_url: compressed }))
     }
     reader.readAsDataURL(file)
@@ -231,26 +219,13 @@ export default function SetoranKotobaPage() {
 
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim() || !formData.image_url.trim()) {
+    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim()) {
       setAlertConfig({
         isOpen: true,
         title: 'Formulir Belum Lengkap ⚠️',
-        message: 'Mohon isi seluruh 4 bidang wajib pada "Formulir Setoran Kotoba": Huruf Jepang, Romaji, Makna, dan Upload Gambar (Wajib)!',
+        message: 'Mohon lengkapi Huruf Jepang, Romaji, dan Makna/Arti dari kosakata yang disetorkan.',
         type: 'warning',
         buttonText: 'Lengkapi Data',
-        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-      })
-      return
-    }
-
-    const scriptCheck = detectJapaneseScript(formData.japanese)
-    if (!scriptCheck.isValid) {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Input Bukan Huruf Jepang! ⚠️',
-        message: 'Bidang "Huruf Jepang" wajib mengandung setidaknya satu karakter asli Hiragana (あ/い), Katakana (ア/イ), atau Kanji (日/本).\n\nMohon periksa kembali inputanmu agar tidak memasukkan alfabet biasa/teks acak pada kolom huruf Jepang!',
-        type: 'warning',
-        buttonText: 'Perbaiki Huruf Jepang',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
       })
       return
@@ -261,6 +236,8 @@ export default function SetoranKotobaPage() {
     const processedImageUrl = formData.image_url.trim()
       ? await compressImageDataUrl(formData.image_url.trim())
       : undefined
+
+    const targetUid = profile?.id || user?.id || effectiveUserId
 
     if (editingItem) {
       const updated = kotobaList.map(item =>
@@ -278,8 +255,8 @@ export default function SetoranKotobaPage() {
       setIsModalOpen(false)
       setSaving(false)
 
-      if (user) {
-        supabase
+      try {
+        await supabase
           .from('user_kotoba_submissions')
           .update({
             japanese: formData.japanese.trim(),
@@ -288,12 +265,41 @@ export default function SetoranKotobaPage() {
             image_url: processedImageUrl || null,
           })
           .eq('id', editingItem.id)
-          .then(() => {})
+      } catch (err) {
+        console.warn('Update kotoba DB error:', err)
       }
     } else {
+      let finalId = `kotoba-${Date.now()}`
+
+      // Attempt DB Insert
+      if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
+        try {
+          const { data, error } = await supabase
+            .from('user_kotoba_submissions')
+            .insert({
+              user_id: targetUid,
+              japanese: formData.japanese.trim(),
+              romaji: formData.romaji.trim(),
+              meaning: formData.meaning.trim(),
+              image_url: processedImageUrl || null,
+              is_mastered: false,
+            })
+            .select()
+            .single()
+
+          if (!error && data?.id) {
+            finalId = data.id
+          } else if (error) {
+            console.warn('Insert kotoba DB note:', error)
+          }
+        } catch (err) {
+          console.warn('Insert kotoba DB catch:', err)
+        }
+      }
+
       const newItem: UserKotoba = {
-        id: `kotoba-${Date.now()}`,
-        user_id: user?.id || 'guest',
+        id: finalId,
+        user_id: targetUid,
         japanese: formData.japanese.trim(),
         romaji: formData.romaji.trim(),
         meaning: formData.meaning.trim(),
@@ -302,50 +308,29 @@ export default function SetoranKotobaPage() {
         created_at: new Date().toISOString(),
       }
 
-      // 1. Instant local render & instant modal close (0ms lag!)
       const updated = [newItem, ...kotobaList]
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
 
-      // 2. Non-blocking background DB insert & mission calculation
-      const targetUid = profile?.id || user?.id
-      if (targetUid) {
-        (async () => {
-          try {
-            const { data, error } = await supabase
-              .from('user_kotoba_submissions')
-              .insert({
-                user_id: targetUid,
-                japanese: formData.japanese.trim(),
-                romaji: formData.romaji.trim(),
-                meaning: formData.meaning.trim(),
-                image_url: processedImageUrl || null,
-                is_mastered: false,
-              })
-              .select()
-              .single()
+      // Update lesson progress & daily missions
+      if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
+        try {
+          await supabase.from('lesson_progress').upsert({
+            student_id: targetUid,
+            lesson_id: `user_kotoba_${finalId}`,
+            is_completed: true,
+            last_watched_at: new Date().toISOString(),
+          }, { onConflict: 'student_id,lesson_id' })
 
-            if (!error && data) {
-              newItem.id = data.id
-            }
-
-            await supabase.from('lesson_progress').upsert({
-              student_id: targetUid,
-              lesson_id: `user_kotoba_${newItem.id}`,
-              is_completed: true,
-              last_watched_at: new Date().toISOString(),
-            }, { onConflict: 'student_id,lesson_id' })
-
-            const todayStr = new Date().toISOString().split('T')[0]
-            const mission = (await fetchDailyMission(targetUid, todayStr)) || getDailyMission(targetUid, todayStr)
-            if (mission) {
-              await calculateMissionProgress(targetUid, mission)
-            }
-          } catch (e) {
-            console.warn('Background Kotoba DB sync note:', e)
+          const todayStr = new Date().toISOString().split('T')[0]
+          const mission = (await fetchDailyMission(targetUid, todayStr)) || getDailyMission(targetUid, todayStr)
+          if (mission) {
+            await calculateMissionProgress(targetUid, mission)
           }
-        })()
+        } catch (e) {
+          console.warn('Mission sync note:', e)
+        }
       }
     }
   }
@@ -355,11 +340,13 @@ export default function SetoranKotobaPage() {
     const updated = kotobaList.map(k => k.id === item.id ? { ...k, is_mastered: updatedStatus } : k)
     saveToLocal(updated)
 
-    if (user) {
+    try {
       await supabase
         .from('user_kotoba_submissions')
         .update({ is_mastered: updatedStatus })
         .eq('id', item.id)
+    } catch (err) {
+      console.warn('Toggle mastered DB note:', err)
     }
   }
 
@@ -368,11 +355,13 @@ export default function SetoranKotobaPage() {
     const updated = kotobaList.filter(k => k.id !== id)
     saveToLocal(updated)
 
-    if (user) {
+    try {
       await supabase
         .from('user_kotoba_submissions')
         .delete()
         .eq('id', id)
+    } catch (err) {
+      console.warn('Delete kotoba DB note:', err)
     }
   }
 
@@ -1003,15 +992,17 @@ export default function SetoranKotobaPage() {
                 />
               </div>
 
-              {/* Field 4: Image File Upload */}
+              {/* Field 4: Image File Upload (Optional) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. {t('sk_input_image', 'Upload Gambar')} <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    4. {t('sk_input_image', 'Upload Gambar (Opsional)')}
+                  </label>
+                  <span className="text-[0.65rem] text-slate-400 font-medium">Boleh dikosongkan</span>
+                </div>
                 <input
                   type="file"
                   accept="image/*"
-                  required={!formData.image_url}
                   onChange={handleImageFileChange}
                   className="w-full px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[0.68rem] file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
                 />
