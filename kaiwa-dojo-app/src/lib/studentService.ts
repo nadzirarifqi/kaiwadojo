@@ -53,7 +53,9 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         email: p.email || `${p.username}@kaiwadojo.com`,
         phone_number: p.phone_number,
         institution: p.institution,
-        group_name: p.group_name || normalizeGroup(p.institution),
+        group_name: p.group_name !== undefined && p.group_name !== null
+          ? (p.group_name || undefined)
+          : (normalizeGroup(p.institution) || undefined),
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,
@@ -80,6 +82,7 @@ export async function createStudentAccount(data: {
   email: string
   phone_number?: string
   institution?: string
+  group_name?: string | null
   bio?: string
   status?: StudentStatus
 }): Promise<StudentAccount | null> {
@@ -88,6 +91,10 @@ export async function createStudentAccount(data: {
   const targetStatus = data.status || 'approved'
   const newId = data.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`)
 
+  const resolvedGroup = data.group_name !== undefined
+    ? (data.group_name ? data.group_name.trim() : null)
+    : (normalizeGroup(data.institution) || null)
+
   const newStudent: StudentAccount = {
     id: newId,
     full_name: data.full_name,
@@ -95,7 +102,7 @@ export async function createStudentAccount(data: {
     email: cleanEmail,
     phone_number: data.phone_number,
     institution: data.institution,
-    group_name: normalizeGroup(data.institution),
+    group_name: resolvedGroup || undefined,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
@@ -112,14 +119,13 @@ export async function createStudentAccount(data: {
       email: newStudent.email,
       phone_number: newStudent.phone_number,
       institution: newStudent.institution,
+      group_name: resolvedGroup,
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
       streak_days: 0,
       status: targetStatus,
     }
-    const grp = normalizeGroup(newStudent.institution)
-    if (grp) payload.group_name = grp
 
     let { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
 
@@ -206,6 +212,7 @@ export async function updateStudentAccount(
     username: string
     email: string
     institution?: string
+    group_name?: string | null
     bio?: string
     status?: StudentStatus
   }
@@ -216,15 +223,22 @@ export async function updateStudentAccount(
     const cleanEmail = data.email.toLowerCase().trim()
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
 
-    const payload = {
+    const resolvedGroup = data.group_name !== undefined
+      ? (data.group_name ? data.group_name.trim() : null)
+      : (normalizeGroup(data.institution) || null)
+
+    const payload: any = {
       full_name: data.full_name,
       username: cleanUser,
       email: cleanEmail,
-      institution: data.institution,
-      group_name: normalizeGroup(data.institution),
+      institution: data.institution !== undefined ? (data.institution?.trim() || null) : undefined,
+      group_name: resolvedGroup,
       bio: data.bio,
       status: data.status,
     }
+
+    // Clean undefined keys
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key])
 
     if (isUuid) {
       const { error } = await supabase.from('profiles').update(payload).eq('id', target)
