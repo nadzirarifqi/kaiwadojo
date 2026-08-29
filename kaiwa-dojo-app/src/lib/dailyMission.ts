@@ -506,17 +506,38 @@ export async function calculateMissionProgress(
   const kotobaBaseline = mission.baseline?.kotobaCount || 0
   const actualKotoba = Math.max(0, totalKotobaDone - kotobaBaseline)
 
+  // Check if mission has active targets
+  const hasAnyTarget = (mission.selectedVideos && mission.selectedVideos.length > 0 && mission.targetReplayCount > 0) ||
+    mission.targetQuizCount > 0 ||
+    mission.targetKotobaCount > 0
+
   const videoCompleted = mission.targetReplayCount === 0 || actualReplays >= mission.targetReplayCount
   const quizCompleted  = mission.targetQuizCount === 0 || actualQuizzes >= mission.targetQuizCount
   const kotobaCompleted = mission.targetKotobaCount === 0 || actualKotoba  >= mission.targetKotobaCount
-
-  const isFullyCompleted = videoCompleted && quizCompleted && kotobaCompleted
 
   const videoPct  = mission.targetReplayCount === 0 ? 100 : Math.min(100, (actualReplays / mission.targetReplayCount) * 100)
   const quizPct   = mission.targetQuizCount === 0 ? 100 : Math.min(100, (actualQuizzes / mission.targetQuizCount) * 100)
   const kotobaPct = mission.targetKotobaCount === 0 ? 100 : Math.min(100, (actualKotoba / mission.targetKotobaCount) * 100)
 
-  const overallPct = Math.round((videoPct + quizPct + kotobaPct) / 3)
+  // Overall percentage strictly based on planned active targets
+  let targetComponentsCount = 0
+  let targetPctSum = 0
+  if (mission.targetReplayCount > 0) {
+    targetComponentsCount++
+    targetPctSum += videoPct
+  }
+  if (mission.targetQuizCount > 0) {
+    targetComponentsCount++
+    targetPctSum += quizPct
+  }
+  if (mission.targetKotobaCount > 0) {
+    targetComponentsCount++
+    targetPctSum += kotobaPct
+  }
+
+  const overallPct = targetComponentsCount > 0 ? Math.round(targetPctSum / targetComponentsCount) : 0
+  // Streak is ONLY earned when user has planned targets AND reached exactly 100% across all of them
+  const isFullyCompleted = hasAnyTarget && videoCompleted && quizCompleted && kotobaCompleted && overallPct === 100
 
   // Sync streak if fully completed on target date
   if (isFullyCompleted) {
