@@ -10,6 +10,8 @@ jobs:
   build-and-deploy:
     name: Build & Deploy ke Rumahweb (FTPS)
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
     steps:
       - name: Checkout Repository
@@ -32,22 +34,22 @@ jobs:
           VITE_FONNTE_TOKEN: ${{ secrets.VITE_FONNTE_TOKEN }}
 
       - name: Copy .htaccess ke dist/
-        run: cp public/.htaccess dist/.htaccess
+        run: cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via FTP ke Rumahweb
+      - name: Deploy via FTPS ke Rumahweb
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
-          protocol: ftp
+          protocol: ftps
           security: loose
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           dangerous-clean-slate: false
           state-name: .ftp-deploy-sync-state.json
-          timeout: 300000
+          timeout: 60000
           log-level: verbose
           exclude: |
             **/.git*
