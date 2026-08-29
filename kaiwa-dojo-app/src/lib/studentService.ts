@@ -53,9 +53,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         email: p.email || `${p.username}@kaiwadojo.com`,
         phone_number: p.phone_number,
         institution: p.institution,
-        group_name: p.group_name !== undefined && p.group_name !== null
-          ? (p.group_name || undefined)
-          : (normalizeGroup(p.institution) || undefined),
+        group_name: p.group_name ? p.group_name.trim() : undefined,
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,

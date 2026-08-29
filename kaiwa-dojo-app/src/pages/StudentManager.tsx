@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -560,351 +561,355 @@ export default function StudentManager() {
         )}
       </div>
 
-      {/* Add Student Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 my-auto">
-            <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50">
-              <div className="flex items-center gap-2.5">
-                <span className="size-8 rounded-xl bg-primary/20 text-red-400 flex items-center justify-center text-sm font-black border border-primary/30">
-                  🎓
-                </span>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Tambah Akun Pelajar Baru</h3>
-                  <p className="text-[0.68rem] text-slate-300">Pendaftaran akun pelajar & penetapan grup resmi</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="p-5 sm:p-6 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Kolom Kiri: Informasi Pribadi & Login */}
-                <div className="space-y-3">
+      {/* Add Student Modal Portal */}
+      {showAddModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-8 rounded-xl bg-primary/20 text-red-400 flex items-center justify-center text-sm font-black border border-primary/30">
+                    🎓
+                  </span>
                   <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Nama Lengkap Siswa <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="contoh: Budi Santoso"
-                      value={fullName}
-                      onChange={e => setFullName(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        Username <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="budisantoso"
-                        value={username}
-                        onChange={e => setUsername(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="budi@kaiwadojo.com"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Status Akun
-                    </label>
-                    <select
-                      value={status}
-                      onChange={e => setStatus(e.target.value as StudentStatus)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                    >
-                      <option value="approved">✅ Aktif (Terverifikasi)</option>
-                      <option value="pending">⏳ Menunggu Persetujuan</option>
-                      <option value="rejected">✕ Nonaktif / Ditolak</option>
-                    </select>
+                    <h3 className="text-base font-extrabold text-white">Tambah Akun Pelajar Baru</h3>
+                    <p className="text-[0.68rem] text-slate-300">Pendaftaran akun pelajar & penetapan grup resmi</p>
                   </div>
                 </div>
-
-                {/* Kolom Kanan: Lembaga, Grup, & Bio */}
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                        Asal Lembaga / Instansi
-                      </label>
-                      {institution.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const detected = matchGroupFromInstitution(institution, availableGroups)
-                            setGroupName(detected)
-                          }}
-                          className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
-                        >
-                          ⚡ Cocokkan Grup
-                        </button>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="contoh: VIVA Legacy | STAI DT"
-                      value={institution}
-                      onChange={e => {
-                        const newInst = e.target.value
-                        setInstitution(newInst)
-                        if (!groupName) {
-                          const autoGrp = matchGroupFromInstitution(newInst, availableGroups)
-                          setGroupName(autoGrp)
-                        }
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
-                    <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
-                      🏷️ Label Grup Siswa
-                    </label>
-                    <select
-                      value={groupName}
-                      onChange={e => setGroupName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    >
-                      <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
-                      {availableGroups.map(g => (
-                        <option key={g.id} value={g.name}>🏷️ {g.name}</option>
-                      ))}
-                    </select>
-                    <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
-                      {groupName ? `User terikat grup "${groupName}" dan dapat melihat jadwal grup.` : 'User hanya dapat melihat kelas umum/publik.'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Bio / Catatan Siswa
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Persiapan magang kerja di Tokyo"
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs transition-all"
+                  className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <span>{saving ? 'Menyimpan...' : 'Simpan Akun Pelajar'}</span>
+                  ✕
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Edit Student Modal */}
-      {editingStudent && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 my-auto">
-            <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50">
-              <div className="flex items-center gap-2.5">
-                <span className="size-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm font-black border border-purple-400/30">
-                  ✏️
-                </span>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Edit Data Akun Pelajar</h3>
-                  <p className="text-[0.68rem] text-slate-300">Ubah data profil, status akun, dan penetapan label grup</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingStudent(null)}
-                className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdate} className="p-5 sm:p-6 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Kolom Kiri: Informasi Pribadi & Login */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Nama Lengkap Siswa <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={e => setFullName(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
+              <form onSubmit={handleCreate} className="p-5 sm:p-6 overflow-y-auto flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Kolom Kiri: Informasi Pribadi & Login */}
+                  <div className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        Username <span className="text-red-500">*</span>
+                        Nama Lengkap Siswa <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={username}
-                        onChange={e => setUsername(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        placeholder="contoh: Budi Santoso"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Username <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="budisantoso"
+                          value={username}
+                          onChange={e => setUsername(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="budi@kaiwadojo.com"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        Email <span className="text-red-500">*</span>
+                        Status Akun
                       </label>
+                      <select
+                        value={status}
+                        onChange={e => setStatus(e.target.value as StudentStatus)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                      >
+                        <option value="approved">✅ Aktif (Terverifikasi)</option>
+                        <option value="pending">⏳ Menunggu Persetujuan</option>
+                        <option value="rejected">✕ Nonaktif / Ditolak</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Kolom Kanan: Lembaga, Grup, & Bio */}
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Asal Lembaga / Instansi
+                        </label>
+                        {institution.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const detected = matchGroupFromInstitution(institution, availableGroups)
+                              setGroupName(detected)
+                            }}
+                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                          >
+                            ⚡ Cocokkan Grup
+                          </button>
+                        )}
+                      </div>
                       <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        type="text"
+                        placeholder="contoh: VIVA Legacy | STAI DT"
+                        value={institution}
+                        onChange={e => {
+                          const newInst = e.target.value
+                          setInstitution(newInst)
+                          if (!groupName) {
+                            const autoGrp = matchGroupFromInstitution(newInst, availableGroups)
+                            setGroupName(autoGrp)
+                          }
+                        }}
                         className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Status Akun Pelajar
-                    </label>
-                    <select
-                      value={status}
-                      onChange={e => setStatus(e.target.value as StudentStatus)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    >
-                      <option value="approved">✅ Aktif (Terverifikasi)</option>
-                      <option value="pending">⏳ Menunggu Persetujuan</option>
-                      <option value="rejected">✕ Nonaktif / Ditolak</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Kolom Kanan: Lembaga, Grup, & Bio */}
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                        Asal Lembaga / Instansi
+                    <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
+                      <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
+                        🏷️ Label Grup Siswa
                       </label>
-                      {institution.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const detected = matchGroupFromInstitution(institution, availableGroups)
-                            setGroupName(detected)
-                          }}
-                          className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
-                        >
-                          ⚡ Cocokkan Grup
-                        </button>
-                      )}
+                      <select
+                        value={groupName}
+                        onChange={e => setGroupName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      >
+                        <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
+                        {availableGroups.map(g => (
+                          <option key={g.id} value={g.name}>🏷️ {g.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
+                        {groupName ? `User terikat grup "${groupName}" dan dapat melihat jadwal grup.` : 'User hanya dapat melihat kelas umum/publik.'}
+                      </p>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="contoh: VIVA Legacy | STAI DT"
-                      value={institution}
-                      onChange={e => setInstitution(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    />
-                  </div>
 
-                  {/* Group Dropdown - Admin Override */}
-                  <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
-                    <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
-                      🏷️ Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Pilih/Ubah)</span>
-                    </label>
-                    <select
-                      value={groupName}
-                      onChange={e => setGroupName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    >
-                      <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
-                      {availableGroups.map(g => (
-                        <option key={g.id} value={g.name}>🏷️ {g.name}</option>
-                      ))}
-                    </select>
-                    <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
-                      {groupName ? `User terikat ke grup "${groupName}".` : 'User adalah Siswa Biasa (hanya akses kelas umum).'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                      Bio / Catatan Siswa
-                    </label>
-                    <input
-                      type="text"
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
-                    />
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        Bio / Catatan Siswa
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Persiapan magang kerja di Tokyo"
+                        value={bio}
+                        onChange={e => setBio(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+                {/* Action Buttons */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <span>{saving ? 'Menyimpan...' : 'Simpan Akun Pelajar'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Edit Student Modal Portal */}
+      {editingStudent &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm font-black border border-purple-400/30">
+                    ✏️
+                  </span>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white">Edit Data Akun Pelajar</h3>
+                    <p className="text-[0.68rem] text-slate-300">Ubah data profil, status akun, dan penetapan label grup</p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs transition-all"
+                  className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                  ✕
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleUpdate} className="p-5 sm:p-6 overflow-y-auto flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Kolom Kiri: Informasi Pribadi & Login */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        Nama Lengkap Siswa <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Username <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={username}
+                          onChange={e => setUsername(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        Status Akun Pelajar
+                      </label>
+                      <select
+                        value={status}
+                        onChange={e => setStatus(e.target.value as StudentStatus)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      >
+                        <option value="approved">✅ Aktif (Terverifikasi)</option>
+                        <option value="pending">⏳ Menunggu Persetujuan</option>
+                        <option value="rejected">✕ Nonaktif / Ditolak</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Kolom Kanan: Lembaga, Grup, & Bio */}
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Asal Lembaga / Instansi
+                        </label>
+                        {institution.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const detected = matchGroupFromInstitution(institution, availableGroups)
+                              setGroupName(detected)
+                            }}
+                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                          >
+                            ⚡ Cocokkan Grup
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="contoh: VIVA Legacy | STAI DT"
+                        value={institution}
+                        onChange={e => setInstitution(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    {/* Group Dropdown - Admin Override */}
+                    <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
+                      <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
+                        🏷️ Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Pilih/Ubah)</span>
+                      </label>
+                      <select
+                        value={groupName}
+                        onChange={e => setGroupName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      >
+                        <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
+                        {availableGroups.map(g => (
+                          <option key={g.id} value={g.name}>🏷️ {g.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
+                        {groupName ? `User terikat ke grup "${groupName}".` : 'User adalah Siswa Biasa (hanya akses kelas umum).'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        Bio / Catatan Siswa
+                      </label>
+                      <input
+                        type="text"
+                        value={bio}
+                        onChange={e => setBio(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingStudent(null)}
+                    className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </main>
   )
 }
