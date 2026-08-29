@@ -582,6 +582,34 @@ export async function calculateMissionProgress(
     } catch (e) {
       console.warn('Learning streak DB upsert note:', e)
     }
+  } else {
+    // If progress is NOT 100% completed, remove entry from learning_streaks so streak is not awarded prematurely
+    try {
+      await supabase
+        .from('learning_streaks')
+        .delete()
+        .eq('student_id', userId)
+        .eq('date', dateStr)
+
+      const { data: streaksData } = await supabase
+        .from('learning_streaks')
+        .select('date')
+        .eq('student_id', userId)
+
+      if (streaksData) {
+        const streakDates = new Set(streaksData.map((s: any) => s.date))
+        const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
+        await supabase
+          .from('profiles')
+          .update({ streak_days: streakCount, last_active_at: new Date().toISOString() })
+          .eq('id', userId)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('kaiwa_profile_updated'))
+        }
+      }
+    } catch (e) {
+      console.warn('Learning streak delete note:', e)
+    }
   }
 
   return {

@@ -692,6 +692,22 @@ export default function Dashboard() {
       const completed = enrolled.filter((e: any) => Number(e.progress_pct) === 100)
 
       const streakDates = new Set(streaksData.map((s: any) => s.date))
+      
+      // Realtime override for today based on live mission progress
+      if (mission) {
+        if (missionProgress?.isFullyCompleted || (missionProgress === null && false)) {
+          streakDates.add(todayDate)
+        } else {
+          // If mission progress is not 100%, today is NOT completed
+          const prog = await calculateMissionProgress(effectiveUserId, mission)
+          if (prog.isFullyCompleted) {
+            streakDates.add(todayDate)
+          } else {
+            streakDates.delete(todayDate)
+          }
+        }
+      }
+
       const liveStreakCount = calculateStreakFromDates(streakDates)
 
       const allMissionsMap = await fetchAllUserMissions(effectiveUserId)
@@ -719,7 +735,7 @@ export default function Dashboard() {
       }))
 
       setStreakHistory(history)
-      await new Promise(r => setTimeout(r, 1000))
+      await new Promise(r => setTimeout(r, 600))
       setLoading(false)
     }
 
@@ -734,6 +750,7 @@ export default function Dashboard() {
     window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
     window.addEventListener('kaiwa_mission_progress_updated', handleSync)
     window.addEventListener('kaiwa_lesson_progress_updated', handleSync)
+    window.addEventListener('kaiwa_profile_updated', handleSync)
     window.addEventListener('storage', handleSync)
 
     const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
@@ -751,6 +768,7 @@ export default function Dashboard() {
       window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
       window.removeEventListener('kaiwa_mission_progress_updated', handleSync)
       window.removeEventListener('kaiwa_lesson_progress_updated', handleSync)
+      window.removeEventListener('kaiwa_profile_updated', handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeScheduleRealtime()
       unsubscribeMissionRealtime()

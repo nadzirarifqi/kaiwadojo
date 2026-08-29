@@ -762,6 +762,16 @@ export default function MyCourses() {
         replay_count: newReplayCount,
         last_watched_at: new Date().toISOString(),
       }, { onConflict: 'student_id,lesson_id' })
+
+      try {
+        const todayStr = getTodayDateString()
+        const mission = (await fetchDailyMission(effectiveUserId, todayStr)) || getDailyMission(effectiveUserId, todayStr)
+        if (mission) {
+          await calculateMissionProgress(effectiveUserId, mission)
+        }
+      } catch (e) {
+        console.warn('Streak replay progress sync note:', e)
+      }
     }
   }
 
