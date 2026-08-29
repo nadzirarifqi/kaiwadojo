@@ -355,13 +355,27 @@ export default function SetoranKotobaPage() {
     const updated = kotobaList.filter(k => k.id !== id)
     saveToLocal(updated)
 
-    try {
-      await supabase
-        .from('user_kotoba_submissions')
-        .delete()
-        .eq('id', id)
-    } catch (err) {
-      console.warn('Delete kotoba DB note:', err)
+    if (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user') {
+      try {
+        await supabase
+          .from('user_kotoba_submissions')
+          .delete()
+          .eq('id', id)
+
+        await supabase
+          .from('lesson_progress')
+          .delete()
+          .eq('student_id', effectiveUserId)
+          .eq('lesson_id', `user_kotoba_${id}`)
+
+        const todayStr = new Date().toISOString().split('T')[0]
+        const mission = (await fetchDailyMission(effectiveUserId, todayStr)) || getDailyMission(effectiveUserId, todayStr)
+        if (mission) {
+          await calculateMissionProgress(effectiveUserId, mission)
+        }
+      } catch (err) {
+        console.warn('Delete kotoba DB note:', err)
+      }
     }
   }
 
