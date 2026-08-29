@@ -319,14 +319,39 @@ export function detectVideoDuration(
 
     if (babNumber && partNumber) {
       const jilidPath = babNumber <= 25 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'
-      // Standard Rumahweb naming format: "Kaiwa Dojo - BAB {n} S{p}.mov"
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MOV`)
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mov`)
-      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`)}`)
-      candidateUrls.push(`${jilidPath}/${encodeURIComponent(`BAB ${babNumber}`)}/${encodeURIComponent(`Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MOV`)}`)
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`)
-      candidateUrls.push(`${jilidPath}/BAB ${babNumber}/Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`)
+      const zeroPad = String(babNumber).padStart(2, '0')
+
+      const folders = [
+        `BAB ${babNumber}`,
+        `Bab ${babNumber}`,
+        `BAB ${zeroPad}`,
+        `Bab ${zeroPad}`,
+        `BAB${babNumber}`,
+        `Bab${babNumber}`,
+        `bab ${babNumber}`,
+      ]
+
+      const filenames = [
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mov`,
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MOV`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mov`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MOV`,
+        `Kaiwa Dojo - BAB ${zeroPad} S${partNumber}.mov`,
+        `Kaiwa Dojo - Bab ${zeroPad} S${partNumber}.mov`,
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.mp4`,
+        `Kaiwa Dojo - BAB ${babNumber} S${partNumber}.MP4`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.mp4`,
+        `Kaiwa Dojo - Bab ${babNumber} S${partNumber}.MP4`,
+        `Kaiwa Dojo - BAB ${zeroPad} S${partNumber}.mp4`,
+        `Kaiwa Dojo - Bab ${zeroPad} S${partNumber}.mp4`,
+      ]
+
+      for (const f of folders) {
+        for (const fn of filenames) {
+          candidateUrls.push(`${jilidPath}/${f}/${fn}`)
+          candidateUrls.push(`${jilidPath}/${encodeURIComponent(f)}/${encodeURIComponent(fn)}`)
+        }
+      }
     }
 
     if (urlOrBase && urlOrBase.trim()) {

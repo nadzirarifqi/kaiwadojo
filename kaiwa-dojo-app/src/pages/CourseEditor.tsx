@@ -88,7 +88,7 @@ export default function CourseEditor() {
     if (detectedCount > 0) {
       showToast(`Berhasil mendeteksi ${detectedCount} durasi video & tersimpan ke database! ⏱️`)
     } else {
-      showToast(`Video belum siap di server Rumahweb atau periksa nama/lokasi file video.`, 'error')
+      showToast(`Belum dapat memuat metadata video. Anda bisa langsung mengisi durasi (cth: 15.00) lalu klik '💾 Simpan Bab Ini'.`, 'error')
     }
   }
 
