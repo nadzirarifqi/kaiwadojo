@@ -113,6 +113,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       },
       {
         icon: (
+          <span className="size-7 rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/20 shadow-xs">
+            👥
+          </span>
+        ),
+        label: 'Kelola Grup & Label',
+        to: '/kelola-grup',
+      },
+      {
+        icon: (
           <span className="size-7 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/20 shadow-xs">
             📆
           </span>

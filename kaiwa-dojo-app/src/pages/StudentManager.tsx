@@ -12,6 +12,7 @@ import {
   rejectStudentAccount,
   normalizeGroup,
 } from '../lib/studentService'
+import { fetchGroups, matchGroupFromInstitution, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { calculateUserPresence } from '../lib/presenceUtils'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
@@ -43,7 +44,7 @@ export default function StudentManager() {
   const [toast, setToast] = useState<string | null>(null)
 
   // Available groups from kaiwa_groups table
-  const [availableGroups, setAvailableGroups] = useState<string[]>([])
+  const [availableGroups, setAvailableGroups] = useState<KaiwaGroup[]>([])
 
   async function loadData() {
     setLoading(true)
@@ -56,21 +57,27 @@ export default function StudentManager() {
     loadData()
     loadGroups()
 
+    const handleGroupSync = () => {
+      loadGroups()
+      loadData()
+    }
+    window.addEventListener(GROUP_UPDATE_EVENT, handleGroupSync)
+
     // Auto-refresh presence every 30 seconds
     const refreshInterval = setInterval(() => {
       fetchStudents().then(data => setStudents(data))
     }, 30000)
 
-    return () => clearInterval(refreshInterval)
+    return () => {
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleGroupSync)
+      clearInterval(refreshInterval)
+    }
   }, [])
 
   async function loadGroups() {
     try {
-      const { data } = await supabase
-        .from('kaiwa_groups')
-        .select('name')
-        .order('name', { ascending: true })
-      if (data) setAvailableGroups(data.map((g: any) => g.name))
+      const data = await fetchGroups(true)
+      setAvailableGroups(data)
     } catch {
       setAvailableGroups([])
     }
@@ -303,12 +310,20 @@ export default function StudentManager() {
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
-        >
-          <span>+ Tambah Akun Pelajar Baru</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigate('/kelola-grup')}
+            className="px-4 py-3 bg-purple-600/90 hover:bg-purple-600 text-white text-xs sm:text-sm font-extrabold rounded-2xl border border-purple-400/40 cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+          >
+            <span>👥 Kelola Grup & Kata Kunci</span>
+          </button>
+          <button
+            onClick={openAddModal}
+            className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
+          >
+            <span>+ Tambah Akun Pelajar Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* Students List Table */}
@@ -457,11 +472,13 @@ export default function StudentManager() {
                       {/* Grup Column */}
                       <td className="py-3 px-2">
                         {std.group_name ? (
-                          <span className="px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[0.65rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                            👥 {std.group_name}
+                          <span className="px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 text-[0.65rem] font-black border border-purple-200 dark:border-purple-800 whitespace-nowrap font-mono">
+                            🏷️ {std.group_name}
                           </span>
                         ) : (
-                          <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-semibold">
+                            🌐 Siswa Biasa
+                          </span>
                         )}
                       </td>
 
@@ -500,35 +517,24 @@ export default function StudentManager() {
                               ✕ Tolak
                             </button>
                           </>
-                        ) : std.status === 'rejected' ? (
-                          <button
-                            onClick={() => handleApprove(std)}
-                            disabled={saving}
-                            className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold border-none cursor-pointer transition-colors"
-                          >
-                            ✓ Setujui Ulang
-                          </button>
                         ) : (
-                          <button
-                            onClick={() => handleReject(std)}
-                            disabled={saving}
-                            className="px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-800 dark:text-amber-300 text-xs font-bold border-none cursor-pointer transition-colors"
-                          >
-                            🔒 Nonaktifkan
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openEditModal(std)}
+                              disabled={saving}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(std)}
+                              disabled={saving}
+                              className="px-2.5 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-600 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-900/40 cursor-pointer transition-colors"
+                            >
+                              🗑️ Hapus
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => openEditModal(std)}
-                          className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(std)}
-                          className="px-2 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
-                        >
-                          🗑️
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -544,7 +550,7 @@ export default function StudentManager() {
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
-            <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between">
+            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
                 <h3 className="text-lg font-extrabold">🎓 Tambah Akun Pelajar</h3>
@@ -591,32 +597,37 @@ export default function StudentManager() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Instansi</label>
                 <input
                   type="text"
-                  placeholder="contoh: Nama Group | Institusi"
+                  placeholder="contoh: VIVA Legacy | STAI DT"
                   value={institution}
-                  onChange={e => setInstitution(e.target.value)}
+                  onChange={e => {
+                    const newInst = e.target.value
+                    setInstitution(newInst)
+                    const autoGrp = matchGroupFromInstitution(newInst, availableGroups)
+                    setGroupName(autoGrp)
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                 />
               </div>
 
               {/* Group Dropdown */}
-              <div className="p-3 bg-violet-50/70 dark:bg-violet-950/20 rounded-xl border border-violet-200 dark:border-violet-800">
-                <label className="text-xs font-black text-violet-700 dark:text-violet-300 block mb-1">
-                  👥 Grup Siswa <span className="font-bold text-slate-400 normal-case">(Admin Override)</span>
+              <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
+                  🏷️ Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Otomatis/Override)</span>
                 </label>
                 <select
                   value={groupName}
                   onChange={e => setGroupName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-violet-500"
+                  className="w-full px-3 py-2 rounded-xl border border-purple-200 dark:border-purple-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                 >
-                  <option value="">— Tidak ada grup (user biasa)</option>
+                  <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
                   {availableGroups.map(g => (
-                    <option key={g} value={g}>{g}</option>
+                    <option key={g.id} value={g.name}>🏷️ {g.name}</option>
                   ))}
                 </select>
-                <p className="text-[0.65rem] text-slate-400 mt-1">Jika kosong, user hanya dapat melihat kelas "Semua Siswa".</p>
+                <p className="text-[0.65rem] text-slate-400 mt-1">Jika diset sebagai Siswa Biasa, hanya dapat melihat jadwal kelas umum.</p>
               </div>
 
               <div>
@@ -699,29 +710,34 @@ export default function StudentManager() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Perguruan Tinggi</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Asal Lembaga / Instansi</label>
                 <input
                   type="text"
-                  placeholder="contoh: Nama Group | Institusi"
+                  placeholder="contoh: VIVA Legacy | STAI DT"
                   value={institution}
-                  onChange={e => setInstitution(e.target.value)}
+                  onChange={e => {
+                    const newInst = e.target.value
+                    setInstitution(newInst)
+                    const autoGrp = matchGroupFromInstitution(newInst, availableGroups)
+                    setGroupName(autoGrp)
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                 />
               </div>
 
               {/* Group Dropdown - Admin Override */}
-              <div className="p-3 bg-violet-50/70 dark:bg-violet-950/20 rounded-xl border border-violet-200 dark:border-violet-800">
-                <label className="text-xs font-black text-violet-700 dark:text-violet-300 block mb-1">
-                  👥 Grup Siswa <span className="font-bold text-slate-400 normal-case">(Admin Override)</span>
+              <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
+                  🏷️ Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Otomatis/Override)</span>
                 </label>
                 <select
                   value={groupName}
                   onChange={e => setGroupName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-violet-200 dark:border-violet-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-violet-500"
+                  className="w-full px-3 py-2 rounded-xl border border-purple-200 dark:border-purple-700 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                 >
-                  <option value="">— Tidak ada grup (user biasa)</option>
+                  <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
                   {availableGroups.map(g => (
-                    <option key={g} value={g}>{g}</option>
+                    <option key={g.id} value={g.name}>🏷️ {g.name}</option>
                   ))}
                 </select>
                 <p className="text-[0.65rem] text-slate-400 mt-1">Pilih grup untuk menentukan kelas apa yang bisa dilihat user ini.</p>

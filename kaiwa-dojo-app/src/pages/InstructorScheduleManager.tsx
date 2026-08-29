@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import AdaptiveIcon from '../components/AdaptiveIcon'
-import { supabase } from '../lib/supabaseClient'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -18,6 +17,7 @@ import {
   RESERVATION_UPDATE_EVENT,
   subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
 interface ScheduleSlotItem {
@@ -58,7 +58,7 @@ export default function InstructorScheduleManagerPage() {
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotItem[]>([])
 
   // Available groups from DB (kaiwa_groups table)
-  const [availableGroups, setAvailableGroups] = useState<string[]>([])
+  const [availableGroups, setAvailableGroups] = useState<KaiwaGroup[]>([])
 
   function calculateDefaultEndDate(startDateStr: string): string {
     if (!startDateStr) return ''
@@ -86,11 +86,8 @@ export default function InstructorScheduleManagerPage() {
 
   async function loadGroups() {
     try {
-      const { data } = await supabase
-        .from('kaiwa_groups')
-        .select('name')
-        .order('name', { ascending: true })
-      if (data) setAvailableGroups(data.map((g: any) => g.name))
+      const data = await fetchGroups(true)
+      setAvailableGroups(data)
     } catch {
       setAvailableGroups([])
     }
@@ -102,15 +99,18 @@ export default function InstructorScheduleManagerPage() {
 
     const handleSync = () => {
       loadData()
+      loadGroups()
     }
 
     window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     const unsubscribeRealtime = subscribeToScheduleRealtime(handleSync)
 
     return () => {
       window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       unsubscribeRealtime()
     }
   }, [])
@@ -808,7 +808,7 @@ export default function InstructorScheduleManagerPage() {
                 >
                   <option value="">🌐 Semua Siswa (Tidak Dibatasi)</option>
                   {availableGroups.map(g => (
-                    <option key={g} value={g}>{g}</option>
+                    <option key={g.id} value={g.name}>🏷️ {g.name}</option>
                   ))}
                 </select>
                 <p className="text-[0.68rem] text-slate-400 mt-1.5">

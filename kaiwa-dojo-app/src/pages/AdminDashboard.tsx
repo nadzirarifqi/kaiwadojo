@@ -6,6 +6,7 @@ import { fetchInstructors, type InstructorAccount } from '../lib/instructorServi
 import { fetchStudents, type StudentAccount } from '../lib/studentService'
 import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
+import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -21,8 +22,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   // Group management state
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([])
+  const [groups, setGroups] = useState<KaiwaGroup[]>([])
   const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupKeywords, setNewGroupKeywords] = useState('')
   const [groupLoading, setGroupLoading] = useState(false)
   const [groupToast, setGroupToast] = useState<string | null>(null)
 
@@ -32,31 +34,39 @@ export default function AdminDashboard() {
   }
 
   async function loadGroups() {
-    const { data } = await supabase.from('kaiwa_groups').select('id, name').order('name')
-    if (data) setGroups(data)
+    const data = await fetchGroups(true)
+    setGroups(data)
   }
 
   async function handleAddGroup() {
     const name = newGroupName.trim()
     if (!name) return
     setGroupLoading(true)
-    const { error } = await supabase.from('kaiwa_groups').insert({ name })
-    if (!error) {
+    const res = await createGroup({
+      name,
+      keywords: newGroupKeywords || name.toLowerCase(),
+    })
+    if (res.success) {
       setNewGroupName('')
+      setNewGroupKeywords('')
       await loadGroups()
       showGroupToast(`Grup "${name}" berhasil ditambahkan!`)
     } else {
-      showGroupToast(`Gagal: ${error.message}`)
+      showGroupToast(`Gagal: ${res.error}`)
     }
     setGroupLoading(false)
   }
 
   async function handleDeleteGroup(id: string, name: string) {
-    if (!confirm(`Hapus grup "${name}"? Kelas yang menggunakan grup ini akan jadi terbuka untuk semua.`)) return
+    if (!confirm(`Hapus grup "${name}"? Siswa di grup ini akan menjadi Siswa Biasa dan jadwal kelas terbuka untuk umum.`)) return
     setGroupLoading(true)
-    await supabase.from('kaiwa_groups').delete().eq('id', id)
-    await loadGroups()
-    showGroupToast(`Grup "${name}" dihapus.`)
+    const res = await deleteGroup(id, name)
+    if (res.success) {
+      await loadGroups()
+      showGroupToast(`Grup "${name}" dihapus.`)
+    } else {
+      showGroupToast(`Gagal: ${res.error}`)
+    }
     setGroupLoading(false)
   }
 
@@ -84,8 +94,10 @@ export default function AdminDashboard() {
 
     const handleReservationSync = () => {
       loadData()
+      loadGroups()
     }
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
     window.addEventListener('storage', handleReservationSync)
 
     const channel = supabase
@@ -97,6 +109,7 @@ export default function AdminDashboard() {
 
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener('storage', handleReservationSync)
       supabase.removeChannel(channel)
     }
@@ -150,6 +163,12 @@ export default function AdminDashboard() {
             className="px-4 py-2.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
             <span>🎓 Akun Pelajar</span>
+          </button>
+          <button
+            onClick={() => navigate('/kelola-grup')}
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+          >
+            <span>👥 Kelola Grup</span>
           </button>
           <button
             onClick={() => navigate('/kelola-kursus')}
@@ -349,37 +368,52 @@ export default function AdminDashboard() {
       </div>
       {/* ── KELOLA GRUP ─────────────────────────────────────── */}
       <div className="mt-6 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              <span>👥 Kelola Nama Grup</span>
+              <span>👥 Kelola Grup & Label Pelajar</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Nama grup digunakan untuk membatasi visibilitas kelas. Matching bersifat case-insensitive dan mengabaikan spasi berlebih.
+              Grup membatasi visibilitas kelas. Siswa yang mendaftar di luar keyword grup admin otomatis menjadi Siswa Biasa.
             </p>
           </div>
-          {groupToast && (
-            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              ✅ {groupToast}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {groupToast && (
+              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                ✅ {groupToast}
+              </span>
+            )}
+            <button
+              onClick={() => navigate('/kelola-grup')}
+              className="px-3.5 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 hover:bg-purple-200 text-xs font-extrabold border border-purple-200 dark:border-purple-800 cursor-pointer transition-all flex items-center gap-1.5"
+            >
+              <span>Buka Menu Lengkap &rarr;</span>
+            </button>
+          </div>
         </div>
 
-        {/* Add Group */}
-        <div className="flex gap-2 mb-4">
+        {/* Add Group Quick Form */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-4">
           <input
             type="text"
-            placeholder="Nama grup baru, cth: VIVA Legacy"
+            placeholder="Nama grup (cth: VLI2608)"
             value={newGroupName}
             onChange={e => setNewGroupName(e.target.value)}
+            className="sm:col-span-4 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-bold"
+          />
+          <input
+            type="text"
+            placeholder="Keywords (cth: viva legacy, vli2608, vli)"
+            value={newGroupKeywords}
+            onChange={e => setNewGroupKeywords(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAddGroup()}
-            className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500 font-medium"
+            className="sm:col-span-6 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
           />
           <button
             type="button"
             onClick={handleAddGroup}
             disabled={groupLoading || !newGroupName.trim()}
-            className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all disabled:opacity-50 shrink-0"
+            className="sm:col-span-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all disabled:opacity-50 shrink-0"
           >
             + Tambah
           </button>
@@ -389,28 +423,35 @@ export default function AdminDashboard() {
         {groups.length === 0 ? (
           <p className="text-xs text-slate-400 italic text-center py-6">Belum ada grup terdaftar.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {groups.map(g => (
-              <div
-                key={g.id}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800"
-              >
-                <div>
-                  <div className="text-sm font-extrabold text-slate-800 dark:text-white">{g.name}</div>
-                  <div className="text-[0.65rem] text-slate-400 font-mono">
-                    key: "{g.name.trim().toLowerCase().replace(/\s+/g, ' ')}"
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteGroup(g.id, g.name)}
-                  disabled={groupLoading}
-                  className="size-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-900/40 cursor-pointer transition-all text-xs font-black flex items-center justify-center disabled:opacity-40"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {groups.map(g => {
+              const kws = parseKeywords(g.keywords)
+              return (
+                <div
+                  key={g.id}
+                  className="flex items-start justify-between p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/60"
                 >
-                  ×
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <div className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                      <span className="text-purple-600 dark:text-purple-400">🏷️</span>
+                      <span>{g.name}</span>
+                    </div>
+                    <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-mono mt-0.5 line-clamp-1">
+                      key: {kws.join(', ') || g.name.toLowerCase()}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGroup(g.id, g.name)}
+                    disabled={groupLoading}
+                    title="Hapus Grup"
+                    className="size-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-900/40 cursor-pointer transition-all text-xs font-black flex items-center justify-center disabled:opacity-40 shrink-0"
+                  >
+                    ×
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

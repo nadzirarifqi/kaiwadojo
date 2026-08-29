@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { matchGroupFromInstitution } from './groupService'
 
 export type StudentStatus = 'approved' | 'pending' | 'rejected'
 
@@ -9,7 +10,7 @@ export interface StudentAccount {
   email: string
   phone_number?: string
   institution?: string
-  group_name?: string  // Extracted from institution (text before '|'), normalized
+  group_name?: string  // Matches admin registered group (e.g. 'VLI2608'), or empty for regular student
   role: 'pelajar'
   avatar_url?: string
   bio?: string
@@ -20,18 +21,12 @@ export interface StudentAccount {
 }
 
 /**
- * Ekstrak nama grup dari field institution.
- * Case-insensitive dan whitespace-insensitive.
- * Contoh: "VIVA Legacy | STAI DT" → "viva legacy"
- * Contoh: "  viva legacy  " → "viva legacy"
+ * Normalisasi dan deteksi grup dari field institution.
+ * - Jika mengandung keyword grup (cth: 'viva legacy' / 'vli2608') → 'VLI2608'
+ * - Jika tidak ada grup yang terdaftar cocok → '' (Siswa Biasa)
  */
 export function normalizeGroup(raw: string | null | undefined): string {
-  if (!raw) return ''
-  const extracted = raw.split('|')[0].trim()
-  if (extracted.toLowerCase().includes('viva legacy')) {
-    return 'VIVA Legacy'
-  }
-  return extracted
+  return matchGroupFromInstitution(raw)
 }
 
 /**
