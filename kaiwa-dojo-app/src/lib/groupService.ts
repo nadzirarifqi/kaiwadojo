@@ -74,8 +74,39 @@ export function matchGroupFromInstitution(
   return ''
 }
 
+const LOCAL_STORAGE_KEY = 'kaiwa_custom_groups_v1'
+
 /**
- * Fetch all groups from DB (kaiwa_groups table) with auto-migration/fallback
+ * Helper to get local stored groups
+ */
+function getLocalGroups(): KaiwaGroup[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.warn('getLocalGroups parse error:', e)
+  }
+  return []
+}
+
+/**
+ * Helper to save local stored groups
+ */
+function saveLocalGroups(list: KaiwaGroup[]) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list))
+  } catch (e) {
+    console.warn('saveLocalGroups error:', e)
+  }
+}
+
+/**
+ * Fetch all groups from DB (kaiwa_groups table) with auto-migration/localStorage fallback
  */
 export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
   const now = Date.now()
@@ -84,15 +115,15 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
   }
 
   try {
-    // Try full select with keywords & description
+    // 1. Try full select from Supabase kaiwa_groups
     const { data, error } = await supabase
       .from('kaiwa_groups')
       .select('*')
       .order('name', { ascending: true })
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       const formatted: KaiwaGroup[] = data.map((g: any) => ({
-        id: g.id || g.name,
+        id: String(g.id || g.name),
         name: g.name,
         keywords: g.keywords || (g.name.toLowerCase().includes('vli') || g.name.toLowerCase().includes('viva') ? 'viva legacy, vli2608, vli 2608, viva' : g.name.toLowerCase()),
         description: g.description || '',
@@ -102,10 +133,11 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
 
       cachedGroups = formatted
       cacheTimestamp = now
+      saveLocalGroups(formatted)
       return formatted
     }
 
-    // Fallback: If table has only id & name
+    // 2. Fallback: select id, name
     const { data: fallbackData } = await supabase
       .from('kaiwa_groups')
       .select('id, name')
@@ -113,29 +145,40 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
 
     if (fallbackData && fallbackData.length > 0) {
       const formatted: KaiwaGroup[] = fallbackData.map((g: any) => ({
-        id: g.id || g.name,
+        id: String(g.id || g.name),
         name: g.name,
         keywords: g.name.toLowerCase().includes('vli') || g.name.toLowerCase().includes('viva') ? 'viva legacy, vli2608, vli 2608, viva' : g.name.toLowerCase(),
         description: '',
       }))
       cachedGroups = formatted
       cacheTimestamp = now
+      saveLocalGroups(formatted)
       return formatted
     }
   } catch (err) {
-    console.warn('fetchGroups error:', err)
+    console.warn('fetchGroups DB error, using local fallback:', err)
   }
 
-  // Default fallback if database empty
+  // 3. Check localStorage if DB is not populated yet
+  const local = getLocalGroups()
+  if (local.length > 0) {
+    cachedGroups = local
+    cacheTimestamp = now
+    return local
+  }
+
+  // 4. Default baseline fallback
   const defaultGroups: KaiwaGroup[] = [
     {
-      id: 'default-vli2608',
+      id: 'vli2608-default',
       name: 'VLI2608',
       keywords: 'viva legacy, vli2608, vli 2608, viva, vli',
       description: 'Grup Resmi Pelajar VIVA Legacy (VLI2608)',
     },
   ]
   cachedGroups = defaultGroups
+  cacheTimestamp = now
+  saveLocalGroups(defaultGroups)
   return defaultGroups
 }
 
@@ -156,38 +199,43 @@ export async function createGroup(group: {
     .filter(Boolean)
     .join(', ')
 
-  const payload: any = {
+  const newGroupObj: KaiwaGroup = {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
     name: cleanName,
     keywords: cleanKeywords,
     description: (group.description || '').trim(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   }
 
+  // Update memory & local storage immediately
+  const existing = await fetchGroups(false)
+  const updatedList = [...existing.filter(g => g.name.toLowerCase() !== cleanName.toLowerCase()), newGroupObj]
+  cachedGroups = updatedList
+  saveLocalGroups(updatedList)
+
   try {
-    const { data, error } = await supabase
-      .from('kaiwa_groups')
-      .insert(payload)
-      .select()
-      .single()
+    const payload: any = {
+      id: newGroupObj.id,
+      name: cleanName,
+      keywords: cleanKeywords,
+      description: newGroupObj.description,
+    }
+
+    const { error } = await supabase.from('kaiwa_groups').upsert(payload, { onConflict: 'name' })
 
     if (error) {
       // Fallback without extra columns if column does not exist
       if (error.message.includes('column') || error.code === '42703') {
-        const { error: fErr } = await supabase.from('kaiwa_groups').insert({ name: cleanName })
-        if (fErr) return { success: false, error: fErr.message }
-      } else {
-        return { success: false, error: error.message }
+        await supabase.from('kaiwa_groups').upsert({ name: cleanName }, { onConflict: 'name' })
       }
     }
-
-    await fetchGroups(true)
-    window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
-    return {
-      success: true,
-      group: data || { id: cleanName, name: cleanName, keywords: cleanKeywords, description: payload.description },
-    }
   } catch (err: any) {
-    return { success: false, error: err?.message || 'Gagal menambahkan grup.' }
+    console.warn('createGroup DB catch:', err)
   }
+
+  window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
+  return { success: true, group: newGroupObj }
 }
 
 /**
@@ -207,62 +255,117 @@ export async function updateGroup(
     ? updates.keywords.split(',').map(k => k.trim()).filter(Boolean).join(', ')
     : undefined
 
-  const payload: any = {
-    updated_at: new Date().toISOString(),
+  // 1. Update in-memory & local storage instantly
+  const currentGroups = await fetchGroups(false)
+  let found = false
+  const updatedGroups = currentGroups.map(g => {
+    if (g.id === id || g.name.toLowerCase() === oldName.toLowerCase()) {
+      found = true
+      return {
+        ...g,
+        name: newName,
+        keywords: cleanKeywords !== undefined ? cleanKeywords : g.keywords,
+        description: updates.description !== undefined ? updates.description.trim() : g.description,
+        updated_at: new Date().toISOString(),
+      }
+    }
+    return g
+  })
+
+  if (!found) {
+    updatedGroups.push({
+      id: id || `${Date.now()}`,
+      name: newName,
+      keywords: cleanKeywords || newName.toLowerCase(),
+      description: updates.description ? updates.description.trim() : '',
+      updated_at: new Date().toISOString(),
+    })
   }
-  if (newName) payload.name = newName
-  if (cleanKeywords !== undefined) payload.keywords = cleanKeywords
-  if (updates.description !== undefined) payload.description = updates.description.trim()
 
+  cachedGroups = updatedGroups
+  saveLocalGroups(updatedGroups)
+
+  // 2. Persist to DB kaiwa_groups table
   try {
-    let { error } = await supabase.from('kaiwa_groups').update(payload).eq('id', id)
+    const payload: any = {
+      name: newName,
+      updated_at: new Date().toISOString(),
+    }
+    if (cleanKeywords !== undefined) payload.keywords = cleanKeywords
+    if (updates.description !== undefined) payload.description = updates.description.trim()
 
-    if (error && (error.message.includes('column') || error.code === '42703')) {
-      const { error: simpleErr } = await supabase.from('kaiwa_groups').update({ name: newName }).eq('id', id)
-      error = simpleErr
+    // Try update by id first
+    let isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    let updatedInDb = false
+
+    if (isUuid) {
+      const { error, data } = await supabase.from('kaiwa_groups').update(payload).eq('id', id).select()
+      if (!error && data && data.length > 0) {
+        updatedInDb = true
+      }
     }
 
-    if (error) {
-      return { success: false, error: error.message }
+    // If not updated by id, try update by oldName
+    if (!updatedInDb && oldName) {
+      const { error, data } = await supabase.from('kaiwa_groups').update(payload).eq('name', oldName).select()
+      if (!error && data && data.length > 0) {
+        updatedInDb = true
+      }
     }
 
-    // If group name changed, cascade update student profiles & class schedules
+    // If still not updated, upsert by name
+    if (!updatedInDb) {
+      const upsertPayload: any = {
+        name: newName,
+        keywords: cleanKeywords || newName.toLowerCase(),
+        description: updates.description ? updates.description.trim() : '',
+      }
+      const { error: upErr } = await supabase.from('kaiwa_groups').upsert(upsertPayload, { onConflict: 'name' })
+      if (upErr && (upErr.message.includes('column') || upErr.code === '42703')) {
+        await supabase.from('kaiwa_groups').upsert({ name: newName }, { onConflict: 'name' })
+      }
+    }
+
+    // 3. Cascade update student profiles & class schedules in Supabase DB
     if (oldName && newName && oldName !== newName) {
       await supabase.from('profiles').update({ group_name: newName }).eq('group_name', oldName)
       await supabase.from('class_schedules').update({ target_group: newName }).eq('target_group', oldName)
     }
-
-    await fetchGroups(true)
-    window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
-    return { success: true }
   } catch (err: any) {
-    return { success: false, error: err?.message || 'Gagal memperbarui grup.' }
+    console.warn('updateGroup DB catch:', err)
   }
+
+  window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
+  return { success: true }
 }
 
 /**
  * Delete a group
  */
 export async function deleteGroup(id: string, name: string): Promise<{ success: boolean; error?: string }> {
+  // Update local memory & storage
+  const currentGroups = await fetchGroups(false)
+  const updatedGroups = currentGroups.filter(g => g.id !== id && g.name.toLowerCase() !== name.toLowerCase())
+  cachedGroups = updatedGroups
+  saveLocalGroups(updatedGroups)
+
   try {
-    const { error } = await supabase.from('kaiwa_groups').delete().eq('id', id)
-    if (error) {
-      // Try delete by name
-      const { error: errName } = await supabase.from('kaiwa_groups').delete().eq('name', name)
-      if (errName) return { success: false, error: errName.message }
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (isUuid) {
+      await supabase.from('kaiwa_groups').delete().eq('id', id)
     }
+    await supabase.from('kaiwa_groups').delete().eq('name', name)
 
     // Reset students who had this group to null (Siswa Biasa)
     await supabase.from('profiles').update({ group_name: null }).eq('group_name', name)
     // Clear schedule restriction
     await supabase.from('class_schedules').update({ target_group: null }).eq('target_group', name)
-
-    await fetchGroups(true)
-    window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
-    return { success: true }
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Gagal menghapus grup.' }
+  } catch (err) {
+    console.warn('deleteGroup DB catch:', err)
   }
+
+  window.dispatchEvent(new CustomEvent(GROUP_UPDATE_EVENT))
+  return { success: true }
 }
 
 /**

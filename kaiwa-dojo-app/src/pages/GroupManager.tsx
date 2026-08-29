@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   fetchGroups,
@@ -87,6 +88,15 @@ export default function GroupManagerPage() {
 
     setSaving(true)
     if (editingGroup) {
+      // 1. Instant UI update
+      setGroups(prev =>
+        prev.map(g =>
+          g.id === editingGroup.id || g.name.toLowerCase() === editingGroup.name.toLowerCase()
+            ? { ...g, name, keywords: formKeywords, description: formDescription }
+            : g
+        )
+      )
+
       const res = await updateGroup(editingGroup.id, editingGroup.name, {
         name,
         keywords: formKeywords,
@@ -453,215 +463,219 @@ export default function GroupManagerPage() {
       </div>
 
       {/* Modal: Tambah / Edit Grup */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-              <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <span>{editingGroup ? '✏️ Edit Grup & Kata Kunci' : '✨ Tambah Grup Baru'}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
-              >
-                ✕
-              </button>
-            </div>
-
-            {formError && (
-              <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{formError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveGroup} className="space-y-4">
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Nama Label Grup <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: VLI2608 atau STAI2026"
-                  value={formName}
-                  onChange={e => setFormName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-bold"
-                />
-                <p className="text-[0.7rem] text-slate-400 mt-1">
-                  Nama resmi grup yang akan muncul di profil, filter pelajar, dan reservasi jadwal.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Kata Kunci Pendaftaran (Pisahkan dengan koma)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Contoh: viva legacy, vli2608, vli 2608, viva"
-                  value={formKeywords}
-                  onChange={e => setFormKeywords(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
-                />
-                <p className="text-[0.7rem] text-slate-400 mt-1">
-                  Jika siswa menulis salah satu kata kunci ini pada kolom instansi/grup saat daftar, mereka akan otomatis masuk ke grup ini.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Deskripsi / Catatan (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Grup Khusus Batch Pelajar VIVA Legacy"
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+      {modalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-5 sm:p-6 animate-scale-up max-h-[92vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0">
+                <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                  <span>{editingGroup ? '✏️ Edit Grup & Kata Kunci' : '✨ Tambah Grup Baru'}</span>
+                </h3>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  disabled={saving}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer hover:bg-slate-200 transition-all"
+                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !formName.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all disabled:opacity-50 shadow-md flex items-center gap-1.5"
-                >
-                  <span>{saving ? 'Menyimpan...' : editingGroup ? 'Simpan Perubahan' : 'Tambah Grup'}</span>
+                  ✕
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              {formError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2 shrink-0">
+                  <span>⚠️</span>
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveGroup} className="space-y-4 overflow-y-auto pr-1">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Nama Label Grup <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: VLI2608 atau STAI2026"
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-bold"
+                  />
+                  <p className="text-[0.7rem] text-slate-400 mt-1">
+                    Nama resmi grup yang akan muncul di profil, filter pelajar, dan reservasi jadwal.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Kata Kunci Pendaftaran (Pisahkan dengan koma)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Contoh: viva legacy, vli2608, vli 2608, viva"
+                    value={formKeywords}
+                    onChange={e => setFormKeywords(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
+                  />
+                  <p className="text-[0.7rem] text-slate-400 mt-1">
+                    Jika siswa menulis salah satu kata kunci ini pada kolom instansi/grup saat daftar, mereka akan otomatis masuk ke grup ini.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Deskripsi / Catatan (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Grup Khusus Batch Pelajar VIVA Legacy"
+                    value={formDescription}
+                    onChange={e => setFormDescription(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    disabled={saving}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer hover:bg-slate-200 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || !formName.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all disabled:opacity-50 shadow-md flex items-center gap-1.5"
+                  >
+                    <span>{saving ? 'Menyimpan...' : editingGroup ? 'Simpan Perubahan' : 'Tambah Grup'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Modal / Drawer: Anggota Grup */}
-      {selectedGroupMembers && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-6 animate-scale-up max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0">
-              <div>
-                <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                  <span>👥 Anggota Grup:</span>
-                  <span className="font-mono text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800">
-                    {selectedGroupMembers.name}
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Daftar seluruh siswa yang saat ini terhubung dengan grup ini.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGroupMembers(null)
-                  setMemberSearch('')
-                }}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Member search bar */}
-            <div className="mb-3 shrink-0">
-              <input
-                type="text"
-                placeholder="Cari nama, username, atau email siswa..."
-                value={memberSearch}
-                onChange={e => setMemberSearch(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
-              />
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-              {(() => {
-                const members = students.filter(
-                  s => (s.group_name || '').toLowerCase() === selectedGroupMembers.name.toLowerCase()
-                )
-                const filtered = members.filter(
-                  s =>
-                    s.full_name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-                    s.username.toLowerCase().includes(memberSearch.toLowerCase()) ||
-                    s.email.toLowerCase().includes(memberSearch.toLowerCase()) ||
-                    (s.institution || '').toLowerCase().includes(memberSearch.toLowerCase())
-                )
-
-                if (filtered.length === 0) {
-                  return (
-                    <div className="text-center py-10 text-slate-400">
-                      <div className="text-3xl mb-1">🔍</div>
-                      <p className="text-xs font-bold">
-                        {members.length === 0 ? 'Belum ada siswa di grup ini.' : 'Tidak ada siswa yang cocok dengan pencarian.'}
-                      </p>
-                    </div>
-                  )
-                }
-
-                return filtered.map(std => (
-                  <div
-                    key={std.id}
-                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="size-9 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 flex items-center justify-center font-black text-xs shrink-0 border border-purple-500/20">
-                        {std.full_name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-black text-slate-800 dark:text-white truncate">
-                          {std.full_name}
-                        </div>
-                        <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 truncate">
-                          @{std.username} • {std.email}
-                        </div>
-                        {std.institution && (
-                          <div className="text-[0.65rem] text-purple-600 dark:text-purple-400 font-mono mt-0.5 truncate">
-                            🏛️ "{std.institution}"
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <span
-                      className={`px-2 py-0.5 rounded-md text-[0.65rem] font-black shrink-0 ${
-                        std.status === 'approved'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                      }`}
-                    >
-                      {std.status === 'approved' ? 'Aktif' : std.status}
+      {selectedGroupMembers &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-5 sm:p-6 animate-scale-up max-h-[88vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                    <span>👥 Anggota Grup:</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800">
+                      {selectedGroupMembers.name}
                     </span>
-                  </div>
-                ))
-              })()}
-            </div>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Daftar seluruh siswa yang saat ini terhubung dengan grup ini.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedGroupMembers(null)
+                    setMemberSearch('')
+                  }}
+                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
+                >
+                  ✕
+                </button>
+              </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGroupMembers(null)
-                  setMemberSearch('')
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer"
-              >
-                Tutup
-              </button>
+              {/* Member search bar */}
+              <div className="mb-3 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Cari nama, username, atau email siswa..."
+                  value={memberSearch}
+                  onChange={e => setMemberSearch(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
+                />
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+                {(() => {
+                  const members = students.filter(
+                    s => (s.group_name || '').toLowerCase() === selectedGroupMembers.name.toLowerCase()
+                  )
+                  const filtered = members.filter(
+                    s =>
+                      s.full_name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                      s.username.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                      s.email.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                      (s.institution || '').toLowerCase().includes(memberSearch.toLowerCase())
+                  )
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-10 text-slate-400">
+                        <div className="text-3xl mb-1">🔍</div>
+                        <p className="text-xs font-bold">
+                          {members.length === 0 ? 'Belum ada siswa di grup ini.' : 'Tidak ada siswa yang cocok dengan pencarian.'}
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  return filtered.map(std => (
+                    <div
+                      key={std.id}
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-9 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 flex items-center justify-center font-black text-xs shrink-0 border border-purple-500/20">
+                          {std.full_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-slate-800 dark:text-white truncate">
+                            {std.full_name}
+                          </div>
+                          <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 truncate">
+                            @{std.username} • {std.email}
+                          </div>
+                          {std.institution && (
+                            <div className="text-[0.65rem] text-purple-600 dark:text-purple-400 font-mono mt-0.5 truncate">
+                              🏛️ "{std.institution}"
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[0.65rem] font-black shrink-0 ${
+                          std.status === 'approved'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        }`}
+                      >
+                        {std.status === 'approved' ? 'Aktif' : std.status}
+                      </span>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedGroupMembers(null)
+                    setMemberSearch('')
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </main>
   )
 }
