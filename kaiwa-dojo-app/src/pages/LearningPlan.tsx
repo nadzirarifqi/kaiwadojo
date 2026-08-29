@@ -832,29 +832,36 @@ export default function LearningPlanPage() {
     const allMissionsMap = await fetchAllUserMissions(activeUserId)
     setUserMissions(allMissionsMap)
 
-    // 3. Compute past missions progress for the displayed month (using preFetched data in memory)
+    // 3. Compute past missions progress for the displayed month in parallel
     const year = currentMonthDate.getFullYear()
     const month = currentMonthDate.getMonth()
     const daysInCurrentMonth = new Date(year, month + 1, 0).getDate()
     const completedSet = new Set<string>()
 
-    for (let d = 1; d <= daysInCurrentMonth; d++) {
+    const dayPromises = Array.from({ length: daysInCurrentMonth }, async (_, idx) => {
+      const d = idx + 1
       const formattedMonth = String(month + 1).padStart(2, '0')
       const formattedDay   = String(d).padStart(2, '0')
       const dStr = `${year}-${formattedMonth}-${formattedDay}`
 
       if (streakDates.has(dStr)) {
-        completedSet.add(dStr)
+        return dStr
       } else {
         const m = allMissionsMap.get(dStr)
         if (m) {
           const prog = await calculateMissionProgress(activeUserId, m, preFetched)
           if (prog.isFullyCompleted) {
-            completedSet.add(dStr)
+            return dStr
           }
         }
       }
-    }
+      return null
+    })
+
+    const results = await Promise.all(dayPromises)
+    results.forEach(dStr => {
+      if (dStr) completedSet.add(dStr)
+    })
     setPastCompletedSet(completedSet)
 
     // 4. Load mission for selected date

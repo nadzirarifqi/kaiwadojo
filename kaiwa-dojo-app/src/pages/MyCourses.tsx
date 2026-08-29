@@ -6,7 +6,6 @@ import { useLanguage } from '../contexts/LanguageContext'
 import {
   getChapterSettingsMap,
   getCourseHeaderSettings,
-  detectVideoDuration,
   CHAPTER_UPDATE_EVENT,
   subscribeToChapterRealtime,
   type CourseHeaderSettings,
@@ -411,7 +410,6 @@ export default function MyCourses() {
     const [adminChapterMap, adminHeader] = await Promise.all([
       getChapterSettingsMap(),
       getCourseHeaderSettings(),
-      new Promise(r => setTimeout(r, 1000)),
     ])
     setHeaderSettings(adminHeader)
 
@@ -560,40 +558,6 @@ export default function MyCourses() {
     setChapters(generatedChapters)
     setLoading(false)
   }
-
-  // Non-blocking background prefetch for video durations from Rumahweb server
-  useEffect(() => {
-    if (chapters.length === 0) return
-
-    const checkLessons = chapters.flatMap(c => c.lessons).filter(l => l.content_type === 'video' && l.video_id && (!l.duration_text || l.duration_text === '15' || l.duration_text === '15.00' || l.duration_text === '12' || l.duration_text === '12.00'))
-
-    if (checkLessons.length === 0) return
-
-    let mounted = true
-    checkLessons.forEach(async lesson => {
-      if (!lesson.video_id) return
-      try {
-        const detected = await detectVideoDuration(lesson.video_id)
-        if (!mounted) return
-        setChapters(prevChapters =>
-          prevChapters.map(chap => ({
-            ...chap,
-            lessons: chap.lessons.map(l => {
-              if (l.id === lesson.id) {
-                const mins = Math.ceil(parseFloat(detected) || l.duration_minutes)
-                return { ...l, duration_text: detected, duration_minutes: mins }
-              }
-              return l
-            }),
-          }))
-        )
-      } catch {}
-    })
-
-    return () => {
-      mounted = false
-    }
-  }, [chapters.length])
 
   // Handle URL search params for direct video navigation from Daily Missions (e.g. ?jilid=1&bab=1&item=1)
   useEffect(() => {

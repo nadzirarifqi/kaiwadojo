@@ -66,7 +66,6 @@ export default function ClassReservationPage() {
     const [sData, rData] = await Promise.all([
       fetchSchedules(),
       fetchReservations(),
-      new Promise(r => setTimeout(r, 1000)),
     ])
     setSchedules(sData)
     setReservations(rData)

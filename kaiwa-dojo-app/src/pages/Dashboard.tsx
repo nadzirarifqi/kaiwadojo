@@ -735,7 +735,6 @@ export default function Dashboard() {
       }))
 
       setStreakHistory(history)
-      await new Promise(r => setTimeout(r, 600))
       setLoading(false)
     }
 

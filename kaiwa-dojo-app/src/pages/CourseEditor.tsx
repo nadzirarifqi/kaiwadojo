@@ -130,7 +130,6 @@ export default function CourseEditor() {
     const [map, header] = await Promise.all([
       getChapterSettingsMap(),
       getCourseHeaderSettings(),
-      new Promise(r => setTimeout(r, 1000)),
     ])
     setChapterMap(map)
     setHeaderSettings(header)
