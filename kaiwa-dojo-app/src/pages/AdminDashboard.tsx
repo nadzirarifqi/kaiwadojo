@@ -110,6 +110,9 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
         loadData()
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_suggestions' }, () => {
+        loadData()
+      })
       .subscribe()
 
     return () => {

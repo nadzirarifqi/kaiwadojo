@@ -33,41 +33,10 @@ DROP POLICY IF EXISTS "Admin can update feedback" ON feedback_suggestions;
 DROP POLICY IF EXISTS "Admin can delete feedback" ON feedback_suggestions;
 
 -- RLS Policies
--- 1. Anyone (public guests and logged-in users) can submit feedback
-CREATE POLICY "Public and authenticated users can insert feedback"
-  ON feedback_suggestions FOR INSERT
-  WITH CHECK (true);
+-- Enable full permissive access for anon, authenticated, and service_role
+CREATE POLICY "Allow full access feedback" ON feedback_suggestions
+  FOR ALL USING (true) WITH CHECK (true);
 
--- 2. Authenticated users can view their own feedbacks, while admins can view all feedbacks
-CREATE POLICY "Users can view own feedback or Admin can view all"
-  ON feedback_suggestions FOR SELECT
-  USING (
-    auth.uid() = user_id
-    OR EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
-    )
-  );
+-- Grant full permissions
+GRANT ALL ON TABLE feedback_suggestions TO anon, authenticated, service_role;
 
--- 3. Only admins can update feedback (status, admin_notes, etc.)
-CREATE POLICY "Admin can update feedback"
-  ON feedback_suggestions FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
-    )
-  );
-
--- 4. Only admins can delete feedback
-CREATE POLICY "Admin can delete feedback"
-  ON feedback_suggestions FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
-    )
-  );

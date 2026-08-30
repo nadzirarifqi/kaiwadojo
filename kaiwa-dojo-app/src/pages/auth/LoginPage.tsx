@@ -6,6 +6,8 @@ import { fetchStudents } from '../../lib/studentService'
 import { getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import CustomAlertModal from '../../components/CustomAlertModal'
 
+import { getDeviceInfo, generateNewClientSessionId, claimDeviceSession, getOrCreateClientSessionId } from '../../lib/deviceUtils'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { sessionExpiredNotice, clearSessionNotice } = useAuth()
@@ -14,6 +16,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+
+  // Multi-Device Conflict Modal State
+  const [conflictModal, setConflictModal] = useState<{
+    isOpen: boolean
+    activeDevice: string
+    currentDevice: string
+    pendingProfile: any
+    pendingAuthData: any
+  }>({
+    isOpen: false,
+    activeDevice: '',
+    currentDevice: '',
+    pendingProfile: null,
+    pendingAuthData: null,
+  })
+  const [takeoverLoading, setTakeoverLoading] = useState(false)
 
   // Pop-up Alert Modal State
   const [alertModal, setAlertModal] = useState<{
@@ -49,6 +67,55 @@ export default function LoginPage() {
       actionUrl,
       actionText,
     })
+  }
+
+  async function handleConfirmTakeover() {
+    if (!conflictModal.pendingProfile?.id) return
+    setTakeoverLoading(true)
+
+    const newSessId = generateNewClientSessionId()
+    const myDevice = getDeviceInfo()
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          current_session_id: newSessId,
+          current_device_info: myDevice,
+          last_session_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString(),
+        })
+        .eq('id', conflictModal.pendingProfile.id)
+
+      sessionStorage.setItem('kaiwa_session_active', 'true')
+      sessionStorage.setItem(
+        'kaiwa_custom_profile',
+        JSON.stringify({
+          ...conflictModal.pendingProfile,
+          current_session_id: newSessId,
+          current_device_info: myDevice,
+        })
+      )
+      window.dispatchEvent(new Event('kaiwa_profile_updated'))
+
+      setConflictModal(prev => ({ ...prev, isOpen: false }))
+      setTakeoverLoading(false)
+      navigate('/dashboard')
+    } catch (e) {
+      console.warn('Takeover error:', e)
+      setTakeoverLoading(false)
+      setConflictModal(prev => ({ ...prev, isOpen: false }))
+      navigate('/dashboard')
+    }
+  }
+
+  async function handleCancelTakeover() {
+    await supabase.auth.signOut().catch(() => {})
+    sessionStorage.removeItem('kaiwa_session_active')
+    sessionStorage.removeItem('kaiwa_custom_profile')
+    sessionStorage.removeItem('kaiwa_client_session_id')
+    setConflictModal(prev => ({ ...prev, isOpen: false, pendingProfile: null, pendingAuthData: null }))
+    setLoading(false)
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -119,6 +186,7 @@ export default function LoginPage() {
           console.warn('Admin upsert note:', e)
         }
 
+        await claimDeviceSession(adminId)
         sessionStorage.setItem('kaiwa_session_active', 'true')
         sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
         localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
@@ -336,6 +404,26 @@ export default function LoginPage() {
           return
         }
 
+        // ── Check Multi-Device Concurrent Session ──
+        const myClientSess = getOrCreateClientSessionId()
+        const otherSessId = profData?.current_session_id
+        const otherDevice = profData?.current_device_info || 'Perangkat Lain'
+
+        if (otherSessId && otherSessId !== myClientSess) {
+          // An active session exists on another device!
+          setConflictModal({
+            isOpen: true,
+            activeDevice: otherDevice,
+            currentDevice: getDeviceInfo(),
+            pendingProfile: profData,
+            pendingAuthData: authData,
+          })
+          setLoading(false)
+          return
+        }
+
+        // No conflict: claim session and enter
+        await claimDeviceSession(authData.user.id)
         sessionStorage.setItem('kaiwa_session_active', 'true')
         if (profData) {
           sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(profData))
@@ -509,6 +597,79 @@ export default function LoginPage() {
         actionText={alertModal.actionText}
         onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* ── Multi-Device Conflict & Takeover Modal ── */}
+      {conflictModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-900 border border-amber-500/30 text-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-amber-500/10 animate-scale-up relative overflow-hidden">
+            {/* Ambient glow */}
+            <div className="absolute -top-16 -right-16 size-36 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 size-36 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="text-center mb-5">
+              <div className="size-16 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3.5 shadow-lg">
+                ⚠️
+              </div>
+              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[0.7rem] font-extrabold uppercase tracking-widest inline-block mb-1.5">
+                Perangkat Lain Terdeteksi
+              </span>
+              <h2 className="text-xl font-black text-white">Akun Sedang Aktif di Perangkat Lain</h2>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                Untuk mencegah terjadinya bentrok progres atau data ganda, KaiwaDojo membatasi <span className="text-white font-bold">1 sesi perangkat aktif</span> untuk setiap akun.
+              </p>
+            </div>
+
+            {/* Device Comparison Card */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 mb-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+                  <span>📱</span> Perangkat Aktif Saat Ini:
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-extrabold text-[0.72rem]">
+                  {conflictModal.activeDevice}
+                </span>
+              </div>
+              <div className="h-px bg-slate-800" />
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+                  <span>💻</span> Perangkat Ini (Baru):
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-extrabold text-[0.72rem]">
+                  {conflictModal.currentDevice}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                disabled={takeoverLoading}
+                onClick={handleConfirmTakeover}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {takeoverLoading ? (
+                  <span>Mengalihkan Sesi...</span>
+                ) : (
+                  <>
+                    <span>🔑 Masuk di Perangkat Ini</span>
+                    <span className="text-[0.65rem] opacity-80 lowercase font-normal">(keluarkan perangkat lain)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                disabled={takeoverLoading}
+                onClick={handleCancelTakeover}
+                className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-extrabold rounded-2xl border border-slate-700 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.98]"
+              >
+                ❌ Batal & Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { claimDeviceSession } from '../../lib/deviceUtils'
 
 const ADMIN_CORRECT_PIN = '899876'
 
@@ -88,6 +89,7 @@ export default function AdminLoginPage() {
         console.warn('Admin DB fetch note:', err)
       }
 
+      await claimDeviceSession(adminId)
       sessionStorage.setItem('kaiwa_session_active', 'true')
       sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
       localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))

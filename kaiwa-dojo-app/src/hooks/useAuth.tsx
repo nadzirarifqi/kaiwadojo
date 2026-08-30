@@ -20,6 +20,9 @@ export interface Profile {
   streak_days: number
   status?: 'approved' | 'pending' | 'rejected'
   last_active_at: string | null
+  current_session_id?: string | null
+  current_device_info?: string | null
+  last_session_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isActive) {
       sessionStorage.removeItem('kaiwa_custom_profile')
       sessionStorage.removeItem('kaiwa_session_active')
+      sessionStorage.removeItem('kaiwa_client_session_id')
       return null
     }
 
@@ -86,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const LAST_HEARTBEAT_KEY = 'kaiwa_last_presence_heartbeat'
 
-  // Send presence heartbeat to Supabase DB to track online status
+  // Send presence heartbeat to Supabase DB to track online status & verify active session
   const sendPresenceHeartbeat = async (userId: string) => {
     if (!userId) return
     const now = Date.now()
@@ -98,10 +102,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     sessionStorage.setItem(LAST_HEARTBEAT_KEY, now.toString())
     try {
-      await supabase
+      const { data: dbProf } = await supabase
         .from('profiles')
         .update({ last_active_at: new Date().toISOString() })
         .eq('id', userId)
+        .select('current_session_id, current_device_info')
+        .maybeSingle()
+
+      // Check if session has been taken over by another device
+      if (dbProf?.current_session_id) {
+        const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
+        if (mySessionId && dbProf.current_session_id !== mySessionId) {
+          const otherDevice = dbProf.current_device_info || 'Perangkat Lain'
+          signOut(`Akun Anda telah masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`)
+        }
+      }
     } catch {}
   }
 
@@ -132,6 +147,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut(data.status === 'rejected' ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin.' : 'Akun Anda masih dalam proses verifikasi Admin.')
         return
       }
+
+      // Check single active device session
+      const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
+      if (data.current_session_id && mySessionId && data.current_session_id !== mySessionId) {
+        const otherDevice = data.current_device_info || 'Perangkat Lain'
+        signOut(`Akun Anda telah masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`)
+        return
+      }
+
       setProfile(data as Profile)
       sessionStorage.setItem('kaiwa_session_active', 'true')
       sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(data))
@@ -166,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut().catch(() => {})
     sessionStorage.removeItem('kaiwa_session_active')
     sessionStorage.removeItem('kaiwa_custom_profile')
+    sessionStorage.removeItem('kaiwa_client_session_id')
     localStorage.removeItem('kaiwa_custom_profile')
     localStorage.removeItem(LAST_ACTIVITY_KEY)
     setSession(null)
@@ -176,6 +201,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpiredNotice(reason)
     }
   }
+
+  // ── Realtime Single Active Session Guard ──
+  // If another device logs in and takes over the session, kick this device immediately
+  useEffect(() => {
+    if (!profile?.id) return
+
+    const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
+    if (!mySessionId) return
+
+    const sessionGuardChannel = supabase
+      .channel(`profile_session_guard_${profile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${profile.id}`,
+        },
+        (payload: any) => {
+          const newProfile = payload.new
+          if (newProfile && newProfile.current_session_id) {
+            const currentClientSess = sessionStorage.getItem('kaiwa_client_session_id')
+            if (currentClientSess && newProfile.current_session_id !== currentClientSess) {
+              const otherDevice = newProfile.current_device_info || 'Perangkat Lain'
+              signOut(
+                `Akun Anda baru saja masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`
+              )
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(sessionGuardChannel)
+    }
+  }, [profile?.id])
 
   useEffect(() => {
     // Record initial activity time
@@ -231,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       sessionStorage.removeItem('kaiwa_custom_profile')
       sessionStorage.removeItem('kaiwa_session_active')
+      sessionStorage.removeItem('kaiwa_client_session_id')
       localStorage.removeItem(LAST_ACTIVITY_KEY)
       supabase.auth.signOut().catch(() => {})
       setSession(null)

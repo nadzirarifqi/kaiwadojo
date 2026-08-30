@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabaseClient'
 import {
   fetchFeedbacks,
   updateFeedbackStatus,
@@ -54,9 +55,18 @@ export default function FeedbackManager() {
     window.addEventListener(FEEDBACK_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
 
+    // Realtime Supabase listener on feedback_suggestions table
+    const feedbackChannel = supabase
+      .channel('admin_feedback_suggestions_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_suggestions' }, () => {
+        handleSync()
+      })
+      .subscribe()
+
     return () => {
       window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
+      supabase.removeChannel(feedbackChannel)
     }
   }, [])
 
