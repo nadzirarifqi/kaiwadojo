@@ -397,7 +397,6 @@ export async function calculateMissionProgress(
   let kotobaSubmissions: any[] = preFetched?.kotobaSubmissions || []
   let totalRawReplays = 0
   let totalRawQuizzes = 0
-  let totalRawKotoba  = 0
 
   if (!preFetched) {
     // Fetch lesson progress, quiz attempts & kotoba submissions from Supabase if not pre-fetched
@@ -455,13 +454,18 @@ export async function calculateMissionProgress(
   if (savedKotobaRaw) {
     try {
       const parsedKotoba: any[] = JSON.parse(savedKotobaRaw)
-      if (parsedKotoba.length > kotobaSubmissions.length) {
-        kotobaSubmissions = parsedKotoba
+      if (Array.isArray(parsedKotoba) && parsedKotoba.length > 0) {
+        const mergedMap = new Map<string, any>()
+        kotobaSubmissions.forEach(k => mergedMap.set(k.id, k))
+        parsedKotoba.forEach(k => {
+          if (!mergedMap.has(k.id)) {
+            mergedMap.set(k.id, k)
+          }
+        })
+        kotobaSubmissions = Array.from(mergedMap.values())
       }
     } catch {}
   }
-
-  totalRawKotoba = kotobaSubmissions ? kotobaSubmissions.length : 0
 
   // Calculate per-video progress
   const videoProgressMap: Record<string, number> = {}
@@ -520,27 +524,26 @@ export async function calculateMissionProgress(
   const quizBaseline = mission.baseline?.quizCount || 0
   const actualQuizzes = Math.max(0, totalQuizDone - quizBaseline)
 
-  // Kotoba progress: Dihitung dari berapa kotoba yang ditambahkan user pada hari tersebut (dateStr)
+  // Kotoba progress: Dihitung HANYA dari jumlah kotoba yang diunggah/dimasukkan user pada hari tersebut (dateStr)
+  // Tidak perlu sampai dikuasai (mastered), hanya perlu mengunggah kotoba pada tanggal misi harian.
   let kotobaAddedOnDate = 0
   if (kotobaSubmissions && Array.isArray(kotobaSubmissions)) {
-    kotobaAddedOnDate = kotobaSubmissions.filter((k: any) => {
-      if (!k.created_at) return false
+    kotobaSubmissions.forEach((k: any) => {
+      if (!k.created_at) return
       try {
         const utcDate = new Date(k.created_at).toISOString().split('T')[0]
         const localDate = new Date(k.created_at).toLocaleDateString('sv-SE')
-        return utcDate === dateStr || localDate === dateStr
-      } catch {
-        return false
-      }
-    }).length
+        if (utcDate === dateStr || localDate === dateStr) {
+          kotobaAddedOnDate++
+        }
+      } catch {}
+    })
   }
 
-  let rawKotobaFromLesson = 0
   let kotobaLessonsOnDate = 0
-  if (progressData) {
+  if (progressData && Array.isArray(progressData)) {
     progressData.forEach((p: any) => {
       if ((p.lesson_id?.includes('kotoba') || p.lesson_id?.includes('item_5')) && p.is_completed) {
-        rawKotobaFromLesson++
         if (p.last_watched_at) {
           try {
             const utcDate = new Date(p.last_watched_at).toISOString().split('T')[0]
@@ -554,12 +557,8 @@ export async function calculateMissionProgress(
     })
   }
 
-  // Baseline delta fallback
-  const totalKotobaDone = Math.max(totalRawKotoba, rawKotobaFromLesson)
-  const kotobaBaseline = mission.baseline?.kotobaCount || 0
-  const baselineDelta = Math.max(0, totalKotobaDone - kotobaBaseline)
-
-  const actualKotoba = Math.max(kotobaAddedOnDate, kotobaLessonsOnDate, baselineDelta)
+  // Hanya menghitung kotoba yang diunggah pada hari tersebut (tanpa fallback total database)
+  const actualKotoba = Math.max(kotobaAddedOnDate, kotobaLessonsOnDate)
 
   // Determine active planned targets & Rest Day / Freeze status
   const isNoPlan = isNoPlanMission(mission)
