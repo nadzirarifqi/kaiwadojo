@@ -396,12 +396,22 @@ export default function MyCourses() {
     window.addEventListener('storage', handleSync)
     const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
 
+    // Realtime listener for lesson_progress across all user devices
+    const effectiveUserId = profile?.id || user?.id || null
+    const progressChannel = supabase
+      .channel('my_courses_progress_realtime_' + (effectiveUserId || 'all'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, () => {
+        fetchCourseData()
+      })
+      .subscribe()
+
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeRealtime()
+      supabase.removeChannel(progressChannel)
     }
-  }, [user, selectedJilid])
+  }, [user, profile?.id, selectedJilid])
 
   async function fetchCourseData() {
     setLoading(true)
@@ -415,8 +425,6 @@ export default function MyCourses() {
 
     // 1. Fetch user's progress — DB is source of truth, scoped strictly per user ID
     const effectiveUserId = profile?.id || user?.id || null
-    // NEVER use a shared 'active_global' key for logged-in users — it leaks
-    // progress from previous users on the same device/browser.
     const storageKey = effectiveUserId
       ? `kaiwa_lesson_progress_${effectiveUserId}`
       : null
@@ -441,18 +449,44 @@ export default function MyCourses() {
         .select('lesson_id, is_completed, replay_count')
         .eq('student_id', effectiveUserId)
 
+      const dbMap = new Map<string, { is_completed: boolean; replay_count: number }>()
       if (progressData) {
         progressData.forEach((p: any) => {
-          const local = userProgress.get(p.lesson_id)
-          userProgress.set(p.lesson_id, {
-            is_completed: p.is_completed || false,
-            replay_count: Math.max(p.replay_count || 0, local?.replay_count || 0),
-          })
+          if (p.lesson_id) {
+            dbMap.set(p.lesson_id, {
+              is_completed: p.is_completed || false,
+              replay_count: p.replay_count || 0,
+            })
+          }
         })
       }
+
+      // Reconcile: check if there are local completed items not yet in DB (e.g. from previous offline sessions)
+      const toSyncToDb: any[] = []
+      userProgress.forEach((localVal, lessonId) => {
+        if (localVal.is_completed && !dbMap.has(lessonId)) {
+          toSyncToDb.push({
+            student_id: effectiveUserId,
+            lesson_id: lessonId,
+            is_completed: true,
+            replay_count: localVal.replay_count || 1,
+            last_watched_at: new Date().toISOString(),
+          })
+          dbMap.set(lessonId, localVal)
+        }
+      })
+
+      if (toSyncToDb.length > 0) {
+        supabase.from('lesson_progress').upsert(toSyncToDb, { onConflict: 'student_id,lesson_id' }).then(() => {})
+      }
+
+      // Overwrite userProgress map with authoritative DB records
+      dbMap.forEach((val, key) => {
+        userProgress.set(key, val)
+      })
     }
     setProgressMap(userProgress)
-    // Persist back only to user-specific key (never shared global key)
+    // Persist back to user-specific key
     if (storageKey) {
       localStorage.setItem(storageKey, JSON.stringify(Array.from(userProgress.entries())))
     }

@@ -117,10 +117,28 @@ export default function SetoranKotobaPage() {
     onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
   })
 
-  // Load Kotoba from Database and Local Storage Backup
+  // Load Kotoba from Database and Local Storage Backup with Realtime Sync
   useEffect(() => {
     loadKotobaList()
-  }, [user, profile?.id])
+
+    const handleSync = () => {
+      loadKotobaList()
+    }
+    window.addEventListener('storage', handleSync)
+
+    // Realtime Postgres listener for user_kotoba_submissions across all devices
+    const channel = supabase
+      .channel('kotoba_realtime_' + (effectiveUserId || 'all'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, () => {
+        loadKotobaList()
+      })
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('storage', handleSync)
+      supabase.removeChannel(channel)
+    }
+  }, [user, profile?.id, effectiveUserId])
 
   async function loadKotobaList() {
     const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
@@ -143,32 +161,48 @@ export default function SetoranKotobaPage() {
       setLoading(true)
     }
 
-    // 2. Fetch fresh DB records in background
+    // 2. Auto-migrate any local-only items (id starting with 'kotoba-') to Supabase
+    if (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user') {
+      const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
+      if (unsyncedLocals.length > 0) {
+        for (const un of unsyncedLocals) {
+          try {
+            await supabase.from('user_kotoba_submissions').insert({
+              user_id: effectiveUserId,
+              japanese: un.japanese,
+              romaji: un.romaji,
+              meaning: un.meaning,
+              image_url: un.image_url || null,
+              is_mastered: un.is_mastered || false,
+            })
+          } catch (e) {
+            console.warn('Auto-sync kotoba note:', e)
+          }
+        }
+      }
+    }
+
+    // 3. Fetch authoritative DB records from Supabase
     let dbItems: UserKotoba[] = []
-    if (user?.id || profile?.id) {
+    if (user?.id || profile?.id || effectiveUserId) {
       const { data, error } = await supabase
         .from('user_kotoba_submissions')
         .select('*')
         .eq('user_id', effectiveUserId)
         .order('created_at', { ascending: false })
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         dbItems = data as UserKotoba[]
       }
     }
 
-    const mergedMap = new Map<string, UserKotoba>()
-    dbItems.forEach(item => mergedMap.set(item.id, item))
-    localItems.forEach(item => {
-      if (!mergedMap.has(item.id)) {
-        mergedMap.set(item.id, item)
-      }
-    })
-
-    const finalItems = Array.from(mergedMap.values())
-    setKotobaList(finalItems)
-    localStorage.setItem(storageKey, JSON.stringify(finalItems))
-    localStorage.setItem(globalKey, JSON.stringify(finalItems))
+    if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user')) {
+      setKotobaList(dbItems)
+      localStorage.setItem(storageKey, JSON.stringify(dbItems))
+      localStorage.setItem(globalKey, JSON.stringify(dbItems))
+    } else if (localItems.length > 0) {
+      setKotobaList(localItems)
+    }
     setLoading(false)
   }
 

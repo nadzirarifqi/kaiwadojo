@@ -755,10 +755,11 @@ export default function Dashboard() {
     const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
     const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleSync)
 
-    // Realtime Supabase listener for lesson_progress DB updates
+    // Realtime Supabase listener for lesson_progress & user_kotoba_submissions DB updates
     const lessonProgressChannel = supabase
       .channel('dashboard_lesson_progress_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, handleSync)
       .subscribe()
 
     return () => {
