@@ -426,3 +426,64 @@ export function detectVideoDuration(
     tryNextUrl()
   })
 }
+
+/* ── Parse Video File Name (e.g. "Kaiwa Dojo - BAB 3 S1.mov") ── */
+export function parseVideoFileMeta(filename: string): { bab: number | null; part: number | null } {
+  const clean = filename.toLowerCase()
+  const babMatch = clean.match(/bab[\s_-]*(\d+)/i)
+  const partMatch = clean.match(/s(\d)/i)
+
+  const bab = babMatch ? parseInt(babMatch[1], 10) : null
+  const part = partMatch ? parseInt(partMatch[1], 10) : null
+
+  return { bab, part }
+}
+
+/* ── Instant Local File Duration Reader (No network / CORS / Hosting dependencies) ── */
+export function detectDurationFromLocalFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      const url = URL.createObjectURL(file)
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+
+      const cleanup = () => {
+        URL.revokeObjectURL(url)
+        video.onloadedmetadata = null
+        video.onerror = null
+        video.removeAttribute('src')
+        video.load()
+      }
+
+      const timer = setTimeout(() => {
+        cleanup()
+        reject('Timeout membaca durasi video')
+      }, 6000)
+
+      video.onloadedmetadata = () => {
+        clearTimeout(timer)
+        const secs = video.duration || 0
+        if (!isNaN(secs) && secs > 0 && isFinite(secs)) {
+          const m = Math.floor(secs / 60)
+          const s = Math.floor(secs % 60)
+          const res = `${m}.${String(s).padStart(2, '0')}`
+          cleanup()
+          resolve(res)
+        } else {
+          cleanup()
+          reject('Durasi tidak terbaca')
+        }
+      }
+
+      video.onerror = () => {
+        clearTimeout(timer)
+        cleanup()
+        reject('Format video tidak didukung oleh browser')
+      }
+
+      video.src = url
+    } catch (e) {
+      reject(e)
+    }
+  })
+}

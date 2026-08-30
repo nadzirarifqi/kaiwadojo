@@ -131,6 +131,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       },
       {
         icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-500/20 shadow-xs">
+            💡
+          </span>
+        ),
+        label: 'Masukan & Saran',
+        to: '/kelola-masukan',
+      },
+      {
+        icon: (
           <span className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-500/20 shadow-xs">
             📚
           </span>

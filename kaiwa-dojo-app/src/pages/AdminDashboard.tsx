@@ -7,6 +7,7 @@ import { fetchStudents, type StudentAccount } from '../lib/studentService'
 import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
 
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -19,6 +20,7 @@ export default function AdminDashboard() {
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
 
   // Group management state
@@ -73,18 +75,20 @@ export default function AdminDashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [instData, stdData, schData, resData, chapData] = await Promise.all([
+    const [instData, stdData, schData, resData, chapData, fbData] = await Promise.all([
       fetchInstructors(),
       fetchStudents(),
       fetchSchedules(),
       fetchReservations(),
       getChapterSettingsMap(),
+      fetchFeedbacks(),
     ])
     setInstructors(instData)
     setStudents(stdData)
     setSchedules(sortSchedules(schData))
     setReservations(resData)
     setChapterSettings(chapData)
+    setFeedbacks(fbData)
     setLoading(false)
   }
 
@@ -98,6 +102,7 @@ export default function AdminDashboard() {
     }
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
     window.addEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
     window.addEventListener('storage', handleReservationSync)
 
     const channel = supabase
@@ -110,6 +115,7 @@ export default function AdminDashboard() {
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener('storage', handleReservationSync)
       supabase.removeChannel(channel)
     }
@@ -171,6 +177,17 @@ export default function AdminDashboard() {
             <span>👥 Kelola Grup</span>
           </button>
           <button
+            onClick={() => navigate('/kelola-masukan')}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+          >
+            <span>💡 Masukan & Saran</span>
+            {feedbacks.filter(f => f.status === 'unread').length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-white text-amber-700 text-[0.65rem] font-black">
+                {feedbacks.filter(f => f.status === 'unread').length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => navigate('/kelola-kursus')}
             className="px-4 py-2.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
@@ -180,7 +197,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {/* Stat 1: Pemateri Accounts */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-between">
           <div>
@@ -189,7 +206,7 @@ export default function AdminDashboard() {
               {instructors.length} <span className="text-xs font-bold text-slate-400">Sensei</span>
             </div>
             <span className="text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
-              ✅ Tugas: Reservasi Kelas Live
+              ✅ Reservasi Live
             </span>
           </div>
           <div className="size-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-2xl shrink-0">
@@ -200,12 +217,12 @@ export default function AdminDashboard() {
         {/* Stat 2: Course Chapters */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Bab Dipublikasikan</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Bab Rilis</span>
             <div className="text-2xl sm:text-3xl font-black text-primary dark:text-red-400">
               {publishedCount} <span className="text-xs font-bold text-slate-400">/ 50 Bab</span>
             </div>
             <span className="text-[0.68rem] font-bold text-sky-600 dark:text-sky-400 mt-1 block">
-              🟢 Tugas Admin: Edit Kursus
+              🟢 Edit Kursus
             </span>
           </div>
           <div className="size-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-2xl shrink-0">
@@ -232,16 +249,37 @@ export default function AdminDashboard() {
         {/* Stat 4: Student Accounts */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Total Akun Pelajar</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Total Pelajar</span>
             <div className="text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400">
               {students.length} <span className="text-xs font-bold text-slate-400">Siswa</span>
             </div>
             <span className="text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
-              🎓 Terdaftar di Sistem
+              🎓 Terdaftar
             </span>
           </div>
           <div className="size-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-2xl shrink-0">
             🎓
+          </div>
+        </div>
+
+        {/* Stat 5: Masukan & Saran */}
+        <div 
+          onClick={() => navigate('/kelola-masukan')}
+          className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-amber-500/30 hover:border-amber-500 shadow-2xs flex items-center justify-between cursor-pointer transition-all hover:shadow-md"
+        >
+          <div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Masukan Pengguna</span>
+            <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+              {feedbacks.length} <span className="text-xs font-bold text-slate-400">Pesan</span>
+            </div>
+            <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 mt-1 block">
+              {feedbacks.filter(f => f.status === 'unread').length > 0
+                ? `● ${feedbacks.filter(f => f.status === 'unread').length} Belum Dibaca`
+                : '✅ Semua Terbaca'}
+            </span>
+          </div>
+          <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-2xl shrink-0">
+            💡
           </div>
         </div>
       </div>
@@ -366,6 +404,73 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── MASUKAN & SARAN TERBARU ─────────────────────────── */}
+      <div className="mt-6 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+          <div>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+              <span>💡 Masukan & Saran Pengguna Terbaru</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Evaluasi, ide penambahan fitur baru, serta laporan kendala teknis yang dikirimkan oleh pengguna website.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/kelola-masukan')}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
+          >
+            <span>Buka Panel Masukan Lengkap &rarr;</span>
+          </button>
+        </div>
+
+        {feedbacks.length === 0 ? (
+          <p className="text-xs text-slate-400 italic text-center py-6">Belum ada masukan dari pengguna.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {feedbacks.slice(0, 3).map(fb => {
+              const meta = CATEGORY_META[fb.category] || CATEGORY_META.saran_fitur
+              return (
+                <div
+                  key={fb.id}
+                  onClick={() => navigate('/kelola-masukan')}
+                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 hover:border-amber-400 transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded-lg text-[0.7rem] font-bold border flex items-center gap-1 ${meta.badgeClass}`}>
+                        <span>{meta.icon}</span>
+                        <span>{meta.label}</span>
+                      </span>
+                      <span className="text-xs font-bold text-amber-500">
+                        {'★'.repeat(fb.rating || 5)}
+                      </span>
+                    </div>
+                    {fb.title && (
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white mb-1 line-clamp-1">
+                        {fb.title}
+                      </h4>
+                    )}
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                      {fb.message}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[0.68rem] text-slate-400">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
+                      👤 {fb.name}
+                    </span>
+                    <span>
+                      {new Date(fb.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* ── KELOLA GRUP ─────────────────────────────────────── */}
       <div className="mt-6 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">

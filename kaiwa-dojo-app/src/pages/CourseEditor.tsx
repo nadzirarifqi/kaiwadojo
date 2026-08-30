@@ -8,6 +8,8 @@ import {
   getCourseHeaderSettings,
   saveCourseHeaderSettings,
   detectVideoDuration,
+  detectDurationFromLocalFile,
+  parseVideoFileMeta,
   CHAPTER_UPDATE_EVENT,
   subscribeToChapterRealtime,
   type ChapterSetting,
@@ -88,7 +90,106 @@ export default function CourseEditor() {
     if (detectedCount > 0) {
       showToast(`Berhasil mendeteksi ${detectedCount} durasi video & tersimpan ke database! ⏱️`)
     } else {
-      showToast(`Belum dapat memuat metadata video. Anda bisa langsung mengisi durasi (cth: 15.00) lalu klik '💾 Simpan Bab Ini'.`, 'error')
+      showToast(`Hosting belum dapat merespon metadata. Anda bisa klik tombol '📂 Pilih File Video Komputer' di bawah untuk deteksi instan 100%!`, 'error')
+    }
+  }
+
+  async function handleLocalFilesDuration(babNum: number, files: FileList | null) {
+    if (!files || files.length === 0) return
+    setDetectingBab(babNum)
+
+    const chap = chapterMap[babNum] || { bab_number: babNum, title: `Bab ${babNum}`, is_hidden: false }
+    let d1 = chap.duration_s1
+    let d2 = chap.duration_s2
+    let d3 = chap.duration_s3
+    let detectedCount = 0
+
+    const fileList = Array.from(files)
+
+    for (const file of fileList) {
+      try {
+        const meta = parseVideoFileMeta(file.name)
+        const dur = await detectDurationFromLocalFile(file)
+
+        if (meta.part === 1 || fileList.length === 1) {
+          d1 = dur
+          detectedCount++
+        } else if (meta.part === 2) {
+          d2 = dur
+          detectedCount++
+        } else if (meta.part === 3) {
+          d3 = dur
+          detectedCount++
+        } else {
+          if (!d1 || d1 === '15.00') { d1 = dur; detectedCount++ }
+          else if (!d2 || d2 === '15.00') { d2 = dur; detectedCount++ }
+          else if (!d3 || d3 === '12.00') { d3 = dur; detectedCount++ }
+        }
+      } catch (err) {
+        console.warn('Error reading local file:', file.name, err)
+      }
+    }
+
+    const updated: ChapterSetting = {
+      ...chap,
+      duration_s1: d1,
+      duration_s2: d2,
+      duration_s3: d3,
+    }
+
+    setChapterMap(prev => ({
+      ...prev,
+      [babNum]: updated,
+    }))
+
+    await saveChapterSetting(updated)
+    setDetectingBab(null)
+
+    if (detectedCount > 0) {
+      showToast(`Berhasil membaca ${detectedCount} durasi dari file video lokal & tersimpan ke database! ⏱️`)
+    } else {
+      showToast(`Tidak dapat membaca durasi dari file video yang dipilih.`, 'error')
+    }
+  }
+
+  async function handleBatchLocalFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setIsDetectingAll(true)
+    showToast(`Memproses ${files.length} file video lokal dari komputer... ⏱️`)
+
+    let updatedMap = { ...chapterMap }
+    let successCount = 0
+    const touchedBabs = new Set<number>()
+
+    for (const file of Array.from(files)) {
+      try {
+        const meta = parseVideoFileMeta(file.name)
+        if (meta.bab && meta.part) {
+          const dur = await detectDurationFromLocalFile(file)
+          const chap = updatedMap[meta.bab] || { bab_number: meta.bab, title: `Bab ${meta.bab}`, is_hidden: false }
+
+          if (meta.part === 1) chap.duration_s1 = dur
+          if (meta.part === 2) chap.duration_s2 = dur
+          if (meta.part === 3) chap.duration_s3 = dur
+
+          updatedMap[meta.bab] = chap
+          touchedBabs.add(meta.bab)
+          successCount++
+        }
+      } catch (err) {
+        console.warn('Batch local file read note:', file.name, err)
+      }
+    }
+
+    setChapterMap(updatedMap)
+    setIsDetectingAll(false)
+
+    if (touchedBabs.size > 0) {
+      const listToSave = Array.from(touchedBabs).map(b => updatedMap[b]).filter(Boolean)
+      await saveBatchChapterSettings(listToSave)
+      showToast(`Sukses! ${successCount} durasi video (${touchedBabs.size} Bab) berhasil diperbarui dari file lokal & tersimpan ke database! 🚀`)
+    } else {
+      showToast(`Nama file tidak terdeteksi pola "BAB {n} S{p}". Contoh nama: "Kaiwa Dojo - BAB 3 S1.mov"`, 'error')
     }
   }
 
@@ -430,12 +531,23 @@ export default function CourseEditor() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            <label className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5">
+              <span>📂 Ambil Durasi Massal dari Folder Komputer</span>
+              <input
+                type="file"
+                multiple
+                accept="video/*,.mov,.mp4,.MOV,.MP4"
+                className="hidden"
+                onChange={e => handleBatchLocalFiles(e.target.files)}
+              />
+            </label>
+
             <button
               onClick={handleBatchAutoDetectAll}
               disabled={isDetectingAll}
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
             >
-              <span>⏱️ {isDetectingAll ? 'Mendeteksi Semua Video...' : `Deteksi & Simpan Durasi Semua Bab Jilid ${selectedJilid}`}</span>
+              <span>⏱️ {isDetectingAll ? 'Mendeteksi Semua Video...' : `Scan Durasi Hosting Jilid ${selectedJilid}`}</span>
             </button>
 
             <button
@@ -604,14 +716,27 @@ export default function CourseEditor() {
                       <span className="text-[0.68rem] text-slate-400 font-normal">(Format standar hosting Rumahweb)</span>
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => handleAutoDetectDurations(babNum)}
-                      disabled={detectingBab === babNum}
-                      className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto disabled:opacity-50"
-                    >
-                      <span>{detectingBab === babNum ? '⏳ Mendeteksi Video...' : '🔍 Deteksi Otomatis Durasi dari File'}</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0">
+                        <span>📂 Pilih File Video (Baca Instan)</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="video/*,.mov,.mp4,.MOV,.MP4"
+                          className="hidden"
+                          onChange={e => handleLocalFilesDuration(babNum, e.target.files)}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAutoDetectDurations(babNum)}
+                        disabled={detectingBab === babNum}
+                        className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                      >
+                        <span>{detectingBab === babNum ? '⏳ Mendeteksi...' : '🔍 Scan dari Hosting'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">

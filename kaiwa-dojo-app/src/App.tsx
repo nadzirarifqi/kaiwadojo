@@ -14,6 +14,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const InstructorManagerPage = lazy(() => import('./pages/InstructorManager'))
 const StudentManagerPage = lazy(() => import('./pages/StudentManager'))
 const GroupManagerPage = lazy(() => import('./pages/GroupManager'))
+const FeedbackManagerPage = lazy(() => import('./pages/FeedbackManager'))
 const MyCourses = lazy(() => import('./pages/MyCourses'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
@@ -175,6 +176,7 @@ export function AppRoutes() {
                 <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
                 <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
                 <Route path="/kelola-grup"     element={<ProtectedRoute><AppShell><GroupManagerPage /></AppShell></ProtectedRoute>} />
+                <Route path="/kelola-masukan"  element={<ProtectedRoute><AppShell><FeedbackManagerPage /></AppShell></ProtectedRoute>} />
                 <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
                 <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
                 <Route path="*"                element={<Navigate to="/" replace />} />
