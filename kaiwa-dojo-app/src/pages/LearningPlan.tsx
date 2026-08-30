@@ -816,7 +816,7 @@ export default function LearningPlanPage() {
       const [sRes, pRes, kRes] = await Promise.all([
         supabase.from('learning_streaks').select('date').eq('student_id', activeUserId),
         supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', activeUserId),
-        supabase.from('user_kotoba_submissions').select('id').eq('user_id', activeUserId),
+        supabase.from('user_kotoba_submissions').select('id, created_at').eq('user_id', activeUserId),
       ])
       streaksData = sRes.data || []
       pData = pRes.data || []
