@@ -166,3 +166,20 @@ export function getAdminWhatsAppUrl(username: string): string {
   return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
 }
 
+/**
+ * Menghasilkan URL direct link WhatsApp ke Admin untuk pengajuan hapus akun
+ */
+export function getAdminWhatsAppDeleteAccountUrl(username?: string, fullName?: string, email?: string): string {
+  const adminWa = import.meta.env.VITE_ADMIN_WA_NUMBER || '087875018001'
+  let formatted = adminWa.replace(/[^0-9]/g, '')
+  if (formatted.startsWith('0')) {
+    formatted = '62' + formatted.slice(1)
+  }
+  const cleanUser = (username || '').replace(/^@/, '')
+  const nameStr = fullName ? ` (${fullName})` : ''
+  const emailStr = email ? `\n• Email: ${email}` : ''
+  const messageText = `Halo Admin KaiwaDojo, saya ingin mengajukan permohonan penghapusan akun saya:\n• Username: @${cleanUser}${nameStr}${emailStr}\n\nMohon bantuannya untuk memproses konfirmasi dan penghapusan akun saya dari sistem KaiwaDojo. Terima kasih.`
+  return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
+}
+
+
