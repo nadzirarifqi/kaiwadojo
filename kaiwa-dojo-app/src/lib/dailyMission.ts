@@ -676,3 +676,141 @@ export async function calculateMissionProgress(
     isFullyCompleted,
   }
 }
+
+/**
+ * Backfill historical streak caps for a user.
+ *
+ * Problem: calculateMissionProgress() hanya dijalankan secara realtime saat user membuka
+ * LearningPlan. Misi hari-hari lampau yang sudah selesai tapi belum pernah di-render
+ * tidak akan mendapat cap di learning_streaks.
+ *
+ * Solusi: Saat user pertama login dalam sesi baru, panggil fungsi ini sekali.
+ * Fungsi ini akan:
+ *   1. Ambil semua daily_missions user dari DB
+ *   2. Ambil semua learning_streaks user yang sudah ada
+ *   3. Untuk misi yang belum punya cap → recalculate ulang progress-nya
+ *   4. Jika isFullyCompleted → insert cap ke learning_streaks
+ *
+ * Throttle: max 1x per sesi (sessionStorage), berjalan background (fire-and-forget).
+ */
+export async function backfillHistoricalStreakCaps(userId: string): Promise<void> {
+  if (!userId) return
+
+  // Throttle: hanya jalankan sekali per sesi browser
+  const BACKFILL_KEY = `kaiwa_streak_backfill_done_${userId}`
+  if (sessionStorage.getItem(BACKFILL_KEY) === 'true') return
+  sessionStorage.setItem(BACKFILL_KEY, 'true')
+
+  try {
+    const today = getTodayDateString()
+
+    // 1. Ambil semua daily_missions dari DB (kecuali hari ini — sudah handled realtime)
+    const { data: missions, error: mErr } = await supabase
+      .from('daily_missions')
+      .select('*')
+      .eq('student_id', userId)
+      .lt('date', today) // hanya hari lampau
+
+    if (mErr || !missions || missions.length === 0) return
+
+    // 2. Ambil semua streaks yang sudah ada
+    const { data: streaks } = await supabase
+      .from('learning_streaks')
+      .select('date')
+      .eq('student_id', userId)
+
+    const existingStreakDates = new Set((streaks || []).map((s: any) => s.date))
+
+    // 3. Filter misi yang belum punya cap
+    const missionsWithoutCap = missions.filter((row: any) => {
+      const d = typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date)
+      return !existingStreakDates.has(d)
+    })
+
+    if (missionsWithoutCap.length === 0) return
+
+    // 4. Fetch progress data sekali (shared for all missions)
+    const [{ data: pData }, { data: kData }, { data: qData }] = await Promise.all([
+      supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', userId),
+      supabase.from('user_kotoba_submissions').select('id, created_at').eq('user_id', userId),
+      supabase.from('quiz_attempts').select('id, passed').eq('student_id', userId).eq('passed', true),
+    ])
+
+    const preFetched = {
+      progressData: pData || [],
+      kotobaSubmissions: kData || [],
+    }
+    // Inject quiz count into preFetched as a synthetic field for calculateMissionProgress
+    const quizCount = (qData || []).length;
+    (preFetched as any).quizCount = quizCount
+
+    // 5. Calculate progress per mission dan tambahkan cap jika selesai
+    const capsToInsert: { id: string; student_id: string; date: string }[] = []
+
+    for (const row of missionsWithoutCap) {
+      const cleanDate = typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date)
+      const missionData: DailyMissionData = {
+        date: cleanDate,
+        selectedVideos: row.selected_videos || [],
+        targetReplayCount: typeof row.target_replay_count === 'number' ? row.target_replay_count : 0,
+        targetQuizCount: typeof row.target_quiz_count === 'number' ? row.target_quiz_count : 0,
+        targetKotobaCount: typeof row.target_kotoba_count === 'number' ? row.target_kotoba_count : 0,
+        baseline: row.baseline_snapshot || undefined,
+      }
+
+      // Rest day → langsung dapat cap tanpa hitung progress
+      if (isNoPlanMission(missionData)) {
+        capsToInsert.push({
+          id: ensureUUID(`${userId}_${cleanDate}`, '00000000-0000-0000-0005-'),
+          student_id: userId,
+          date: cleanDate,
+        })
+        continue
+      }
+
+      // Misi dengan target → hitung progress aktual
+      try {
+        const prog = await calculateMissionProgress(userId, missionData, preFetched)
+        if (prog.isFullyCompleted) {
+          capsToInsert.push({
+            id: ensureUUID(`${userId}_${cleanDate}`, '00000000-0000-0000-0005-'),
+            student_id: userId,
+            date: cleanDate,
+          })
+        }
+      } catch {
+        // Skip missions that fail to calculate
+      }
+    }
+
+    if (capsToInsert.length === 0) return
+
+    // 6. Batch insert semua caps sekaligus
+    await supabase
+      .from('learning_streaks')
+      .upsert(capsToInsert, { onConflict: 'student_id,date' })
+
+    // 7. Update streak_days di profile
+    const { data: allStreaks } = await supabase
+      .from('learning_streaks')
+      .select('date')
+      .eq('student_id', userId)
+
+    if (allStreaks) {
+      const allDates = new Set(allStreaks.map((s: any) => s.date))
+      const streakCount = calculateStreakFromDates(allDates, today)
+      await supabase
+        .from('profiles')
+        .update({ streak_days: streakCount })
+        .eq('id', userId)
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('kaiwa_profile_updated'))
+      }
+    }
+
+    console.log(`[backfillHistoricalStreakCaps] Added ${capsToInsert.length} missing caps for user ${userId}`)
+  } catch (e) {
+    console.warn('[backfillHistoricalStreakCaps] Error (non-critical):', e)
+  }
+}

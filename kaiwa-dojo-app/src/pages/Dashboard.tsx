@@ -14,6 +14,7 @@ import {
   getTodayDateString,
   DAILY_MISSION_UPDATE_EVENT,
   subscribeToDailyMissionRealtime,
+  backfillHistoricalStreakCaps,
 } from '../lib/dailyMission'
 import {
   SCHEDULE_UPDATE_EVENT,
@@ -597,6 +598,11 @@ export default function Dashboard() {
           Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
           setVideoProgressMap(map)
         }
+      }
+
+      // Backfill missing historical streak caps (fire-and-forget, throttled 1x per session)
+      if (effectiveUserId && effectiveUserId !== 'active_user') {
+        backfillHistoricalStreakCaps(effectiveUserId).catch(() => {})
       }
 
       // Calculate Minna no Nihongo Jilid 1 & 2 Progress (DB + Local Storage merge)
