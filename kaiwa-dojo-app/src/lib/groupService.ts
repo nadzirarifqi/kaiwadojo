@@ -31,8 +31,9 @@ export function parseKeywords(rawKeywords: string | null | undefined): string[] 
 /**
  * Matches an institution string against a list of KaiwaGroup objects.
  * - Checks if the institution contains any group keyword or exact group name (case-insensitive).
- * - If match found -> returns the formal group name (e.g. 'VLI2608').
+ * - If match found -> returns the formal group name.
  * - If NO match -> returns '' (empty string / Siswa Biasa).
+ * - All group names and keywords are managed exclusively via the database (kaiwa_groups table).
  */
 export function matchGroupFromInstitution(
   rawInstitution: string | null | undefined,
@@ -43,34 +44,26 @@ export function matchGroupFromInstitution(
   const cleanInst = rawInstitution.trim().toLowerCase()
   if (!cleanInst) return ''
 
-  // 1. Priority check against loaded groups
-  if (groups && groups.length > 0) {
-    for (const grp of groups) {
-      const gName = (grp.name || '').trim().toLowerCase()
-      if (!gName) continue
+  // Check against DB-loaded groups only (no hardcode)
+  for (const grp of groups) {
+    const gName = (grp.name || '').trim().toLowerCase()
+    if (!gName) continue
 
-      // Direct match with group name (e.g. "VLI2608" or "VLI 2608")
-      if (cleanInst.includes(gName) || cleanInst.replace(/\s+/g, '').includes(gName.replace(/\s+/g, ''))) {
+    // Direct match with group name
+    if (cleanInst.includes(gName) || cleanInst.replace(/\s+/g, '').includes(gName.replace(/\s+/g, ''))) {
+      return grp.name
+    }
+
+    // Keyword matches
+    const kws = parseKeywords(grp.keywords)
+    for (const kw of kws) {
+      if (cleanInst.includes(kw) || cleanInst.replace(/\s+/g, '').includes(kw.replace(/\s+/g, ''))) {
         return grp.name
-      }
-
-      // Keyword matches
-      const kws = parseKeywords(grp.keywords)
-      for (const kw of kws) {
-        if (cleanInst.includes(kw) || cleanInst.replace(/\s+/g, '').includes(kw.replace(/\s+/g, ''))) {
-          return grp.name
-        }
       }
     }
   }
 
-  // 2. Built-in hardcoded fallback for VLI2608 / VIVA Legacy
-  // (ensures instant matching even before DB groups load)
-  if (cleanInst.includes('viva legacy') || cleanInst.includes('vli2608') || cleanInst.includes('vli 2608')) {
-    return 'VLI2608'
-  }
-
-  // 3. If no defined group matches, return empty string (Siswa Biasa)
+  // No match -> Siswa Biasa
   return ''
 }
 
@@ -125,7 +118,7 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
       const formatted: KaiwaGroup[] = data.map((g: any) => ({
         id: String(g.id || g.name),
         name: g.name,
-        keywords: g.keywords || (g.name.toLowerCase().includes('vli') || g.name.toLowerCase().includes('viva') ? 'viva legacy, vli2608, vli 2608, viva' : g.name.toLowerCase()),
+        keywords: g.keywords || '',
         description: g.description || '',
         created_at: g.created_at,
         updated_at: g.updated_at,
@@ -137,7 +130,7 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
       return formatted
     }
 
-    // 2. Fallback: select id, name
+    // 2. Fallback: select id, name only
     const { data: fallbackData } = await supabase
       .from('kaiwa_groups')
       .select('id, name')
@@ -147,7 +140,7 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
       const formatted: KaiwaGroup[] = fallbackData.map((g: any) => ({
         id: String(g.id || g.name),
         name: g.name,
-        keywords: g.name.toLowerCase().includes('vli') || g.name.toLowerCase().includes('viva') ? 'viva legacy, vli2608, vli 2608, viva' : g.name.toLowerCase(),
+        keywords: '',
         description: '',
       }))
       cachedGroups = formatted
@@ -159,7 +152,7 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
     console.warn('fetchGroups DB error, using local fallback:', err)
   }
 
-  // 3. Check localStorage if DB is not populated yet
+  // 3. Check localStorage if DB is not reachable
   const local = getLocalGroups()
   if (local.length > 0) {
     cachedGroups = local
@@ -167,19 +160,8 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
     return local
   }
 
-  // 4. Default baseline fallback
-  const defaultGroups: KaiwaGroup[] = [
-    {
-      id: 'vli2608-default',
-      name: 'VLI2608',
-      keywords: 'viva legacy, vli2608, vli 2608, viva, vli',
-      description: 'Grup Resmi Pelajar VIVA Legacy (VLI2608)',
-    },
-  ]
-  cachedGroups = defaultGroups
-  cacheTimestamp = now
-  saveLocalGroups(defaultGroups)
-  return defaultGroups
+  // 4. Return empty — admin harus set grup via Group Manager di database
+  return []
 }
 
 /**
@@ -407,8 +389,7 @@ export async function syncAllStudentsWithGroups(): Promise<{
       }
     }
 
-    // Also update any schedules with old 'VIVA Legacy' name -> 'VLI2608'
-    await supabase.from('class_schedules').update({ target_group: 'VLI2608' }).ilike('target_group', '%viva legacy%')
+    // Update schedules with old group names to match current DB group names (handled dynamically)
 
     return {
       total: students.length,
