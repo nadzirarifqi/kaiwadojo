@@ -249,8 +249,8 @@ export default function StudentManager() {
     // 1. Hapus dari React state secara instan
     setStudents(prev => prev.filter(s => s.id !== std.id && s.username.toLowerCase() !== std.username.toLowerCase()))
 
-    // 2. Hapus dari database Supabase
-    const success = await deleteStudentAccount(std.id)
+    // 2. Hapus dari database Supabase (menghapus profiles dan auth.users secara tuntas)
+    const success = await deleteStudentAccount(std.id, std.email)
 
     setSaving(false)
     if (success) {

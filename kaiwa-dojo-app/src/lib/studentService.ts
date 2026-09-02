@@ -256,51 +256,67 @@ export async function updateStudentAccount(
 
 /**
  * Menghapus akun pelajar secara permanen dari Supabase:
- * 1. Memanggil RPC delete_auth_user() → hapus dari auth.users (profiles terhapus via CASCADE)
- * 2. Fallback: hapus manual dari profiles jika RPC gagal atau user tidak punya auth record
+ * 1. Memanggil RPC delete_auth_user(user_id, user_email) → hapus dari auth.users dan profiles
+ * 2. Fallback: Hapus langsung dari tabel profiles (yang juga memicu trigger on_profile_deleted_cleanup_auth)
  */
-export async function deleteStudentAccount(id: string): Promise<boolean> {
+export async function deleteStudentAccount(id: string, email?: string): Promise<boolean> {
   try {
     const target = (id || '').trim()
+    const targetEmail = (email || '').trim().toLowerCase()
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
 
-    if (isUuid) {
-      // 1. Coba hapus dari auth.users via RPC (ini juga hapus profiles via CASCADE)
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('delete_auth_user', { user_id: target })
+    console.log('[deleteStudentAccount] Memulai penghapusan akun:', { id: target, email: targetEmail, isUuid })
+
+    // 1. Coba hapus via RPC delete_auth_user (membersihkan auth.users & profiles secara tuntas)
+    try {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('delete_auth_user', {
+        user_id: isUuid ? target : null,
+        user_email: targetEmail || null,
+      })
 
       if (!rpcError && rpcResult === true) {
-        console.log('deleteStudentAccount: berhasil hapus dari auth.users via RPC, id:', target)
+        console.log('[deleteStudentAccount] Berhasil hapus dari auth.users & profiles via RPC:', { id: target, email: targetEmail })
         return true
       }
 
       if (rpcError) {
-        console.warn('delete_auth_user RPC error (fallback ke profiles):', rpcError.message)
+        console.warn('[deleteStudentAccount] RPC delete_auth_user note:', rpcError.message)
       }
+    } catch (rpcEx) {
+      console.warn('[deleteStudentAccount] RPC call exception:', rpcEx)
+    }
 
-      // 2. Fallback: hapus hanya dari profiles jika RPC gagal
+    // 2. Hapus dari tabel profiles (safety-net: akan memicu trigger database untuk membersihkan auth.users)
+    if (isUuid) {
       const { error: profileErr } = await supabase.from('profiles').delete().eq('id', target)
       if (!profileErr) {
+        console.log('[deleteStudentAccount] Berhasil hapus dari profiles by id:', target)
         return true
       }
-      console.warn('deleteStudentAccount by id error:', profileErr.message)
+      console.warn('[deleteStudentAccount] Delete by id error:', profileErr.message)
     }
 
-    // 3. Hapus by username (untuk custom admin accounts tanpa auth record)
+    // 3. Fallback: Hapus by email dari profiles
+    if (targetEmail) {
+      const { error: errEmail } = await supabase.from('profiles').delete().ilike('email', targetEmail)
+      if (!errEmail) {
+        console.log('[deleteStudentAccount] Berhasil hapus dari profiles by email:', targetEmail)
+        return true
+      }
+      console.warn('[deleteStudentAccount] Delete by email error:', errEmail.message)
+    }
+
+    // 4. Fallback: Hapus by username dari profiles
     const { error: errUser } = await supabase.from('profiles').delete().ilike('username', target)
     if (!errUser) {
+      console.log('[deleteStudentAccount] Berhasil hapus dari profiles by username:', target)
       return true
     }
-    console.warn('deleteStudentAccount by username error:', errUser.message)
+    console.warn('[deleteStudentAccount] Delete by username error:', errUser.message)
 
-    // 4. Hapus by email
-    const { error: errEmail } = await supabase.from('profiles').delete().ilike('email', target)
-    if (errEmail) {
-      console.error('deleteStudentAccount by email error:', errEmail.message)
-      return false
-    }
-    return true
+    return false
   } catch (e) {
-    console.error('deleteStudentAccount catch:', e)
+    console.error('[deleteStudentAccount] Catch error:', e)
     return false
   }
 }
