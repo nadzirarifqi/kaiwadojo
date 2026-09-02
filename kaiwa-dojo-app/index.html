@@ -1,15 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/kaiwa-logo.png" />
+
+    <!-- Viewport & PWA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#b91c1c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- SEO -->
     <title>KaiwaDoJo — Platform Interaktif Belajar Bahasa Jepang</title>
+    <meta name="description" content="KaiwaDoJo adalah platform interaktif belajar bahasa Jepang dengan kelas live, materi terstruktur, dan latihan harian yang menyenangkan." />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="KaiwaDoJo" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="KaiwaDoJo — Platform Interaktif Belajar Bahasa Jepang" />
+    <meta property="og:description" content="KaiwaDoJo adalah platform interaktif belajar bahasa Jepang dengan kelas live, materi terstruktur, dan latihan harian yang menyenangkan." />
+    <meta property="og:image" content="/kaiwa-logo.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/kaiwa-logo.png" />
+    <link rel="apple-touch-icon" href="/kaiwa-logo.png" />
+
+    <!-- Resource Hints — Koneksi awal ke Supabase & CDN sebelum JS dimuat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://supabase.co" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

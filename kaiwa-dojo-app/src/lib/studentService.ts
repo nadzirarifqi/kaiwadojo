@@ -255,7 +255,9 @@ export async function updateStudentAccount(
 }
 
 /**
- * Menghapus akun pelajar secara permanen dari Supabase Database (profiles table)
+ * Menghapus akun pelajar secara permanen dari Supabase:
+ * 1. Memanggil RPC delete_auth_user() → hapus dari auth.users (profiles terhapus via CASCADE)
+ * 2. Fallback: hapus manual dari profiles jika RPC gagal atau user tidak punya auth record
  */
 export async function deleteStudentAccount(id: string): Promise<boolean> {
   try {
@@ -263,27 +265,43 @@ export async function deleteStudentAccount(id: string): Promise<boolean> {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)
 
     if (isUuid) {
-      const { error } = await supabase.from('profiles').delete().eq('id', target)
-      if (!error) {
+      // 1. Coba hapus dari auth.users via RPC (ini juga hapus profiles via CASCADE)
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('delete_auth_user', { user_id: target })
+
+      if (!rpcError && rpcResult === true) {
+        console.log('deleteStudentAccount: berhasil hapus dari auth.users via RPC, id:', target)
         return true
       }
-      console.warn('DB deleteStudentAccount by id error:', error.message)
+
+      if (rpcError) {
+        console.warn('delete_auth_user RPC error (fallback ke profiles):', rpcError.message)
+      }
+
+      // 2. Fallback: hapus hanya dari profiles jika RPC gagal
+      const { error: profileErr } = await supabase.from('profiles').delete().eq('id', target)
+      if (!profileErr) {
+        return true
+      }
+      console.warn('deleteStudentAccount by id error:', profileErr.message)
     }
 
-    // Try deleting by username
+    // 3. Hapus by username (untuk custom admin accounts tanpa auth record)
     const { error: errUser } = await supabase.from('profiles').delete().ilike('username', target)
-    if (errUser) {
-      console.warn('DB deleteStudentAccount by username error:', errUser.message)
-      // Try deleting by email
-      const { error: errEmail } = await supabase.from('profiles').delete().ilike('email', target)
-      if (errEmail) {
-        console.error('DB deleteStudentAccount by email error:', errEmail.message)
-        return false
-      }
+    if (!errUser) {
+      return true
+    }
+    console.warn('deleteStudentAccount by username error:', errUser.message)
+
+    // 4. Hapus by email
+    const { error: errEmail } = await supabase.from('profiles').delete().ilike('email', target)
+    if (errEmail) {
+      console.error('deleteStudentAccount by email error:', errEmail.message)
+      return false
     }
     return true
   } catch (e) {
-    console.error('DB deleteStudentAccount catch:', e)
+    console.error('deleteStudentAccount catch:', e)
     return false
   }
 }
+

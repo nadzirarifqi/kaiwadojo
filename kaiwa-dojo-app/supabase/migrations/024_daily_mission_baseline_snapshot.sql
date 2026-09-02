@@ -19,4 +19,5 @@ CREATE POLICY "Allow all daily_missions"
   USING (true)
   WITH CHECK (true);
 
+
 GRANT ALL ON TABLE public.daily_missions TO anon, authenticated, service_role;

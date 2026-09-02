@@ -41,83 +41,117 @@ export default function AdminLoginPage() {
     setLoginError(null)
     setLoading(true)
 
-    const cleanUser = username.trim().toLowerCase()
+    const cleanUser = username.trim().toLowerCase().replace(/^@/, '')
 
-    if (cleanUser === 'kaiwahiroshima' && password === 'inaconnextkaiwa6') {
-      const adminId = '00000000-0000-0000-0000-000000000099'
-      let adminProf = {
-        id: adminId,
-        full_name: 'Admin Hiroshima',
-        username: 'kaiwahiroshima',
-        email: 'admin@kaiwadojo.com',
-        bio: '',
-        avatar_url: null as string | null,
-        role: 'admin',
-        status: 'approved',
-        streak_days: 99,
-        last_active_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      try {
-        const { data: dbAdmin } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', adminId)
-          .maybeSingle()
-
-        if (dbAdmin) {
-          adminProf = {
-            ...adminProf,
-            full_name: dbAdmin.full_name || adminProf.full_name,
-            username: dbAdmin.username || adminProf.username,
-            bio: dbAdmin.bio || adminProf.bio,
-            avatar_url: dbAdmin.avatar_url || adminProf.avatar_url,
-          }
-        } else {
-          await supabase.from('profiles').upsert({
-            id: adminId,
-            full_name: 'Admin Hiroshima',
-            username: 'kaiwahiroshima',
-            email: 'admin@kaiwadojo.com',
-            role: 'admin',
-            status: 'approved',
-          })
+    // 1. Special Admin Hiroshima Credentials
+    if (cleanUser === 'kaiwahiroshima') {
+      if (password === 'inaconnextkaiwa6') {
+        const adminId = '00000000-0000-0000-0000-000000000099'
+        let adminProf = {
+          id: adminId,
+          full_name: 'Admin Hiroshima',
+          username: 'kaiwahiroshima',
+          email: 'admin@kaiwadojo.com',
+          bio: '',
+          avatar_url: null as string | null,
+          role: 'admin',
+          status: 'approved',
+          streak_days: 99,
+          last_active_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         }
-      } catch (err) {
-        console.warn('Admin DB fetch note:', err)
+
+        try {
+          const { data: dbAdmin } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', adminId)
+            .maybeSingle()
+
+          if (dbAdmin) {
+            adminProf = {
+              ...adminProf,
+              full_name: dbAdmin.full_name || adminProf.full_name,
+              username: dbAdmin.username || adminProf.username,
+              bio: dbAdmin.bio || adminProf.bio,
+              avatar_url: dbAdmin.avatar_url || adminProf.avatar_url,
+            }
+          } else {
+            await supabase.from('profiles').upsert({
+              id: adminId,
+              full_name: 'Admin Hiroshima',
+              username: 'kaiwahiroshima',
+              email: 'admin@kaiwadojo.com',
+              role: 'admin',
+              status: 'approved',
+            })
+          }
+        } catch (err) {
+          console.warn('Admin DB fetch note:', err)
+        }
+
+        await claimDeviceSession(adminId)
+        sessionStorage.setItem('kaiwa_session_active', 'true')
+        sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+        localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+        window.dispatchEvent(new Event('kaiwa_profile_updated'))
+
+        setLoading(false)
+        navigate('/dashboard')
+        return
+      } else {
+        setLoading(false)
+        setLoginError('Password salah untuk akun Admin Hiroshima. Silakan coba lagi.')
+        return
       }
-
-      await claimDeviceSession(adminId)
-      sessionStorage.setItem('kaiwa_session_active', 'true')
-      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
-      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
-      window.dispatchEvent(new Event('kaiwa_profile_updated'))
-
-      setLoading(false)
-      navigate('/dashboard')
-      return
     }
 
-    // Try standard auth login for admin
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: cleanUser.includes('@') ? cleanUser : 'admin@kaiwadojo.com',
-      password,
-    })
+    // 2. Try standard auth login for other admin or instructor accounts
+    try {
+      let targetEmail = cleanUser
+      if (!cleanUser.includes('@')) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('id, email, role, status')
+          .ilike('username', cleanUser)
+          .maybeSingle()
 
-    if (authError) {
-      if (authError.message === 'Email not confirmed') {
-        setLoginError('Email belum dikonfirmasi. Silakan cek inbox/spam email kamu.')
-      } else if (authError.message === 'Invalid login credentials') {
-        setLoginError('Username atau password salah. Coba lagi.')
-      } else {
-        setLoginError(authError.message)
+        if (prof?.email) {
+          targetEmail = prof.email
+        } else {
+          setLoading(false)
+          setLoginError('Akun admin atau instruktur tidak ditemukan. Pastikan username sudah benar.')
+          return
+        }
       }
+
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password,
+      })
+
+      if (authError) {
+        if (authError.message.includes('Invalid login credentials') || authError.status === 400 || authError.status === 500) {
+          setLoginError('Username/email atau password salah.')
+        } else if (authError.message.includes('Email not confirmed')) {
+          setLoginError('Email belum dikonfirmasi. Silakan cek inbox/spam email kamu.')
+        } else {
+          setLoginError(authError.message)
+        }
+        setLoading(false)
+        return
+      }
+
+      if (authData.user) {
+        await claimDeviceSession(authData.user.id)
+        sessionStorage.setItem('kaiwa_session_active', 'true')
+        navigate('/dashboard')
+      }
+    } catch (err: any) {
+      console.warn('Admin login error:', err)
+      setLoginError('Username/email atau password salah.')
       setLoading(false)
-    } else {
-      sessionStorage.setItem('kaiwa_session_active', 'true')
-      navigate('/dashboard')
     }
   }
 

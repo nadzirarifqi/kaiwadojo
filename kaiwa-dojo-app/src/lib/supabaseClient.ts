@@ -14,6 +14,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
+  realtime: {
+    // Kurangi frekuensi heartbeat realtime channel — default 30s → 60s
+    // Mengurangi beban koneksi WebSocket saat banyak user aktif sekaligus
+    params: {
+      eventsPerSecond: 5,
+    },
+    heartbeatIntervalMs: 60000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1500, 30000),
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-app-version': '1.0.0',
+    },
+  },
 })
 
 // ── Helper: Detect Provider ──────────────────────────────────
@@ -25,4 +42,3 @@ export function detectVideoProvider(url: string): { provider: 'direct'; videoId:
 export function getEmbedUrl(_provider: string, videoId: string): string {
   return videoId
 }
-

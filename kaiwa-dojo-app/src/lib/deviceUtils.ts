@@ -34,7 +34,9 @@ export function getDeviceInfo(): string {
 }
 
 /**
- * Get or create a unique session ID for this browser tab/instance
+ * Get or create a unique session ID for this browser tab/instance.
+ * Digunakan sebagai identifikasi device untuk informasi/audit trail,
+ * bukan sebagai mekanisme restrict multi-device.
  */
 export function getOrCreateClientSessionId(): string {
   if (typeof window === 'undefined') return 'server_session'
@@ -68,11 +70,13 @@ export function clearClientSessionId(): void {
 }
 
 /**
- * Claim and register this device's session in Supabase profiles
+ * Register this device's session in Supabase profiles for audit/tracking purposes.
+ * Multi-device friendly: tidak ada kick logic, hanya update info perangkat terakhir login.
  */
 export async function claimDeviceSession(userId: string): Promise<{ sessionId: string; deviceInfo: string }> {
   const sessionId = getOrCreateClientSessionId()
   const deviceInfo = getDeviceInfo()
+  const now = new Date().toISOString()
 
   try {
     await supabase
@@ -80,8 +84,8 @@ export async function claimDeviceSession(userId: string): Promise<{ sessionId: s
       .update({
         current_session_id: sessionId,
         current_device_info: deviceInfo,
-        last_session_at: new Date().toISOString(),
-        last_active_at: new Date().toISOString(),
+        last_session_at: now,
+        last_active_at: now,
       })
       .eq('id', userId)
   } catch (e) {

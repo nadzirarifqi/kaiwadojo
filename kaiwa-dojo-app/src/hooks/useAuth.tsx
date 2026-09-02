@@ -7,6 +7,14 @@ export type UserRole = 'pelajar' | 'pemateri' | 'admin'
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000 // 30 minutes in milliseconds
 const LAST_ACTIVITY_KEY   = 'kaiwa_last_activity_timestamp'
 
+// Kolom yang diambil dari tabel profiles — spesifik, bukan SELECT *
+const PROFILE_SELECT_FIELDS = [
+  'id', 'full_name', 'username', 'email', 'phone_number', 'institution',
+  'avatar_url', 'bio', 'role', 'streak_days', 'status',
+  'last_active_at', 'current_session_id', 'current_device_info', 'last_session_at',
+  'created_at', 'updated_at',
+].join(', ')
+
 export interface Profile {
   id: string
   full_name: string
@@ -90,7 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const LAST_HEARTBEAT_KEY = 'kaiwa_last_presence_heartbeat'
 
-  // Send presence heartbeat to Supabase DB to track online status & verify active session
+  /**
+   * Send presence heartbeat — hanya update last_active_at.
+   * Multi-device friendly: tidak ada conflict check / kick logic.
+   * Throttle: max 1x per 60 detik per tab.
+   */
   const sendPresenceHeartbeat = async (userId: string) => {
     if (!userId) return
     const now = Date.now()
@@ -102,21 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     sessionStorage.setItem(LAST_HEARTBEAT_KEY, now.toString())
     try {
-      const { data: dbProf } = await supabase
+      await supabase
         .from('profiles')
         .update({ last_active_at: new Date().toISOString() })
         .eq('id', userId)
-        .select('current_session_id, current_device_info')
-        .maybeSingle()
-
-      // Check if session has been taken over by another device
-      if (dbProf?.current_session_id) {
-        const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
-        if (mySessionId && dbProf.current_session_id !== mySessionId) {
-          const otherDevice = dbProf.current_device_info || 'Perangkat Lain'
-          signOut(`Akun Anda telah masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`)
-        }
-      }
     } catch {}
   }
 
@@ -139,40 +140,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function fetchProfile(userId: string) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PROFILE_SELECT_FIELDS)
       .eq('id', userId)
       .single()
     if (!error && data) {
-      if (data.role === 'pelajar' && (data.status === 'rejected' || data.status === 'pending')) {
-        signOut(data.status === 'rejected' ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin.' : 'Akun Anda masih dalam proses verifikasi Admin.')
+      const profile = data as unknown as Profile
+      if (profile.role === 'pelajar' && (profile.status === 'rejected' || profile.status === 'pending')) {
+        signOut(profile.status === 'rejected' ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin.' : 'Akun Anda masih dalam proses verifikasi Admin.')
         return
       }
 
-      // Check single active device session
-      const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
-      if (data.current_session_id && mySessionId && data.current_session_id !== mySessionId) {
-        const otherDevice = data.current_device_info || 'Perangkat Lain'
-        signOut(`Akun Anda telah masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`)
-        return
-      }
-
-      setProfile(data as Profile)
+      setProfile(profile)
       sessionStorage.setItem('kaiwa_session_active', 'true')
-      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(data))
+      sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(profile))
     }
   }
 
   async function refreshProfile() {
-    const custom = sessionStorage.getItem('kaiwa_custom_profile') || localStorage.getItem('kaiwa_custom_profile')
+    const custom = sessionStorage.getItem('kaiwa_custom_profile')
     if (custom) {
       try {
-        const parsed = JSON.parse(custom)
+        const parsed = JSON.parse(custom) as Profile
         if (parsed?.id) {
-          const { data: dbProf } = await supabase.from('profiles').select('*').eq('id', parsed.id).maybeSingle()
+          const { data: dbProf } = await supabase
+            .from('profiles')
+            .select(PROFILE_SELECT_FIELDS)
+            .eq('id', parsed.id)
+            .maybeSingle()
           if (dbProf) {
-            const merged = { ...parsed, ...dbProf }
+            const merged: Profile = { ...parsed, ...(dbProf as unknown as Profile) }
             sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(merged))
-            localStorage.setItem('kaiwa_custom_profile', JSON.stringify(merged))
             setProfile(merged)
             return
           }
@@ -201,44 +198,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpiredNotice(reason)
     }
   }
-
-  // ── Realtime Single Active Session Guard ──
-  // If another device logs in and takes over the session, kick this device immediately
-  useEffect(() => {
-    if (!profile?.id) return
-
-    const mySessionId = sessionStorage.getItem('kaiwa_client_session_id')
-    if (!mySessionId) return
-
-    const sessionGuardChannel = supabase
-      .channel(`profile_session_guard_${profile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${profile.id}`,
-        },
-        (payload: any) => {
-          const newProfile = payload.new
-          if (newProfile && newProfile.current_session_id) {
-            const currentClientSess = sessionStorage.getItem('kaiwa_client_session_id')
-            if (currentClientSess && newProfile.current_session_id !== currentClientSess) {
-              const otherDevice = newProfile.current_device_info || 'Perangkat Lain'
-              signOut(
-                `Akun Anda baru saja masuk di perangkat lain (${otherDevice}). Anda telah dikeluarkan dari perangkat ini demi keamanan dan konsistensi data.`
-              )
-            }
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(sessionGuardChannel)
-    }
-  }, [profile?.id])
 
   useEffect(() => {
     // Record initial activity time
