@@ -1442,6 +1442,7 @@ export default function MyCourses() {
                       style={{ aspectRatio: '9/16', maxHeight: 'min(58vh, 540px)' }}
                     >
                       <SmartVideoPlayer
+                        key={activeLesson.id}
                         lesson={activeLesson}
                         chapterBab={activeChapter?.bab_number || 1}
                         onLoadedMetadata={totalSecs => {
