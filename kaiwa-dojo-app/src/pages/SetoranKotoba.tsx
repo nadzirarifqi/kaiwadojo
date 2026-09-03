@@ -781,8 +781,8 @@ export default function SetoranKotobaPage() {
 
       {/* Flashcard Test Modal Screen */}
       {isTestActive && (
-        <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-2 sm:pt-0 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[96dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto my-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
@@ -958,8 +958,8 @@ export default function SetoranKotobaPage() {
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center p-2 sm:p-4 pt-2 sm:pt-0 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[96dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto my-auto">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
                 {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}

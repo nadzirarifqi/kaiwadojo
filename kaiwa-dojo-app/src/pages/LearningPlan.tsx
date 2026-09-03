@@ -203,8 +203,8 @@ function DailyMissionBuilderModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1.5 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[96dvh] border border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-center justify-center p-4 sm:p-6 animate-fade-in overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90dvh] border border-slate-200 dark:border-slate-800 my-auto">
         
         {/* Modal Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-primary via-primary-dark to-slate-900 text-white flex items-center justify-between shrink-0">
@@ -500,8 +500,8 @@ function DateClassEnrollModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1.5 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[96dvh] border border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-center justify-center p-4 sm:p-6 animate-fade-in overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90dvh] border border-slate-200 dark:border-slate-800 my-auto">
         
         {/* Toast inside modal */}
         {toast && (

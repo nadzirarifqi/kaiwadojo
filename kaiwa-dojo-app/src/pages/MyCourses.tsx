@@ -1219,8 +1219,8 @@ export default function MyCourses() {
 
       {/* ── Video Player & Placeholder Modal ── */}
       {activeLesson && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start sm:items-center justify-center p-1 sm:p-6 pt-1 sm:pt-0 animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[98dvh] sm:h-[92vh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-center justify-center p-4 sm:p-6 animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90dvh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up my-auto">
 
             {/* Modal Header */}
             <div className="px-3.5 py-2 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
