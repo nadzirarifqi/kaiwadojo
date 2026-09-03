@@ -1265,31 +1265,69 @@ export default function MyCourses() {
                     <h4 className="font-bold text-slate-700 dark:text-slate-300 text-[0.65rem] uppercase tracking-wider mb-0.5">
                       Materi {activeChapter?.title || 'Bab Ini'}
                     </h4>
-                    {activeChapter?.lessons.map(l => (
-                      <button
-                        key={l.id}
-                        onClick={() => { setActiveLesson(l); setShowLessonList(false) }}
-                        className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
-                          activeLesson?.id === l.id
-                            ? 'bg-white dark:bg-slate-900 border-primary shadow-xs text-primary'
-                            : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white'
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1 pr-2">
-                          <div className="text-xs font-bold truncate">{l.title}</div>
-                          <div className="text-[0.65rem] text-slate-400 mt-0.5">
-                            ⏱️ {l.duration_minutes}m {l.is_placeholder ? '• ⏳ Segera Hadir' : ''}
+                    {activeChapter?.lessons.map(l => {
+                      const lIsQuiz = l.content_type === 'quiz'
+                      const babVids = activeChapter.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3)
+                      const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
+                      const lIsLocked = lIsQuiz && watchedVids < 3
+                      const quizNum = l.lesson_number - 3
+                      const contentLabel = lIsQuiz
+                        ? `🎯 Kuis ${quizNum}`
+                        : `📖 Video ${l.lesson_number}`
+                      return (
+                        <button
+                          key={l.id}
+                          onClick={() => {
+                            if (lIsLocked) {
+                              setAlertConfig({
+                                isOpen: true,
+                                title: 'Kuis Masih Terkunci 🔒',
+                                message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
+                                type: 'lock',
+                                buttonText: 'Siap, Nonton Dulu!',
+                                onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+                              })
+                              return
+                            }
+                            setActiveLesson(l)
+                            setShowLessonList(false)
+                          }}
+                          className={`p-2 rounded-xl text-left border transition-all flex items-center justify-between ${
+                            lIsLocked
+                              ? 'bg-slate-100 dark:bg-slate-700/40 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed opacity-70'
+                              : activeLesson?.id === l.id
+                                ? 'bg-white dark:bg-slate-900 border-primary shadow-xs text-primary cursor-pointer'
+                                : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white cursor-pointer'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className={`text-[0.6rem] font-extrabold px-1.5 py-0.5 rounded-md ${
+                                lIsLocked ? 'bg-amber-500/20 text-amber-600' :
+                                lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-primary/10 text-primary'
+                              }`}>
+                                {lIsLocked ? `🔒 Kuis ${quizNum}` : contentLabel}
+                              </span>
+                              {l.is_completed && <span className="text-[0.6rem] text-emerald-600 font-bold">✓</span>}
+                            </div>
+                            <div className="text-xs font-bold truncate">{l.title}</div>
+                            <div className="text-[0.65rem] text-slate-400 mt-0.5">
+                              ⏱️ {l.duration_minutes}m
+                              {lIsLocked ? ` • 🔒 Tonton ${3 - watchedVids} video lagi` : l.is_placeholder ? ' • ⏳ Segera Hadir' : ''}
+                            </div>
                           </div>
-                        </div>
-                        {l.is_completed ? (
-                          <span className="text-xs">✅</span>
-                        ) : l.is_placeholder ? (
-                          <span className="text-[0.65rem] opacity-40">🔒</span>
-                        ) : (
-                          <span className="text-xs opacity-40">▶</span>
-                        )}
-                      </button>
-                    ))}
+                          {l.is_completed ? (
+                            <span className="text-xs">✅</span>
+                          ) : lIsLocked ? (
+                            <span className="text-sm">🔒</span>
+                          ) : l.is_placeholder ? (
+                            <span className="text-[0.65rem] opacity-40">🔒</span>
+                          ) : (
+                            <span className="text-xs opacity-40">▶</span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
                 {activeLesson.content_type === 'kotoba' ? (
@@ -1461,34 +1499,94 @@ export default function MyCourses() {
 
               {/* Right Column: Playlist of 5 Videos in active Chapter (desktop only) */}
               <div className="hidden lg:flex bg-slate-50 border-l border-slate-200 p-4 overflow-y-auto flex-col gap-2">
-                <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider px-2 mb-2">
+                <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider px-2 mb-1">
                   Materi {activeChapter?.title || 'Bab Ini'}
                 </h4>
-                {activeChapter?.lessons.map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => setActiveLesson(l)}
-                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
-                      activeLesson?.id === l.id
-                        ? 'bg-white border-primary shadow-sm text-primary'
-                        : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1 pr-2">
-                      <div className="text-xs font-bold truncate">{l.title}</div>
-                      <div className="text-[0.7rem] text-slate-400 mt-0.5">
-                        ⏱️ {l.duration_minutes}m {l.is_placeholder ? '• ⏳ Segera Hadir' : ''}
+                <p className="text-[0.65rem] text-slate-400 px-2 mb-2 font-medium">
+                  {activeChapter?.lessons.filter(l => l.is_completed).length || 0} / {activeChapter?.lessons.length || 0} selesai
+                </p>
+                {activeChapter?.lessons.map(l => {
+                  const lIsQuiz = l.content_type === 'quiz'
+                  const babVids = activeChapter!.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3)
+                  const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
+                  const lIsLocked = lIsQuiz && watchedVids < 3
+                  const quizNum = l.lesson_number - 3
+                  const contentLabel = lIsQuiz
+                    ? `🎯 Kuis ${quizNum}`
+                    : `📖 Video ${l.lesson_number}`
+                  const isActive = activeLesson?.id === l.id
+                  return (
+                    <button
+                      key={l.id}
+                      onClick={() => {
+                        if (lIsLocked) {
+                          setAlertConfig({
+                            isOpen: true,
+                            title: 'Kuis Masih Terkunci 🔒',
+                            message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter!.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
+                            type: 'lock',
+                            buttonText: 'Siap, Nonton Dulu!',
+                            onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+                          })
+                          return
+                        }
+                        setActiveLesson(l)
+                      }}
+                      className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
+                        lIsLocked
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
+                          : isActive
+                            ? 'bg-white border-primary shadow-sm text-primary cursor-pointer'
+                            : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white hover:shadow-xs cursor-pointer'
+                      }`}
+                    >
+                      {/* Left: type icon */}
+                      <div className={`size-8 rounded-lg flex items-center justify-center text-sm shrink-0 mt-0.5 ${
+                        lIsLocked ? 'bg-amber-100 text-amber-500' :
+                        isActive ? 'bg-primary/15 text-primary' :
+                        lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {lIsLocked ? '🔒' : lIsQuiz ? '🎯' : l.is_placeholder ? '⏳' : isActive ? '▶' : '📖'}
                       </div>
-                    </div>
-                    {l.is_completed ? (
-                      <span className="text-xs">✅</span>
-                    ) : l.is_placeholder ? (
-                      <span className="text-[0.65rem] opacity-40">🔒</span>
-                    ) : (
-                      <span className="text-xs opacity-40">▶</span>
-                    )}
-                  </button>
-                ))}
+
+                      {/* Right: text */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`text-[0.6rem] font-extrabold px-1.5 py-0.5 rounded-md leading-none ${
+                            lIsLocked ? 'bg-amber-100 text-amber-600' :
+                            isActive ? 'bg-primary/10 text-primary' :
+                            lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {lIsLocked ? `🔒 Kuis ${quizNum}` : contentLabel}
+                          </span>
+                          {l.is_completed && !lIsLocked && (
+                            <span className="text-[0.6rem] text-emerald-600 font-extrabold">✓ Selesai</span>
+                          )}
+                        </div>
+                        <div className="text-xs font-bold truncate leading-snug">{l.title}</div>
+                        <div className="text-[0.68rem] text-slate-400 mt-0.5">
+                          ⏱️ {l.duration_minutes}m
+                          {lIsLocked
+                            ? <span className="text-amber-500 font-semibold"> • Tonton {3 - watchedVids} video lagi</span>
+                            : l.is_placeholder ? ' • ⏳ Segera Hadir' : ''}
+                        </div>
+                      </div>
+
+                      {/* Right badge */}
+                      {!lIsLocked && (
+                        l.is_completed ? (
+                          <span className="text-base shrink-0">✅</span>
+                        ) : l.is_placeholder ? (
+                          <span className="text-[0.65rem] opacity-40 shrink-0">⏳</span>
+                        ) : isActive ? (
+                          <span className="size-2 rounded-full bg-primary shrink-0 mt-2"></span>
+                        ) : (
+                          <span className="text-xs opacity-30 shrink-0">▶</span>
+                        )
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

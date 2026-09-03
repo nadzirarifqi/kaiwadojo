@@ -88,7 +88,7 @@ export default function WhatsAppWidget() {
 
       {/* WhatsApp Confirmation Modal */}
       {isWaOpen && (
-        <div className="fixed inset-0 z-[999] flex items-start justify-center p-3 sm:p-4 pt-6 sm:pt-8 md:pt-10 pb-10 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+        <div className="fixed inset-0 z-[999] flex items-start justify-center p-3 sm:p-4 pt-10 sm:pt-14 md:pt-16 pb-12 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up text-center relative overflow-hidden max-h-[90dvh] overflow-y-auto">
 
             {/* Header Icon */}

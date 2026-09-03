@@ -465,7 +465,7 @@ export default function InstructorScheduleManagerPage() {
 
       {/* ── CREATE / EDIT SCHEDULE MODAL ───────────────────────── */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start justify-center p-3 sm:p-6 pt-4 sm:pt-6 md:pt-8 pb-10 animate-fade-in overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start justify-center p-3 sm:p-6 pt-8 sm:pt-12 md:pt-14 lg:pt-16 pb-12 animate-fade-in overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90dvh] border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
             <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between shrink-0">
