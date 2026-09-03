@@ -790,6 +790,23 @@ export default function MyCourses() {
     }
   }
 
+  // Auto refresh state for smooth video player transitions
+  const [isVideoRefreshing, setIsVideoRefreshing] = useState(false)
+  const [videoKey, setVideoKey] = useState(0)
+
+  function handleSwitchLesson(newLesson: LessonItem) {
+    if (newLesson.id === activeLesson?.id && !isVideoRefreshing) return
+
+    // Briefly unmount and refresh the video player to reload cleanly and smoothly
+    setIsVideoRefreshing(true)
+    setActiveLesson(newLesson)
+    setVideoKey(prev => prev + 1)
+
+    setTimeout(() => {
+      setIsVideoRefreshing(false)
+    }, 150)
+  }
+
   function toggleBabAccordion(babNum: number) {
     setExpandedBabs(prev => {
       const next = new Set(prev)
@@ -823,6 +840,11 @@ export default function MyCourses() {
   const totalProgressPct      = totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0
 
   const currentFact = JAPAN_FUN_FACTS[funFactIndex]
+  const currentLessonIdx = activeChapter?.lessons.findIndex(l => l.id === activeLesson?.id) ?? -1
+  const prevLesson = currentLessonIdx > 0 && activeChapter ? activeChapter.lessons[currentLessonIdx - 1] : null
+  const nextLesson = currentLessonIdx >= 0 && activeChapter && currentLessonIdx < activeChapter.lessons.length - 1
+    ? activeChapter.lessons[currentLessonIdx + 1]
+    : null
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
@@ -1119,7 +1141,7 @@ export default function MyCourses() {
                               return
                             }
                             setActiveChapter(chap)
-                            setActiveLesson(lesson)
+                            handleSwitchLesson(lesson)
                           }}
                           className={`w-[230px] sm:w-[250px] shrink-0 rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg ${
                             isQuizLocked
@@ -1305,7 +1327,7 @@ export default function MyCourses() {
                               })
                               return
                             }
-                            setActiveLesson(l)
+                            handleSwitchLesson(l)
                             setShowLessonList(false)
                           }}
                           className={`p-2 rounded-xl text-left border transition-all flex items-center justify-between ${
@@ -1454,29 +1476,36 @@ export default function MyCourses() {
 
                     {/* Portrait Phone Frame */}
                     <div
-                      className="w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[340px] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-2xl border sm:border-4 border-slate-800 relative z-10 group"
+                      className="w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[340px] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-2xl border sm:border-4 border-slate-800 relative z-10 group flex items-center justify-center"
                       style={{ aspectRatio: '9/16', maxHeight: 'min(58vh, 540px)' }}
                     >
-                      <SmartVideoPlayer
-                        key={`${activeChapter?.bab_number || 1}_${activeLesson.id}_${activeLesson.lesson_number}_${activeLesson.video_id || ''}`}
-                        lesson={activeLesson}
-                        chapterBab={activeChapter?.bab_number || 1}
-                        onLoadedMetadata={totalSecs => {
-                          const mins = Math.floor(totalSecs / 60)
-                          const secs = Math.floor(totalSecs % 60)
-                          const formatted = `${mins}.${String(secs).padStart(2, '0')}`
-                          if (activeLesson) {
-                            activeLesson.duration_text = formatted
-                            activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
-                          }
-                        }}
-                        onEnded={() => {
-                          handleIncrementReplay(activeLesson)
-                          if (!activeLesson.is_completed) {
-                            handleToggleLessonComplete(activeLesson)
-                          }
-                        }}
-                      />
+                      {isVideoRefreshing ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white gap-3 p-4 select-none animate-fade-in">
+                          <div className="size-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                          <span className="text-xs font-bold text-slate-300 animate-pulse">Memuat materi video...</span>
+                        </div>
+                      ) : (
+                        <SmartVideoPlayer
+                          key={`video_${videoKey}_${activeChapter?.bab_number || 1}_${activeLesson.id}_${activeLesson.lesson_number}`}
+                          lesson={activeLesson}
+                          chapterBab={activeChapter?.bab_number || 1}
+                          onLoadedMetadata={totalSecs => {
+                            const mins = Math.floor(totalSecs / 60)
+                            const secs = Math.floor(totalSecs % 60)
+                            const formatted = `${mins}.${String(secs).padStart(2, '0')}`
+                            if (activeLesson) {
+                              activeLesson.duration_text = formatted
+                              activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
+                            }
+                          }}
+                          onEnded={() => {
+                            handleIncrementReplay(activeLesson)
+                            if (!activeLesson.is_completed) {
+                              handleToggleLessonComplete(activeLesson)
+                            }
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1497,19 +1526,72 @@ export default function MyCourses() {
                   </div>
                 )}
 
-                {/* Lesson Details */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">{activeLesson.title}</h3>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">
-                      ⏱️ Estimasi Durasi: {activeLesson.duration_minutes} menit • Diulang {activeLesson.replay_count || 0} kali
-                    </p>
+                {/* Lesson Details & Direct Navigation Controls */}
+                <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight">
+                        {activeLesson.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">
+                        ⏱️ Estimasi Durasi: {activeLesson.duration_minutes} menit • Diulang {activeLesson.replay_count || 0} kali
+                      </p>
+                    </div>
+
+                    {activeLesson.is_completed && (
+                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 self-start sm:self-center">
+                        ✓ Selesai
+                      </span>
+                    )}
                   </div>
-                  {activeLesson.is_completed && (
-                    <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 self-start sm:self-center">
-                      ✓ Video Selesai Ditonton
-                    </span>
-                  )}
+
+                  {/* Previous / Next Lesson Quick Navigation Buttons */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                    <button
+                      type="button"
+                      disabled={!prevLesson}
+                      onClick={() => prevLesson && handleSwitchLesson(prevLesson)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                        !prevLesson
+                          ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
+                          : 'cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary shadow-2xs'
+                      }`}
+                    >
+                      <span>◀</span>
+                      <span>Materi Sebelumnya</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={!nextLesson}
+                      onClick={() => {
+                        if (!nextLesson) return
+                        const isQuiz = nextLesson.content_type === 'quiz'
+                        const babVids = activeChapter?.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3) || []
+                        const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
+                        if (isQuiz && watchedVids < 3) {
+                          setAlertConfig({
+                            isOpen: true,
+                            title: 'Kuis Masih Terkunci 🔒',
+                            message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter?.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
+                            type: 'lock',
+                            buttonText: 'Siap, Nonton Dulu!',
+                            onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+                          })
+                          return
+                        }
+                        handleSwitchLesson(nextLesson)
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                        !nextLesson
+                          ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
+                          : 'cursor-pointer bg-primary text-white border-primary hover:bg-primary-dark shadow-xs'
+                      }`}
+                    >
+                      <span>Materi Selanjutnya</span>
+                      <span>▶</span>
+                    </button>
+                  </div>
                 </div>
 
               </div>
@@ -1547,7 +1629,7 @@ export default function MyCourses() {
                           })
                           return
                         }
-                        setActiveLesson(l)
+                        handleSwitchLesson(l)
                       }}
                       className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
                         lIsLocked
