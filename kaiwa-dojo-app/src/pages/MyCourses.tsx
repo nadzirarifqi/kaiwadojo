@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
@@ -118,13 +118,28 @@ function SmartVideoPlayer({
   onLoadedMetadata: (durationSecs: number) => void
   onEnded: () => void
 }) {
-  const [candidates] = useState<string[]>(() =>
-    getVideoUrlCandidates(lesson.video_id, chapterBab, lesson.lesson_number)
+  const candidates = useMemo(
+    () => getVideoUrlCandidates(lesson.video_id, chapterBab, lesson.lesson_number),
+    [lesson.video_id, chapterBab, lesson.lesson_number]
   )
   const [candidateIdx, setCandidateIdx] = useState<number>(0)
   const [hasFailedAll, setHasFailedAll] = useState<boolean>(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  // Reset index and error state whenever the target lesson changes
+  useEffect(() => {
+    setCandidateIdx(0)
+    setHasFailedAll(false)
+  }, [lesson.id, lesson.video_id, lesson.lesson_number, chapterBab])
 
   const currentUrl = candidates[candidateIdx] || lesson.video_id || ''
+
+  // Explicitly call load() on HTML5 video element when currentUrl changes
+  useEffect(() => {
+    if (videoRef.current && currentUrl) {
+      videoRef.current.load()
+    }
+  }, [currentUrl])
 
   function handleError() {
     if (candidateIdx < candidates.length - 1) {
@@ -172,9 +187,11 @@ function SmartVideoPlayer({
 
   return (
     <video
+      ref={videoRef}
       key={currentUrl}
       src={currentUrl}
       controls
+      autoPlay
       controlsList="nodownload"
       playsInline
       preload="metadata"
@@ -188,7 +205,6 @@ function SmartVideoPlayer({
       onEnded={onEnded}
       onError={handleError}
     >
-      <source src={currentUrl} />
       Browser kamu tidak mendukung pemutaran langsung file video ini.
     </video>
   )
@@ -534,9 +550,9 @@ export default function MyCourses() {
         const hostedUrl    = getHostedVideoUrl(bab, item.num)
         
         let customVideoOverride = null
-        if (item.num === 1 && adminSetting?.video1_url) customVideoOverride = adminSetting.video1_url
-        if (item.num === 2 && adminSetting?.video2_url) customVideoOverride = adminSetting.video2_url
-        if (item.num === 3 && adminSetting?.video3_url) customVideoOverride = adminSetting.video3_url
+        if (item.num === 1) customVideoOverride = adminSetting?.custom_video_s1 || adminSetting?.video1_url || null
+        if (item.num === 2) customVideoOverride = adminSetting?.custom_video_s2 || adminSetting?.video2_url || null
+        if (item.num === 3) customVideoOverride = adminSetting?.custom_video_s3 || adminSetting?.video3_url || null
 
         const videoUrl = customVideoOverride || dbLesson?.video_url || hostedUrl
 
@@ -1442,7 +1458,7 @@ export default function MyCourses() {
                       style={{ aspectRatio: '9/16', maxHeight: 'min(58vh, 540px)' }}
                     >
                       <SmartVideoPlayer
-                        key={activeLesson.id}
+                        key={`${activeChapter?.bab_number || 1}_${activeLesson.id}_${activeLesson.lesson_number}_${activeLesson.video_id || ''}`}
                         lesson={activeLesson}
                         chapterBab={activeChapter?.bab_number || 1}
                         onLoadedMetadata={totalSecs => {
