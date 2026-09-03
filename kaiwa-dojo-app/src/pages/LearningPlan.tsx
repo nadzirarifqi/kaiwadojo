@@ -204,7 +204,7 @@ function DailyMissionBuilderModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] overflow-y-auto animate-fade-in">
-      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+      <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-4 sm:pt-6 md:pt-8 pb-10">
       <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90dvh] border border-slate-200 dark:border-slate-800">
         
         {/* Modal Header */}
@@ -503,7 +503,7 @@ function DateClassEnrollModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] overflow-y-auto animate-fade-in">
-      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+      <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-4 sm:pt-6 md:pt-8 pb-10">
       <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90dvh] border border-slate-200 dark:border-slate-800">
         
         {/* Toast inside modal */}

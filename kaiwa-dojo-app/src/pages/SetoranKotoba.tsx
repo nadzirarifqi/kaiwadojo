@@ -781,8 +781,9 @@ export default function SetoranKotobaPage() {
 
       {/* Flashcard Test Modal Screen */}
       {isTestActive && (
-        <div className="fixed inset-0 z-[999] flex flex-col p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto my-auto mx-auto">
+        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in">
+          <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-4 sm:pt-6 md:pt-8 pb-10">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
@@ -953,13 +954,15 @@ export default function SetoranKotobaPage() {
               </div>
             ) : null}
           </div>
+          </div>
         </div>
       )}
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999] flex flex-col p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto my-auto mx-auto">
+        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in">
+          <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-4 sm:pt-6 md:pt-8 pb-10">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
                 {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}
@@ -1084,6 +1087,7 @@ export default function SetoranKotobaPage() {
                 </button>
               </div>
             </form>
+          </div>
           </div>
         </div>
       )}

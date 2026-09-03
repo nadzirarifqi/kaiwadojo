@@ -435,8 +435,8 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
 
       {/* Detail Pop-up Modal View */}
       {selectedScheduleItem && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[999] animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl flex flex-col gap-4 animate-scale-up my-auto max-h-[92dvh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-start justify-center p-3 sm:p-4 pt-4 sm:pt-6 md:pt-8 pb-10 z-[999] animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl flex flex-col gap-4 animate-scale-up max-h-[90dvh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
