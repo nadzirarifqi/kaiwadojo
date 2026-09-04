@@ -10,6 +10,7 @@ import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, 
 import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
 
 import LoadingScreen from '../components/LoadingScreen'
+import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -22,6 +23,9 @@ export default function AdminDashboard() {
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Broadcast WA Modal state
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
 
   // Group management state
   const [groups, setGroups] = useState<KaiwaGroup[]>([])
@@ -131,6 +135,7 @@ export default function AdminDashboard() {
   const publishedCount = Object.values(chapterSettings).filter(c => !c.is_hidden).length
 
   return (
+    <>
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header Banner */}
       <div
@@ -161,6 +166,12 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowBroadcastModal(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2 animate-pulse-subtle"
+          >
+            <span>📢 Broadcast WA</span>
+          </button>
           <button
             onClick={() => navigate('/kelola-pemateri')}
             className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
@@ -564,5 +575,15 @@ export default function AdminDashboard() {
         )}
       </div>
     </main>
+
+      {/* WhatsApp Broadcast Modal */}
+      {showBroadcastModal && (
+        <WhatsAppBroadcastModal
+          adminId={profile?.id || ''}
+          adminName={profile?.full_name || profile?.username || 'Admin'}
+          onClose={() => setShowBroadcastModal(false)}
+        />
+      )}
+    </>
   )
 }
