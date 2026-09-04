@@ -1239,20 +1239,28 @@ export default function LearningPlanPage() {
                       {/* Minimalist Expanded Accordion Content */}
                       {isExpanded && (
                         <div className="p-3.5 sm:p-4 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-col gap-3 bg-slate-50/40 dark:bg-slate-950/30 rounded-b-2xl animate-fade-in">
-                          {/* Sleek Quick Action Bar */}
+                          {/* Sleek Quick Action Bar — hide edit misi for past dates */}
                           <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs">
-                            <span className="font-semibold text-slate-600 dark:text-slate-400">⚡ Aksi Tanggal Ini:</span>
+                            <span className="font-semibold text-slate-600 dark:text-slate-400">
+                              {isPast ? '🔒 Arsip Tanggal Ini:' : '⚡ Aksi Tanggal Ini:'}
+                            </span>
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedDateStr(dateStr)
-                                  setShowMissionModal(true)
-                                }}
-                                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
-                              >
-                                🎯 + Misi Mandiri
-                              </button>
+                              {isPast ? (
+                                <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+                                  🔒 Tanggal Telah Berlalu
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedDateStr(dateStr)
+                                    setShowMissionModal(true)
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
+                                >
+                                  🎯 + Misi Mandiri
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1261,7 +1269,7 @@ export default function LearningPlanPage() {
                                 }}
                                 className="px-3 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
                               >
-                                💻 + Kelas Live
+                                💻 Kelas Live
                               </button>
                             </div>
                           </div>
@@ -1337,25 +1345,50 @@ export default function LearningPlanPage() {
 
                           {/* Target Misi Belajar Mandiri List */}
                           {dateMission && (
-                            <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 text-xs">
+                            <div className={`p-3 rounded-xl border flex flex-col gap-2 text-xs ${
+                              isPast
+                                ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
+                            }`}>
                               <div className="flex items-center justify-between">
                                 <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                  <span>🎯</span>
-                                  <span>Target Misi Mandiri ({dateMission.selectedVideos.length} Video)</span>
+                                  <span>{isPast ? '🔒' : '🎯'}</span>
+                                  <span>
+                                    {isPast ? 'Arsip Misi Mandiri' : 'Target Misi Mandiri'} ({dateMission.selectedVideos.length} Video)
+                                  </span>
                                 </span>
                                 <span className="text-[0.68rem] font-bold text-slate-500">
                                   {dateMission.targetReplayCount} Replays
                                 </span>
                               </div>
+                              {isPast && (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                                  <span className="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400">🔒 Mode Lihat Arsip — Tidak dapat diedit</span>
+                                </div>
+                              )}
                               {dateMission.selectedVideos.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
                                   {dateMission.selectedVideos.map(vid => (
-                                    <span key={vid.id} className="text-[0.7rem] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md">
+                                    <span key={vid.id} className={`text-[0.7rem] font-medium px-2 py-0.5 rounded-md ${
+                                      isPast
+                                        ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                    }`}>
                                       🎥 {vid.title}
                                     </span>
                                   ))}
                                 </div>
                               )}
+                              {(dateMission.targetQuizCount || 0) > 0 || (dateMission.targetKotobaCount || 0) > 0 ? (
+                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[0.68rem] font-semibold text-slate-500 dark:text-slate-400">
+                                  {(dateMission.targetQuizCount || 0) > 0 && (
+                                    <span>🎯 {dateMission.targetQuizCount} Kuis Target</span>
+                                  )}
+                                  {(dateMission.targetKotobaCount || 0) > 0 && (
+                                    <span>🔤 {dateMission.targetKotobaCount} Kotoba Target</span>
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
                           )}
 
@@ -1531,14 +1564,16 @@ export default function LearningPlanPage() {
                             <span className="hidden sm:inline">Streak</span>
                           </span>
                         )}
-                        {!isPast && dateMission && (
+                        {dateMission && (
                           <span className={`text-[0.58rem] sm:text-[0.68rem] font-extrabold px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate text-center sm:text-left ${
-                            isNoPlan
-                              ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60'
-                              : 'bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300'
+                            isPast
+                              ? 'bg-slate-200/80 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 border border-slate-300/60 dark:border-slate-600/60'
+                              : isNoPlan
+                                ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60'
+                                : 'bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300'
                           }`}>
-                            {isNoPlan
-                              ? '🚫 Tidak Ada Rencana'
+                            {isPast && '🔒 '}{isNoPlan
+                              ? 'Tidak Ada Rencana'
                               : dateMission.selectedVideos.length > 0
                                 ? `🎯 ${dateMission.selectedVideos.map(v => `Bab ${v.bab} P${v.videoNum}`).join(', ')}`
                                 : (dateMission.targetQuizCount || 0) > 0
