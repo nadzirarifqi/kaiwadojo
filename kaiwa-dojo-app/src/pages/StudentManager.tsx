@@ -24,6 +24,8 @@ export default function StudentManager() {
   const [students, setStudents] = useState<StudentAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [groupFilter, setGroupFilter] = useState<string>('all')
 
   // Add Modal State
   const [showAddModal, setShowAddModal] = useState(false)
@@ -282,8 +284,32 @@ export default function StudentManager() {
   const onlineCount = students.filter(s => calculateUserPresence(s.last_active_at).isOnline).length
 
   const filteredStudents = students.filter(std => {
-    if (statusFilter === 'pending') return std.status === 'pending'
-    if (statusFilter === 'approved') return std.status === 'approved'
+    if (statusFilter === 'pending' && std.status !== 'pending') return false
+    if (statusFilter === 'approved' && std.status !== 'approved') return false
+
+    if (groupFilter !== 'all') {
+      if (groupFilter === 'no_group') {
+        if (std.group_name) return false
+      } else if (std.group_name !== groupFilter) {
+        return false
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      const digitsOnlyQ = q.replace(/\D/g, '')
+      const matchesName = (std.full_name || '').toLowerCase().includes(q)
+      const matchesUsername = (std.username || '').toLowerCase().includes(q)
+      const matchesEmail = (std.email || '').toLowerCase().includes(q)
+      const matchesPhone =
+        (std.phone_number || '').toLowerCase().includes(q) ||
+        (digitsOnlyQ.length >= 3 && (std.phone_number || '').replace(/\D/g, '').includes(digitsOnlyQ))
+      const matchesInstitution = (std.institution || '').toLowerCase().includes(q)
+      const matchesGroup = (std.group_name || '').toLowerCase().includes(q)
+
+      return matchesName || matchesUsername || matchesEmail || matchesPhone || matchesInstitution || matchesGroup
+    }
+
     return true
   })
 
@@ -343,45 +369,120 @@ export default function StudentManager() {
 
       {/* Students List Table */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              <span>📋 Daftar Akun Siswa / Pelajar</span>
-            </h3>
+        <div className="flex flex-col gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                <span>📋 Daftar Akun Siswa / Pelajar</span>
+              </h3>
+              {searchQuery.trim() || groupFilter !== 'all' || statusFilter !== 'all' ? (
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                  Menampilkan {filteredStudents.length} dari {students.length} pelajar
+                </span>
+              ) : (
+                <span className="text-xs font-semibold text-slate-400">
+                  Total: {students.length} pelajar
+                </span>
+              )}
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
+                  statusFilter === 'all'
+                    ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                }`}
+              >
+                Semua ({students.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('pending')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-amber-500'
+                }`}
+              >
+                ⏳ Menunggu ({pendingCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('approved')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
+                  statusFilter === 'approved'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-emerald-600'
+                }`}
+              >
+                ✅ Terverifikasi ({approvedCount})
+              </button>
+            </div>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
-                statusFilter === 'all'
-                  ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Semua ({students.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
-                statusFilter === 'pending'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-amber-500'
-              }`}
-            >
-              ⏳ Menunggu ({pendingCount})
-            </button>
-            <button
-              onClick={() => setStatusFilter('approved')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all ${
-                statusFilter === 'approved'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-emerald-600'
-              }`}
-            >
-              ✅ Terverifikasi ({approvedCount})
-            </button>
+          {/* Search & Group Filter Row */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
+                🔍
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama, @username, email, nomor WA, asal lembaga, grup..."
+                className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 size-5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center border-none cursor-pointer transition-colors"
+                  title="Hapus pencarian"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Filter by Group Dropdown */}
+            {availableGroups.length > 0 && (
+              <div className="shrink-0 sm:w-56">
+                <select
+                  value={groupFilter}
+                  onChange={(e) => setGroupFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+                >
+                  <option value="all">🏷️ Semua Grup</option>
+                  <option value="no_group">🌐 Tanpa Grup (Siswa Biasa)</option>
+                  {availableGroups.map((g) => (
+                    <option key={g.id} value={g.name}>
+                      🏷️ {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {(searchQuery.trim() || groupFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('')
+                  setGroupFilter('all')
+                }}
+                className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer transition-colors shrink-0 flex items-center justify-center gap-1.5"
+                title="Reset filter & pencarian"
+              >
+                <span>🔄</span>
+                <span>Reset</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -390,10 +491,43 @@ export default function StudentManager() {
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredStudents.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm italic">
-            {statusFilter === 'pending'
-              ? 'Tidak ada akun pelajar yang sedang menunggu verifikasi.'
-              : 'Belum ada akun pelajar yang terdaftar dalam kategori ini.'}
+          <div className="py-12 text-center text-slate-400 text-sm">
+            {searchQuery.trim() || groupFilter !== 'all' ? (
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl">🔍</span>
+                <p className="font-bold text-slate-700 dark:text-slate-200">
+                  Tidak ada akun pelajar yang cocok
+                </p>
+                <p className="text-xs text-slate-400 max-w-md">
+                  {searchQuery.trim() && (
+                    <>
+                      Kata kunci: <span className="font-semibold text-primary">"{searchQuery}"</span>
+                    </>
+                  )}
+                  {searchQuery.trim() && groupFilter !== 'all' && ' • '}
+                  {groupFilter !== 'all' && (
+                    <>
+                      Filter grup: <span className="font-semibold text-purple-500">{groupFilter === 'no_group' ? 'Tanpa Grup' : groupFilter}</span>
+                    </>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setGroupFilter('all')
+                    setStatusFilter('all')
+                  }}
+                  className="mt-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold border-none cursor-pointer hover:bg-primary-dark transition-colors shadow-xs"
+                >
+                  Reset Pencarian & Filter
+                </button>
+              </div>
+            ) : statusFilter === 'pending' ? (
+              <span className="italic">Tidak ada akun pelajar yang sedang menunggu verifikasi.</span>
+            ) : (
+              <span className="italic">Belum ada akun pelajar yang terdaftar dalam kategori ini.</span>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
