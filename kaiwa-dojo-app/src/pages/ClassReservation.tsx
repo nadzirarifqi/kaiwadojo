@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { supabase } from '../lib/supabaseClient'
-import { normalizeGroup } from '../lib/studentService'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT, matchGroupFromInstitution } from '../lib/groupService'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -19,6 +19,7 @@ import {
   matchScheduleId,
   getScheduleDatesList,
   areDatesOverlapping,
+  isScheduleAccessibleForUser,
 } from '../lib/scheduleService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
@@ -34,6 +35,7 @@ export default function ClassReservationPage() {
 
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
+  const [groups, setGroups] = useState<KaiwaGroup[]>([])
   const [loading, setLoading] = useState(true)
 
   const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'my-schedules'>('all')
@@ -63,12 +65,14 @@ export default function ClassReservationPage() {
 
   async function loadData() {
     setLoading(true)
-    const [sData, rData] = await Promise.all([
+    const [sData, rData, gData] = await Promise.all([
       fetchSchedules(),
       fetchReservations(),
+      fetchGroups(),
     ])
     setSchedules(sData)
     setReservations(rData)
+    setGroups(gData)
 
     const status = await getMonthlyOnlineRequirementStatus(userId)
     setReqStatus(status)
@@ -78,9 +82,10 @@ export default function ClassReservationPage() {
   useEffect(() => {
     loadData()
 
-    // 1. Instant local window event sync (multi-tab / role switcher)
+    // 1. Instant local window event sync (multi-tab / role switcher / group changes)
     const handleLocalSync = () => loadData()
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleLocalSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
     window.addEventListener('storage', handleLocalSync)
 
     // 2. Supabase Realtime channel for cross-device live quota updates
@@ -100,6 +105,7 @@ export default function ClassReservationPage() {
 
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleLocalSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
       window.removeEventListener('storage', handleLocalSync)
       supabase.removeChannel(channel)
     }
@@ -123,6 +129,11 @@ export default function ClassReservationPage() {
   // Check locking constraint for user
   function checkLockStatus(sch: ClassSchedule): { isLocked: boolean; reason?: string } {
     if (getUserReservation(sch.id)) return { isLocked: false }
+
+    // 0. Group restriction check
+    if (!isScheduleAccessibleForUser(sch, profile, groups)) {
+      return { isLocked: true, reason: `Khusus Grup ${sch.target_group || ''}` }
+    }
 
     const enrolled = getEnrolledCount(sch.id)
     if (enrolled >= sch.max_quota) {
@@ -188,7 +199,7 @@ export default function ClassReservationPage() {
     setActionLoading(true)
 
     if (confirmModalType === 'book') {
-      const res = await bookClass(targetSchedule, userId, userName, userEmail)
+      const res = await bookClass(targetSchedule, userId, userName, userEmail, profile, groups)
       if (res.success) {
         showToast(res.message || `Berhasil reservasi kelas "${targetSchedule.title}"!`)
         await loadData()
@@ -211,26 +222,23 @@ export default function ClassReservationPage() {
     setTargetReservationId(null)
   }
 
-  // Filter schedules
-  const availableWeeks = Array.from(new Set(schedules.map(s => s.week_range_id))).sort()
-  const availableMonths = Array.from(new Set(schedules.map(s => s.month_range_id))).sort()
+  // User's group determination (supports direct group_name with fallback to institution match)
+  const resolvedUserGroup = (
+    profile?.group_name?.trim() ||
+    matchGroupFromInstitution(profile?.institution, groups) ||
+    ''
+  ).trim()
 
-  // Group-based visibility:
-  // - userGroupName comes from DB field group_name or fallback to institution
-  const userGroupName = normalizeGroup((profile as any)?.group_name || (profile as any)?.institution)
+  // Filter schedules that the current user has permission/access to see
+  const accessibleSchedules = schedules.filter(sch => isScheduleAccessibleForUser(sch, profile, groups))
 
-  const filteredSchedules = schedules.filter(sch => {
+  const availableWeeks = Array.from(new Set(accessibleSchedules.map(s => s.week_range_id))).sort()
+  const availableMonths = Array.from(new Set(accessibleSchedules.map(s => s.month_range_id))).sort()
+
+  const filteredSchedules = accessibleSchedules.filter(sch => {
     // Type tab
     if (activeTab === 'online' && sch.type !== 'online') return false
     if (activeTab === 'offline' && sch.type !== 'offline') return false
-
-    // Group visibility filter:
-    // - if schedule has no target_group → visible to all
-    // - if schedule has target_group → only visible if user's group matches (case+space insensitive)
-    if (sch.target_group) {
-      const schedGroup = normalizeGroup(sch.target_group)
-      if (!userGroupName || userGroupName.toLowerCase() !== schedGroup.toLowerCase()) return false
-    }
 
     // Week filter
     if (selectedWeekFilter !== 'all' && sch.week_range_id !== selectedWeekFilter) return false
@@ -244,7 +252,8 @@ export default function ClassReservationPage() {
       const matchTitle = sch.title.toLowerCase().includes(term)
       const matchSub = sch.subtitle_chapter.toLowerCase().includes(term)
       const matchInst = sch.instructor_name.toLowerCase().includes(term)
-      if (!matchTitle && !matchSub && !matchInst) return false
+      const matchGrp = sch.target_group ? sch.target_group.toLowerCase().includes(term) : false
+      if (!matchTitle && !matchSub && !matchInst && !matchGrp) return false
     }
 
     return true
@@ -306,7 +315,7 @@ export default function ClassReservationPage() {
           </p>
         </div>
 
-        {/* User Role Badge */}
+        {/* User Role & Group Badge */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-xs shrink-0">
           <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-lg font-serif">
             学
@@ -314,6 +323,13 @@ export default function ClassReservationPage() {
           <div>
             <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400">Login Sebagai</div>
             <div className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200">{userName}</div>
+            <div className="text-[0.68rem] font-extrabold mt-0.5 flex items-center gap-1 text-slate-500 dark:text-slate-400">
+              {resolvedUserGroup ? (
+                <span className="text-violet-600 dark:text-violet-400 font-black">🏷️ {resolvedUserGroup}</span>
+              ) : (
+                <span>🌐 Siswa Reguler</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -366,7 +382,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            {t('cr_tab_all', 'Semua Kelas')} ({schedules.length})
+            {t('cr_tab_all', 'Semua Kelas')} ({accessibleSchedules.length})
           </button>
 
           <button
@@ -377,7 +393,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>{t('cr_tab_online', '💻 Kelas Online (Mingguan)')}</span>
+            <span>{t('cr_tab_online', '💻 Kelas Online (Mingguan)')}</span> ({accessibleSchedules.filter(s => s.type === 'online').length})
           </button>
 
           <button
@@ -388,7 +404,7 @@ export default function ClassReservationPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>{t('cr_tab_offline', '🏢 Kelas Offline (Bulanan)')}</span>
+            <span>{t('cr_tab_offline', '🏢 Kelas Offline (Bulanan)')}</span> ({accessibleSchedules.filter(s => s.type === 'offline').length})
           </button>
 
           <button
@@ -520,6 +536,21 @@ export default function ClassReservationPage() {
 
                     {/* Content */}
                     <div className="flex flex-col gap-2 mb-4">
+                      {/* Target Group Restriction Pill */}
+                      <div>
+                        {sch.target_group ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-300/80 dark:border-violet-700/80">
+                            <span>👥</span>
+                            <span>Khusus Grup: {sch.target_group}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <span>🌐</span>
+                            <span>Terbuka untuk Semua Siswa</span>
+                          </span>
+                        )}
+                      </div>
+
                       <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2">
                         {sch.title}
                       </h3>

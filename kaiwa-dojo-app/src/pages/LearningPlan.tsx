@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -17,6 +17,7 @@ import {
 } from '../lib/dailyMission'
 
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -26,6 +27,7 @@ import {
   cancelClassBooking,
   calculateDateScheduleStatus,
   isScheduleActiveOnDate,
+  isScheduleAccessibleForUser,
   formatDateRangeIndonesian,
   formatTimeShort,
   sortSchedules,
@@ -453,6 +455,8 @@ function DateClassEnrollModal({
   userId,
   userName,
   userEmail,
+  profile,
+  groups,
   onClose,
   onRefresh,
   onOpenMissionBuilder,
@@ -463,6 +467,8 @@ function DateClassEnrollModal({
   userId: string
   userName: string
   userEmail: string
+  profile?: any
+  groups?: KaiwaGroup[]
   onClose: () => void
   onRefresh: () => Promise<void>
   onOpenMissionBuilder: () => void
@@ -479,7 +485,7 @@ function DateClassEnrollModal({
 
   async function handleBook(sch: ClassSchedule) {
     setLoadingId(sch.id)
-    const res = await bookClass(sch, userId, userName, userEmail)
+    const res = await bookClass(sch, userId, userName, userEmail, profile, groups)
     setLoadingId(null)
     if (res.success) {
       showToast(`Berhasil mendaftar di kelas "${sch.title}"!`)
@@ -755,11 +761,13 @@ export default function LearningPlanPage() {
   // Class Schedules & Reservations State for Calendar Visual Indicators
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
+  const [groups, setGroups] = useState<KaiwaGroup[]>([])
 
   async function reloadSchedules() {
-    const [sData, rData] = await Promise.all([fetchSchedules(), fetchReservations()])
+    const [sData, rData, gData] = await Promise.all([fetchSchedules(), fetchReservations(), fetchGroups()])
     setSchedules(sData)
     setReservations(rData)
+    setGroups(gData)
   }
 
   useEffect(() => {
@@ -769,6 +777,7 @@ export default function LearningPlanPage() {
     const handleSync = () => reloadSchedules()
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
     window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
 
     // 2. Supabase Realtime channel for cross-device sync
@@ -777,10 +786,15 @@ export default function LearningPlanPage() {
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
       window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeScheduleRealtime()
     }
   }, [])
+
+  const accessibleSchedules: ClassSchedule[] = useMemo(() => {
+    return schedules.filter(s => isScheduleAccessibleForUser(s, profile, groups))
+  }, [schedules, profile, groups])
 
   // Automatically scroll to top whenever mission modal or class modal opens
   useEffect(() => {
@@ -932,7 +946,7 @@ export default function LearningPlanPage() {
   const daysToRender = (viewMode === 'schedule' && showOnlyActivities)
     ? allMonthDays.filter(item => {
         const activeUserId = profile?.id || user?.id || ''
-        const status = calculateDateScheduleStatus(item.dateStr, activeUserId, schedules, reservations)
+        const status = calculateDateScheduleStatus(item.dateStr, activeUserId, accessibleSchedules, reservations)
         const mission = userMissions.get(item.dateStr) || getDailyMission(activeUserId, item.dateStr)
         return status.isBooked || mission !== null
       })
@@ -1101,7 +1115,7 @@ export default function LearningPlanPage() {
                   const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
                   const hasPlan = dateMission !== null
 
-                  const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
+                  const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, accessibleSchedules, reservations)
                   const allDaySchedules = dateStatus.schedules || []
                   const userReservedSchedules = allDaySchedules.filter(sch =>
                     reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
@@ -1450,7 +1464,7 @@ export default function LearningPlanPage() {
                   const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
                   const hasPlan = dateMission !== null
 
-                  const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, schedules, reservations)
+                  const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, accessibleSchedules, reservations)
 
                   const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
 
@@ -1697,11 +1711,11 @@ export default function LearningPlanPage() {
             </button>
 
             {/* Live Class Sessions Card in Right Panel */}
-            {schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length > 0 && (
+            {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length > 0 && (
               <div className="p-4 rounded-2xl bg-sky-950/70 border border-sky-400/30 flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-extrabold text-sky-300">
-                    💻 Sesi Kelas Live ({schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length} Sesi)
+                    💻 Sesi Kelas Live ({accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length} Sesi)
                   </span>
                   <button
                     onClick={() => setShowClassModal(true)}
@@ -1712,7 +1726,7 @@ export default function LearningPlanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {schedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).map(sch => {
+                  {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).map(sch => {
                     const activeUserId = profile?.id || user?.id || ''
                     const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
                     const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
@@ -1913,11 +1927,13 @@ export default function LearningPlanPage() {
       {showClassModal && (
         <DateClassEnrollModal
           dateStr={selectedDateStr}
-          schedules={schedules}
+          schedules={accessibleSchedules}
           reservations={reservations}
           userId={profile?.id || user?.id || ''}
           userName={profile?.full_name || user?.user_metadata?.full_name || 'Pengguna'}
           userEmail={profile?.email || user?.email || ''}
+          profile={profile}
+          groups={groups}
           onClose={() => setShowClassModal(false)}
           onRefresh={reloadSchedules}
           onOpenMissionBuilder={() => setShowMissionModal(true)}

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { type KaiwaGroup, matchGroupFromInstitution, parseKeywords } from './groupService'
 
 export type ClassType = 'online' | 'offline'
 
@@ -860,12 +861,88 @@ export function subscribeToScheduleRealtime(onUpdate: () => void) {
   }
 }
 
+/**
+ * Determines if a class schedule is accessible to a given user.
+ * - Admin and Pemateri can access all schedules.
+ * - Schedules without target_group (or "semua siswa", "all") are open to ALL students.
+ * - Schedules with target_group are ONLY accessible to students matching that target group (or its registered alias/keywords).
+ */
+export function isScheduleAccessibleForUser(
+  schedule: ClassSchedule,
+  userProfile: { role?: string; group_name?: string | null; institution?: string | null } | null | undefined,
+  groups: KaiwaGroup[] = []
+): boolean {
+  if (userProfile?.role === 'admin' || userProfile?.role === 'pemateri') {
+    return true
+  }
+
+  const schGroup = (schedule.target_group || '').trim()
+
+  // No group restriction -> accessible to all students
+  if (!schGroup || schGroup.toLowerCase() === 'semua siswa' || schGroup.toLowerCase() === 'all') {
+    return true
+  }
+
+  // If schedule has a target group, user must be logged in
+  if (!userProfile) return false
+
+  // 1. Get student's group (from profile.group_name or fallback to matched institution)
+  const studentGroup = (
+    userProfile.group_name?.trim() ||
+    matchGroupFromInstitution(userProfile.institution, groups) ||
+    ''
+  ).trim()
+
+  if (!studentGroup) {
+    // Regular student without a group -> cannot access group-specific class
+    return false
+  }
+
+  // 2. Direct match (case-insensitive)
+  if (studentGroup.toLowerCase() === schGroup.toLowerCase()) {
+    return true
+  }
+
+  // 3. Space-collapsed match (e.g. "viva legacy 02" vs "viva  legacy  02")
+  const normStudent = studentGroup.toLowerCase().replace(/\s+/g, '')
+  const normSch = schGroup.toLowerCase().replace(/\s+/g, '')
+  if (normStudent === normSch) {
+    return true
+  }
+
+  // 4. Match via KaiwaGroup keywords / alias in DB
+  const grpSch = groups.find(g =>
+    g.name.toLowerCase() === schGroup.toLowerCase() ||
+    parseKeywords(g.keywords).some(kw => kw.toLowerCase() === schGroup.toLowerCase() || normSch === kw.toLowerCase().replace(/\s+/g, ''))
+  )
+  const grpStudent = groups.find(g =>
+    g.name.toLowerCase() === studentGroup.toLowerCase() ||
+    parseKeywords(g.keywords).some(kw => kw.toLowerCase() === studentGroup.toLowerCase() || normStudent === kw.toLowerCase().replace(/\s+/g, ''))
+  )
+
+  if (grpSch && grpStudent && (grpSch.id === grpStudent.id || grpSch.name.toLowerCase() === grpStudent.name.toLowerCase())) {
+    return true
+  }
+
+  return false
+}
+
 export async function bookClass(
   schedule: ClassSchedule,
   userId: string,
   userName: string,
-  userEmail: string
+  userEmail: string,
+  userProfile?: { role?: string; group_name?: string | null; institution?: string | null } | null,
+  groups?: KaiwaGroup[]
 ): Promise<{ success: boolean; message: string; reservation?: ClassReservation }> {
+  // 0. Restriction Check (if userProfile provided)
+  if (userProfile && schedule.target_group && !isScheduleAccessibleForUser(schedule, userProfile, groups || [])) {
+    return {
+      success: false,
+      message: `Kelas ini hanya dapat diakses oleh siswa dari grup "${schedule.target_group}". Akun Anda belum terdaftar dalam grup tersebut.`,
+    }
+  }
+
   const schedules = await fetchSchedules()
   const reservations = await fetchReservations()
 

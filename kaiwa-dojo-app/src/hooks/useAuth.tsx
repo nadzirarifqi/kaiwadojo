@@ -9,7 +9,7 @@ const LAST_ACTIVITY_KEY   = 'kaiwa_last_activity_timestamp'
 
 // Kolom yang diambil dari tabel profiles — spesifik, bukan SELECT *
 const PROFILE_SELECT_FIELDS = [
-  'id', 'full_name', 'username', 'email', 'phone_number', 'institution',
+  'id', 'full_name', 'username', 'email', 'phone_number', 'institution', 'group_name',
   'avatar_url', 'bio', 'role', 'streak_days', 'status',
   'last_active_at', 'current_session_id', 'current_device_info', 'last_session_at',
   'created_at', 'updated_at',
@@ -22,6 +22,7 @@ export interface Profile {
   email: string | null
   phone_number: string | null
   institution?: string | null
+  group_name?: string | null
   avatar_url: string | null
   bio: string | null
   role: UserRole
