@@ -52,14 +52,13 @@ export function getTodayDateString(): string {
 }
 
 export function getDailyMission(userId: string, targetDate?: string): DailyMissionData | null {
+  if (!userId || userId === 'active_user') return null
   const dateStr = targetDate || getTodayDateString()
   const possibleKeys = [
     `kaiwa_daily_mission_${userId}_${dateStr}`,
-    `kaiwa_daily_mission_active_user_${dateStr}`,
   ]
   if (dateStr === getTodayDateString()) {
     possibleKeys.push(`kaiwa_daily_mission_${userId}`)
-    possibleKeys.push(`kaiwa_daily_mission_active_user`)
   }
 
   for (const key of possibleKeys) {
@@ -115,18 +114,20 @@ export async function fetchDailyMission(userId: string, targetDate: string): Pro
 
 export async function fetchAllUserMissions(userId: string): Promise<Map<string, DailyMissionData>> {
   const missionMap = new Map<string, DailyMissionData>()
-  if (!userId) return missionMap
+  if (!userId || userId === 'active_user') return missionMap
 
-  // 1. Load DB missions first (Source of Truth)
+  // 1. Fetch all missions from Supabase DB for this user
   try {
     const { data, error } = await supabase
       .from('daily_missions')
       .select('*')
       .eq('student_id', userId)
 
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       data.forEach((row: any) => {
-        const cleanDate = typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date)
+        const cleanDate = row.date ? (typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date)) : ''
+        if (!cleanDate) return
+
         const mission: DailyMissionData = {
           date: cleanDate,
           selectedVideos: row.selected_videos || [],
@@ -145,23 +146,21 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
 
   // 2. Load local storage as backup for offline dates not present in DB
   try {
-    const prefixes = [`kaiwa_daily_mission_${userId}_`, `kaiwa_daily_mission_active_user_`, `kaiwa_daily_mission_`]
+    const prefix = `kaiwa_daily_mission_${userId}_`
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (!key) continue
-      for (const prefix of prefixes) {
-        if (key.startsWith(prefix)) {
-          const dateStr = key.replace(prefix, '')
-          const raw = localStorage.getItem(key)
-          if (raw) {
-            try {
-              const parsed: DailyMissionData = JSON.parse(raw)
-              const cleanDate = parsed.date ? (typeof parsed.date === 'string' ? parsed.date.split('T')[0] : String(parsed.date)) : (dateStr.match(/^\d{4}-\d{2}-\d{2}$/) ? dateStr : null)
-              if (cleanDate && !missionMap.has(cleanDate)) {
-                missionMap.set(cleanDate, { ...parsed, date: cleanDate })
-              }
-            } catch {}
-          }
+      if (key.startsWith(prefix)) {
+        const dateStr = key.replace(prefix, '')
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          try {
+            const parsed: DailyMissionData = JSON.parse(raw)
+            const cleanDate = parsed.date ? (typeof parsed.date === 'string' ? parsed.date.split('T')[0] : String(parsed.date)) : (dateStr.match(/^\d{4}-\d{2}-\d{2}$/) ? dateStr : null)
+            if (cleanDate && !missionMap.has(cleanDate)) {
+              missionMap.set(cleanDate, { ...parsed, date: cleanDate })
+            }
+          } catch {}
         }
       }
     }
@@ -195,8 +194,7 @@ export async function captureCurrentProgressSnapshot(
 
     // Merge with Local Storage progress
     const localProgKey = `kaiwa_lesson_progress_${userId}`
-    const globalProgKey = `kaiwa_lesson_progress_active_global`
-    const savedProgRaw = localStorage.getItem(localProgKey) || localStorage.getItem(globalProgKey)
+    const savedProgRaw = localStorage.getItem(localProgKey)
     let progressData: any[] = pData || []
     if (savedProgRaw) {
       try {
@@ -239,8 +237,7 @@ export async function captureCurrentProgressSnapshot(
 
     // Kotoba baseline
     const localKotobaKey = `kaiwa_user_kotoba_${userId}`
-    const globalKotobaKey = `kaiwa_user_kotoba_active_global`
-    const savedKotobaRaw = localStorage.getItem(localKotobaKey) || localStorage.getItem(globalKotobaKey)
+    const savedKotobaRaw = localStorage.getItem(localKotobaKey)
     let kotobaLen = kData ? kData.length : 0
     if (savedKotobaRaw) {
       try {
@@ -426,8 +423,7 @@ export async function calculateMissionProgress(
 
   // Merge with Local Storage backup
   const localProgKey = `kaiwa_lesson_progress_${userId}`
-  const globalProgKey = `kaiwa_lesson_progress_active_global`
-  const savedProgRaw = localStorage.getItem(localProgKey) || localStorage.getItem(globalProgKey)
+  const savedProgRaw = localStorage.getItem(localProgKey)
   if (savedProgRaw) {
     try {
       const parsedArr: [string, { is_completed: boolean; replay_count: number }][] = JSON.parse(savedProgRaw)
@@ -449,8 +445,7 @@ export async function calculateMissionProgress(
   }
 
   const localKotobaKey = `kaiwa_user_kotoba_${userId}`
-  const globalKotobaKey = `kaiwa_user_kotoba_active_global`
-  const savedKotobaRaw = localStorage.getItem(localKotobaKey) || localStorage.getItem(globalKotobaKey)
+  const savedKotobaRaw = localStorage.getItem(localKotobaKey)
   if (savedKotobaRaw) {
     try {
       const parsedKotoba: any[] = JSON.parse(savedKotobaRaw)

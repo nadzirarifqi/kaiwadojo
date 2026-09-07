@@ -79,7 +79,7 @@ async function compressImageDataUrl(dataUrl: string, maxWidth = 800, quality = 0
 export default function SetoranKotobaPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
-  const effectiveUserId = profile?.id || user?.id || 'active_user'
+  const effectiveUserId = user?.id || profile?.id || null
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -119,6 +119,13 @@ export default function SetoranKotobaPage() {
 
   // Load Kotoba from Database and Local Storage Backup with Realtime Sync
   useEffect(() => {
+    localStorage.removeItem('kaiwa_user_kotoba_active_global')
+    if (!effectiveUserId) {
+      setKotobaList([])
+      setLoading(false)
+      return
+    }
+
     loadKotobaList()
 
     const handleSync = () => {
@@ -128,7 +135,7 @@ export default function SetoranKotobaPage() {
 
     // Realtime Postgres listener for user_kotoba_submissions across all devices
     const channel = supabase
-      .channel('kotoba_realtime_' + (effectiveUserId || 'all'))
+      .channel('kotoba_realtime_' + effectiveUserId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, () => {
         loadKotobaList()
       })
@@ -138,14 +145,19 @@ export default function SetoranKotobaPage() {
       window.removeEventListener('storage', handleSync)
       supabase.removeChannel(channel)
     }
-  }, [user, profile?.id, effectiveUserId])
+  }, [user?.id, profile?.id, effectiveUserId])
 
   async function loadKotobaList() {
-    const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
-    const globalKey = `kaiwa_user_kotoba_active_global`
+    if (!effectiveUserId) {
+      setKotobaList([])
+      setLoading(false)
+      return
+    }
 
-    // 1. Instant local cache render
-    const localData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+    const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
+
+    // 1. Instant local cache render (scoped strictly to this user)
+    const localData = localStorage.getItem(storageKey)
     let localItems: UserKotoba[] = []
     if (localData) {
       try {
@@ -162,7 +174,7 @@ export default function SetoranKotobaPage() {
     }
 
     // 2. Auto-migrate any local-only items (id starting with 'kotoba-') to Supabase
-    if (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user') {
+    if (effectiveUserId && effectiveUserId !== 'guest') {
       const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
       if (unsyncedLocals.length > 0) {
         for (const un of unsyncedLocals) {
@@ -184,22 +196,19 @@ export default function SetoranKotobaPage() {
 
     // 3. Fetch authoritative DB records from Supabase
     let dbItems: UserKotoba[] = []
-    if (user?.id || profile?.id || effectiveUserId) {
-      const { data, error } = await supabase
-        .from('user_kotoba_submissions')
-        .select('*')
-        .eq('user_id', effectiveUserId)
-        .order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('user_kotoba_submissions')
+      .select('*')
+      .eq('user_id', effectiveUserId)
+      .order('created_at', { ascending: false })
 
-      if (!error && data) {
-        dbItems = data as UserKotoba[]
-      }
+    if (!error && data) {
+      dbItems = data as UserKotoba[]
     }
 
-    if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user')) {
+    if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
       setKotobaList(dbItems)
       localStorage.setItem(storageKey, JSON.stringify(dbItems))
-      localStorage.setItem(globalKey, JSON.stringify(dbItems))
     } else if (localItems.length > 0) {
       setKotobaList(localItems)
     }
@@ -208,10 +217,10 @@ export default function SetoranKotobaPage() {
 
   function saveToLocal(updatedList: UserKotoba[]) {
     setKotobaList(updatedList)
-    const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
-    const globalKey = `kaiwa_user_kotoba_active_global`
-    localStorage.setItem(storageKey, JSON.stringify(updatedList))
-    localStorage.setItem(globalKey, JSON.stringify(updatedList))
+    if (effectiveUserId) {
+      const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
+      localStorage.setItem(storageKey, JSON.stringify(updatedList))
+    }
     window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
     window.dispatchEvent(new Event('storage'))
   }
@@ -271,7 +280,7 @@ export default function SetoranKotobaPage() {
       ? await compressImageDataUrl(formData.image_url.trim())
       : undefined
 
-    const targetUid = profile?.id || user?.id || effectiveUserId
+    const targetUid = profile?.id || user?.id || effectiveUserId || ''
 
     if (editingItem) {
       const updated = kotobaList.map(item =>

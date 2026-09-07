@@ -803,9 +803,10 @@ export default function LearningPlanPage() {
     }
   }, [showMissionModal, showClassModal])
 
-  const activeUserId = profile?.id || user?.id || 'active_user'
+  const activeUserId = user?.id || profile?.id || null
 
   useEffect(() => {
+    if (!activeUserId) return
     loadData()
 
     const handleMissionSync = () => {
@@ -822,24 +823,23 @@ export default function LearningPlanPage() {
       window.removeEventListener('storage', handleMissionSync)
       unsubscribeMissionRealtime()
     }
-  }, [user, profile?.id, selectedDateStr, currentMonthDate])
+  }, [user?.id, profile?.id, selectedDateStr, currentMonthDate])
 
   async function loadData() {
+    if (!activeUserId) return
     // 1. Batch fetch user's streaks, lesson progress, and kotoba submissions in parallel
     let streaksData: any[] = []
     let pData: any[] = []
     let kData: any[] = []
 
-    if (user?.id || profile?.id) {
-      const [sRes, pRes, kRes] = await Promise.all([
-        supabase.from('learning_streaks').select('date').eq('student_id', activeUserId),
-        supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', activeUserId),
-        supabase.from('user_kotoba_submissions').select('id, created_at').eq('user_id', activeUserId),
-      ])
-      streaksData = sRes.data || []
-      pData = pRes.data || []
-      kData = kRes.data || []
-    }
+    const [sRes, pRes, kRes] = await Promise.all([
+      supabase.from('learning_streaks').select('date').eq('student_id', activeUserId),
+      supabase.from('lesson_progress').select('lesson_id, is_completed, replay_count, last_watched_at').eq('student_id', activeUserId),
+      supabase.from('user_kotoba_submissions').select('id, created_at').eq('user_id', activeUserId),
+    ])
+    streaksData = sRes.data || []
+    pData = pRes.data || []
+    kData = kRes.data || []
 
     const streakDates = new Set(streaksData.map((s: any) => s.date))
     setStreakSet(streakDates)
@@ -1945,7 +1945,7 @@ export default function LearningPlanPage() {
       {showMissionModal && (
         <DailyMissionBuilderModal
           targetDate={selectedDateStr}
-          currentMission={userMissions.get(selectedDateStr) || getDailyMission(activeUserId, selectedDateStr) || selectedMission}
+          currentMission={userMissions.get(selectedDateStr) || (activeUserId ? getDailyMission(activeUserId, selectedDateStr) : null) || selectedMission}
           onSave={handleSaveMission}
           onClose={() => setShowMissionModal(false)}
         />

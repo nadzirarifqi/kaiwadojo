@@ -86,7 +86,7 @@ export default function ProfilePage() {
     }
   }, [profile])
 
-  const activeUserId = profile?.id || user?.id
+  const activeUserId = user?.id || profile?.id
 
   // Fetch full data from database tables (profiles, enrollments, lesson_progress, quiz_attempts)
   useEffect(() => {
@@ -183,7 +183,7 @@ export default function ProfilePage() {
     }
 
     loadDatabaseData()
-  }, [user])
+  }, [activeUserId])
 
   // Toast notification timer
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -325,7 +325,7 @@ export default function ProfilePage() {
       }
 
       sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(updatedProfileObj))
-      localStorage.setItem('kaiwa_custom_profile', JSON.stringify(updatedProfileObj))
+      localStorage.removeItem('kaiwa_custom_profile')
       window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
       await refreshProfile()

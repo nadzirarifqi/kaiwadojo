@@ -583,7 +583,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadDashboardData() {
-      const effectiveUserId = profile?.id || user?.id || 'active_user'
+      localStorage.removeItem('kaiwa_lesson_progress_active_global')
+      const effectiveUserId = user?.id || profile?.id || null
+      if (!effectiveUserId) {
+        setLoading(false)
+        return
+      }
 
       // Daily Mission: Fetch from DB first (or local fallback)
       const todayDate = getTodayDateString()
@@ -601,20 +606,16 @@ export default function Dashboard() {
       }
 
       // Backfill missing historical streak caps (fire-and-forget, throttled 1x per session)
-      if (effectiveUserId && effectiveUserId !== 'active_user') {
-        backfillHistoricalStreakCaps(effectiveUserId).catch(() => {})
-      }
+      backfillHistoricalStreakCaps(effectiveUserId).catch(() => {})
 
       // Calculate Minna no Nihongo Jilid 1 & 2 Progress (DB + Local Storage merge)
       let userLessonProgress: any[] = []
-      if (user?.id || profile?.id) {
-        const { data } = await supabase
-          .from('lesson_progress')
-          .select('lesson_id, is_completed')
-          .eq('student_id', effectiveUserId)
-          .eq('is_completed', true)
-        userLessonProgress = data || []
-      }
+      const { data } = await supabase
+        .from('lesson_progress')
+        .select('lesson_id, is_completed')
+        .eq('student_id', effectiveUserId)
+        .eq('is_completed', true)
+      userLessonProgress = data || []
 
       const completedSet = new Set<string>()
 
@@ -624,10 +625,9 @@ export default function Dashboard() {
         })
       }
 
-      // Merge with local storage progress cache (handles both array-of-tuples and plain objects)
+      // Merge with local storage progress cache (strictly scoped to this user)
       const storageKey = `kaiwa_lesson_progress_${effectiveUserId}`
-      const globalKey = `kaiwa_lesson_progress_active_global`
-      const localProgressData = localStorage.getItem(storageKey) || localStorage.getItem(globalKey)
+      const localProgressData = localStorage.getItem(storageKey)
       if (localProgressData) {
         try {
           const parsed = JSON.parse(localProgressData)

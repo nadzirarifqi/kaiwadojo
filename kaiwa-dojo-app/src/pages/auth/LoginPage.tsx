@@ -125,7 +125,7 @@ export default function LoginPage() {
         await claimDeviceSession(adminId)
         sessionStorage.setItem('kaiwa_session_active', 'true')
         sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
-        localStorage.setItem('kaiwa_custom_profile', JSON.stringify(adminProf))
+        localStorage.removeItem('kaiwa_custom_profile')
         window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
         setLoading(false)
