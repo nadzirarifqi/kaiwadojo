@@ -399,28 +399,130 @@ function DailyMissionBuilderModal({
           {/* Step 2 & 3: Target Kuis & Kotoba */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-1.5">
-                {t('lp_step3_quiz', '2. Target Kuis Evaluasi')}
-              </label>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setTargetQuiz(q => Math.max(0, q - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
-                <span className="flex-1 text-center text-xs font-black">
-                  {targetQuiz > 0 ? `${targetQuiz} Kuis` : '0 Kuis (🚫 Tidak Ada Rencana)'}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  {t('lp_step3_quiz', '2. Target Kuis Evaluasi')}
+                </label>
+                <span className="text-[0.65rem] text-slate-400 font-bold">Maks. 50</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setTargetQuiz(q => Math.max(0, q - 1))}
+                  className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                >
+                  −
+                </button>
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={targetQuiz === 0 ? '' : targetQuiz}
+                    placeholder="0"
+                    onChange={e => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10)
+                      if (isNaN(val)) setTargetQuiz(0)
+                      else setTargetQuiz(Math.max(0, Math.min(50, val)))
+                    }}
+                    className="w-full text-center px-3 py-2 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white text-xs font-black outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] font-bold text-slate-400 pointer-events-none select-none">
+                    Kuis
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTargetQuiz(q => Math.min(50, q + 1))}
+                  className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <div className="flex items-center justify-between mt-1 text-[0.65rem]">
+                <span className="text-slate-400 font-medium">
+                  {targetQuiz === 0 ? '🚫 0 Kuis (Tidak Ada Rencana)' : `🎯 Target: ${targetQuiz} Kuis`}
                 </span>
-                <button type="button" onClick={() => setTargetQuiz(q => Math.min(10, q + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 5, 10].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTargetQuiz(amt)}
+                      className={`px-1.5 py-0.5 rounded-md text-[0.62rem] font-bold border cursor-pointer transition-all ${
+                        targetQuiz === amt
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-1.5">
-                {t('lp_step4_kotoba', '3. Target Setoran Kotoba')}
-              </label>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setTargetKotoba(k => Math.max(0, k - 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">−</button>
-                <span className="flex-1 text-center text-xs font-black">
-                  {targetKotoba > 0 ? `${targetKotoba} Setoran` : '0 Setoran (🚫 Tidak Ada Rencana)'}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  {t('lp_step4_kotoba', '3. Target Setoran Kotoba')}
+                </label>
+                <span className="text-[0.65rem] text-slate-400 font-bold">Maks. 100</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setTargetKotoba(k => Math.max(0, k - 1))}
+                  className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                >
+                  −
+                </button>
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={targetKotoba === 0 ? '' : targetKotoba}
+                    placeholder="0"
+                    onChange={e => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10)
+                      if (isNaN(val)) setTargetKotoba(0)
+                      else setTargetKotoba(Math.max(0, Math.min(100, val)))
+                    }}
+                    className="w-full text-center px-3 py-2 pr-14 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white text-xs font-black outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] font-bold text-slate-400 pointer-events-none select-none">
+                    Setoran
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTargetKotoba(k => Math.min(100, k + 1))}
+                  className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <div className="flex items-center justify-between mt-1 text-[0.65rem]">
+                <span className="text-slate-400 font-medium">
+                  {targetKotoba === 0 ? '🚫 0 Setoran (Tidak Ada Rencana)' : `🎯 Target: ${targetKotoba} Kotoba`}
                 </span>
-                <button type="button" onClick={() => setTargetKotoba(k => Math.min(10, k + 1))} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-slate-600 dark:text-slate-300 border-none cursor-pointer">+</button>
+                <div className="flex items-center gap-1">
+                  {[5, 10, 25, 50, 100].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTargetKotoba(amt)}
+                      className={`px-1.5 py-0.5 rounded-md text-[0.62rem] font-bold border cursor-pointer transition-all ${
+                        targetKotoba === amt
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
