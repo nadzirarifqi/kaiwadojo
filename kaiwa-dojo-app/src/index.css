@@ -128,11 +128,23 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Prevent unwanted iOS Safari auto-zoom on input focus */
+/* Prevent unwanted iOS Safari auto-zoom on input focus & ensure full typing responsiveness */
 input, select, textarea {
   font-family: inherit;
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+  touch-action: manipulation;
+}
+
+@media screen and (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media (min-width: 640px) {

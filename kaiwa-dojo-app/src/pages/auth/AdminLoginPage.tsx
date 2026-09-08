@@ -157,7 +157,7 @@ export default function AdminLoginPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat text-white flex items-center justify-center p-4 relative overflow-hidden font-sans"
+      className="min-h-dvh bg-cover bg-center bg-no-repeat text-white flex items-center justify-center p-4 py-8 relative overflow-hidden font-sans"
       style={{
         backgroundImage:
           "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.92)), url('/japan-background(4).jpg')",
@@ -166,7 +166,7 @@ export default function AdminLoginPage() {
       {/* Floating Back to Landing Page Button */}
       <button
         onClick={() => navigate('/')}
-        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white hover:border-red-500/50 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white hover:border-red-500/50 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[40px]"
       >
         <span>← Kembali ke Landing Page</span>
       </button>
@@ -212,19 +212,25 @@ export default function AdminLoginPage() {
                 </label>
                 <input
                   type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  enterKeyHint="go"
                   maxLength={6}
                   required
                   autoFocus
                   placeholder="• • • • • •"
                   value={pinInput}
                   onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center tracking-[0.5em] text-2xl font-black py-3 px-4 rounded-2xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:tracking-normal placeholder:text-slate-600"
+                  className="w-full text-center tracking-[0.5em] text-2xl font-black py-3.5 px-4 rounded-2xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:tracking-normal placeholder:text-slate-600 touch-manipulation min-h-[48px]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2"
+                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
               >
                 🔓 Verifikasi PIN Admin
               </button>
@@ -257,10 +263,14 @@ export default function AdminLoginPage() {
                 <input
                   type="text"
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   placeholder="kaiwahiroshima"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-xs font-bold outline-none focus:border-primary transition-all"
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all min-h-[44px] touch-manipulation"
                 />
               </div>
 
@@ -270,15 +280,20 @@ export default function AdminLoginPage() {
                   <input
                     type={showPass ? 'text' : 'password'}
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="go"
                     placeholder="Masukkan password admin"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-xs font-bold outline-none focus:border-primary transition-all pr-10"
+                    className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all pr-12 min-h-[44px] touch-manipulation"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs border-none bg-transparent cursor-pointer font-bold"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-base border-none bg-transparent cursor-pointer font-bold min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
+                    aria-label="Toggle password visibility"
                   >
                     {showPass ? '🙈' : '👁️'}
                   </button>
@@ -288,7 +303,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2"
+                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
               >
                 {loading ? 'Authenticating Admin...' : '🔑 Masuk ke Admin Dashboard'}
               </button>

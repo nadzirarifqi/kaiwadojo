@@ -357,7 +357,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 transition-colors relative"
+      className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 py-8 transition-colors relative"
       style={{
         backgroundImage:
           "linear-gradient(to bottom, rgba(15,23,42,0.75), rgba(15,23,42,0.88)), url('/japan-background(5).jpg')",
@@ -367,7 +367,7 @@ export default function LoginPage() {
       {/* Floating Back to Landing Page Button */}
       <button
         onClick={() => navigate('/')}
-        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[40px]"
       >
         <span>← Kembali ke Landing Page</span>
       </button>
@@ -406,7 +406,7 @@ export default function LoginPage() {
               </div>
               <button
                 onClick={clearSessionNotice}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-base border-none bg-transparent cursor-pointer shrink-0"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-base border-none bg-transparent cursor-pointer shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center touch-manipulation"
               >
                 ×
               </button>
@@ -423,12 +423,16 @@ export default function LoginPage() {
               <input
                 id="login-username"
                 type="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
                 autoComplete="username"
                 placeholder="username atau nama@email.com"
                 required
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
               />
             </div>
 
@@ -438,7 +442,7 @@ export default function LoginPage() {
                 <label htmlFor="login-password" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   Password
                 </label>
-                <button type="button" className="text-xs text-primary dark:text-red-400 hover:underline font-bold border-none bg-transparent cursor-pointer">
+                <button type="button" className="text-xs text-primary dark:text-red-400 hover:underline font-bold border-none bg-transparent cursor-pointer touch-manipulation py-1">
                   Lupa password?
                 </button>
               </div>
@@ -446,17 +450,22 @@ export default function LoginPage() {
                 <input
                   id="login-password"
                   type={showPass ? 'text' : 'password'}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="go"
                   autoComplete="current-password"
                   placeholder="••••••••"
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium pr-10"
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium pr-12 min-h-[44px] touch-manipulation"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs border-none bg-transparent cursor-pointer font-bold"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base border-none bg-transparent cursor-pointer font-bold min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
+                  aria-label="Toggle password visibility"
                 >
                   {showPass ? '🙈' : '👁️'}
                 </button>
@@ -475,7 +484,7 @@ export default function LoginPage() {
               id="btn-login"
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98] min-h-[48px] touch-manipulation flex items-center justify-center"
             >
               {loading ? 'Memproses Masuk...' : 'Masuk →'}
             </button>

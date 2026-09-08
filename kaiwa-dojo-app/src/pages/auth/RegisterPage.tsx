@@ -419,7 +419,7 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 transition-colors relative"
+      className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 py-8 transition-colors relative"
       style={{
         backgroundImage:
           "linear-gradient(to bottom, rgba(15,23,42,0.75), rgba(15,23,42,0.88)), url('/japan-background(5).jpg')",
@@ -428,7 +428,7 @@ export default function RegisterPage() {
       {/* Floating Back to Landing Page Button */}
       <button
         onClick={() => navigate('/')}
-        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[40px]"
       >
         <span>← Kembali ke Landing Page</span>
       </button>
@@ -467,11 +467,15 @@ export default function RegisterPage() {
               <input
                 id="reg-fullname"
                 type="text"
+                autoComplete="name"
+                autoCapitalize="words"
+                autoCorrect="off"
+                enterKeyHint="next"
                 placeholder="Budi Santoso"
                 required
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
               />
             </div>
 
@@ -486,6 +490,10 @@ export default function RegisterPage() {
                   id="reg-username"
                   type="text"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   placeholder="budisantoso"
                   required
                   value={username}
@@ -494,7 +502,7 @@ export default function RegisterPage() {
                     if (usernameError) setUsernameError(null)
                   }}
                   onBlur={handleCheckUsernameOnBlur}
-                  className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                  className={`w-full pl-9 pr-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
                     usernameError
                       ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
                       : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
@@ -516,6 +524,9 @@ export default function RegisterPage() {
               <input
                 id="reg-phone"
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                enterKeyHint="next"
                 placeholder="081234567890"
                 required
                 value={phoneNumber}
@@ -524,7 +535,7 @@ export default function RegisterPage() {
                   if (phoneError) setPhoneError(null)
                 }}
                 onBlur={handleCheckPhoneOnBlur}
-                className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                className={`w-full px-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
                   phoneError
                     ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
@@ -545,11 +556,14 @@ export default function RegisterPage() {
               <input
                 id="reg-institution"
                 type="text"
+                autoCapitalize="words"
+                autoCorrect="off"
+                enterKeyHint="next"
                 placeholder="Contoh: Nama Group | Institusi"
                 required
                 value={institution}
                 onChange={e => setInstitution(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
               />
               <div className="text-[0.68rem] text-slate-400 dark:text-slate-500 leading-relaxed bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800">
                 <span className="font-bold text-slate-500 dark:text-slate-400">Format:</span>{' '}
@@ -567,7 +581,12 @@ export default function RegisterPage() {
               <input
                 id="reg-email"
                 type="email"
+                inputMode="email"
                 autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
                 placeholder="nama@email.com"
                 required
                 value={email}
@@ -576,7 +595,7 @@ export default function RegisterPage() {
                   if (emailError) setEmailError(null)
                 }}
                 onBlur={handleCheckEmailOnBlur}
-                className={`w-full px-4 py-3 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium ${
+                className={`w-full px-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
                   emailError
                     ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
@@ -599,17 +618,21 @@ export default function RegisterPage() {
                   id="reg-password"
                   type={showPass ? 'text' : 'password'}
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="done"
                   placeholder="Min. 8 karakter"
                   required
                   minLength={8}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-11 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium"
+                  className="w-full px-4 py-3.5 sm:py-3 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base border-none bg-transparent cursor-pointer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base border-none bg-transparent cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
                   aria-label="Toggle password visibility"
                 >
                   {showPass ? '🙈' : '👁️'}
@@ -629,7 +652,7 @@ export default function RegisterPage() {
               id="btn-register"
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 min-h-[48px] touch-manipulation"
             >
               <span>💬</span>
               <span>{loading ? 'Memproses...' : 'Kirim Kode OTP via WhatsApp →'}</span>
@@ -655,29 +678,29 @@ export default function RegisterPage() {
 
       {/* ── OTP VERIFICATION MODAL (WHATSAPP) ───────────────────────────────────── */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in overscroll-contain">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh]">
             
             {/* Modal Header */}
-            <div className="px-6 py-5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white flex items-center justify-between">
+            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
                   💬
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">Verifikasi Kode OTP WhatsApp</h3>
+                  <h3 className="text-sm sm:text-base font-extrabold text-white">Verifikasi Kode OTP WhatsApp</h3>
                   <p className="text-[0.7rem] text-emerald-200">Dikirim ke {phoneNumber || 'Nomor WhatsApp'}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowOtpModal(false)}
-                className="size-8 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-lg flex items-center justify-center"
+                className="size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-lg flex items-center justify-center touch-manipulation min-h-[36px] min-w-[36px]"
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleVerifyOtpSubmit} className="p-6 flex flex-col gap-5">
+            <form onSubmit={handleVerifyOtpSubmit} className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 overflow-y-auto">
               <div className="text-center">
                 <div className="inline-block px-3.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[0.68rem] font-black text-emerald-700 dark:text-emerald-300 mb-2 border border-emerald-300 dark:border-emerald-800">
                   💬 Kode OTP WhatsApp
@@ -695,11 +718,15 @@ export default function RegisterPage() {
                     ref={otpRefs[idx]}
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                     maxLength={1}
                     value={digit}
                     onChange={e => handleOtpDigitChange(idx, e.target.value)}
                     onKeyDown={e => handleOtpKeyDown(idx, e)}
-                    className="size-11 sm:size-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-center text-xl sm:text-2xl font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 focus:border-primary dark:focus:border-red-400 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all shadow-xs"
+                    className="size-11 sm:size-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-center text-xl sm:text-2xl font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 focus:border-primary dark:focus:border-red-400 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all shadow-xs touch-manipulation"
                   />
                 ))}
               </div>
@@ -719,7 +746,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={generateNewOtp}
                   disabled={otpTimer > 0}
-                  className="text-xs text-primary dark:text-red-400 font-extrabold underline border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
+                  className="text-xs text-primary dark:text-red-400 font-extrabold underline border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed touch-manipulation py-1"
                 >
                   Kirim Ulang OTP
                 </button>
@@ -728,7 +755,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={verifyingOtp}
-                className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm border-none cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-2"
+                className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm border-none cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
               >
                 {verifyingOtp ? 'Memverifikasi Kode OTP...' : 'Verifikasi OTP & Daftar Akun ✓'}
               </button>

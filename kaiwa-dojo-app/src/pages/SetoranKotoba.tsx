@@ -896,17 +896,28 @@ export default function SetoranKotobaPage() {
                   <div className="pt-2">
                     <input
                       type="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="go"
                       placeholder="Ketik tebakan jawabanmu di sini..."
                       value={userAnswerInput}
                       onChange={e => setUserAnswerInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all text-center"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          setShowAnswerKey(true)
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-base sm:text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all text-center min-h-[46px] touch-manipulation"
                     />
                   </div>
 
                   {!showAnswerKey && (
                     <button
+                      type="button"
                       onClick={() => setShowAnswerKey(true)}
-                      className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border-none cursor-pointer transition-all"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all touch-manipulation min-h-[42px]"
                     >
                       🔍 Periksa Kunci Jawaban
                     </button>
@@ -947,13 +958,13 @@ export default function SetoranKotobaPage() {
                     <div className="grid grid-cols-2 gap-3 pt-1">
                       <button
                         onClick={() => handleSelfAssessment(false)}
-                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
+                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 min-h-[46px] touch-manipulation active:scale-95"
                       >
                         <span>{t('sk_test_difficult_btn', '🔴 Masih Sulit')}</span>
                       </button>
                       <button
                         onClick={() => handleSelfAssessment(true)}
-                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1"
+                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 min-h-[46px] touch-manipulation active:scale-95"
                       >
                         <span>{t('sk_test_mastered_btn', '🟢 Sudah Mudah / Dikuasai')}</span>
                       </button>
@@ -969,128 +980,141 @@ export default function SetoranKotobaPage() {
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in">
-          <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-8 sm:pt-12 md:pt-14 lg:pt-16 pb-12">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in overscroll-contain">
+          <div className="flex min-h-full items-start justify-center p-2.5 sm:p-6 pt-4 sm:pt-10 md:pt-12 pb-16 sm:pb-12">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
                 {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="size-7 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-xs sm:text-sm"
+                className="size-8 sm:size-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-sm touch-manipulation"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-3 sm:space-y-4">
-              {/* Field 1: Kanji / Katakana / Hiragana */}
-              <div>
-                <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
+            <form onSubmit={handleSubmitForm} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 overscroll-contain">
+                {/* Field 1: Kanji / Katakana / Hiragana */}
+                <div>
+                  <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
+                    </label>
+                    {formData.japanese.trim() && (
+                      <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all ${
+                        detectJapaneseScript(formData.japanese).isValid
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
+                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
+                      }`}>
+                        {detectJapaneseScript(formData.japanese).isValid
+                          ? `✅ ${detectJapaneseScript(formData.japanese).detectedSummary}`
+                          : '⚠️ Wajib huruf Jepang'}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
+                    value={formData.japanese}
+                    onChange={e => setFormData({ ...formData, japanese: e.target.value })}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium min-h-[44px] ${
+                      formData.japanese.trim()
+                        ? detectJapaneseScript(formData.japanese).isValid
+                          ? 'border-emerald-400 focus:border-emerald-500'
+                          : 'border-amber-400 focus:border-amber-500'
+                        : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                    }`}
+                  />
+                  <p className="text-[0.62rem] sm:text-[0.68rem] text-slate-400 font-medium mt-1">
+                    Sistem otomatis memverifikasi karakter Hiragana (あ), Katakana (ア), atau Kanji (日).
+                  </p>
+                </div>
+
+                {/* Field 2: Romaji */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    2. {t('sk_input_romaji', 'Cara Baca (Romaji)')} <span className="text-red-500">*</span>
                   </label>
-                  {formData.japanese.trim() && (
-                    <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all ${
-                      detectJapaneseScript(formData.japanese).isValid
-                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
-                        : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
-                    }`}>
-                      {detectJapaneseScript(formData.japanese).isValid
-                        ? `✅ Terdeteksi: ${detectJapaneseScript(formData.japanese).detectedSummary}`
-                        : '⚠️ Wajib mengandung Hiragana/Katakana/Kanji'}
-                    </span>
+                  <input
+                    type="text"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
+                    value={formData.romaji}
+                    onChange={e => setFormData({ ...formData, romaji: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium min-h-[44px]"
+                  />
+                </div>
+
+                {/* Field 3: Meaning */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    3. {t('sk_input_meaning', 'Makna / Terjemahan')} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    enterKeyHint="done"
+                    placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
+                    value={formData.meaning}
+                    onChange={e => setFormData({ ...formData, meaning: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium min-h-[44px]"
+                  />
+                </div>
+
+                {/* Field 4: Image File Upload (Optional) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    4. {t('sk_input_image', 'Upload Gambar (Opsional)')}
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer min-h-[44px] flex items-center"
+                  />
+
+                  {formData.image_url && (
+                    <div className="mt-2 relative w-full h-24 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                      <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                        className="absolute top-1.5 right-1.5 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-xs font-extrabold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs touch-manipulation"
+                      >
+                        ✕ Hapus Gambar
+                      </button>
+                    </div>
                   )}
                 </div>
-                <input
-                  type="text"
-                  required
-                  placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
-                  value={formData.japanese}
-                  onChange={e => setFormData({ ...formData, japanese: e.target.value })}
-                  className={`w-full px-3 py-2 sm:py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium ${
-                    formData.japanese.trim()
-                      ? detectJapaneseScript(formData.japanese).isValid
-                        ? 'border-emerald-400 focus:border-emerald-500'
-                        : 'border-amber-400 focus:border-amber-500'
-                      : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
-                  }`}
-                />
-                <p className="text-[0.62rem] sm:text-[0.68rem] text-slate-400 font-medium mt-0.5 sm:mt-1">
-                  Sistem otomatis memverifikasi karakter Hiragana (あ), Katakana (ア), atau Kanji (日).
-                </p>
               </div>
 
-              {/* Field 2: Romaji */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  2. {t('sk_input_romaji', 'Cara Baca (Romaji)')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
-                  value={formData.romaji}
-                  onChange={e => setFormData({ ...formData, romaji: e.target.value })}
-                  className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
-                />
-              </div>
-
-              {/* Field 3: Meaning */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  3. {t('sk_input_meaning', 'Makna / Terjemahan')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
-                  value={formData.meaning}
-                  onChange={e => setFormData({ ...formData, meaning: e.target.value })}
-                  className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
-                />
-              </div>
-
-              {/* Field 4: Image File Upload (Optional) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. {t('sk_input_image', 'Upload Gambar (Opsional)')}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageFileChange}
-                  className="w-full px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[0.68rem] file:font-extrabold file:bg-amber-500 file:text-white hover:file:bg-amber-600 cursor-pointer"
-                />
-
-                {formData.image_url && (
-                  <div className="mt-2 relative w-full h-24 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
-                    <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
-                      className="absolute top-1.5 right-1.5 px-2 py-0.5 bg-red-600/90 hover:bg-red-700 text-white text-[0.62rem] font-extrabold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs"
-                    >
-                      ✕ Hapus Gambar
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800">
+              {/* Sticky Actions Footer */}
+              <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 border-none cursor-pointer"
+                  className="px-4 py-3 sm:py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs sm:text-sm cursor-pointer touch-manipulation hover:bg-slate-100"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md"
+                  className="flex-1 py-3.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md min-h-[44px] touch-manipulation active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : '＋ Simpan Kosakata'}
                 </button>
