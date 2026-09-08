@@ -862,10 +862,10 @@ export function subscribeToScheduleRealtime(onUpdate: () => void) {
 }
 
 /**
- * Determines if a class schedule is accessible to a given user.
+ * Determines if a class schedule is accessible to a given user (supports multiple target groups).
  * - Admin and Pemateri can access all schedules.
- * - Schedules without target_group (or "semua siswa", "all") are open to ALL students.
- * - Schedules with target_group are ONLY accessible to students matching that target group (or its registered alias/keywords).
+ * - Schedules without target_group (or "semua siswa", "all", "publik") are open to ALL students.
+ * - Schedules with target_group are accessible to students matching ANY of the target groups.
  */
 export function isScheduleAccessibleForUser(
   schedule: ClassSchedule,
@@ -876,10 +876,17 @@ export function isScheduleAccessibleForUser(
     return true
   }
 
-  const schGroup = (schedule.target_group || '').trim()
+  const rawGroup = (schedule.target_group || '').trim()
+  if (!rawGroup || rawGroup.toLowerCase() === 'semua siswa' || rawGroup.toLowerCase() === 'all' || rawGroup.toLowerCase() === 'publik') {
+    return true
+  }
 
-  // No group restriction -> accessible to all students
-  if (!schGroup || schGroup.toLowerCase() === 'semua siswa' || schGroup.toLowerCase() === 'all') {
+  const targetList = rawGroup
+    .split(/[,|\n]+/)
+    .map(t => t.trim())
+    .filter(t => t && !['semua siswa', 'all', 'publik'].includes(t.toLowerCase()))
+
+  if (targetList.length === 0) {
     return true
   }
 
@@ -898,30 +905,34 @@ export function isScheduleAccessibleForUser(
     return false
   }
 
-  // 2. Direct match (case-insensitive)
-  if (studentGroup.toLowerCase() === schGroup.toLowerCase()) {
-    return true
-  }
-
-  // 3. Space-collapsed match (e.g. "viva legacy 02" vs "viva  legacy  02")
   const normStudent = studentGroup.toLowerCase().replace(/\s+/g, '')
-  const normSch = schGroup.toLowerCase().replace(/\s+/g, '')
-  if (normStudent === normSch) {
-    return true
-  }
 
-  // 4. Match via KaiwaGroup keywords / alias in DB
-  const grpSch = groups.find(g =>
-    g.name.toLowerCase() === schGroup.toLowerCase() ||
-    parseKeywords(g.keywords).some(kw => kw.toLowerCase() === schGroup.toLowerCase() || normSch === kw.toLowerCase().replace(/\s+/g, ''))
-  )
   const grpStudent = groups.find(g =>
     g.name.toLowerCase() === studentGroup.toLowerCase() ||
     parseKeywords(g.keywords).some(kw => kw.toLowerCase() === studentGroup.toLowerCase() || normStudent === kw.toLowerCase().replace(/\s+/g, ''))
   )
 
-  if (grpSch && grpStudent && (grpSch.id === grpStudent.id || grpSch.name.toLowerCase() === grpStudent.name.toLowerCase())) {
-    return true
+  for (const schGroup of targetList) {
+    // Direct match (case-insensitive)
+    if (studentGroup.toLowerCase() === schGroup.toLowerCase()) {
+      return true
+    }
+
+    // Space-collapsed match
+    const normSch = schGroup.toLowerCase().replace(/\s+/g, '')
+    if (normStudent === normSch) {
+      return true
+    }
+
+    // Match via KaiwaGroup keywords / alias in DB
+    const grpSch = groups.find(g =>
+      g.name.toLowerCase() === schGroup.toLowerCase() ||
+      parseKeywords(g.keywords).some(kw => kw.toLowerCase() === schGroup.toLowerCase() || normSch === kw.toLowerCase().replace(/\s+/g, ''))
+    )
+
+    if (grpSch && grpStudent && (grpSch.id === grpStudent.id || grpSch.name.toLowerCase() === grpStudent.name.toLowerCase())) {
+      return true
+    }
   }
 
   return false

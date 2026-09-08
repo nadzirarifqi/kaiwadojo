@@ -10,6 +10,7 @@ import {
   detectVideoDuration,
   detectDurationFromLocalFile,
   parseVideoFileMeta,
+  parseTargetGroups,
   CHAPTER_UPDATE_EVENT,
   subscribeToChapterRealtime,
   type ChapterSetting,
@@ -29,6 +30,8 @@ export default function CourseEditor() {
 
   const [chapterMap, setChapterMap] = useState<Record<number, ChapterSetting>>({})
   const [groups, setGroups] = useState<KaiwaGroup[]>([])
+  const [showBulkGroupModal, setShowBulkGroupModal] = useState(false)
+  const [bulkSelectedGroups, setBulkSelectedGroups] = useState<string[]>([])
   const [_headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
     page_title: '📚 Buku Kursus Minna no Nihongo',
     page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
@@ -310,9 +313,11 @@ export default function CourseEditor() {
     )
   }
 
-  async function handleBulkSetGroup(groupName: string | null) {
+  async function handleBulkSetGroups(groupNames: string[] | null) {
     const startBab = selectedJilid === 1 ? 1 : 26
     const endBab   = selectedJilid === 1 ? 25 : 50
+
+    const finalVal = groupNames && groupNames.length > 0 ? groupNames.join(', ') : null
 
     const updatedList: ChapterSetting[] = []
     const updatedMap = { ...chapterMap }
@@ -327,7 +332,7 @@ export default function CourseEditor() {
 
       const updated: ChapterSetting = {
         ...current,
-        target_group: groupName || null,
+        target_group: finalVal,
       }
 
       updatedMap[bab] = updated
@@ -338,10 +343,46 @@ export default function CourseEditor() {
     await saveBatchChapterSettings(updatedList)
 
     showToast(
-      groupName
-        ? `Akses semua Bab di Jilid ${selectedJilid} diatur KHUSUS GRUP "${groupName}" 👥`
-        : `Akses semua Bab di Jilid ${selectedJilid} diatur PUBLIK untuk SEMUA SISWA 🌐`
+      finalVal
+        ? `Akses semua Bab Jilid ${selectedJilid} diatur KHUSUS ${groupNames?.length} GRUP: "${finalVal}" 👥`
+        : `Akses semua Bab Jilid ${selectedJilid} diatur PUBLIK (Semua Siswa) 🌐`
     )
+  }
+
+  function handleToggleChapterGroup(babNum: number, groupName: string) {
+    const chap = chapterMap[babNum] || {
+      bab_number: babNum,
+      title: `Bab ${babNum}`,
+      subtitle: '',
+      is_hidden: false,
+    }
+    const current = parseTargetGroups(chap.target_group)
+    let nextList: string[] = []
+    if (current.includes(groupName)) {
+      nextList = current.filter(g => g !== groupName)
+    } else {
+      nextList = [...current, groupName]
+    }
+    const nextVal = nextList.length > 0 ? nextList.join(', ') : null
+    setChapterMap(prev => ({
+      ...prev,
+      [babNum]: { ...prev[babNum], target_group: nextVal },
+    }))
+  }
+
+  function handleSetChapterAllPublic(babNum: number) {
+    setChapterMap(prev => ({
+      ...prev,
+      [babNum]: { ...prev[babNum], target_group: null },
+    }))
+  }
+
+  function handleSetChapterAllGroups(babNum: number) {
+    const allGroupNames = groups.map(g => g.name).join(', ')
+    setChapterMap(prev => ({
+      ...prev,
+      [babNum]: { ...prev[babNum], target_group: allGroupNames || null },
+    }))
   }
 
   const [isDetectingAll, setIsDetectingAll] = useState(false)
@@ -417,7 +458,8 @@ export default function CourseEditor() {
     const matchesSearch =
       chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       chap.subtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `bab ${babNum}`.includes(searchTerm.toLowerCase())
+      `bab ${babNum}`.includes(searchTerm.toLowerCase()) ||
+      (chap.target_group && chap.target_group.toLowerCase().includes(searchTerm.toLowerCase()))
 
     if (!matchesSearch) return false
 
@@ -425,13 +467,13 @@ export default function CourseEditor() {
     if (statusFilter === 'visible' && chap.is_hidden) return false
     if (statusFilter === 'hidden' && !chap.is_hidden) return false
 
-    // Group filter
+    // Group filter (multichoice match)
     if (groupFilter !== 'all') {
-      const tg = (chap.target_group || '').trim()
+      const tgList = parseTargetGroups(chap.target_group)
       if (groupFilter === '__public__') {
-        if (tg && tg.toLowerCase() !== 'semua siswa' && tg.toLowerCase() !== 'all' && tg.toLowerCase() !== 'publik') return false
+        if (tgList.length > 0) return false
       } else {
-        if (tg.toLowerCase() !== groupFilter.toLowerCase()) return false
+        if (!tgList.some(g => g.toLowerCase() === groupFilter.toLowerCase())) return false
       }
     }
 
@@ -617,25 +659,17 @@ export default function CourseEditor() {
               <span>🔴 Sembunyikan Semua Jilid {selectedJilid}</span>
             </button>
 
-            {/* Bulk Set Group Selector */}
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-              <select
-                onChange={e => {
-                  const val = e.target.value
-                  if (val === '__default__') return
-                  handleBulkSetGroup(val === '' ? null : val)
-                  e.target.value = '__default__'
-                }}
-                defaultValue="__default__"
-                className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs outline-none"
-              >
-                <option value="__default__" disabled>👥 Set Akses Grup Massal (Jilid {selectedJilid})...</option>
-                <option value="">🌐 Jadikan Terbuka / Publik (Semua Siswa)</option>
-                {groups.map(g => (
-                  <option key={g.id} value={g.name}>👥 Khusus Grup: {g.name}</option>
-                ))}
-              </select>
-            </div>
+            {/* Bulk Set Group Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setBulkSelectedGroups([])
+                setShowBulkGroupModal(true)
+              }}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>👥 Set Akses Grup Massal (Jilid {selectedJilid})</span>
+            </button>
           </div>
         </div>
 
@@ -684,6 +718,109 @@ export default function CourseEditor() {
         </div>
       </div>
 
+      {/* Bulk Group Modal */}
+      {showBulkGroupModal && (
+        <div className="fixed inset-0 z-[650] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col gap-4 animate-scale-up">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                  <span>👥</span>
+                  <span>Atur Akses Grup Massal (Jilid {selectedJilid})</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Pilih 1 atau lebih grup untuk diterapkan sekaligus ke seluruh 25 Bab di Jilid {selectedJilid}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBulkGroupModal(false)}
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center justify-center border-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="font-bold text-slate-600 dark:text-slate-300">Pilihan Grup:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBulkSelectedGroups(groups.map(g => g.name))}
+                  className="text-xs font-bold text-indigo-600 hover:underline border-none bg-transparent cursor-pointer"
+                >
+                  Pilih Semua
+                </button>
+                <span className="text-slate-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => setBulkSelectedGroups([])}
+                  className="text-xs font-bold text-rose-600 hover:underline border-none bg-transparent cursor-pointer"
+                >
+                  Jadikan Publik (Semua Siswa)
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto p-1">
+              {groups.map(g => {
+                const isChecked = bulkSelectedGroups.includes(g.name)
+                return (
+                  <label
+                    key={g.id}
+                    className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                      isChecked
+                        ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-500 text-indigo-950 dark:text-indigo-200'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        setBulkSelectedGroups(prev =>
+                          isChecked ? prev.filter(x => x !== g.name) : [...prev, g.name]
+                        )
+                      }}
+                      className="size-4 accent-indigo-600 rounded"
+                    />
+                    <span className="text-xs font-bold">{g.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-[0.72rem] text-slate-500 dark:text-slate-400">
+              {bulkSelectedGroups.length === 0 ? (
+                <span>🌐 Semua 25 bab akan dibuka untuk <strong>Semua Siswa (Publik)</strong>.</span>
+              ) : (
+                <span>👥 Semua 25 bab akan dikhususkan untuk <strong>{bulkSelectedGroups.length} grup ({bulkSelectedGroups.join(', ')})</strong>.</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowBulkGroupModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleBulkSetGroups(bulkSelectedGroups.length > 0 ? bulkSelectedGroups : null)
+                  setShowBulkGroupModal(false)
+                }}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer shadow-md"
+              >
+                🚀 Terapkan ke 25 Bab Jilid {selectedJilid}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chapters Editor List */}
       {loading ? (
         <CourseCardSkeleton count={5} />
@@ -703,11 +840,8 @@ export default function CourseEditor() {
               is_hidden: false,
             }
 
-            const targetGroupVal = (chap.target_group || '').trim()
-            const isGroupRestricted = targetGroupVal &&
-              targetGroupVal.toLowerCase() !== 'semua siswa' &&
-              targetGroupVal.toLowerCase() !== 'all' &&
-              targetGroupVal.toLowerCase() !== 'publik'
+            const activeChapterGroups = parseTargetGroups(chap.target_group)
+            const isGroupRestricted = activeChapterGroups.length > 0
 
             return (
               <div
@@ -747,8 +881,8 @@ export default function CourseEditor() {
                         </span>
                         {isGroupRestricted ? (
                           <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-300 flex items-center gap-1">
-                            <span>👥 Khusus Grup:</span>
-                            <strong>{targetGroupVal}</strong>
+                            <span>👥 Khusus ({activeChapterGroups.length} Grup):</span>
+                            <strong>{activeChapterGroups.join(', ')}</strong>
                           </span>
                         ) : (
                           <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700">
@@ -818,36 +952,94 @@ export default function CourseEditor() {
                   </div>
                 </div>
 
-                {/* Group Restriction Control */}
-                <div className="p-3.5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <span className="font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                      <span>👥 Restriksi Akses Grup (Keamanan & Akses Terbatas):</span>
-                    </span>
-                    <p className="text-[0.7rem] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Pilih grup siswa tertentu yang berhak mengakses bab ini, atau biarkan terbuka untuk semua siswa.
-                    </p>
+                {/* Group Restriction Multi-choice Control */}
+                <div className="p-3.5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 flex flex-col gap-2.5 text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                        <span>👥 Restriksi Akses Grup (Bisa Pilih &gt;1 Grup):</span>
+                      </span>
+                      <p className="text-[0.7rem] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Klik grup untuk menambah/menghapus akses, atau pilih <strong>Semua Siswa</strong> untuk terbuka umum.
+                      </p>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleSetChapterAllPublic(babNum)}
+                        className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border ${
+                          activeChapterGroups.length === 0
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        🌐 Semua Siswa (Publik)
+                      </button>
+
+                      {groups.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetChapterAllGroups(babNum)}
+                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 cursor-pointer"
+                        >
+                          ✓ Pilih Semua Grup
+                        </button>
+                      )}
+
+                      {activeChapterGroups.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetChapterAllPublic(babNum)}
+                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 cursor-pointer"
+                        >
+                          ✕ Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="sm:w-72 shrink-0">
-                    <select
-                      value={chap.target_group || ''}
-                      onChange={e => {
-                        const val = e.target.value || null
-                        setChapterMap(prev => ({
-                          ...prev,
-                          [babNum]: { ...prev[babNum], target_group: val },
-                        }))
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-700/60 font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 shadow-2xs"
-                    >
-                      <option value="">🌐 Semua Siswa (Terbuka / Publik)</option>
-                      {groups.map(g => (
-                        <option key={g.id} value={g.name}>
-                          👥 Khusus Grup: {g.name}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Multi-choice Group Badges / Pills */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-indigo-100/60 dark:border-indigo-900/40">
+                    {groups.length === 0 ? (
+                      <span className="text-[0.7rem] text-slate-400 italic">Belum ada grup siswa terdaftar di database. Bab terbuka untuk semua siswa.</span>
+                    ) : (
+                      groups.map(g => {
+                        const isSelected = activeChapterGroups.includes(g.name)
+                        return (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => handleToggleChapterGroup(babNum, g.name)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 select-none ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs font-black scale-[1.02]'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50/50'
+                            }`}
+                          >
+                            <span className={`size-3.5 rounded-md flex items-center justify-center text-[0.6rem] font-black ${
+                              isSelected ? 'bg-white text-indigo-600' : 'border border-slate-300 dark:border-slate-600'
+                            }`}>
+                              {isSelected ? '✓' : ''}
+                            </span>
+                            <span>{g.name}</span>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  {/* Selected Summary */}
+                  <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                    <span>Status Akses:</span>
+                    {activeChapterGroups.length === 0 ? (
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">🌐 Terbuka Publik (Semua Siswa)</span>
+                    ) : (
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                        👥 {activeChapterGroups.length} Grup Terpilih: {activeChapterGroups.join(', ')}
+                      </span>
+                    )}
                   </div>
                 </div>
 

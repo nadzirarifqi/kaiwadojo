@@ -9,6 +9,7 @@ import {
   CHAPTER_UPDATE_EVENT,
   subscribeToChapterRealtime,
   isChapterAccessibleForUser,
+  parseTargetGroups,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
@@ -640,10 +641,11 @@ export default function MyCourses() {
       if (chap) {
         const isAccessible = isChapterAccessibleForUser(chap, profile, groups)
         if (!isAccessible && !isInstructor) {
+          const grpList = parseTargetGroups(chap.target_group)
           setAlertConfig({
             isOpen: true,
             title: 'Akses Materi Dibatasi 🔒',
-            message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${chap.target_group}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+            message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${grpList.join(', ')}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
             type: 'lock',
             buttonText: 'Kembali',
             onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
@@ -834,10 +836,11 @@ export default function MyCourses() {
   function toggleBabAccordion(babNum: number) {
     const chap = chapters.find(c => c.bab_number === babNum)
     if (chap && !isInstructor && !isChapterAccessibleForUser(chap, profile, groups)) {
+      const grpList = parseTargetGroups(chap.target_group)
       setAlertConfig({
         isOpen: true,
         title: 'Akses Materi Dibatasi 🔒',
-        message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${chap.target_group}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+        message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${grpList.join(', ')}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
         type: 'lock',
         buttonText: 'Mengerti',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
@@ -866,12 +869,13 @@ export default function MyCourses() {
 
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
+    const targetList = parseTargetGroups(c.target_group)
     return (
       c.title.toLowerCase().includes(q) ||
       c.subtitle.toLowerCase().includes(q) ||
       `bab ${c.bab_number}`.includes(q) ||
       `第${c.bab_number}課`.toLowerCase().includes(q) ||
-      (c.target_group && c.target_group.toLowerCase().includes(q))
+      targetList.some(g => g.toLowerCase().includes(q))
     )
   })
 
@@ -1119,10 +1123,8 @@ export default function MyCourses() {
           {filteredChapters.map(chap => {
             const isExpanded = expandedBabs.has(chap.bab_number)
             const completedInBab = chap.lessons.filter(l => l.is_completed).length
-            const isRestricted = chap.target_group &&
-              chap.target_group.toLowerCase() !== 'semua siswa' &&
-              chap.target_group.toLowerCase() !== 'all' &&
-              chap.target_group.toLowerCase() !== 'publik'
+            const targetGroupList = parseTargetGroups(chap.target_group)
+            const isRestricted = targetGroupList.length > 0
 
             return (
               <div
@@ -1144,8 +1146,9 @@ export default function MyCourses() {
                           {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
                         </h3>
                         {isRestricted && (
-                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
-                            👥 Khusus: {chap.target_group}
+                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 flex items-center gap-1">
+                            <span>👥 Khusus ({targetGroupList.length}):</span>
+                            <span>{targetGroupList.join(', ')}</span>
                           </span>
                         )}
                       </div>

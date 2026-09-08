@@ -25,10 +25,26 @@ const SETTINGS_KEY = 'kaiwa_chapter_settings_v2'
 const HEADER_KEY = 'kaiwa_course_header_v2'
 
 /**
- * Checks if a chapter is accessible to a user based on role and target_group.
+ * Parse comma-separated or array target groups into clean unique list of group names.
+ */
+export function parseTargetGroups(target?: string | string[] | null): string[] {
+  if (!target) return []
+  if (Array.isArray(target)) {
+    return target
+      .map(t => (t || '').trim())
+      .filter(t => t && !['semua siswa', 'all', 'publik', '__public__'].includes(t.toLowerCase()))
+  }
+  return target
+    .split(/[,|\n]+/)
+    .map(t => t.trim())
+    .filter(t => t && !['semua siswa', 'all', 'publik', '__public__'].includes(t.toLowerCase()))
+}
+
+/**
+ * Checks if a chapter is accessible to a user based on role and target_group (supports multiple groups).
  * - Admin & Pemateri can access all chapters.
  * - Chapters with no target_group (or 'semua siswa', 'all', 'publik') are accessible to all students.
- * - Chapters with a specific target_group require the student to belong to that group.
+ * - Chapters with specific target_groups require the student to belong to at least one of those groups.
  */
 export function isChapterAccessibleForUser(
   chapter: { target_group?: string | null; is_hidden?: boolean },
@@ -39,14 +55,14 @@ export function isChapterAccessibleForUser(
     return true
   }
 
-  const target = (chapter.target_group || '').trim()
+  const targetList = parseTargetGroups(chapter.target_group)
 
   // No group restriction -> open to all students
-  if (!target || target.toLowerCase() === 'semua siswa' || target.toLowerCase() === 'all' || target.toLowerCase() === 'publik') {
+  if (targetList.length === 0) {
     return true
   }
 
-  // If chapter is restricted to a group, user must be logged in
+  // If chapter is restricted to specific groups, user must be logged in
   if (!userProfile) return false
 
   // Determine user's group from group_name or match against institution keywords
@@ -60,24 +76,28 @@ export function isChapterAccessibleForUser(
     return false
   }
 
-  // Exact or case-insensitive match
-  if (studentGroup.toLowerCase() === target.toLowerCase()) {
-    return true
-  }
-
-  // Collapsed space match
   const normStudent = studentGroup.toLowerCase().replace(/\s+/g, '')
-  const normTarget = target.toLowerCase().replace(/\s+/g, '')
-  if (normStudent === normTarget) {
-    return true
-  }
 
-  // Keyword match from registered groups
-  const matchedGroupObj = groups.find(g => g.name.toLowerCase() === target.toLowerCase())
-  if (matchedGroupObj) {
-    const kws = (matchedGroupObj.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
-    if (kws.some(kw => studentGroup.toLowerCase().includes(kw) || normStudent.includes(kw.replace(/\s+/g, '')))) {
+  // Check against each allowed target group (student must match ANY of the selected groups)
+  for (const target of targetList) {
+    // Exact or case-insensitive match
+    if (studentGroup.toLowerCase() === target.toLowerCase()) {
       return true
+    }
+
+    // Collapsed space match
+    const normTarget = target.toLowerCase().replace(/\s+/g, '')
+    if (normStudent === normTarget) {
+      return true
+    }
+
+    // Keyword match from registered groups
+    const matchedGroupObj = groups.find(g => g.name.toLowerCase() === target.toLowerCase())
+    if (matchedGroupObj) {
+      const kws = (matchedGroupObj.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
+      if (kws.some(kw => studentGroup.toLowerCase().includes(kw) || normStudent.includes(kw.replace(/\s+/g, '')))) {
+        return true
+      }
     }
   }
 

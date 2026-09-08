@@ -18,6 +18,7 @@ import {
   subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { parseTargetGroups } from '../lib/chapterService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
 interface ScheduleSlotItem {
@@ -405,13 +406,22 @@ export default function InstructorScheduleManagerPage() {
                       </span>
 
                       {/* Target Group Badge */}
-                      <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black ${
-                        sch.target_group
-                          ? 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
-                      }`}>
-                        {sch.target_group ? `👥 ${sch.target_group}` : '🌐 Semua Siswa'}
-                      </span>
+                      {(() => {
+                        const grpList = parseTargetGroups(sch.target_group)
+                        if (grpList.length === 0) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+                              🌐 Semua Siswa
+                            </span>
+                          )
+                        }
+                        return (
+                          <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 flex items-center gap-1">
+                            <span>👥</span>
+                            <span>{grpList.join(', ')}</span>
+                          </span>
+                        )
+                      })()}
                     </div>
 
                     <h3 className="text-base font-extrabold text-slate-800 dark:text-white truncate">
@@ -795,25 +805,94 @@ export default function InstructorScheduleManagerPage() {
                 />
               </div>
 
-              {/* Target Group */}
-              <div className="p-3.5 bg-violet-50/60 dark:bg-violet-950/20 rounded-2xl border border-violet-200/80 dark:border-violet-800/50">
-                <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                  👥 Target Grup Siswa
-                </label>
-                <select
-                  value={formTargetGroup}
-                  onChange={e => setFormTargetGroup(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-violet-200 dark:border-violet-800 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-violet-500 text-xs"
-                >
-                  <option value="">🌐 Semua Siswa (Tidak Dibatasi)</option>
-                  {availableGroups.map(g => (
-                    <option key={g.id} value={g.name}>🏷️ {g.name}</option>
-                  ))}
-                </select>
-                <p className="text-[0.68rem] text-slate-400 mt-1.5">
-                  Hanya siswa dalam grup ini yang dapat melihat dan mendaftar kelas ini. Pilih "Semua Siswa" untuk kelas terbuka.
-                </p>
-              </div>
+              {/* Target Group Multi-choice Control */}
+              {(() => {
+                const selectedFormGroups = parseTargetGroups(formTargetGroup)
+                return (
+                  <div className="p-3.5 bg-violet-50/60 dark:bg-violet-950/20 rounded-2xl border border-violet-200/80 dark:border-violet-800/50 flex flex-col gap-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs">
+                          👥 Target Grup Siswa (Bisa Pilih &gt;1 Grup)
+                        </label>
+                        <p className="text-[0.68rem] text-slate-400 mt-0.5">
+                          Pilih grup yang berhak melihat & mendaftar sesi ini. Kosongkan untuk terbuka bagi semua siswa.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => setFormTargetGroup('')}
+                          className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border ${
+                            selectedFormGroups.length === 0
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          🌐 Semua Siswa (Publik)
+                        </button>
+
+                        {availableGroups.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setFormTargetGroup(availableGroups.map(g => g.name).join(', '))}
+                            className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 hover:bg-violet-200 cursor-pointer"
+                          >
+                            ✓ Pilih Semua
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Multi-choice Pills */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-violet-200/50 dark:border-violet-800/50">
+                      {availableGroups.map(g => {
+                        const isChecked = selectedFormGroups.includes(g.name)
+                        return (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              let next: string[] = []
+                              if (isChecked) {
+                                next = selectedFormGroups.filter(x => x !== g.name)
+                              } else {
+                                next = [...selectedFormGroups, g.name]
+                              }
+                              setFormTargetGroup(next.length > 0 ? next.join(', ') : '')
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 select-none ${
+                              isChecked
+                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-black scale-[1.02]'
+                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-violet-400'
+                            }`}
+                          >
+                            <span className={`size-3.5 rounded-md flex items-center justify-center text-[0.6rem] font-black ${
+                              isChecked ? 'bg-white text-violet-600' : 'border border-slate-300 dark:border-slate-600'
+                            }`}>
+                              {isChecked ? '✓' : ''}
+                            </span>
+                            <span>{g.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Summary */}
+                    <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                      <span>Status:</span>
+                      {selectedFormGroups.length === 0 ? (
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">🌐 Terbuka untuk Semua Siswa (Tanpa Batasan)</span>
+                      ) : (
+                        <span className="font-bold text-violet-600 dark:text-violet-400">
+                          👥 Dibatasi khusus {selectedFormGroups.length} grup: {selectedFormGroups.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Form Buttons */}
               <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">

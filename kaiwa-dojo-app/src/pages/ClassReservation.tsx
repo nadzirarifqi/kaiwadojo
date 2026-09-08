@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT, matchGroupFromInstitution } from '../lib/groupService'
+import { parseTargetGroups } from '../lib/chapterService'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -132,7 +133,8 @@ export default function ClassReservationPage() {
 
     // 0. Group restriction check
     if (!isScheduleAccessibleForUser(sch, profile, groups)) {
-      return { isLocked: true, reason: `Khusus Grup ${sch.target_group || ''}` }
+      const grpList = parseTargetGroups(sch.target_group)
+      return { isLocked: true, reason: `Khusus Grup ${grpList.join(', ')}` }
     }
 
     const enrolled = getEnrolledCount(sch.id)
@@ -252,7 +254,9 @@ export default function ClassReservationPage() {
       const matchTitle = sch.title.toLowerCase().includes(term)
       const matchSub = sch.subtitle_chapter.toLowerCase().includes(term)
       const matchInst = sch.instructor_name.toLowerCase().includes(term)
-      const matchGrp = sch.target_group ? sch.target_group.toLowerCase().includes(term) : false
+      const matchGrp = sch.target_group
+        ? parseTargetGroups(sch.target_group).some(g => g.toLowerCase().includes(term))
+        : false
       if (!matchTitle && !matchSub && !matchInst && !matchGrp) return false
     }
 
@@ -538,17 +542,23 @@ export default function ClassReservationPage() {
                     <div className="flex flex-col gap-2 mb-4">
                       {/* Target Group Restriction Pill */}
                       <div>
-                        {sch.target_group ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-300/80 dark:border-violet-700/80">
-                            <span>👥</span>
-                            <span>Khusus Grup: {sch.target_group}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                            <span>🌐</span>
-                            <span>Terbuka untuk Semua Siswa</span>
-                          </span>
-                        )}
+                        {(() => {
+                          const grpList = parseTargetGroups(sch.target_group)
+                          if (grpList.length > 0) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-300/80 dark:border-violet-700/80">
+                                <span>👥</span>
+                                <span>Khusus ({grpList.length} Grup): {grpList.join(', ')}</span>
+                              </span>
+                            )
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              <span>🌐</span>
+                              <span>Terbuka untuk Semua Siswa</span>
+                            </span>
+                          )
+                        })()}
                       </div>
 
                       <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2">
