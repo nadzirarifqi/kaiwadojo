@@ -15,6 +15,7 @@ import {
   type ChapterSetting,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { CourseCardSkeleton } from '../components/Skeleton'
 
 export default function CourseEditor() {
@@ -24,8 +25,10 @@ export default function CourseEditor() {
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'visible' | 'hidden'>('all')
+  const [groupFilter, setGroupFilter] = useState<string>('all')
 
   const [chapterMap, setChapterMap] = useState<Record<number, ChapterSetting>>({})
+  const [groups, setGroups] = useState<KaiwaGroup[]>([])
   const [_headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
     page_title: '📚 Buku Kursus Minna no Nihongo',
     page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
@@ -216,11 +219,13 @@ export default function CourseEditor() {
 
     const handleSync = () => loadData()
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
     const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
 
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeRealtime()
     }
@@ -228,12 +233,14 @@ export default function CourseEditor() {
 
   async function loadData() {
     setLoading(true)
-    const [map, header] = await Promise.all([
+    const [map, header, groupList] = await Promise.all([
       getChapterSettingsMap(),
       getCourseHeaderSettings(),
+      fetchGroups(true),
     ])
     setChapterMap(map)
     setHeaderSettings(header)
+    setGroups(groupList)
     setEditPageTitle(header.page_title)
     setEditPageSubtitle(header.page_subtitle)
     setLoading(false)
@@ -303,6 +310,40 @@ export default function CourseEditor() {
     )
   }
 
+  async function handleBulkSetGroup(groupName: string | null) {
+    const startBab = selectedJilid === 1 ? 1 : 26
+    const endBab   = selectedJilid === 1 ? 25 : 50
+
+    const updatedList: ChapterSetting[] = []
+    const updatedMap = { ...chapterMap }
+
+    for (let bab = startBab; bab <= endBab; bab++) {
+      const current = updatedMap[bab] || {
+        bab_number: bab,
+        title: `Bab ${bab}`,
+        subtitle: '',
+        is_hidden: false,
+      }
+
+      const updated: ChapterSetting = {
+        ...current,
+        target_group: groupName || null,
+      }
+
+      updatedMap[bab] = updated
+      updatedList.push(updated)
+    }
+
+    setChapterMap(updatedMap)
+    await saveBatchChapterSettings(updatedList)
+
+    showToast(
+      groupName
+        ? `Akses semua Bab di Jilid ${selectedJilid} diatur KHUSUS GRUP "${groupName}" 👥`
+        : `Akses semua Bab di Jilid ${selectedJilid} diatur PUBLIK untuk SEMUA SISWA 🌐`
+    )
+  }
+
   const [isDetectingAll, setIsDetectingAll] = useState(false)
 
   async function handleBatchAutoDetectAll() {
@@ -362,7 +403,7 @@ export default function CourseEditor() {
     setHeaderSettings(newHeader)
     await saveCourseHeaderSettings(newHeader)
     setIsEditingHeader(false)
-    showToast('Header halaman Kursus Saya berhasil diperbarui! ??')
+    showToast('Header halaman Kursus Saya berhasil diperbarui! 💾')
   }
 
   // Filter bab items
@@ -378,11 +419,23 @@ export default function CourseEditor() {
       chap.subtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       `bab ${babNum}`.includes(searchTerm.toLowerCase())
 
-    // Status filter
-    if (statusFilter === 'visible') return matchesSearch && !chap.is_hidden
-    if (statusFilter === 'hidden') return matchesSearch && chap.is_hidden
+    if (!matchesSearch) return false
 
-    return matchesSearch
+    // Status filter
+    if (statusFilter === 'visible' && chap.is_hidden) return false
+    if (statusFilter === 'hidden' && !chap.is_hidden) return false
+
+    // Group filter
+    if (groupFilter !== 'all') {
+      const tg = (chap.target_group || '').trim()
+      if (groupFilter === '__public__') {
+        if (tg && tg.toLowerCase() !== 'semua siswa' && tg.toLowerCase() !== 'all' && tg.toLowerCase() !== 'publik') return false
+      } else {
+        if (tg.toLowerCase() !== groupFilter.toLowerCase()) return false
+      }
+    }
+
+    return true
   })
 
   return (
@@ -563,10 +616,30 @@ export default function CourseEditor() {
             >
               <span>🔴 Sembunyikan Semua Jilid {selectedJilid}</span>
             </button>
+
+            {/* Bulk Set Group Selector */}
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <select
+                onChange={e => {
+                  const val = e.target.value
+                  if (val === '__default__') return
+                  handleBulkSetGroup(val === '' ? null : val)
+                  e.target.value = '__default__'
+                }}
+                defaultValue="__default__"
+                className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs outline-none"
+              >
+                <option value="__default__" disabled>👥 Set Akses Grup Massal (Jilid {selectedJilid})...</option>
+                <option value="">🌐 Jadikan Terbuka / Publik (Semua Siswa)</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.name}>👥 Khusus Grup: {g.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Search & Status Filter */}
+        {/* Search & Status + Group Filters */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="flex-1 w-full relative">
             <input
@@ -576,20 +649,37 @@ export default function CourseEditor() {
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
             />
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">??</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-400 shrink-0">Filter Status:</span>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as any)}
-              className="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
-            >
-              <option value="all">Semua Status (Tampil & Sembunyi)</option>
-              <option value="visible">?? Hanya Ditampilkan (Published)</option>
-              <option value="hidden">?? Hanya Disembunyikan (Hidden)</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <span className="text-xs font-bold text-slate-400 shrink-0">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value as any)}
+                className="w-full sm:w-auto px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
+              >
+                <option value="all">Semua Status</option>
+                <option value="visible">🟢 Tampil (Published)</option>
+                <option value="hidden">🔴 Sembunyi (Hidden)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <span className="text-xs font-bold text-slate-400 shrink-0">Akses:</span>
+              <select
+                value={groupFilter}
+                onChange={e => setGroupFilter(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
+              >
+                <option value="all">Semua Akses (Publik & Khusus)</option>
+                <option value="__public__">🌐 Publik (Semua Siswa)</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.name}>👥 Khusus: {g.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -599,9 +689,9 @@ export default function CourseEditor() {
         <CourseCardSkeleton count={5} />
       ) : filteredBabNumbers.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
-          <span className="text-4xl">??</span>
+          <span className="text-4xl">🔍</span>
           <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tidak ada bab ditemukan</h3>
-          <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau filter status.</p>
+          <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau filter status/akses grup.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -613,28 +703,38 @@ export default function CourseEditor() {
               is_hidden: false,
             }
 
+            const targetGroupVal = (chap.target_group || '').trim()
+            const isGroupRestricted = targetGroupVal &&
+              targetGroupVal.toLowerCase() !== 'semua siswa' &&
+              targetGroupVal.toLowerCase() !== 'all' &&
+              targetGroupVal.toLowerCase() !== 'publik'
+
             return (
               <div
                 key={babNum}
                 className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border transition-all flex flex-col gap-4 shadow-sm ${
                   chap.is_hidden
                     ? 'border-rose-300/80 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/20'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                    : isGroupRestricted
+                      ? 'border-indigo-300 dark:border-indigo-800/80 bg-indigo-50/10 dark:bg-indigo-950/10'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
                 }`}
               >
-                {/* Header Row: Bab Title + Visibility Toggle Switch */}
+                {/* Header Row: Bab Title + Visibility & Group Badges + Toggle Switch */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-3">
                     <div className={`size-11 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs ${
                       chap.is_hidden
                         ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200'
-                        : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/20'
+                        : isGroupRestricted
+                          ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200'
+                          : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/20'
                     }`}>
                       {babNum}
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
                           第{babNum}課: {chap.title.replace(/^Bab\s+(\d+):\s*/i, '').replace(/^第\d+課:\s*/i, '')}
                         </h3>
@@ -643,8 +743,18 @@ export default function CourseEditor() {
                             ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-300'
                             : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-300'
                         }`}>
-                          {chap.is_hidden ? '?? Disembunyikan dari Siswa' : '?? Tampil ke Siswa'}
+                          {chap.is_hidden ? '🔴 Disembunyikan' : '🟢 Tampil ke Siswa'}
                         </span>
+                        {isGroupRestricted ? (
+                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-300 flex items-center gap-1">
+                            <span>👥 Khusus Grup:</span>
+                            <strong>{targetGroupVal}</strong>
+                          </span>
+                        ) : (
+                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700">
+                            🌐 Terbuka Semua Siswa
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
                         {chap.subtitle || 'Belum ada penjelasan bab.'}
@@ -662,7 +772,7 @@ export default function CourseEditor() {
                           : 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                       }`}
                     >
-                      <span>{chap.is_hidden ? '?? Sembunyi (Klik untuk Tampilkan)' : '?? Tampil (Klik untuk Sembunyikan)'}</span>
+                      <span>{chap.is_hidden ? '👁️ Tampilkan' : '🙈 Sembunyikan'}</span>
                     </button>
                   </div>
                 </div>
@@ -705,6 +815,39 @@ export default function CourseEditor() {
                       placeholder="Contoh: わたしはエンジニアです (Saya adalah insinyur)"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
                     />
+                  </div>
+                </div>
+
+                {/* Group Restriction Control */}
+                <div className="p-3.5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <span className="font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                      <span>👥 Restriksi Akses Grup (Keamanan & Akses Terbatas):</span>
+                    </span>
+                    <p className="text-[0.7rem] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Pilih grup siswa tertentu yang berhak mengakses bab ini, atau biarkan terbuka untuk semua siswa.
+                    </p>
+                  </div>
+
+                  <div className="sm:w-72 shrink-0">
+                    <select
+                      value={chap.target_group || ''}
+                      onChange={e => {
+                        const val = e.target.value || null
+                        setChapterMap(prev => ({
+                          ...prev,
+                          [babNum]: { ...prev[babNum], target_group: val },
+                        }))
+                      }}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-700/60 font-bold text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 shadow-2xs"
+                    >
+                      <option value="">🌐 Semua Siswa (Terbuka / Publik)</option>
+                      {groups.map(g => (
+                        <option key={g.id} value={g.name}>
+                          👥 Khusus Grup: {g.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

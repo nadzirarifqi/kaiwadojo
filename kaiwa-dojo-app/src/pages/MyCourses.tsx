@@ -8,8 +8,10 @@ import {
   getCourseHeaderSettings,
   CHAPTER_UPDATE_EVENT,
   subscribeToChapterRealtime,
+  isChapterAccessibleForUser,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import { CourseCardSkeleton } from '../components/Skeleton'
 import {
@@ -40,6 +42,7 @@ interface ChapterItem {
   subtitle: string
   is_hidden?: boolean
   has_video?: boolean
+  target_group?: string | null
   lessons: LessonItem[]
 }
 
@@ -336,6 +339,7 @@ export default function MyCourses() {
   // State Tabs
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
   const [chapters, setChapters]           = useState<ChapterItem[]>([])
+  const [groups, setGroups]               = useState<KaiwaGroup[]>([])
   const [loading, setLoading]             = useState(true)
   const [searchBab, setSearchBab]         = useState('')
 
@@ -348,6 +352,7 @@ export default function MyCourses() {
       fetchCourseData()
     }
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleLocalSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
     window.addEventListener('storage', handleLocalSync)
 
     // 2. Supabase Realtime channel for cross-device sync
@@ -364,6 +369,7 @@ export default function MyCourses() {
 
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleLocalSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
       window.removeEventListener('storage', handleLocalSync)
       supabase.removeChannel(channel)
     }
@@ -409,6 +415,7 @@ export default function MyCourses() {
     }
 
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
     const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
 
@@ -423,6 +430,7 @@ export default function MyCourses() {
 
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeRealtime()
       supabase.removeChannel(progressChannel)
@@ -432,12 +440,14 @@ export default function MyCourses() {
   async function fetchCourseData() {
     setLoading(true)
 
-    // 0. Fetch Admin Chapter Settings & Header Settings
-    const [adminChapterMap, adminHeader] = await Promise.all([
+    // 0. Fetch Admin Chapter Settings, Header Settings & Groups
+    const [adminChapterMap, adminHeader, groupList] = await Promise.all([
       getChapterSettingsMap(),
       getCourseHeaderSettings(),
+      fetchGroups(true),
     ])
     setHeaderSettings(adminHeader)
+    setGroups(groupList)
 
     // 1. Fetch user's progress — DB is source of truth, scoped strictly per user ID
     const effectiveUserId = profile?.id || user?.id || null
@@ -601,6 +611,7 @@ export default function MyCourses() {
         subtitle: adminSetting?.subtitle || info.subtitle,
         is_hidden: adminSetting?.is_hidden ?? false,
         has_video: adminSetting?.has_video ?? (info as any).has_video ?? false,
+        target_group: adminSetting?.target_group || null,
         lessons,
       })
     }
@@ -625,9 +636,22 @@ export default function MyCourses() {
 
     if (paramBab) {
       const babNum = parseInt(paramBab, 10)
-      setExpandedBabs(prev => new Set(prev).add(babNum))
       const chap = chapters.find(c => c.bab_number === babNum)
       if (chap) {
+        const isAccessible = isChapterAccessibleForUser(chap, profile, groups)
+        if (!isAccessible && !isInstructor) {
+          setAlertConfig({
+            isOpen: true,
+            title: 'Akses Materi Dibatasi 🔒',
+            message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${chap.target_group}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+            type: 'lock',
+            buttonText: 'Kembali',
+            onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+          })
+          return
+        }
+
+        setExpandedBabs(prev => new Set(prev).add(babNum))
         setActiveChapter(chap)
         if (paramItem) {
           const itemNum = parseInt(paramItem, 10)
@@ -645,7 +669,7 @@ export default function MyCourses() {
         }
       }
     }
-  }, [chapters, searchParams])
+  }, [chapters, searchParams, profile, groups, isInstructor])
 
   // Automatically scroll to top whenever a lesson/video modal opens
   useEffect(() => {
@@ -808,6 +832,19 @@ export default function MyCourses() {
   }
 
   function toggleBabAccordion(babNum: number) {
+    const chap = chapters.find(c => c.bab_number === babNum)
+    if (chap && !isInstructor && !isChapterAccessibleForUser(chap, profile, groups)) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Akses Materi Dibatasi 🔒',
+        message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${chap.target_group}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+        type: 'lock',
+        buttonText: 'Mengerti',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+
     setExpandedBabs(prev => {
       const next = new Set(prev)
       if (next.has(babNum)) next.delete(babNum)
@@ -822,13 +859,19 @@ export default function MyCourses() {
     const shouldHideUnreleased = !isInstructor || (profile?.role === 'admin' && adminStudentViewMode)
     if (shouldHideUnreleased && c.is_hidden) return false
 
+    // If student view, filter out group-restricted chapters the user cannot access
+    if (shouldHideUnreleased && !isChapterAccessibleForUser(c, profile, groups)) {
+      return false
+    }
+
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
     return (
       c.title.toLowerCase().includes(q) ||
       c.subtitle.toLowerCase().includes(q) ||
       `bab ${c.bab_number}`.includes(q) ||
-      `第${c.bab_number}課`.toLowerCase().includes(q)
+      `第${c.bab_number}課`.toLowerCase().includes(q) ||
+      (c.target_group && c.target_group.toLowerCase().includes(q))
     )
   })
 
@@ -857,8 +900,8 @@ export default function MyCourses() {
             </span>
             <span className="text-xs font-semibold text-slate-300">
               {adminStudentViewMode
-                ? 'Menampilkan daftar bab persis seperti yang dilihat oleh Siswa (Bab Sembunyi disaring).'
-                : 'Menampilkan seluruh 50 Bab (Termasuk Bab yang disembunyikan).'}
+                ? 'Menampilkan daftar bab persis seperti yang dilihat oleh Siswa (Bab Sembunyi & Bab luar grup disaring).'
+                : 'Menampilkan seluruh 50 Bab (Termasuk Bab yang disembunyikan / khusus grup).'}
             </span>
           </div>
           <button
@@ -1076,6 +1119,10 @@ export default function MyCourses() {
           {filteredChapters.map(chap => {
             const isExpanded = expandedBabs.has(chap.bab_number)
             const completedInBab = chap.lessons.filter(l => l.is_completed).length
+            const isRestricted = chap.target_group &&
+              chap.target_group.toLowerCase() !== 'semua siswa' &&
+              chap.target_group.toLowerCase() !== 'all' &&
+              chap.target_group.toLowerCase() !== 'publik'
 
             return (
               <div
@@ -1092,9 +1139,16 @@ export default function MyCourses() {
                       {chap.bab_number}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
-                        {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
+                          {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
+                        </h3>
+                        {isRestricted && (
+                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                            👥 Khusus: {chap.target_group}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">
                         {chap.subtitle}
                       </p>

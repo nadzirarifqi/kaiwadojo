@@ -43,6 +43,7 @@ import {
   getChapterSettingsMap,
   DEFAULT_JILID_1,
   DEFAULT_JILID_2,
+  isChapterAccessibleForUser,
   type ChapterSetting,
 } from '../lib/chapterService'
 
@@ -90,22 +91,32 @@ function DailyMissionBuilderModal({
   const [missionDate, setMissionDate]     = useState<string>(targetDate)
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(currentMission?.selectedVideos?.[0]?.jilid || 1)
   const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
+  const [groups, setGroups]               = useState<KaiwaGroup[]>([])
   const [isSaving, setIsSaving]           = useState<boolean>(false)
 
   useEffect(() => {
     getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
+    fetchGroups(true).then(setGroups)
     const handleUpdate = () => {
       getChapterSettingsMap().then((map: Record<number, ChapterSetting>) => setChapterSettingsMap(map))
+      fetchGroups(true).then(setGroups)
     }
     window.addEventListener('kaiwa_chapter_updated', handleUpdate)
-    return () => window.removeEventListener('kaiwa_chapter_updated', handleUpdate)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleUpdate)
+    return () => {
+      window.removeEventListener('kaiwa_chapter_updated', handleUpdate)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleUpdate)
+    }
   }, [])
 
   const startBab = selectedJilid === 1 ? 1 : 26
   const availableBabs = Array.from({ length: 25 }, (_, i) => startBab + i).filter(b => {
     if (!isStudent) return true
     const setting = chapterSettingsMap[b]
-    if (setting) return !setting.is_hidden
+    if (setting) {
+      if (setting.is_hidden) return false
+      return isChapterAccessibleForUser(setting, profile, groups)
+    }
     return b <= 2
   })
 

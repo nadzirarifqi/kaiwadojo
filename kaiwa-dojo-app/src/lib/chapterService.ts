@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { type KaiwaGroup, matchGroupFromInstitution } from './groupService'
 
 export interface ChapterSetting {
   bab_number: number
@@ -12,6 +13,7 @@ export interface ChapterSetting {
   custom_video_s1?: string
   custom_video_s2?: string
   custom_video_s3?: string
+  target_group?: string | null // null / 'semua siswa' = Terbuka untuk semua, string = Khusus grup tertentu
 }
 
 export interface CourseHeaderSettings {
@@ -21,6 +23,66 @@ export interface CourseHeaderSettings {
 
 const SETTINGS_KEY = 'kaiwa_chapter_settings_v2'
 const HEADER_KEY = 'kaiwa_course_header_v2'
+
+/**
+ * Checks if a chapter is accessible to a user based on role and target_group.
+ * - Admin & Pemateri can access all chapters.
+ * - Chapters with no target_group (or 'semua siswa', 'all', 'publik') are accessible to all students.
+ * - Chapters with a specific target_group require the student to belong to that group.
+ */
+export function isChapterAccessibleForUser(
+  chapter: { target_group?: string | null; is_hidden?: boolean },
+  userProfile: { role?: string; group_name?: string | null; institution?: string | null } | null | undefined,
+  groups: KaiwaGroup[] = []
+): boolean {
+  if (userProfile?.role === 'admin' || userProfile?.role === 'pemateri') {
+    return true
+  }
+
+  const target = (chapter.target_group || '').trim()
+
+  // No group restriction -> open to all students
+  if (!target || target.toLowerCase() === 'semua siswa' || target.toLowerCase() === 'all' || target.toLowerCase() === 'publik') {
+    return true
+  }
+
+  // If chapter is restricted to a group, user must be logged in
+  if (!userProfile) return false
+
+  // Determine user's group from group_name or match against institution keywords
+  const studentGroup = (
+    userProfile.group_name?.trim() ||
+    matchGroupFromInstitution(userProfile.institution, groups) ||
+    ''
+  ).trim()
+
+  if (!studentGroup) {
+    return false
+  }
+
+  // Exact or case-insensitive match
+  if (studentGroup.toLowerCase() === target.toLowerCase()) {
+    return true
+  }
+
+  // Collapsed space match
+  const normStudent = studentGroup.toLowerCase().replace(/\s+/g, '')
+  const normTarget = target.toLowerCase().replace(/\s+/g, '')
+  if (normStudent === normTarget) {
+    return true
+  }
+
+  // Keyword match from registered groups
+  const matchedGroupObj = groups.find(g => g.name.toLowerCase() === target.toLowerCase())
+  if (matchedGroupObj) {
+    const kws = (matchedGroupObj.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean)
+    if (kws.some(kw => studentGroup.toLowerCase().includes(kw) || normStudent.includes(kw.replace(/\s+/g, '')))) {
+      return true
+    }
+  }
+
+  return false
+}
 
 /* ── Default Chapter Titles for Jilid 1 (Bab 1 - 25) ── */
 export const DEFAULT_JILID_1: { [key: number]: { title: string; subtitle: string; has_video: boolean } } = {
@@ -134,6 +196,7 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
             custom_video_s1: item.custom_video_s1,
             custom_video_s2: item.custom_video_s2,
             custom_video_s3: item.custom_video_s3,
+            target_group: item.target_group ?? result[item.bab_number].target_group ?? null,
           }
         }
       })
@@ -180,7 +243,7 @@ export function subscribeToChapterRealtime(onUpdate: () => void) {
 export async function saveChapterSetting(setting: ChapterSetting): Promise<boolean> {
   // 1. Save to Supabase DB for ground truth cross-user / cross-device synchronization
   try {
-    const { error } = await supabase.from('chapter_settings').upsert({
+    const payload: any = {
       bab_number: setting.bab_number,
       title: setting.title,
       subtitle: setting.subtitle,
@@ -192,12 +255,21 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
       custom_video_s1: setting.custom_video_s1 || null,
       custom_video_s2: setting.custom_video_s2 || null,
       custom_video_s3: setting.custom_video_s3 || null,
+      target_group: setting.target_group || null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'bab_number' })
+    }
+
+    const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
 
     if (error) {
-      console.error('Supabase chapter_settings upsert error:', error.message)
-      throw new Error(`Gagal menyimpan ke database Supabase: ${error.message}`)
+      if (error.message.includes('target_group') || error.code === '42703') {
+        // Fallback without target_group column if column not yet in DB schema
+        delete payload.target_group
+        await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
+      } else {
+        console.error('Supabase chapter_settings upsert error:', error.message)
+        throw new Error(`Gagal menyimpan ke database Supabase: ${error.message}`)
+      }
     }
   } catch (err: any) {
     console.error('Supabase saveChapterSetting error:', err)
@@ -223,7 +295,7 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
   return true
 }
 
-/* ── Save Multiple Chapter Settings in Batch (Publish All / Hide All) ── */
+/* ── Save Multiple Chapter Settings in Batch (Publish All / Hide All / Bulk Group Set) ── */
 export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): Promise<boolean> {
   // 1. Batch upsert into Supabase DB
   try {
@@ -239,13 +311,22 @@ export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): 
       custom_video_s1: s.custom_video_s1 || null,
       custom_video_s2: s.custom_video_s2 || null,
       custom_video_s3: s.custom_video_s3 || null,
+      target_group: s.target_group || null,
       updated_at: new Date().toISOString(),
     }))
 
     const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
     if (error) {
-      console.error('Supabase batch upsert error:', error.message)
-      throw new Error(`Gagal batch update ke database Supabase: ${error.message}`)
+      if (error.message.includes('target_group') || error.code === '42703') {
+        const strippedPayload = payload.map(p => {
+          const { target_group, ...rest } = p
+          return rest
+        })
+        await supabase.from('chapter_settings').upsert(strippedPayload, { onConflict: 'bab_number' })
+      } else {
+        console.error('Supabase batch upsert error:', error.message)
+        throw new Error(`Gagal batch update ke database Supabase: ${error.message}`)
+      }
     }
   } catch (err: any) {
     console.error('Supabase saveBatchChapterSettings error:', err)
