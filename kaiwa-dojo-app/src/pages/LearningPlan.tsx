@@ -11,6 +11,7 @@ import {
   calculateMissionProgress,
   fetchDailyMission,
   fetchAllUserMissions,
+  isNoPlanMission,
   getTodayDateString,
   DAILY_MISSION_UPDATE_EVENT,
   subscribeToDailyMissionRealtime,
@@ -862,16 +863,23 @@ export default function LearningPlanPage() {
       const formattedDay   = String(d).padStart(2, '0')
       const dStr = `${year}-${formattedMonth}-${formattedDay}`
 
+      const m = allMissionsMap.get(dStr)
+      // If no mission exists for this date, it cannot be completed/passed
+      if (!m) {
+        return null
+      }
+
+      if (isNoPlanMission(m)) {
+        return dStr
+      }
+
       if (streakDates.has(dStr)) {
         return dStr
-      } else {
-        const m = allMissionsMap.get(dStr)
-        if (m) {
-          const prog = await calculateMissionProgress(activeUserId, m, preFetched)
-          if (prog.isFullyCompleted) {
-            return dStr
-          }
-        }
+      }
+
+      const prog = await calculateMissionProgress(activeUserId, m, preFetched)
+      if (prog.isFullyCompleted) {
+        return dStr
       }
       return null
     })
@@ -1105,15 +1113,16 @@ export default function LearningPlanPage() {
                   const isToday = dateStr === todayStr
                   const isPast = dateStr < todayStr
                   const isSelected = dateStr === selectedDateStr
-                  const isPassed = streakSet.has(dateStr) || pastCompletedSet.has(dateStr)
                   const isExpanded = expandedDates.has(dateStr)
-
-                  const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
-                  const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
 
                   const activeUserId = profile?.id || user?.id || ''
                   const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
                   const hasPlan = dateMission !== null
+                  const isNoPlan = dateMission !== null && isNoPlanMission(dateMission)
+                  const isPassed = hasPlan && (streakSet.has(dateStr) || pastCompletedSet.has(dateStr))
+
+                  const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
+                  const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
 
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, accessibleSchedules, reservations)
                   const allDaySchedules = dateStatus.schedules || []
@@ -1124,23 +1133,27 @@ export default function LearningPlanPage() {
                   const hasActivity = daySchedules.length > 0 || dateMission !== null
                   const isDateLocked = dateStatus.hasSchedule && !dateStatus.canEnroll && !dateStatus.isBooked
 
-                  const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
+                  let stampSrc = '/kosong.png'
+                  let stampAlt = 'Belum Buat Rencana (Cap Abu-abu)'
+                  let stampLabel = 'Belum Buat Rencana'
 
-                  const stampSrc = isNoPlan
-                    ? '/tidakada.png'
-                    : isPassed
-                      ? '/lulus.png'
-                      : hasPlan
-                        ? '/gagal.png'
-                        : '/kosong.png'
-
-                  const stampAlt = isNoPlan
-                    ? 'Tidak Ada Rencana (Cap Biru)'
-                    : isPassed
-                      ? 'Lulus (100%)'
-                      : hasPlan
-                        ? 'Gagal (Tidak Selesai)'
-                        : 'Kosong (Belum Ada Rencana)'
+                  if (!hasPlan) {
+                    stampSrc = '/kosong.png'
+                    stampAlt = 'Belum Buat Rencana (Cap Abu-abu)'
+                    stampLabel = 'Belum Buat Rencana'
+                  } else if (isNoPlan) {
+                    stampSrc = '/tidakada.png'
+                    stampAlt = 'Tidak Ada Rencana (Cap Biru)'
+                    stampLabel = 'Tidak Ada Rencana'
+                  } else if (isPassed) {
+                    stampSrc = '/lulus.png'
+                    stampAlt = 'Lulus 100% (Cap Hijau)'
+                    stampLabel = 'Lulus 100%'
+                  } else {
+                    stampSrc = '/gagal.png'
+                    stampAlt = 'Belum Tuntas (Cap Merah)'
+                    stampLabel = 'Belum Tuntas'
+                  }
 
                   let cardBorderAccent = 'border-l-4 border-l-transparent'
 
@@ -1229,10 +1242,11 @@ export default function LearningPlanPage() {
                               <img
                                 src={stampSrc}
                                 alt={stampAlt}
+                                title={stampAlt}
                                 className="size-6 object-contain shrink-0 rotate-[-6deg]"
                               />
                               <span className="text-[0.68rem] font-semibold text-slate-600 dark:text-slate-300 hidden xs:inline">
-                                {isPassed ? 'Lulus 100%' : hasPlan ? (isNoPlan ? 'Tidak Ada Rencana' : 'Belum Tuntas') : 'Tanpa Rencana'}
+                                {stampLabel}
                               </span>
                             </div>
                           )}
@@ -1454,35 +1468,35 @@ export default function LearningPlanPage() {
 
                   const isPast = dateStr < todayStr
                   const isSelected = dateStr === selectedDateStr
-                  const hasStreak = streakSet.has(dateStr)
-                  const isPassed = streakSet.has(dateStr) || pastCompletedSet.has(dateStr)
+
+                  const activeUserId = profile?.id || user?.id || ''
+                  const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
+                  const hasPlan = dateMission !== null
+                  const isNoPlan = dateMission !== null && isNoPlanMission(dateMission)
+                  const isPassed = hasPlan && (streakSet.has(dateStr) || pastCompletedSet.has(dateStr))
+                  const hasStreak = hasPlan && (streakSet.has(dateStr) || isPassed)
 
                   const accountCreatedDateStr = (profile?.created_at || user?.created_at || new Date().toISOString()).split('T')[0]
                   const isPastEligibleForStamp = isPast && (isPassed || dateStr >= accountCreatedDateStr)
                   
-                  const activeUserId = profile?.id || user?.id || ''
-                  const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
-                  const hasPlan = dateMission !== null
-
                   const dateStatus = calculateDateScheduleStatus(dateStr, activeUserId, accessibleSchedules, reservations)
 
-                  const isNoPlan = dateMission !== null && dateMission.selectedVideos.length === 0 && (dateMission.targetQuizCount || 0) === 0 && (dateMission.targetKotobaCount || 0) === 0
+                  let stampSrc = '/kosong.png'
+                  let stampAlt = 'Belum Buat Rencana (Cap Abu-abu)'
 
-                  const stampSrc = isNoPlan
-                    ? '/tidakada.png'
-                    : isPassed
-                      ? '/lulus.png'
-                      : hasPlan
-                        ? '/gagal.png'
-                        : '/kosong.png'
-
-                  const stampAlt = isNoPlan
-                    ? 'Tidak Ada Rencana (Cap Biru)'
-                    : isPassed
-                      ? 'Lulus (100%)'
-                      : hasPlan
-                        ? 'Gagal (Tidak Selesai)'
-                        : 'Kosong (Belum Ada Rencana)'
+                  if (!hasPlan) {
+                    stampSrc = '/kosong.png'
+                    stampAlt = 'Belum Buat Rencana (Cap Abu-abu)'
+                  } else if (isNoPlan) {
+                    stampSrc = '/tidakada.png'
+                    stampAlt = 'Tidak Ada Rencana (Cap Biru)'
+                  } else if (isPassed) {
+                    stampSrc = '/lulus.png'
+                    stampAlt = 'Lulus 100% (Cap Hijau)'
+                  } else {
+                    stampSrc = '/gagal.png'
+                    stampAlt = 'Belum Tuntas (Cap Merah)'
+                  }
 
                   let cellBgStyle = ''
 
@@ -1818,13 +1832,13 @@ export default function LearningPlanPage() {
 
             {selectedMission && missionProgress ? (
               <div className="flex flex-col gap-4">
-                {selectedMission.selectedVideos.length === 0 && (selectedMission.targetQuizCount || 0) === 0 && (selectedMission.targetKotobaCount || 0) === 0 ? (
+                {isNoPlanMission(selectedMission) ? (
                   <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-8 object-contain shrink-0" />
+                      <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-8 object-contain shrink-0 rotate-[-6deg]" />
                       <div>
-                        <div className="text-xs font-black text-sky-300">Cap Biru Diberikan</div>
-                        <div className="text-[0.68rem] text-slate-300">Tidak ada rencana (Video, Kuis, & Kotoba 0)</div>
+                        <div className="text-xs font-black text-sky-300">Cap Biru (Tidak Ada Rencana)</div>
+                        <div className="text-[0.68rem] text-slate-300">Hari istirahat terencana (Video, Kuis, & Kotoba 0)</div>
                       </div>
                     </div>
                     <span className="text-[0.65rem] font-extrabold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
@@ -1832,14 +1846,32 @@ export default function LearningPlanPage() {
                     </span>
                   </div>
                 ) : (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-300 font-medium">Status Misi:</span>
+                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                    missionProgress.isFullyCompleted
+                      ? 'bg-emerald-500/10 border-emerald-500/30'
+                      : 'bg-rose-500/10 border-rose-500/30'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={missionProgress.isFullyCompleted ? '/lulus.png' : '/gagal.png'}
+                        alt={missionProgress.isFullyCompleted ? 'Lulus 100%' : 'Belum Tuntas'}
+                        className="size-8 object-contain shrink-0 rotate-[-6deg]"
+                      />
+                      <div>
+                        <div className="text-xs font-black text-white">
+                          {missionProgress.isFullyCompleted ? 'Cap Hijau: 100% Selesai 🎉' : `Cap Merah: Belum Tuntas (${missionProgress.overallPct}%)`}
+                        </div>
+                        <div className="text-[0.68rem] text-slate-300">
+                          {missionProgress.isFullyCompleted ? 'Semua target misi telah tercapai 100%' : 'Target misi belum tuntas tercapai (<100%)'}
+                        </div>
+                      </div>
+                    </div>
                     <span className={`font-black px-2.5 py-0.5 rounded-full text-[0.7rem] ${
                       missionProgress.isFullyCompleted
                         ? 'bg-emerald-500 text-white'
-                        : 'bg-amber-500 text-white'
+                        : 'bg-rose-500 text-white'
                     }`}>
-                      {missionProgress.isFullyCompleted ? '🎉 100% Selesai' : `${missionProgress.overallPct}% Selesai`}
+                      {missionProgress.isFullyCompleted ? '100% Lulus' : `${missionProgress.overallPct}%`}
                     </span>
                   </div>
                 )}
@@ -1851,7 +1883,7 @@ export default function LearningPlanPage() {
                     <span className="text-emerald-300">{missionProgress.actualReplays}/{missionProgress.targetReplays}x</span>
                   </div>
                   <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${Math.min(100, (missionProgress.actualReplays / selectedMission.targetReplayCount) * 100)}%` }} />
+                    <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${selectedMission.targetReplayCount > 0 ? Math.min(100, (missionProgress.actualReplays / selectedMission.targetReplayCount) * 100) : 100}%` }} />
                   </div>
                   <div className="flex flex-col gap-1 mt-1">
                     {selectedMission.selectedVideos.map((v, i) => (
@@ -1899,13 +1931,19 @@ export default function LearningPlanPage() {
               </div>
             ) : (
               <div className="p-6 bg-white/5 rounded-2xl border border-white/10 text-center flex flex-col items-center gap-3">
-                <span className="text-4xl">📝</span>
                 {isSelectedDatePast ? (
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
-                  </p>
+                  <div className="flex flex-col items-center gap-2.5">
+                    <img src="/kosong.png" alt="Belum Buat Rencana (Cap Abu-abu)" className="size-12 object-contain opacity-90 rotate-[-6deg]" />
+                    <span className="text-xs font-black text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+                      Cap Abu-abu: Belum Buat Rencana
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                      Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
+                    </p>
+                  </div>
                 ) : (
                   <>
+                    <span className="text-4xl">📝</span>
                     <p className="text-xs text-slate-300 leading-relaxed">
                       Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
                     </p>
