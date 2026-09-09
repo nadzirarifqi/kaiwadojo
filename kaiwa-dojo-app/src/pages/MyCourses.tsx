@@ -600,11 +600,10 @@ export default function MyCourses() {
       if (chap) {
         const isAccessible = isChapterAccessibleForUser(chap, profile, groups)
         if (!isAccessible && !isInstructor) {
-          const grpList = parseTargetGroups(chap.target_group)
           setAlertConfig({
             isOpen: true,
-            title: 'Akses Materi Dibatasi 🔒',
-            message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${grpList.join(', ')}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+            title: 'Materi Tidak Tersedia 🔒',
+            message: `Bab ${babNum} saat ini tidak tersedia untuk akun Anda.`,
             type: 'lock',
             buttonText: 'Kembali',
             onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
@@ -795,11 +794,10 @@ export default function MyCourses() {
   function toggleBabAccordion(babNum: number) {
     const chap = chapters.find(c => c.bab_number === babNum)
     if (chap && !isInstructor && !isChapterAccessibleForUser(chap, profile, groups)) {
-      const grpList = parseTargetGroups(chap.target_group)
       setAlertConfig({
         isOpen: true,
-        title: 'Akses Materi Dibatasi 🔒',
-        message: `Bab ${babNum} (${chap.title}) dikhususkan untuk siswa grup "${grpList.join(', ')}". Akun Anda belum memiliki akses ke grup ini. Silakan hubungi admin / pemateri jika Anda memerlukan akses.`,
+        title: 'Materi Tidak Tersedia 🔒',
+        message: `Bab ${babNum} saat ini tidak tersedia untuk akun Anda.`,
         type: 'lock',
         buttonText: 'Mengerti',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
@@ -816,9 +814,10 @@ export default function MyCourses() {
   }
 
   /* ── Filter Chapters ─────────────────────────────── */
+  const shouldHideUnreleased = !isInstructor || (profile?.role === 'admin' && adminStudentViewMode)
+
   const filteredChapters = chapters.filter(c => {
     // If student OR if admin is in adminStudentViewMode: hide if marked hidden by Admin
-    const shouldHideUnreleased = !isInstructor || (profile?.role === 'admin' && adminStudentViewMode)
     if (shouldHideUnreleased && c.is_hidden) return false
 
     // If student view, filter out group-restricted chapters the user cannot access
@@ -834,7 +833,7 @@ export default function MyCourses() {
       c.subtitle.toLowerCase().includes(q) ||
       `bab ${c.bab_number}`.includes(q) ||
       `第${c.bab_number}課`.toLowerCase().includes(q) ||
-      targetList.some(g => g.toLowerCase().includes(q))
+      (!shouldHideUnreleased && targetList.some(g => g.toLowerCase().includes(q)))
     )
   })
 
@@ -1104,7 +1103,7 @@ export default function MyCourses() {
                         <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
                           {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
                         </h3>
-                        {isRestricted && (
+                        {!shouldHideUnreleased && isRestricted && (
                           <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 flex items-center gap-1">
                             <span>👥 Khusus ({targetGroupList.length}):</span>
                             <span>{targetGroupList.join(', ')}</span>
