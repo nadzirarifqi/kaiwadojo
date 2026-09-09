@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { ProfileSkeleton } from '../components/Skeleton'
 import { normalizeGroup } from '../lib/studentService'
 import { getDailyMission, isNoPlanMission } from '../lib/dailyMission'
+import { sanitizeInput } from '../lib/securityUtils'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
@@ -279,12 +280,17 @@ export default function ProfilePage() {
       }
 
       // 2. Save directly to Supabase DB profiles table
+      const cleanFullName = sanitizeInput(fullName, 100)
+      const cleanInstitution = sanitizeInput(institution, 150)
+      const cleanBio = sanitizeInput(bio, 500)
+      const cleanAvatar = sanitizeInput(finalAvatarUrl, 500)
+
       const updateData = {
-        full_name: fullName.trim(),
-        institution: institution.trim(),
-        group_name: normalizeGroup(institution.trim()),
-        bio: bio.trim(),
-        avatar_url: finalAvatarUrl.trim() || null,
+        full_name: cleanFullName,
+        institution: cleanInstitution,
+        group_name: normalizeGroup(cleanInstitution),
+        bio: cleanBio,
+        avatar_url: cleanAvatar || null,
         updated_at: new Date().toISOString(),
       }
 
@@ -297,12 +303,12 @@ export default function ProfilePage() {
         console.warn('Profile update warning, attempting upsert:', profileErr)
         const { error: upsertErr } = await supabase.from('profiles').upsert({
           id: targetUserId,
-          full_name: fullName.trim(),
+          full_name: cleanFullName,
           username: (profile?.username || username).trim(),
-          institution: institution.trim(),
-          group_name: normalizeGroup(institution.trim()),
-          bio: bio.trim(),
-          avatar_url: finalAvatarUrl.trim() || null,
+          institution: cleanInstitution,
+          group_name: normalizeGroup(cleanInstitution),
+          bio: cleanBio,
+          avatar_url: cleanAvatar || null,
           role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
           status: profile?.status || 'approved',
           updated_at: new Date().toISOString(),
@@ -314,12 +320,12 @@ export default function ProfilePage() {
       const updatedProfileObj = {
         ...profile,
         id: targetUserId,
-        full_name: fullName.trim(),
+        full_name: cleanFullName,
         username: (profile?.username || username).trim(),
-        institution: institution.trim(),
-        group_name: normalizeGroup(institution.trim()),
-        bio: bio.trim(),
-        avatar_url: finalAvatarUrl.trim() || null,
+        institution: cleanInstitution,
+        group_name: normalizeGroup(cleanInstitution),
+        bio: cleanBio,
+        avatar_url: cleanAvatar || null,
         role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
         updated_at: new Date().toISOString(),
       }

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { sanitizeInput } from './securityUtils'
 
 export type FeedbackCategory =
   | 'saran_fitur'
@@ -143,16 +144,22 @@ function saveLocalFeedbacks(items: FeedbackItem[]) {
  */
 export async function submitFeedback(payload: CreateFeedbackPayload): Promise<{ success: boolean; data?: FeedbackItem; error?: string }> {
   try {
+    const cleanName = sanitizeInput(payload.name, 100) || 'Anonim'
+    const cleanEmail = payload.email ? sanitizeInput(payload.email, 100) : null
+    const cleanPhone = payload.phone_number ? sanitizeInput(payload.phone_number, 20) : null
+    const cleanTitle = payload.title ? sanitizeInput(payload.title, 200) : null
+    const cleanMessage = sanitizeInput(payload.message, 3000)
+
     const itemToInsert = {
       user_id: payload.user_id || null,
-      name: payload.name.trim() || 'Anonim',
-      email: payload.email?.trim() || null,
-      phone_number: payload.phone_number?.trim() || null,
+      name: cleanName,
+      email: cleanEmail,
+      phone_number: cleanPhone,
       role: payload.role || 'tamu',
       category: payload.category,
-      rating: payload.rating || 5,
-      title: payload.title?.trim() || null,
-      message: payload.message.trim(),
+      rating: Math.min(5, Math.max(1, payload.rating || 5)),
+      title: cleanTitle,
+      message: cleanMessage,
       page_url: payload.page_url || (typeof window !== 'undefined' ? window.location.href : null),
       status: 'unread',
     }
@@ -263,9 +270,10 @@ export async function updateFeedbackStatus(id: string, status: FeedbackStatus): 
  */
 export async function updateFeedbackAdminNotes(id: string, adminNotes: string): Promise<{ success: boolean; error?: string }> {
   try {
+    const cleanNotes = sanitizeInput(adminNotes, 2000)
     if (id.startsWith('local-')) {
       const locals = getLocalFeedbacks()
-      const updated = locals.map(f => (f.id === id ? { ...f, admin_notes: adminNotes, updated_at: new Date().toISOString() } : f))
+      const updated = locals.map(f => (f.id === id ? { ...f, admin_notes: cleanNotes, updated_at: new Date().toISOString() } : f))
       saveLocalFeedbacks(updated)
       notifyFeedbackUpdate()
       return { success: true }
@@ -273,12 +281,12 @@ export async function updateFeedbackAdminNotes(id: string, adminNotes: string): 
 
     const { error } = await supabase
       .from('feedback_suggestions')
-      .update({ admin_notes: adminNotes, updated_at: new Date().toISOString() })
+      .update({ admin_notes: cleanNotes, updated_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
       const locals = getLocalFeedbacks()
-      const updated = locals.map(f => (f.id === id ? { ...f, admin_notes: adminNotes, updated_at: new Date().toISOString() } : f))
+      const updated = locals.map(f => (f.id === id ? { ...f, admin_notes: cleanNotes, updated_at: new Date().toISOString() } : f))
       saveLocalFeedbacks(updated)
       notifyFeedbackUpdate()
       return { success: true }

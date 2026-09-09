@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { createStudentAccount } from '../../lib/studentService'
 import { sendWhatsAppOtp, validateWhatsAppNumber, getAdminWhatsAppUrl } from '../../lib/whatsappService'
+import { sanitizeInput, sanitizeUsername, sanitizePhoneNumber, isValidEmail, SecurityRateLimiter } from '../../lib/securityUtils'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -167,14 +168,31 @@ export default function RegisterPage() {
     setEmailError(null)
     setLoading(true)
 
+    const cleanEmail = email.trim().toLowerCase()
+    if (!isValidEmail(cleanEmail)) {
+      setEmailError('Format email tidak valid! Mohon periksa kembali.')
+      setError('Format email tidak valid.')
+      setLoading(false)
+      return
+    }
+
     if (password.length < 8) {
       setError('Password minimal 8 karakter!')
       setLoading(false)
       return
     }
 
+    const cleanPhone = sanitizePhoneNumber(phoneNumber)
+    const otpRateKey = `otp_phone_${cleanPhone}`
+    const otpRateCheck = SecurityRateLimiter.check(otpRateKey, 4, 300)
+    if (!otpRateCheck.allowed) {
+      setError(`Terlalu banyak permintaan OTP untuk nomor ini. Silakan tunggu ${otpRateCheck.lockoutSecondsLeft} detik sebelum meminta kode baru.`)
+      setLoading(false)
+      return
+    }
+
     // 1. Cek Duplikasi (Username, Email, No. WhatsApp) SEBELUM Validasi WA & Kirim OTP
-    const dupeRes = await performDuplicateCheck(username, email, phoneNumber)
+    const dupeRes = await performDuplicateCheck(username, cleanEmail, cleanPhone)
 
     let hasDuplicate = false
     if (dupeRes.isUserDupe) {
@@ -182,11 +200,11 @@ export default function RegisterPage() {
       hasDuplicate = true
     }
     if (dupeRes.isEmailDupe) {
-      setEmailError(`Email "${email.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+      setEmailError(`Email "${cleanEmail}" sudah terdaftar. Silakan gunakan email lain atau login.`)
       hasDuplicate = true
     }
     if (dupeRes.isPhoneDupe) {
-      setPhoneError(`Nomor WhatsApp "${phoneNumber.trim()}" sudah terdaftar. Silakan gunakan nomor lain.`)
+      setPhoneError(`Nomor WhatsApp "${cleanPhone}" sudah terdaftar. Silakan gunakan nomor lain.`)
       hasDuplicate = true
     }
 
@@ -197,12 +215,15 @@ export default function RegisterPage() {
     }
 
     // 2. Validasi Keaktifan & Format Nomor WhatsApp
-    const waCheck = await validateWhatsAppNumber(phoneNumber)
+    const waCheck = await validateWhatsAppNumber(cleanPhone)
     if (!waCheck.isValid) {
       setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif!')
       setLoading(false)
       return
     }
+
+    // Record OTP request attempt
+    SecurityRateLimiter.recordFailure(otpRateKey, 4, 300)
 
     // 3. Hanya jika Username, Email, dan No. WA 100% belum pernah terdaftar -> Kirim OTP via WA & Buka Modal
     await generateNewOtp()
@@ -262,18 +283,24 @@ export default function RegisterPage() {
 
     setVerifyingOtp(true)
 
+    const cleanFullName = sanitizeInput(fullName, 100)
+    const cleanUsername = sanitizeUsername(username)
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanPhone = sanitizePhoneNumber(phoneNumber)
+    const cleanInstitution = sanitizeInput(institution, 150)
+
     let authUserId: string | undefined
 
     try {
       let { data: authData, error: signUpErr } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password,
         options: {
           data: {
-            full_name: fullName.trim(),
-            username: username.trim().toLowerCase(),
-            phone_number: phoneNumber.trim(),
-            institution: institution.trim(),
+            full_name: cleanFullName,
+            username: cleanUsername,
+            phone_number: cleanPhone,
+            institution: cleanInstitution,
             role: 'pelajar',
             status: 'pending',
           },
@@ -284,12 +311,12 @@ export default function RegisterPage() {
       if (signUpErr && signUpErr.message.toLowerCase().includes('database error saving new user')) {
         console.warn('Full metadata signUp failed DB trigger. Retrying minimal metadata signUp...')
         const fallbackSignUp = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
+          email: cleanEmail,
           password,
           options: {
             data: {
-              full_name: fullName.trim(),
-              username: username.trim().toLowerCase(),
+              full_name: cleanFullName,
+              username: cleanUsername,
             },
           },
         })
@@ -301,7 +328,6 @@ export default function RegisterPage() {
 
       if (signUpErr) {
         if (signUpErr.message.toLowerCase().includes('already registered')) {
-          const cleanEmail = email.trim().toLowerCase()
           const { data: existingProf } = await supabase
             .from('profiles')
             .select('id')
@@ -343,11 +369,11 @@ export default function RegisterPage() {
     // Simpan/Upsert Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
     const newStudent = await createStudentAccount({
       id: authUserId,
-      full_name: fullName.trim(),
-      username: username.trim().toLowerCase(),
-      email: email.trim().toLowerCase(),
-      phone_number: phoneNumber.trim(),
-      institution: institution.trim(),
+      full_name: cleanFullName,
+      username: cleanUsername,
+      email: cleanEmail,
+      phone_number: cleanPhone,
+      institution: cleanInstitution,
       bio: 'Siswa Baru Kaiwa Dojo',
       status: 'pending',
     })

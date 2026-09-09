@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useAuth'
 import { fetchStudents } from '../../lib/studentService'
 import { getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import CustomAlertModal from '../../components/CustomAlertModal'
-
 import { claimDeviceSession } from '../../lib/deviceUtils'
+import { SecurityRateLimiter, sanitizeInput } from '../../lib/securityUtils'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [lockoutSeconds, setLockoutSeconds] = useState<number>(0)
 
   // Pop-up Alert Modal State
   const [alertModal, setAlertModal] = useState<{
@@ -33,6 +34,19 @@ export default function LoginPage() {
     type: 'warning',
     buttonText: 'Mengerti',
   })
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let timer: any = null
+    if (lockoutSeconds > 0) {
+      timer = setInterval(() => {
+        setLockoutSeconds(prev => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [lockoutSeconds])
 
   function showAlert(
     title: string,
@@ -53,26 +67,39 @@ export default function LoginPage() {
     })
   }
 
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     clearSessionNotice()
     setError(null)
-    setLoading(true)
 
-    const inputClean = username.trim().toLowerCase()
+    const inputClean = sanitizeInput(username).toLowerCase().replace(/^@/, '')
 
     if (!inputClean) {
-      setLoading(false)
       showAlert('⚠️ Username Belum Diisi', 'Silakan masukkan username atau email Anda terlebih dahulu.')
       return
     }
 
+    // Rate Limit Check
+    const rateKey = `user_login_${inputClean}`
+    const rateCheck = SecurityRateLimiter.check(rateKey, 6, 180)
+    if (!rateCheck.allowed || lockoutSeconds > 0) {
+      const remainingSecs = lockoutSeconds || rateCheck.lockoutSecondsLeft
+      setLockoutSeconds(remainingSecs)
+      showAlert(
+        '🚫 Terlalu Banyak Percobaan',
+        `Akses login untuk akun ini dikunci sementara karena terlalu banyak percobaan gagal. Silakan coba kembali dalam ${remainingSecs} detik.`,
+        'lock',
+        'Tutup'
+      )
+      return
+    }
+
     if (!password) {
-      setLoading(false)
       showAlert('🔒 Password Belum Diisi', 'Silakan masukkan password akun Anda terlebih dahulu.', 'lock', 'Isi Password')
       return
     }
+
+    setLoading(true)
 
     // 1. Special Admin Login Credentials
     if (inputClean === 'kaiwahiroshima') {
@@ -281,6 +308,18 @@ export default function LoginPage() {
 
     if (authError) {
       setLoading(false)
+      const res = SecurityRateLimiter.recordFailure(rateKey, 6, 180)
+      if (res.locked) {
+        setLockoutSeconds(res.lockoutSecondsLeft)
+        showAlert(
+          '🚫 Akun Terkunci Sementara',
+          `Terlalu banyak percobaan login gagal untuk akun ini. Sistem mengunci percobaan login selama ${res.lockoutSecondsLeft} detik untuk mencegah pembajakan akun.`,
+          'lock',
+          'Mengerti'
+        )
+        return
+      }
+
       if (authError.message === 'Email not confirmed') {
         showAlert(
           '✉️ Email Belum Dikonfirmasi',
@@ -292,14 +331,14 @@ export default function LoginPage() {
         if (!userFoundInDb && inputClean.includes('@')) {
           showAlert(
             '❌ Email Tidak Ditemukan',
-            `Email "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan email Anda atau buat akun baru.`,
+            `Email "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan email Anda atau buat akun baru. (Sisa percobaan: ${res.remainingAttempts}x)`,
             'warning',
             'Periksa Email'
           )
         } else {
           showAlert(
             '🔑 Password Salah',
-            `Password yang Anda masukkan untuk akun "**${username}**" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi.`,
+            `Password yang Anda masukkan untuk akun "**${username}**" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi. (Sisa percobaan: ${res.remainingAttempts}x sebelum akun terkunci)`,
             'lock',
             'Coba Password Lagi'
           )
@@ -308,6 +347,9 @@ export default function LoginPage() {
         showAlert('⚠️ Gagal Masuk', `Terjadi kendala saat login: ${authError.message}`, 'warning')
       }
     } else {
+      // Reset rate limit on success
+      SecurityRateLimiter.reset(rateKey)
+
       // Fetch user profile to cache in session
       if (authData?.user?.id) {
         const { data: profData } = await supabase
@@ -428,11 +470,12 @@ export default function LoginPage() {
                 spellCheck={false}
                 enterKeyHint="next"
                 autoComplete="username"
+                disabled={lockoutSeconds > 0 || loading}
                 placeholder="username atau nama@email.com"
                 required
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -455,11 +498,12 @@ export default function LoginPage() {
                   spellCheck={false}
                   enterKeyHint="go"
                   autoComplete="current-password"
+                  disabled={lockoutSeconds > 0 || loading}
                   placeholder="••••••••"
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium pr-12 min-h-[44px] touch-manipulation"
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium pr-12 min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   type="button"
@@ -483,10 +527,14 @@ export default function LoginPage() {
             <button
               id="btn-login"
               type="submit"
-              disabled={loading}
+              disabled={loading || lockoutSeconds > 0}
               className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98] min-h-[48px] touch-manipulation flex items-center justify-center"
             >
-              {loading ? 'Memproses Masuk...' : 'Masuk →'}
+              {lockoutSeconds > 0
+                ? `⏳ Terkunci (${lockoutSeconds}s)`
+                : loading
+                  ? 'Memproses Masuk...'
+                  : 'Masuk →'}
             </button>
           </form>
 

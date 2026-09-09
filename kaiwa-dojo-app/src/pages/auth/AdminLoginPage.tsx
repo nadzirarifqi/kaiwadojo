@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { claimDeviceSession } from '../../lib/deviceUtils'
+import { SecurityRateLimiter, sanitizeUsername } from '../../lib/securityUtils'
 
 const ADMIN_CORRECT_PIN = '899876'
 
@@ -11,26 +12,73 @@ export default function AdminLoginPage() {
   // Phase 1: PIN Gate (ALWAYS requires PIN 899876 on every page load/refresh)
   const [pinVerified, setPinVerified] = useState<boolean>(false)
 
-  // PIN Form State
+  // PIN Form State & Rate Limiting
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinShake, setPinShake] = useState(false)
+  const [pinLockout, setPinLockout] = useState<number>(0)
 
-  // Login Credentials State
+  // Login Credentials State & Rate Limiting
   const [username, setUsername] = useState('kaiwahiroshima')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loginLockout, setLoginLockout] = useState<number>(0)
+
+  // Check initial rate limits
+  useEffect(() => {
+    const pinCheck = SecurityRateLimiter.check('admin_pin_attempt', 5, 300)
+    if (!pinCheck.allowed) {
+      setPinLockout(pinCheck.lockoutSecondsLeft)
+    }
+
+    const authCheck = SecurityRateLimiter.check('admin_auth_attempt', 5, 300)
+    if (!authCheck.allowed) {
+      setLoginLockout(authCheck.lockoutSecondsLeft)
+    }
+  }, [])
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let timer: any = null
+    if (pinLockout > 0 || loginLockout > 0) {
+      timer = setInterval(() => {
+        setPinLockout(prev => (prev > 0 ? prev - 1 : 0))
+        setLoginLockout(prev => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [pinLockout, loginLockout])
 
   function handleVerifyPin(e: React.FormEvent) {
     e.preventDefault()
     setPinError(null)
 
+    // Rate Limit Check (5 attempts, 5 minutes lockout)
+    const check = SecurityRateLimiter.check('admin_pin_attempt', 5, 300)
+    if (!check.allowed || pinLockout > 0) {
+      const remainingSecs = pinLockout || check.lockoutSecondsLeft
+      setPinLockout(remainingSecs)
+      setPinError(`🚫 Terlalu banyak percobaan salah! Portal terkunci selama ${remainingSecs} detik.`)
+      setPinShake(true)
+      setTimeout(() => setPinShake(false), 500)
+      return
+    }
+
     if (pinInput.trim() === ADMIN_CORRECT_PIN) {
+      SecurityRateLimiter.reset('admin_pin_attempt')
       setPinVerified(true)
     } else {
-      setPinError('❌ PIN Keamanan Salah! Akses Admin Ditolak.')
+      const res = SecurityRateLimiter.recordFailure('admin_pin_attempt', 5, 300)
+      if (res.locked) {
+        setPinLockout(res.lockoutSecondsLeft)
+        setPinError(`🚫 Terlalu banyak percobaan PIN salah. Portal terkunci selama ${res.lockoutSecondsLeft} detik.`)
+      } else {
+        setPinError(`❌ PIN Keamanan Salah! Sisa percobaan: ${res.remainingAttempts}x sebelum portal terkunci.`)
+      }
       setPinShake(true)
       setTimeout(() => setPinShake(false), 500)
     }
@@ -39,9 +87,19 @@ export default function AdminLoginPage() {
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoginError(null)
+
+    // Rate limit check for credentials
+    const check = SecurityRateLimiter.check('admin_auth_attempt', 5, 300)
+    if (!check.allowed || loginLockout > 0) {
+      const remainingSecs = loginLockout || check.lockoutSecondsLeft
+      setLoginLockout(remainingSecs)
+      setLoginError(`🚫 Terlalu banyak percobaan login gagal. Silakan tunggu ${remainingSecs} detik.`)
+      return
+    }
+
     setLoading(true)
 
-    const cleanUser = username.trim().toLowerCase().replace(/^@/, '')
+    const cleanUser = sanitizeUsername(username)
 
     // 1. Special Admin Hiroshima Credentials
     if (cleanUser === 'kaiwahiroshima') {
@@ -97,12 +155,19 @@ export default function AdminLoginPage() {
         localStorage.removeItem('kaiwa_custom_profile')
         window.dispatchEvent(new Event('kaiwa_profile_updated'))
 
+        SecurityRateLimiter.reset('admin_auth_attempt')
         setLoading(false)
         navigate('/dashboard')
         return
       } else {
+        const res = SecurityRateLimiter.recordFailure('admin_auth_attempt', 5, 300)
         setLoading(false)
-        setLoginError('Password salah untuk akun Admin Hiroshima. Silakan coba lagi.')
+        if (res.locked) {
+          setLoginLockout(res.lockoutSecondsLeft)
+          setLoginError(`🚫 Terlalu banyak percobaan gagal. Akun dikunci sementara selama ${res.lockoutSecondsLeft} detik.`)
+        } else {
+          setLoginError(`Password salah untuk akun Admin. Sisa percobaan: ${res.remainingAttempts}x.`)
+        }
         return
       }
     }
@@ -120,8 +185,14 @@ export default function AdminLoginPage() {
         if (prof?.email) {
           targetEmail = prof.email
         } else {
+          const res = SecurityRateLimiter.recordFailure('admin_auth_attempt', 5, 300)
           setLoading(false)
-          setLoginError('Akun admin atau instruktur tidak ditemukan. Pastikan username sudah benar.')
+          if (res.locked) {
+            setLoginLockout(res.lockoutSecondsLeft)
+            setLoginError(`🚫 Terlalu banyak percobaan gagal. Silakan tunggu ${res.lockoutSecondsLeft} detik.`)
+          } else {
+            setLoginError(`Akun admin atau instruktur tidak ditemukan. Sisa percobaan: ${res.remainingAttempts}x.`)
+          }
           return
         }
       }
@@ -132,8 +203,12 @@ export default function AdminLoginPage() {
       })
 
       if (authError) {
-        if (authError.message.includes('Invalid login credentials') || authError.status === 400 || authError.status === 500) {
-          setLoginError('Username/email atau password salah.')
+        const res = SecurityRateLimiter.recordFailure('admin_auth_attempt', 5, 300)
+        if (res.locked) {
+          setLoginLockout(res.lockoutSecondsLeft)
+          setLoginError(`🚫 Terlalu banyak percobaan gagal. Silakan tunggu ${res.lockoutSecondsLeft} detik.`)
+        } else if (authError.message.includes('Invalid login credentials') || authError.status === 400 || authError.status === 500) {
+          setLoginError(`Username/email atau password salah. Sisa percobaan: ${res.remainingAttempts}x.`)
         } else if (authError.message.includes('Email not confirmed')) {
           setLoginError('Email belum dikonfirmasi. Silakan cek inbox/spam email kamu.')
         } else {
@@ -144,13 +219,20 @@ export default function AdminLoginPage() {
       }
 
       if (authData.user) {
+        SecurityRateLimiter.reset('admin_auth_attempt')
         await claimDeviceSession(authData.user.id)
         sessionStorage.setItem('kaiwa_session_active', 'true')
         navigate('/dashboard')
       }
     } catch (err: any) {
       console.warn('Admin login error:', err)
-      setLoginError('Username/email atau password salah.')
+      const res = SecurityRateLimiter.recordFailure('admin_auth_attempt', 5, 300)
+      if (res.locked) {
+        setLoginLockout(res.lockoutSecondsLeft)
+        setLoginError(`🚫 Terlalu banyak percobaan gagal. Silakan tunggu ${res.lockoutSecondsLeft} detik.`)
+      } else {
+        setLoginError('Username/email atau password salah.')
+      }
       setLoading(false)
     }
   }
@@ -221,18 +303,22 @@ export default function AdminLoginPage() {
                   maxLength={6}
                   required
                   autoFocus
+                  disabled={pinLockout > 0}
                   placeholder="• • • • • •"
                   value={pinInput}
                   onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center tracking-[0.5em] text-2xl font-black py-3.5 px-4 rounded-2xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:tracking-normal placeholder:text-slate-600 touch-manipulation min-h-[48px]"
+                  className={`w-full text-center tracking-[0.5em] text-2xl font-black py-3.5 px-4 rounded-2xl bg-slate-950 border text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:tracking-normal placeholder:text-slate-600 touch-manipulation min-h-[48px] ${
+                    pinLockout > 0 ? 'opacity-50 border-red-800 cursor-not-allowed' : 'border-slate-800'
+                  }`}
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
+                disabled={pinLockout > 0}
+                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🔓 Verifikasi PIN Admin
+                {pinLockout > 0 ? `⏳ Terkunci (${pinLockout}s)` : '🔓 Verifikasi PIN Admin'}
               </button>
             </form>
           </div>
@@ -253,7 +339,7 @@ export default function AdminLoginPage() {
 
             {loginError && (
               <div className="mb-4 p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-extrabold text-center">
-                ❌ {loginError}
+                {loginError}
               </div>
             )}
 
@@ -263,6 +349,7 @@ export default function AdminLoginPage() {
                 <input
                   type="text"
                   required
+                  disabled={loginLockout > 0 || loading}
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
@@ -270,7 +357,7 @@ export default function AdminLoginPage() {
                   placeholder="kaiwahiroshima"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all min-h-[44px] touch-manipulation"
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -280,6 +367,7 @@ export default function AdminLoginPage() {
                   <input
                     type={showPass ? 'text' : 'password'}
                     required
+                    disabled={loginLockout > 0 || loading}
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
@@ -287,7 +375,7 @@ export default function AdminLoginPage() {
                     placeholder="Masukkan password admin"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all pr-12 min-h-[44px] touch-manipulation"
+                    className="w-full px-4 py-3.5 sm:py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-base sm:text-xs font-bold outline-none focus:border-primary transition-all pr-12 min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
@@ -302,10 +390,14 @@ export default function AdminLoginPage() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
+                disabled={loading || loginLockout > 0}
+                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl border-none cursor-pointer transition-all shadow-lg shadow-primary/25 mt-2 min-h-[48px] touch-manipulation flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Authenticating Admin...' : '🔑 Masuk ke Admin Dashboard'}
+                {loginLockout > 0
+                  ? `⏳ Terkunci (${loginLockout}s)`
+                  : loading
+                    ? 'Authenticating Admin...'
+                    : '🔑 Masuk ke Admin Dashboard'}
               </button>
             </form>
 
