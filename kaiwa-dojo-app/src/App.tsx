@@ -6,27 +6,63 @@ import Sidebar from './components/Sidebar'
 import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
+import ErrorBoundary from './components/ErrorBoundary'
+
+/* ── Lazy Load with Retry ──────────────────────────
+   Jika chunk gagal load (network error / stale hash setelah deploy),
+   otomatis retry 1x. Jika masih gagal, force reload halaman
+   agar browser mengambil index.html terbaru dengan hash chunk yang benar.
+   ─────────────────────────────────────────────── */
+function lazyWithRetry(importFn: () => Promise<{ default: React.ComponentType }>) {
+  return lazy(() =>
+    importFn().catch(() => {
+      // Retry sekali setelah delay singkat
+      return new Promise<{ default: React.ComponentType }>((resolve) => {
+        setTimeout(() => {
+          importFn()
+            .then(resolve)
+            .catch(() => {
+              // Chunk masih gagal — kemungkinan hash lama setelah deploy baru
+              // Force reload untuk mendapat index.html terbaru
+              const hasReloaded = sessionStorage.getItem('kaiwa_chunk_reload')
+              if (!hasReloaded) {
+                sessionStorage.setItem('kaiwa_chunk_reload', 'true')
+                window.location.reload()
+              }
+              // Jika sudah pernah reload, return komponen fallback
+              resolve({ default: () => null })
+            })
+        }, 1500)
+      })
+    })
+  )
+}
+
+// Bersihkan flag reload setelah berhasil load
+if (typeof window !== 'undefined') {
+  sessionStorage.removeItem('kaiwa_chunk_reload')
+}
 
 // Lazy-loaded pages for ultra-fast initial loads and lightweight bundle chunks
-const StudentDashboard = lazy(() => import('./pages/Dashboard'))
-const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
-const InstructorManagerPage = lazy(() => import('./pages/InstructorManager'))
-const StudentManagerPage = lazy(() => import('./pages/StudentManager'))
-const GroupManagerPage = lazy(() => import('./pages/GroupManager'))
-const FeedbackManagerPage = lazy(() => import('./pages/FeedbackManager'))
-const MyCourses = lazy(() => import('./pages/MyCourses'))
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
-const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
-const AdminLoginPage = lazy(() => import('./pages/auth/AdminLoginPage'))
-const LearningPlanPage = lazy(() => import('./pages/LearningPlan'))
-const ProfilePage = lazy(() => import('./pages/Profile'))
-const SettingsPage = lazy(() => import('./pages/Settings'))
-const ClassReservationPage = lazy(() => import('./pages/ClassReservation'))
-const InstructorScheduleManagerPage = lazy(() => import('./pages/InstructorScheduleManager'))
-const CourseEditorPage = lazy(() => import('./pages/CourseEditor'))
-const SetoranKotobaPage = lazy(() => import('./pages/SetoranKotoba'))
-const LandingPage = lazy(() => import('./pages/LandingPage'))
+const StudentDashboard = lazyWithRetry(() => import('./pages/Dashboard'))
+const InstructorDashboard = lazyWithRetry(() => import('./pages/InstructorDashboard'))
+const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'))
+const InstructorManagerPage = lazyWithRetry(() => import('./pages/InstructorManager'))
+const StudentManagerPage = lazyWithRetry(() => import('./pages/StudentManager'))
+const GroupManagerPage = lazyWithRetry(() => import('./pages/GroupManager'))
+const FeedbackManagerPage = lazyWithRetry(() => import('./pages/FeedbackManager'))
+const MyCourses = lazyWithRetry(() => import('./pages/MyCourses'))
+const LoginPage = lazyWithRetry(() => import('./pages/auth/LoginPage'))
+const RegisterPage = lazyWithRetry(() => import('./pages/auth/RegisterPage'))
+const AdminLoginPage = lazyWithRetry(() => import('./pages/auth/AdminLoginPage'))
+const LearningPlanPage = lazyWithRetry(() => import('./pages/LearningPlan'))
+const ProfilePage = lazyWithRetry(() => import('./pages/Profile'))
+const SettingsPage = lazyWithRetry(() => import('./pages/Settings'))
+const ClassReservationPage = lazyWithRetry(() => import('./pages/ClassReservation'))
+const InstructorScheduleManagerPage = lazyWithRetry(() => import('./pages/InstructorScheduleManager'))
+const CourseEditorPage = lazyWithRetry(() => import('./pages/CourseEditor'))
+const SetoranKotobaPage = lazyWithRetry(() => import('./pages/SetoranKotoba'))
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'))
 
 /* ── Role-Aware Dashboard Router ─────────────────── */
 function DashboardRoute() {
@@ -153,41 +189,43 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 /* ── Router ─────────────────────────────────────── */
 export function AppRoutes() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <PageTransition>
-            <Suspense fallback={<LoadingScreen fullScreen={true} />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/"         element={<LandingPage />} />
-                <Route path="/login"    element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/admin"    element={<AdminLoginPage />} />
+    <ErrorBoundary>
+      <LanguageProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <PageTransition>
+              <Suspense fallback={<LoadingScreen fullScreen={true} />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/"         element={<LandingPage />} />
+                  <Route path="/login"    element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/admin"    element={<AdminLoginPage />} />
 
-                {/* Protected routes */}
-                <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
-                <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
-                <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
-                <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-grup"     element={<ProtectedRoute><AppShell><GroupManagerPage /></AppShell></ProtectedRoute>} />
-                <Route path="/kelola-masukan"  element={<ProtectedRoute><AppShell><FeedbackManagerPage /></AppShell></ProtectedRoute>} />
-                <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
-                <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
-                <Route path="*"                element={<Navigate to="/" replace />} />
+                  {/* Protected routes */}
+                  <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
+                  <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
+                  <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-grup"     element={<ProtectedRoute><AppShell><GroupManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/kelola-masukan"  element={<ProtectedRoute><AppShell><FeedbackManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
+                  <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
+                  <Route path="*"                element={<Navigate to="/" replace />} />
 
-              </Routes>
-            </Suspense>
-          </PageTransition>
-          <WhatsAppWidget />
-        </BrowserRouter>
-      </AuthProvider>
-    </LanguageProvider>
+                </Routes>
+              </Suspense>
+            </PageTransition>
+            <WhatsAppWidget />
+          </BrowserRouter>
+        </AuthProvider>
+      </LanguageProvider>
+    </ErrorBoundary>
   )
 }
 

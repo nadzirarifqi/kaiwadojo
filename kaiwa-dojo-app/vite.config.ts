@@ -13,6 +13,11 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
   ],
   build: {
+    // Target es2020 untuk kompatibilitas browser lebih luas (Chrome 80+, Safari 14+, Firefox 78+)
+    // Default Vite 8 adalah es2023 yang terlalu modern — bisa menyebabkan white screen di browser lama
+    target: 'es2020',
+    cssTarget: 'chrome80',
+
     // Vite 8 menggunakan OXC/rolldown sebagai default minifier — lebih cepat dari esbuild
     // Tidak perlu set minify secara eksplisit, biarkan Vite memilih yang optimal
 

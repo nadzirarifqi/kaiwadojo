@@ -42,5 +42,37 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Fallback untuk browser tanpa JavaScript -->
+    <noscript>
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-family:'Inter',system-ui,-apple-system,sans-serif;padding:24px;">
+        <div style="max-width:400px;width:100%;text-align:center;background:#fff;border-radius:20px;padding:36px 24px;box-shadow:0 4px 24px rgba(0,0,0,0.06);border:1px solid #e2e8f0;">
+          <div style="font-size:36px;margin-bottom:16px;">🔒</div>
+          <h2 style="font-size:18px;font-weight:800;color:#1e293b;margin:0 0 8px;">JavaScript Diperlukan</h2>
+          <p style="font-size:13px;color:#64748b;line-height:1.6;margin:0;font-weight:500;">
+            Aplikasi KaiwaDojo memerlukan JavaScript untuk berjalan.
+            Silakan aktifkan JavaScript di pengaturan browser Anda, lalu muat ulang halaman ini.
+          </p>
+        </div>
+      </div>
+    </noscript>
+
+    <!-- Fallback untuk browser yang tidak mendukung ES Module / sangat lawas -->
+    <script nomodule>
+      (function() {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-family:system-ui,-apple-system,sans-serif;padding:24px;">'
+            + '<div style="max-width:400px;width:100%;text-align:center;background:#fff;border-radius:20px;padding:36px 24px;box-shadow:0 4px 24px rgba(0,0,0,0.06);border:1px solid #e2e8f0;">'
+            + '<div style="font-size:36px;margin-bottom:16px;">⚠️</div>'
+            + '<h2 style="font-size:18px;font-weight:800;color:#1e293b;margin:0 0 8px;">Browser Tidak Didukung</h2>'
+            + '<p style="font-size:13px;color:#64748b;line-height:1.6;margin:0 0 20px;font-weight:500;">'
+            + 'Browser Anda terlalu lama dan tidak dapat menjalankan aplikasi KaiwaDojo. '
+            + 'Silakan perbarui browser ke versi terbaru (Chrome, Firefox, Safari, atau Edge).</p>'
+            + '<a href="https://browsehappy.com" style="display:inline-block;background:#B91C1C;color:#fff;padding:12px 24px;border-radius:14px;text-decoration:none;font-weight:800;font-size:13px;">Perbarui Browser →</a>'
+            + '</div></div>';
+        }
+      })();
+    </script>
   </body>
 </html>
