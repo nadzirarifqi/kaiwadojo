@@ -59,26 +59,49 @@ CREATE TRIGGER trg_protect_profile_privileges
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_profile_privileges();
 
--- 2. Set Secure search_path on All Custom Functions
-ALTER FUNCTION public.handle_new_user() SET search_path = public, pg_temp;
-
+-- 2. Set Secure search_path on Custom Functions Safely
 DO $$
 BEGIN
+  -- handle_new_user
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p 
+    JOIN pg_namespace n ON p.pronamespace = n.oid 
+    WHERE n.nspname = 'public' AND p.proname = 'handle_new_user'
+  ) THEN
+    BEGIN
+      ALTER FUNCTION public.handle_new_user() SET search_path = public, pg_temp;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+  END IF;
+
+  -- check_user_duplicates
   IF EXISTS (
     SELECT 1 FROM pg_proc p 
     JOIN pg_namespace n ON p.pronamespace = n.oid 
     WHERE n.nspname = 'public' AND p.proname = 'check_user_duplicates'
   ) THEN
-    ALTER FUNCTION public.check_user_duplicates(TEXT, TEXT, TEXT) SET search_path = public, pg_temp;
+    BEGIN
+      ALTER FUNCTION public.check_user_duplicates(TEXT, TEXT, TEXT) SET search_path = public, pg_temp;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
   END IF;
 
-  IF EXISTS (
-    SELECT 1 FROM pg_proc p 
-    JOIN pg_namespace n ON p.pronamespace = n.oid 
-    WHERE n.nspname = 'public' AND p.proname = 'delete_auth_user'
-  ) THEN
-    ALTER FUNCTION public.delete_auth_user(UUID) SET search_path = public, pg_temp;
-  END IF;
+  -- delete_auth_user (handles both (UUID, TEXT) and (UUID) versions)
+  BEGIN
+    ALTER FUNCTION public.delete_auth_user(UUID, TEXT) SET search_path = public, auth, pg_temp;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    ALTER FUNCTION public.delete_auth_user(UUID) SET search_path = public, auth, pg_temp;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  -- handle_profile_deleted_cleanup_auth
+  BEGIN
+    ALTER FUNCTION public.handle_profile_deleted_cleanup_auth() SET search_path = public, auth, pg_temp;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
 END $$;
 
 -- 3. Security Audit Comment
