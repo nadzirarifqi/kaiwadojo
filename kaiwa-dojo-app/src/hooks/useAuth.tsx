@@ -59,6 +59,13 @@ const AuthContext = createContext<AuthContextValue>({
   refreshProfile: async () => {},
 })
 
+let profileBroadcastChannel: BroadcastChannel | null = null
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    profileBroadcastChannel = new BroadcastChannel('kaiwa_profile_sync_channel')
+  }
+} catch {}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(() => {
@@ -157,6 +164,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(prof)
       sessionStorage.setItem('kaiwa_session_active', 'true')
       sessionStorage.setItem('kaiwa_custom_profile', JSON.stringify(prof))
+      window.dispatchEvent(new CustomEvent('kaiwa_profile_updated', { detail: prof }))
+      if (profileBroadcastChannel) {
+        try {
+          profileBroadcastChannel.postMessage({ type: 'kaiwa_profile_updated', profile: prof })
+        } catch {}
+      }
     }
   }
 
@@ -268,6 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           fetchProfile(curSession.user.id).catch(() => {}).finally(() => setLoading(false))
+          setupProfileRealtime(curSession.user.id)
         } else {
           sessionStorage.removeItem('kaiwa_custom_profile')
           setSession(null)
@@ -299,6 +313,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         fetchProfile(newSession.user.id).catch(() => {}).finally(() => setLoading(false))
+        setupProfileRealtime(newSession.user.id)
       } else if (!active || !newSession) {
         setSession(null)
         setProfile(null)
@@ -309,6 +324,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
     })
+
+    // Realtime channel for logged-in user profile changes
+    let activeProfileChannel: any = null
+    const setupProfileRealtime = (userId: string) => {
+      if (activeProfileChannel) {
+        supabase.removeChannel(activeProfileChannel)
+      }
+      const chId = 'profile_rt_' + userId + '_' + Math.random().toString(36).slice(2)
+      activeProfileChannel = supabase
+        .channel(chId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+          () => {
+            fetchProfile(userId)
+          }
+        )
+        .subscribe()
+    }
+
+    // Cross-tab broadcast listener
+    const handleProfileBroadcast = (e: MessageEvent) => {
+      if (e.data?.type === 'kaiwa_profile_updated' && e.data?.profile) {
+        const p = e.data.profile
+        setProfile(prev => {
+          if (prev && prev.id && prev.id !== p.id) return prev
+          return p
+        })
+      }
+    }
+    if (profileBroadcastChannel) {
+      profileBroadcastChannel.addEventListener('message', handleProfileBroadcast)
+    }
+
+    const handleFocusSync = () => {
+      const activeUser = session?.user?.id || profile?.id
+      if (activeUser) {
+        fetchProfile(activeUser)
+      }
+    }
+    window.addEventListener('focus', handleFocusSync)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleFocusSync()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     // Periodic presence heartbeat every 2 minutes while tab is open
     const heartbeatInterval = setInterval(() => {
@@ -323,13 +386,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }, 120000)
 
+    // Fallback profile sync every 15 seconds to ensure role/group changes propagate
+    const profileSyncInterval = setInterval(() => {
+      const activeUser = session?.user?.id || profile?.id
+      if (activeUser) {
+        fetchProfile(activeUser)
+      }
+    }, 15000)
+
     return () => {
       activityEvents.forEach(evt => {
         window.removeEventListener(evt, handleUserActivity)
       })
       clearInterval(interval)
       clearInterval(heartbeatInterval)
+      clearInterval(profileSyncInterval)
       window.removeEventListener('kaiwa_profile_updated', handleProfileUpdate)
+      window.removeEventListener('focus', handleFocusSync)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (profileBroadcastChannel) {
+        profileBroadcastChannel.removeEventListener('message', handleProfileBroadcast)
+      }
+      if (activeProfileChannel) {
+        supabase.removeChannel(activeProfileChannel)
+      }
       listener.subscription.unsubscribe()
     }
   }, [])

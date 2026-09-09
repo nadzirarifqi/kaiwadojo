@@ -376,6 +376,7 @@ export default function MyCourses() {
     }
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
     window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
+    window.addEventListener('kaiwa_profile_updated', handleSync)
     window.addEventListener('storage', handleSync)
     window.addEventListener('focus', handleSync)
 
@@ -406,6 +407,7 @@ export default function MyCourses() {
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
       window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
+      window.removeEventListener('kaiwa_profile_updated', handleSync)
       window.removeEventListener('storage', handleSync)
       window.removeEventListener('focus', handleSync)
       document.removeEventListener('visibilitychange', handleVisibilityChange)

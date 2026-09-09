@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { supabase } from '../lib/supabaseClient'
-import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT, matchGroupFromInstitution } from '../lib/groupService'
+import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { parseTargetGroups } from '../lib/chapterService'
 import {
   type ClassSchedule,
@@ -224,12 +224,8 @@ export default function ClassReservationPage() {
     setTargetReservationId(null)
   }
 
-  // User's group determination (supports direct group_name with fallback to institution match)
-  const resolvedUserGroup = (
-    profile?.group_name?.trim() ||
-    matchGroupFromInstitution(profile?.institution, groups) ||
-    ''
-  ).trim()
+  // User's group determination (strictly from profile.group_name)
+  const resolvedUserGroup = (profile?.group_name || '').trim()
 
   // Filter schedules that the current user has permission/access to see
   const accessibleSchedules = schedules.filter(sch => isScheduleAccessibleForUser(sch, profile, groups))

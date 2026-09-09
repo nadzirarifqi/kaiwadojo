@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { type KaiwaGroup, matchGroupFromInstitution } from './groupService'
+import { type KaiwaGroup } from './groupService'
 
 export interface ChapterSetting {
   bab_number: number
@@ -65,12 +65,8 @@ export function isChapterAccessibleForUser(
   // If chapter is restricted to specific groups, user must be logged in
   if (!userProfile) return false
 
-  // Determine user's group from group_name or match against institution keywords
-  const studentGroup = (
-    userProfile.group_name?.trim() ||
-    matchGroupFromInstitution(userProfile.institution, groups) ||
-    ''
-  ).trim()
+  // Determine user's group strictly from profile.group_name (Admin-controlled assignment)
+  const studentGroup = (userProfile.group_name || '').trim()
 
   if (!studentGroup) {
     return false

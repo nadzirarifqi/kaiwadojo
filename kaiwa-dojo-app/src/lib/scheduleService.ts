@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { type KaiwaGroup, matchGroupFromInstitution, parseKeywords } from './groupService'
+import { type KaiwaGroup, parseKeywords } from './groupService'
 
 export type ClassType = 'online' | 'offline'
 
@@ -893,12 +893,8 @@ export function isScheduleAccessibleForUser(
   // If schedule has a target group, user must be logged in
   if (!userProfile) return false
 
-  // 1. Get student's group (from profile.group_name or fallback to matched institution)
-  const studentGroup = (
-    userProfile.group_name?.trim() ||
-    matchGroupFromInstitution(userProfile.institution, groups) ||
-    ''
-  ).trim()
+  // 1. Get student's group strictly from profile.group_name (Admin-controlled assignment)
+  const studentGroup = (userProfile.group_name || '').trim()
 
   if (!studentGroup) {
     // Regular student without a group -> cannot access group-specific class
