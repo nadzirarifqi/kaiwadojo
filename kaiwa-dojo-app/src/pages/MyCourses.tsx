@@ -344,46 +344,6 @@ export default function MyCourses() {
   const [loading, setLoading]             = useState(true)
   const [searchBab, setSearchBab]         = useState('')
 
-  /* ── Load Course Data from Supabase & Subscribe to Realtime Updates ── */
-  useEffect(() => {
-    fetchCourseData()
-
-    // 1. Instant local window event sync (for same browser / role switcher / multi-tabs)
-    const handleLocalSync = () => {
-      fetchCourseData()
-    }
-    window.addEventListener(CHAPTER_UPDATE_EVENT, handleLocalSync)
-    window.addEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
-    window.addEventListener('storage', handleLocalSync)
-
-    // 2. Supabase Realtime channel for cross-device sync
-    const channel = supabase
-      .channel('chapter_settings_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'chapter_settings' },
-        () => {
-          fetchCourseData()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      window.removeEventListener(CHAPTER_UPDATE_EVENT, handleLocalSync)
-      window.removeEventListener(GROUP_UPDATE_EVENT, handleLocalSync)
-      window.removeEventListener('storage', handleLocalSync)
-      supabase.removeChannel(channel)
-    }
-  }, [user, profile?.role, selectedJilid])
-
-  // Auto-rotate fun fact every 10 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setFunFactIndex(prev => (prev + 1) % JAPAN_FUN_FACTS.length)
-    }, 10000)
-    return () => clearInterval(timer)
-  }, [])
-
   // Active Lesson / Player state
   const [activeChapter, setActiveChapter] = useState<ChapterItem | null>(null)
   const [activeLesson, setActiveLesson]   = useState<LessonItem | null>(null)
@@ -406,21 +366,20 @@ export default function MyCourses() {
   // Real database lesson map: key = `bab_X_lesson_Y`
   const [_progressMap, setProgressMap] = useState<Map<string, { is_completed: boolean; replay_count: number }>>(new Map())
 
-
-  /* ── Load Course Data from Supabase & Merge Placeholders ── */
+  /* ── Load Course Data from Supabase & Subscribe to Realtime Updates ── */
   useEffect(() => {
     fetchCourseData()
 
+    // 1. Instant local window event sync (for same browser / role switcher / multi-tabs)
     const handleSync = () => {
       fetchCourseData()
     }
-
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
     window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
-    const unsubscribeRealtime = subscribeToChapterRealtime(handleSync)
+    const unsubscribeChapterRealtime = subscribeToChapterRealtime(handleSync)
 
-    // Realtime listener for lesson_progress across all user devices
+    // 2. Realtime listener for lesson_progress across all user devices
     const effectiveUserId = profile?.id || user?.id || null
     const progressChannel = supabase
       .channel('my_courses_progress_realtime_' + (effectiveUserId || 'all'))
@@ -433,10 +392,10 @@ export default function MyCourses() {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
       window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
-      unsubscribeRealtime()
+      unsubscribeChapterRealtime()
       supabase.removeChannel(progressChannel)
     }
-  }, [user, profile?.id, selectedJilid])
+  }, [user, profile?.id, profile?.role, selectedJilid])
 
   async function fetchCourseData() {
     setLoading(true)
@@ -879,9 +838,9 @@ export default function MyCourses() {
     )
   })
 
-  // Calculate total progress
-  const totalLessonsCount     = chapters.reduce((acc, c) => acc + c.lessons.length, 0)
-  const completedLessonsCount = chapters.reduce(
+  // Calculate total progress (based on chapters accessible/visible to the user)
+  const totalLessonsCount     = filteredChapters.reduce((acc, c) => acc + c.lessons.length, 0)
+  const completedLessonsCount = filteredChapters.reduce(
     (acc, c) => acc + c.lessons.filter(l => l.is_completed).length, 0
   )
   const totalProgressPct      = totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0

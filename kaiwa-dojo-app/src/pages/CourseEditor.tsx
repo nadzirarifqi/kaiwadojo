@@ -349,7 +349,7 @@ export default function CourseEditor() {
     )
   }
 
-  function handleToggleChapterGroup(babNum: number, groupName: string) {
+  async function handleToggleChapterGroup(babNum: number, groupName: string) {
     const chap = chapterMap[babNum] || {
       bab_number: babNum,
       title: `Bab ${babNum}`,
@@ -364,25 +364,77 @@ export default function CourseEditor() {
       nextList = [...current, groupName]
     }
     const nextVal = nextList.length > 0 ? nextList.join(', ') : null
+    const updated: ChapterSetting = {
+      ...chap,
+      target_group: nextVal,
+    }
+
     setChapterMap(prev => ({
       ...prev,
-      [babNum]: { ...prev[babNum], target_group: nextVal },
+      [babNum]: updated,
     }))
+
+    try {
+      await saveChapterSetting(updated)
+      showToast(
+        nextVal
+          ? `Akses Bab ${babNum} diatur ke: ${nextList.join(', ')} 👥`
+          : `Akses Bab ${babNum} diatur ke Semua Siswa (Publik) 🌐`
+      )
+    } catch (err: any) {
+      showToast(`Gagal menyimpan restriksi grup Bab ${babNum}: ${err?.message || 'Error'}`, 'error')
+    }
   }
 
-  function handleSetChapterAllPublic(babNum: number) {
+  async function handleSetChapterAllPublic(babNum: number) {
+    const chap = chapterMap[babNum] || {
+      bab_number: babNum,
+      title: `Bab ${babNum}`,
+      subtitle: '',
+      is_hidden: false,
+    }
+    const updated: ChapterSetting = {
+      ...chap,
+      target_group: null,
+    }
+
     setChapterMap(prev => ({
       ...prev,
-      [babNum]: { ...prev[babNum], target_group: null },
+      [babNum]: updated,
     }))
+
+    try {
+      await saveChapterSetting(updated)
+      showToast(`Akses Bab ${babNum} diatur ke Semua Siswa (Publik) 🌐`)
+    } catch (err: any) {
+      showToast(`Gagal menyimpan: ${err?.message || 'Error'}`, 'error')
+    }
   }
 
-  function handleSetChapterAllGroups(babNum: number) {
+  async function handleSetChapterAllGroups(babNum: number) {
+    const chap = chapterMap[babNum] || {
+      bab_number: babNum,
+      title: `Bab ${babNum}`,
+      subtitle: '',
+      is_hidden: false,
+    }
     const allGroupNames = groups.map(g => g.name).join(', ')
+    const updated: ChapterSetting = {
+      ...chap,
+      target_group: allGroupNames || null,
+    }
+
     setChapterMap(prev => ({
       ...prev,
-      [babNum]: { ...prev[babNum], target_group: allGroupNames || null },
+      [babNum]: updated,
     }))
+
+    try {
+      await saveChapterSetting(updated)
+      showToast(`Akses Bab ${babNum} diatur ke seluruh ${groups.length} Grup 👥`)
+    } catch (err: any) {
+      showToast(`Gagal menyimpan: ${err?.message || 'Error'}`, 'error')
+    }
   }
 
   const [isDetectingAll, setIsDetectingAll] = useState(false)

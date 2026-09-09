@@ -282,10 +282,15 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
     const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
 
     if (error) {
-      if (error.message.includes('target_group') || error.code === '42703') {
+      if (error.message.includes('target_group') || error.code === '42703' || error.code === 'PGRST204') {
+        console.warn('Kolom target_group belum aktif di database Supabase. Harap jalankan migration 033 di Supabase Dashboard SQL Editor.')
         // Fallback without target_group column if column not yet in DB schema
         delete payload.target_group
-        await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
+        const fallbackRes = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
+        if (fallbackRes.error) {
+          console.error('Supabase fallback upsert error:', fallbackRes.error.message)
+          throw new Error(`Gagal menyimpan ke database Supabase: ${fallbackRes.error.message}`)
+        }
       } else {
         console.error('Supabase chapter_settings upsert error:', error.message)
         throw new Error(`Gagal menyimpan ke database Supabase: ${error.message}`)
@@ -337,12 +342,17 @@ export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): 
 
     const { error } = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
     if (error) {
-      if (error.message.includes('target_group') || error.code === '42703') {
+      if (error.message.includes('target_group') || error.code === '42703' || error.code === 'PGRST204') {
+        console.warn('Kolom target_group belum aktif di database Supabase. Harap jalankan migration 033 di Supabase Dashboard SQL Editor.')
         const strippedPayload = payload.map(p => {
           const { target_group, ...rest } = p
           return rest
         })
-        await supabase.from('chapter_settings').upsert(strippedPayload, { onConflict: 'bab_number' })
+        const fallbackRes = await supabase.from('chapter_settings').upsert(strippedPayload, { onConflict: 'bab_number' })
+        if (fallbackRes.error) {
+          console.error('Supabase batch fallback error:', fallbackRes.error.message)
+          throw new Error(`Gagal batch update ke database Supabase: ${fallbackRes.error.message}`)
+        }
       } else {
         console.error('Supabase batch upsert error:', error.message)
         throw new Error(`Gagal batch update ke database Supabase: ${error.message}`)
