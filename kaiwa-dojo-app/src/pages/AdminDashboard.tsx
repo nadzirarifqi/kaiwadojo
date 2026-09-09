@@ -8,6 +8,7 @@ import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReserv
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
+import { fetchAllStudentKotobaStats, type GlobalKotobaSummary, KOTOBA_TRACKER_UPDATE_EVENT } from '../lib/kotobaService'
 
 import LoadingScreen from '../components/LoadingScreen'
 import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   const [reservations, setReservations] = useState<ClassReservation[]>([])
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
+  const [kotobaSummary, setKotobaSummary] = useState<GlobalKotobaSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Broadcast WA Modal state
@@ -79,13 +81,14 @@ export default function AdminDashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [instData, stdData, schData, resData, chapData, fbData] = await Promise.all([
+    const [instData, stdData, schData, resData, chapData, fbData, kotobaData] = await Promise.all([
       fetchInstructors(),
       fetchStudents(),
       fetchSchedules(),
       fetchReservations(),
       getChapterSettingsMap(),
       fetchFeedbacks(),
+      fetchAllStudentKotobaStats(),
     ])
     setInstructors(instData)
     setStudents(stdData)
@@ -93,6 +96,7 @@ export default function AdminDashboard() {
     setReservations(resData)
     setChapterSettings(chapData)
     setFeedbacks(fbData)
+    setKotobaSummary(kotobaData.summary)
     setLoading(false)
   }
 
@@ -107,6 +111,7 @@ export default function AdminDashboard() {
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
     window.addEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
     window.addEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
     window.addEventListener('storage', handleReservationSync)
 
     const channel = supabase
@@ -123,6 +128,7 @@ export default function AdminDashboard() {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener('storage', handleReservationSync)
       supabase.removeChannel(channel)
     }
@@ -202,6 +208,13 @@ export default function AdminDashboard() {
             )}
           </button>
           <button
+            onClick={() => navigate('/tracker-kotoba')}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+          >
+            <span className="font-serif">語</span>
+            <span>Tracker Kotoba</span>
+          </button>
+          <button
             onClick={() => navigate('/kelola-kursus')}
             className="px-4 py-2.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
@@ -211,7 +224,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         {/* Stat 1: Pemateri Accounts */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center justify-between">
           <div>
@@ -276,20 +289,39 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stat 5: Masukan & Saran */}
+        {/* Stat 5: Setoran Kotoba Tracker */}
         <div 
-          onClick={() => navigate('/kelola-masukan')}
+          onClick={() => navigate('/tracker-kotoba')}
           className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-amber-500/30 hover:border-amber-500 shadow-2xs flex items-center justify-between cursor-pointer transition-all hover:shadow-md"
         >
           <div>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Masukan Pengguna</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Setoran Kotoba</span>
+            <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 font-serif">
+              {kotobaSummary?.totalKotoba || 0} <span className="text-xs font-bold font-sans text-slate-400">Kata</span>
+            </div>
+            <span className="text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
+              ✅ {kotobaSummary?.masteredKotoba || 0} Dikuasai ({kotobaSummary?.globalMasteryRate || 0}%)
+            </span>
+          </div>
+          <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-2xl font-serif text-amber-600 dark:text-amber-400 shrink-0">
+            語
+          </div>
+        </div>
+
+        {/* Stat 6: Masukan & Saran */}
+        <div 
+          onClick={() => navigate('/kelola-masukan')}
+          className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 shadow-2xs flex items-center justify-between cursor-pointer transition-all hover:shadow-md"
+        >
+          <div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Masukan</span>
             <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
               {feedbacks.length} <span className="text-xs font-bold text-slate-400">Pesan</span>
             </div>
             <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 mt-1 block">
               {feedbacks.filter(f => f.status === 'unread').length > 0
-                ? `● ${feedbacks.filter(f => f.status === 'unread').length} Belum Dibaca`
-                : '✅ Semua Terbaca'}
+                ? `● ${feedbacks.filter(f => f.status === 'unread').length} Baru`
+                : '✅ Terbaca'}
             </span>
           </div>
           <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-2xl shrink-0">

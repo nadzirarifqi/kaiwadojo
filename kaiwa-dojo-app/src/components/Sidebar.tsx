@@ -131,6 +131,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       },
       {
         icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
+            語
+          </span>
+        ),
+        label: 'Tracker Setoran Kotoba',
+        to: '/tracker-kotoba',
+      },
+      {
+        icon: (
           <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-500/20 shadow-xs">
             💡
           </span>
@@ -150,6 +159,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     )
   } else if (currentRole === 'pemateri') {
     navItems.push(
+      {
+        icon: (
+          <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
+            語
+          </span>
+        ),
+        label: 'Tracker Setoran Kotoba',
+        to: '/tracker-kotoba',
+      },
       {
         icon: (
           <span className="size-7 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/20 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/20 shadow-xs">

@@ -62,6 +62,7 @@ const ClassReservationPage = lazyWithRetry(() => import('./pages/ClassReservatio
 const InstructorScheduleManagerPage = lazyWithRetry(() => import('./pages/InstructorScheduleManager'))
 const CourseEditorPage = lazyWithRetry(() => import('./pages/CourseEditor'))
 const SetoranKotobaPage = lazyWithRetry(() => import('./pages/SetoranKotoba'))
+const KotobaTrackerPage = lazyWithRetry(() => import('./pages/KotobaTracker'))
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'))
 
 /* ── Role-Aware Dashboard Router ─────────────────── */
@@ -214,6 +215,7 @@ export function AppRoutes() {
                   <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
                   <Route path="/kelola-grup"     element={<ProtectedRoute><AppShell><GroupManagerPage /></AppShell></ProtectedRoute>} />
                   <Route path="/kelola-masukan"  element={<ProtectedRoute><AppShell><FeedbackManagerPage /></AppShell></ProtectedRoute>} />
+                  <Route path="/tracker-kotoba"  element={<ProtectedRoute><AppShell><KotobaTrackerPage /></AppShell></ProtectedRoute>} />
                   <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
                   <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
                   <Route path="*"                element={<Navigate to="/" replace />} />
