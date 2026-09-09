@@ -3,6 +3,41 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+// ── Auto-recover from stale chunks after a new deployment on hosting ──
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
+    console.warn('Vite preload error detected, refreshing page for new assets...')
+    window.location.reload()
+  })
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const msg = event?.reason?.message || ''
+    if (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('dynamically imported module')
+    ) {
+      event.preventDefault()
+      console.warn('Dynamic import chunk 404 detected, reloading to fetch latest assets...')
+      window.location.reload()
+    }
+  })
+
+  window.addEventListener('error', (event) => {
+    const msg = event?.message || ''
+    if (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('dynamically imported module')
+    ) {
+      event.preventDefault()
+      console.warn('Script loading error detected, reloading to fetch latest assets...')
+      window.location.reload()
+    }
+  })
+}
+
 // ── Initialize Stored Theme & Text Size ──────────────────────
 const savedTheme = localStorage.getItem('kaiwa_theme') || 'light'
 const root = document.documentElement

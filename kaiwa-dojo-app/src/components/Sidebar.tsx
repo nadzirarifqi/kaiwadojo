@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
   async function handleSignOut() {
     await signOut()
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   const currentRole = profile?.role || 'pelajar'

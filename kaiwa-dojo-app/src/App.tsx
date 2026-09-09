@@ -8,39 +8,29 @@ import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
 
-/* ── Lazy Load with Retry ──────────────────────────
-   Jika chunk gagal load (network error / stale hash setelah deploy),
-   otomatis retry 1x. Jika masih gagal, force reload halaman
-   agar browser mengambil index.html terbaru dengan hash chunk yang benar.
+/* ── Lazy Load with Auto-Recovery ──────────────────
+   Jika chunk gagal load (network error / stale hash setelah deploy baru di server),
+   otomatis reload halaman untuk mengambil index.html terbaru.
    ─────────────────────────────────────────────── */
-function lazyWithRetry(importFn: () => Promise<{ default: React.ComponentType }>) {
-  return lazy(() =>
-    importFn().catch(() => {
-      // Retry sekali setelah delay singkat
-      return new Promise<{ default: React.ComponentType }>((resolve) => {
-        setTimeout(() => {
-          importFn()
-            .then(resolve)
-            .catch(() => {
-              // Chunk masih gagal — kemungkinan hash lama setelah deploy baru
-              // Force reload untuk mendapat index.html terbaru
-              const hasReloaded = sessionStorage.getItem('kaiwa_chunk_reload')
-              if (!hasReloaded) {
-                sessionStorage.setItem('kaiwa_chunk_reload', 'true')
-                window.location.reload()
-              }
-              // Jika sudah pernah reload, return komponen fallback
-              resolve({ default: () => null })
-            })
-        }, 1500)
-      })
-    })
-  )
-}
-
-// Bersihkan flag reload setelah berhasil load
-if (typeof window !== 'undefined') {
-  sessionStorage.removeItem('kaiwa_chunk_reload')
+function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
+  importFn: () => Promise<T>
+) {
+  return lazy(async () => {
+    try {
+      return await importFn()
+    } catch (err: any) {
+      console.warn('Chunk load error (possible new version deployed), reloading...', err)
+      const lastReload = sessionStorage.getItem('kaiwa_last_chunk_reload')
+      const now = Date.now()
+      // Cegah infinite reload loop: reload hanya jika reload terakhir > 8 detik lalu
+      if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
+        sessionStorage.setItem('kaiwa_last_chunk_reload', now.toString())
+        window.location.reload()
+        return new Promise<T>(() => {}) // tahan promise karena halaman sedang reload
+      }
+      throw err
+    }
+  })
 }
 
 // Lazy-loaded pages for ultra-fast initial loads and lightweight bundle chunks

@@ -180,15 +180,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut(reason?: string) {
-    await supabase.auth.signOut().catch(() => {})
+    try {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    } catch {}
+
+    // Purge all Supabase auth keys and Kaiwa session storage
     sessionStorage.clear()
-    localStorage.removeItem('kaiwa_custom_profile')
-    localStorage.removeItem('kaiwa_session_active')
-    localStorage.removeItem('kaiwa_user_kotoba_active_global')
-    localStorage.removeItem('kaiwa_lesson_progress_active_global')
-    localStorage.removeItem(LAST_ACTIVITY_KEY)
+    sessionStorage.setItem('kaiwa_session_active', 'false')
+
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('sb-') || k.startsWith('kaiwa_') || k.includes('profile') || k.includes('active_global'))) {
+        if (k !== 'kaiwa_theme' && k !== 'kaiwa_text_size') {
+          localStorage.removeItem(k)
+        }
+      }
+    }
+
     setSession(null)
     setProfile(null)
+    setLoading(false)
+
+    window.dispatchEvent(new Event('kaiwa_profile_updated'))
+    if (profileBroadcastChannel) {
+      try {
+        profileBroadcastChannel.postMessage({ type: 'kaiwa_profile_updated', profile: null })
+      } catch {}
+    }
 
     if (reason) {
       localStorage.setItem('kaiwa_session_expired_reason', reason)
@@ -223,21 +241,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const handleProfileUpdate = () => {
       const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
-      if (!isBrowserSessionActive) return
+      if (!isBrowserSessionActive) {
+        setProfile(null)
+        setSession(null)
+        setLoading(false)
+        return
+      }
       const custom = sessionStorage.getItem('kaiwa_custom_profile')
       if (custom) {
         try {
           const parsed = JSON.parse(custom)
           if (parsed && parsed.id) {
-            setProfile(prev => {
-              if (prev && prev.id && prev.id !== parsed.id) {
-                return prev
-              }
-              return parsed
-            })
+            setProfile(parsed)
             setLoading(false)
           }
-        } catch {}
+        } catch {
+          setProfile(null)
+          setLoading(false)
+        }
+      } else {
+        setProfile(null)
+        setLoading(false)
       }
     }
 
