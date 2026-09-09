@@ -208,14 +208,29 @@ function StreakCard({
 }
 
 /* ── EmbeddedUserScheduleCard Component ─────────────────────── */
+function getRelativeDayLabel(dateStr: string, todayStr: string): string {
+  if (dateStr === todayStr) return 'Hari Ini'
+  const [ty, tm, td] = todayStr.split('-').map(Number)
+  const [dy, dm, dd] = dateStr.split('-').map(Number)
+  const tDate = new Date(ty, tm - 1, td)
+  const dDate = new Date(dy, dm - 1, dd)
+  const diffDays = Math.round((dDate.getTime() - tDate.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays === 1) return 'Besok'
+  if (diffDays === 2) return 'Lusa'
+  if (diffDays > 0) return `${diffDays} hari lagi`
+  if (diffDays === -1) return 'Kemarin'
+  return `${Math.abs(diffDays)} hari lalu`
+}
+
 function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [userReservations, setUserReservations] = useState<any[]>([])
   const [userMissions, setUserMissions]         = useState<{ date: string; mission: DailyMissionData }[]>([])
   const [loading, setLoading]                   = useState(true)
   const [activeFilter, setActiveFilter]         = useState<'all' | 'mission' | 'class'>('all')
+  const [dateScope, setDateScope]               = useState<'upcoming' | 'all' | 'past'>('upcoming')
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = getTodayDateString()
 
   useEffect(() => {
     async function loadSchedulesAndMissions() {
@@ -270,11 +285,23 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
     })),
   ].sort((a, b) => a.date.localeCompare(b.date))
 
-  const filteredTimeline = combinedTimeline.filter(item => {
+  // Filter by category (all, mission, class)
+  const categoryFiltered = combinedTimeline.filter(item => {
     if (activeFilter === 'mission') return item.type === 'mission'
     if (activeFilter === 'class') return item.type === 'class'
     return true
   })
+
+  // Split into upcoming (from today onwards) and past
+  const upcomingTimeline = categoryFiltered.filter(item => item.date >= todayStr)
+  const pastTimeline     = categoryFiltered.filter(item => item.date < todayStr)
+
+  // Timeline list to display based on dateScope (default is 'upcoming' -> refers initial date to today)
+  const displayedTimeline = dateScope === 'upcoming'
+    ? upcomingTimeline
+    : dateScope === 'past'
+      ? pastTimeline.slice().reverse() // show most recent past first
+      : categoryFiltered
 
   const [selectedScheduleItem, setSelectedScheduleItem] = useState<any | null>(null)
 
@@ -302,8 +329,8 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 mb-3 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full overflow-x-auto shrink-0">
+        {/* Filter Pills: Category */}
+        <div className="flex items-center gap-1.5 mb-2.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full overflow-x-auto shrink-0">
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-3 py-1 rounded-lg text-[0.68rem] font-bold border-none cursor-pointer transition-all shrink-0 ${
@@ -336,23 +363,101 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           </button>
         </div>
 
+        {/* Date Scope Pills: Mulai Hari Ini (Default) vs Riwayat */}
+        <div className="flex items-center justify-between gap-2 mb-3 px-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setDateScope('upcoming')}
+              className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                dateScope === 'upcoming'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>📅 Mulai Hari Ini</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
+                dateScope === 'upcoming' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+              }`}>
+                {upcomingTimeline.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDateScope('all')}
+              className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                dateScope === 'all'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>Semua</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
+                dateScope === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+              }`}>
+                {categoryFiltered.length}
+              </span>
+            </button>
+
+            {pastTimeline.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDateScope('past')}
+                className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                  dateScope === 'past'
+                    ? 'bg-primary text-white border-primary shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span>Riwayat Lampau</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
+                  dateScope === 'past' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500'
+                }`}>
+                  {pastTimeline.length}
+                </span>
+              </button>
+            )}
+          </div>
+
+          <span className="text-[0.68rem] text-slate-400 font-semibold hidden sm:inline shrink-0">
+            Hari Ini: <strong className="text-slate-700 dark:text-slate-200">{formatIndonesianFullDate(todayStr).split(',')[0]}</strong>
+          </span>
+        </div>
+
         {/* Scrollable Timeline List */}
         {loading ? (
           <div className="py-8 text-center text-xs text-slate-400">Memuat linimasa jadwalku...</div>
-        ) : filteredTimeline.length === 0 ? (
+        ) : displayedTimeline.length === 0 ? (
           <div className="p-6 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-2 flex-1 justify-center">
-            <span>Belum ada agenda yang tersusun untuk kategori ini.</span>
-            <button
-              onClick={() => navigate('/learning-plan')}
-              className="text-xs font-bold text-primary dark:text-red-400 bg-transparent border-none cursor-pointer hover:underline"
-            >
-              + Susun Agenda Sekarang →
-            </button>
+            <span>
+              {dateScope === 'upcoming'
+                ? `Belum ada agenda aktif mulai hari ini (${formatIndonesianFullDate(todayStr).split(',')[0] || 'hari ini'}) ke depan.`
+                : 'Belum ada agenda yang tersusun untuk kategori ini.'}
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+              <button
+                onClick={() => navigate('/learning-plan')}
+                className="px-3 py-1.5 rounded-xl bg-primary text-white font-bold border-none cursor-pointer hover:bg-primary-dark transition-all text-xs"
+              >
+                + Susun Agenda Sekarang →
+              </button>
+              {dateScope === 'upcoming' && pastTimeline.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDateScope('past')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer hover:bg-slate-300 transition-all text-xs"
+                >
+                  Lihat Riwayat Lampau ({pastTimeline.length})
+                </button>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="space-y-2.5 overflow-y-auto pr-1 max-h-[265px]">
-            {filteredTimeline.map(item => {
+          <div className="space-y-2.5 overflow-y-auto pr-1 max-h-[250px]">
+            {displayedTimeline.map(item => {
               const isToday = item.date === todayStr
+              const relLabel = getRelativeDayLabel(item.date, todayStr)
 
               if (item.type === 'mission') {
                 const m = item.mission
@@ -362,19 +467,27 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                     onClick={() => setSelectedScheduleItem(item)}
                     className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:border-amber-500 flex flex-col gap-1.5 group ${
                       isToday
-                        ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800'
+                        ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-400 dark:border-amber-800 ring-2 ring-amber-300/30 shadow-xs'
                         : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between font-extrabold">
-                      <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                      <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <span>🎯</span>
                         <span>Misi Harian</span>
-                        {isToday && (
-                          <span className="text-[0.6rem] bg-amber-500 text-white px-1.5 py-0.2 rounded-md font-bold uppercase">
-                            Hari Ini
+                        {isToday ? (
+                          <span className="text-[0.62rem] bg-amber-500 text-white px-1.5 py-0.2 rounded-md font-black uppercase shadow-2xs">
+                            🔥 Hari Ini
                           </span>
-                        )}
+                        ) : relLabel === 'Besok' ? (
+                          <span className="text-[0.62rem] bg-sky-500 text-white px-1.5 py-0.2 rounded-md font-bold uppercase">
+                            ⏳ Besok
+                          </span>
+                        ) : relLabel === 'Lusa' ? (
+                          <span className="text-[0.62rem] bg-indigo-500 text-white px-1.5 py-0.2 rounded-md font-bold uppercase">
+                            Lusa
+                          </span>
+                        ) : null}
                       </span>
                       <span className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
                         📅 {formatIndonesianFullDate(item.date)} 🔍
@@ -400,15 +513,30 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                     key={item.id}
                     onClick={() => setSelectedScheduleItem(item)}
                     className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex flex-col gap-1.5 group ${
-                      sch.type === 'online'
-                        ? 'bg-sky-50/80 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100 hover:border-sky-400'
-                        : 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 hover:border-emerald-400'
+                      isToday
+                        ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-700 ring-2 ring-sky-300/30 shadow-xs'
+                        : sch.type === 'online'
+                          ? 'bg-sky-50/70 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100 hover:border-sky-400'
+                          : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 hover:border-emerald-400'
                     }`}
                   >
                     <div className="flex items-center justify-between font-extrabold">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1.5">
                         <span>{sch.type === 'online' ? '💻' : '🏢'}</span>
                         <span>{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
+                        {isToday ? (
+                          <span className="text-[0.62rem] bg-sky-600 text-white px-1.5 py-0.2 rounded-md font-black uppercase shadow-2xs">
+                            🔥 Hari Ini
+                          </span>
+                        ) : relLabel === 'Besok' ? (
+                          <span className="text-[0.62rem] bg-sky-500 text-white px-1.5 py-0.2 rounded-md font-bold uppercase">
+                            ⏳ Besok
+                          </span>
+                        ) : relLabel === 'Lusa' ? (
+                          <span className="text-[0.62rem] bg-indigo-500 text-white px-1.5 py-0.2 rounded-md font-bold uppercase">
+                            Lusa
+                          </span>
+                        ) : null}
                       </span>
                       <span className="text-[0.68rem] font-semibold group-hover:underline">
                         📅 {formatIndonesianFullDate(sch.date)} ({sch.start_time} WIB) 🔍
