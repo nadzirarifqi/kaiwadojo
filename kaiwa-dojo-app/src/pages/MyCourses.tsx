@@ -368,37 +368,57 @@ export default function MyCourses() {
 
   /* ── Load Course Data from Supabase & Subscribe to Realtime Updates ── */
   useEffect(() => {
-    fetchCourseData()
+    fetchCourseData(false)
 
-    // 1. Instant local window event sync (for same browser / role switcher / multi-tabs)
+    // 1. Instant local window event sync (for same browser / role switcher / multi-tabs / focus)
     const handleSync = () => {
-      fetchCourseData()
+      fetchCourseData(true)
     }
     window.addEventListener(CHAPTER_UPDATE_EVENT, handleSync)
     window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
+    window.addEventListener('focus', handleSync)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCourseData(true)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     const unsubscribeChapterRealtime = subscribeToChapterRealtime(handleSync)
 
     // 2. Realtime listener for lesson_progress across all user devices
     const effectiveUserId = profile?.id || user?.id || null
+    const progressChannelId = 'my_courses_progress_' + (effectiveUserId || 'guest') + '_' + Math.random().toString(36).slice(2)
     const progressChannel = supabase
-      .channel('my_courses_progress_realtime_' + (effectiveUserId || 'all'))
+      .channel(progressChannelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, () => {
-        fetchCourseData()
+        fetchCourseData(true)
       })
       .subscribe()
+
+    // 3. Fallback polling every 6 seconds to ensure instant sync even if WebSocket reconnects
+    const pollInterval = setInterval(() => {
+      fetchCourseData(true)
+    }, 6000)
 
     return () => {
       window.removeEventListener(CHAPTER_UPDATE_EVENT, handleSync)
       window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
+      window.removeEventListener('focus', handleSync)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearInterval(pollInterval)
       unsubscribeChapterRealtime()
       supabase.removeChannel(progressChannel)
     }
   }, [user, profile?.id, profile?.role, selectedJilid])
 
-  async function fetchCourseData() {
-    setLoading(true)
+  async function fetchCourseData(silent = false) {
+    if (!silent) {
+      setLoading(true)
+    }
 
     // 0. Fetch Admin Chapter Settings, Header Settings & Groups
     const [adminChapterMap, adminHeader, groupList] = await Promise.all([

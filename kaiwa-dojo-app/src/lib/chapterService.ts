@@ -198,7 +198,7 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
     console.error('LocalStorage read error:', e)
   }
 
-  // 2. Try Supabase DB query (real-time sync across devices)
+  // 2. Try Supabase DB query (real-time sync across devices - DB is authoritative ground truth)
   try {
     const { data, error } = await supabase.from('chapter_settings').select('*')
     if (!error && data && data.length > 0) {
@@ -207,16 +207,16 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
           result[item.bab_number] = {
             ...result[item.bab_number],
             title: item.title || result[item.bab_number].title,
-            subtitle: item.subtitle || result[item.bab_number].subtitle,
+            subtitle: item.subtitle !== undefined && item.subtitle !== null ? item.subtitle : result[item.bab_number].subtitle,
             is_hidden: typeof item.is_hidden === 'boolean' ? item.is_hidden : result[item.bab_number].is_hidden,
             has_video: typeof item.has_video === 'boolean' ? item.has_video : result[item.bab_number].has_video,
             duration_s1: item.duration_s1 != null ? String(item.duration_s1) : result[item.bab_number].duration_s1 ?? '15.00',
             duration_s2: item.duration_s2 != null ? String(item.duration_s2) : result[item.bab_number].duration_s2 ?? '15.00',
             duration_s3: item.duration_s3 != null ? String(item.duration_s3) : result[item.bab_number].duration_s3 ?? '12.00',
-            custom_video_s1: item.custom_video_s1,
-            custom_video_s2: item.custom_video_s2,
-            custom_video_s3: item.custom_video_s3,
-            target_group: item.target_group ?? result[item.bab_number].target_group ?? null,
+            custom_video_s1: item.custom_video_s1 ?? null,
+            custom_video_s2: item.custom_video_s2 ?? null,
+            custom_video_s3: item.custom_video_s3 ?? null,
+            target_group: item.target_group ? item.target_group.trim() : null, // DB is authoritative!
           }
         }
       })
@@ -237,24 +237,51 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
 
 export const CHAPTER_UPDATE_EVENT = 'kaiwa_chapter_updated'
 
+let chapterBroadcastChannel: BroadcastChannel | null = null
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    chapterBroadcastChannel = new BroadcastChannel('kaiwa_chapter_sync_channel')
+  }
+} catch {}
+
 export function notifyChapterChanged(detail?: any) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(CHAPTER_UPDATE_EVENT, { detail }))
+    if (chapterBroadcastChannel) {
+      try {
+        chapterBroadcastChannel.postMessage({ type: CHAPTER_UPDATE_EVENT, detail, timestamp: Date.now() })
+      } catch {}
+    }
   }
 }
 
 export function subscribeToChapterRealtime(onUpdate: () => void) {
   if (typeof window === 'undefined') return () => {}
 
+  // 1. Instant cross-tab sync in same browser via BroadcastChannel
+  const handleBroadcast = (e: MessageEvent) => {
+    if (e.data?.type === CHAPTER_UPDATE_EVENT) {
+      onUpdate()
+    }
+  }
+  if (chapterBroadcastChannel) {
+    chapterBroadcastChannel.addEventListener('message', handleBroadcast)
+  }
+
+  // 2. Supabase Realtime WebSocket channel with unique channel ID
+  const channelId = 'chapter_settings_rt_' + Math.random().toString(36).slice(2)
   const channel = supabase
-    .channel('public_chapter_settings_realtime_channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chapter_settings' }, () => {
-      notifyChapterChanged()
+    .channel(channelId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chapter_settings' }, (payload) => {
+      notifyChapterChanged(payload)
       onUpdate()
     })
     .subscribe()
 
   return () => {
+    if (chapterBroadcastChannel) {
+      chapterBroadcastChannel.removeEventListener('message', handleBroadcast)
+    }
     supabase.removeChannel(channel)
   }
 }
