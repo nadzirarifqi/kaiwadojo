@@ -131,6 +131,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       },
       {
         icon: (
+          <span className="size-7 rounded-xl bg-red-500/10 text-red-600 dark:bg-red-400/20 dark:text-red-300 flex items-center justify-center font-bold text-xs shrink-0 border border-red-500/20 shadow-xs">
+            📢
+          </span>
+        ),
+        label: 'Kelola Pengumuman',
+        to: '/kelola-pengumuman',
+      },
+      {
+        icon: (
           <span className="size-7 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 flex items-center justify-center font-black text-sm shrink-0 font-serif border border-amber-500/30 shadow-xs">
             語
           </span>

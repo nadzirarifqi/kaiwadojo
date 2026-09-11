@@ -9,6 +9,7 @@ import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterServic
 import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
 import { fetchAllStudentKotobaStats, type GlobalKotobaSummary, KOTOBA_TRACKER_UPDATE_EVENT } from '../lib/kotobaService'
+import { fetchAnnouncements, type Announcement, ANNOUNCEMENT_UPDATE_EVENT } from '../lib/announcementService'
 
 import LoadingScreen from '../components/LoadingScreen'
 import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const [kotobaSummary, setKotobaSummary] = useState<GlobalKotobaSummary | null>(null)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
 
   // Broadcast WA Modal state
@@ -81,7 +83,7 @@ export default function AdminDashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [instData, stdData, schData, resData, chapData, fbData, kotobaData] = await Promise.all([
+    const [instData, stdData, schData, resData, chapData, fbData, kotobaData, annData] = await Promise.all([
       fetchInstructors(),
       fetchStudents(),
       fetchSchedules(),
@@ -89,6 +91,7 @@ export default function AdminDashboard() {
       getChapterSettingsMap(),
       fetchFeedbacks(),
       fetchAllStudentKotobaStats(),
+      fetchAnnouncements(),
     ])
     setInstructors(instData)
     setStudents(stdData)
@@ -97,6 +100,7 @@ export default function AdminDashboard() {
     setChapterSettings(chapData)
     setFeedbacks(fbData)
     setKotobaSummary(kotobaData.summary)
+    setAnnouncements(annData)
     setLoading(false)
   }
 
@@ -112,15 +116,23 @@ export default function AdminDashboard() {
     window.addEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
     window.addEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
     window.addEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
+    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleReservationSync)
     window.addEventListener('storage', handleReservationSync)
 
+    // Realtime Supabase listener
     const channel = supabase
-      .channel('admin_reservations_realtime')
+      .channel('admin_dashboard_realtime_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
-        loadData()
+        handleReservationSync()
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_suggestions' }, () => {
-        loadData()
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, () => {
+        handleReservationSync()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        handleReservationSync()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        handleReservationSync()
       })
       .subscribe()
 
@@ -129,6 +141,7 @@ export default function AdminDashboard() {
       window.removeEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
+      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleReservationSync)
       window.removeEventListener('storage', handleReservationSync)
       supabase.removeChannel(channel)
     }
@@ -172,6 +185,17 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigate('/kelola-pengumuman')}
+            className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+          >
+            <span>📢 Kelola Pengumuman</span>
+            {announcements.filter(a => a.is_active).length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-white text-rose-700 text-[0.65rem] font-black">
+                {announcements.filter(a => a.is_active).length} Aktif
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setShowBroadcastModal(true)}
             className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2 animate-pulse-subtle"
@@ -327,6 +351,38 @@ export default function AdminDashboard() {
           <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-2xl shrink-0">
             💡
           </div>
+        </div>
+      </div>
+
+      {/* Announcement Quick Banner Widget */}
+      <div className="bg-gradient-to-r from-red-600/10 via-rose-500/5 to-amber-500/10 dark:from-red-950/40 dark:via-rose-950/20 dark:to-amber-950/30 rounded-3xl p-5 sm:p-6 border border-red-500/20 dark:border-red-800/40 shadow-xs mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="size-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
+            📢
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Papan Pengumuman Dojo
+              </h2>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">
+                {announcements.filter(a => a.is_active).length} Aktif Tayang
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+              Pengumuman resmi akan otomatis muncul sebagai pop-up layar saat siswa pertama kali login ke sistem.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0 self-end md:self-auto">
+          <button
+            onClick={() => navigate('/kelola-pengumuman')}
+            className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
+          >
+            <span>➕ Buat / Kelola Pengumuman</span>
+            <span>→</span>
+          </button>
         </div>
       </div>
 

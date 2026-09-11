@@ -23,6 +23,13 @@ import {
 } from '../lib/scheduleService'
 import { useLanguage } from '../contexts/LanguageContext'
 import { DashboardSkeleton } from '../components/Skeleton'
+import {
+  type Announcement,
+  fetchActiveAnnouncementsForUser,
+  ANNOUNCEMENT_UPDATE_EVENT,
+  subscribeToAnnouncementRealtime,
+} from '../lib/announcementService'
+import AnnouncementModal from '../components/AnnouncementModal'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -707,6 +714,11 @@ export default function Dashboard() {
   const [dailyMission, setDailyMission]         = useState<DailyMissionData | null>(null)
   const [missionProgress, setMissionProgress] = useState<MissionProgress | null>(null)
   const [videoProgressMap, setVideoProgressMap] = useState<Map<string, number>>(new Map())
+
+  // Announcements State & Auto Pop-up
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState<Announcement[]>([])
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -716,6 +728,25 @@ export default function Dashboard() {
       if (!effectiveUserId) {
         setLoading(false)
         return
+      }
+
+      // Fetch Active Announcements for this student
+      try {
+        const annRes = await fetchActiveAnnouncementsForUser(profile)
+        setAnnouncements(annRes.announcements)
+        setUnreadAnnouncements(annRes.unreadAnnouncements)
+
+        // Auto pop-up on login / initial mount if there is any unread announcement
+        if (annRes.unreadAnnouncements.length > 0) {
+          const sessionSeenKey = `kaiwa_ann_seen_session_${effectiveUserId}`
+          const alreadySeenInSession = sessionStorage.getItem(sessionSeenKey)
+          if (!alreadySeenInSession) {
+            setShowAnnouncementModal(true)
+            sessionStorage.setItem(sessionSeenKey, 'true')
+          }
+        }
+      } catch (err) {
+        console.warn('Dashboard announcements load note:', err)
       }
 
       // Daily Mission: Fetch from DB first (or local fallback)
@@ -884,16 +915,19 @@ export default function Dashboard() {
     window.addEventListener('kaiwa_mission_progress_updated', handleSync)
     window.addEventListener('kaiwa_lesson_progress_updated', handleSync)
     window.addEventListener('kaiwa_profile_updated', handleSync)
+    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
 
     const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
     const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleSync)
+    const unsubscribeAnnouncementRealtime = subscribeToAnnouncementRealtime(handleSync)
 
     // Realtime Supabase listener for lesson_progress & user_kotoba_submissions DB updates
     const lessonProgressChannel = supabase
       .channel('dashboard_lesson_progress_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, handleSync)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, handleSync)
       .subscribe()
 
     return () => {
@@ -903,9 +937,11 @@ export default function Dashboard() {
       window.removeEventListener('kaiwa_mission_progress_updated', handleSync)
       window.removeEventListener('kaiwa_lesson_progress_updated', handleSync)
       window.removeEventListener('kaiwa_profile_updated', handleSync)
+      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeScheduleRealtime()
       unsubscribeMissionRealtime()
+      unsubscribeAnnouncementRealtime()
       supabase.removeChannel(lessonProgressChannel)
     }
   }, [user, profile])
@@ -960,14 +996,68 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <button
-            onClick={() => navigate('/my-courses')}
-            className="self-start md:self-center px-5 py-3 rounded-2xl bg-white text-slate-900 font-extrabold hover:bg-slate-100 text-xs sm:text-sm border-none cursor-pointer shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <span>▶ {t('dash_continue_learning', 'Lanjut Belajar')}</span>
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-center">
+            {announcements.length > 0 && (
+              <button
+                onClick={() => setShowAnnouncementModal(true)}
+                className="px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs sm:text-sm border border-white/30 backdrop-blur-md cursor-pointer transition-all flex items-center gap-2 shadow-md hover:scale-105 active:scale-95"
+              >
+                <span>📢 Pengumuman</span>
+                {unreadAnnouncements.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[0.65rem] font-black animate-pulse">
+                    {unreadAnnouncements.length} Baru
+                  </span>
+                )}
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate('/my-courses')}
+              className="px-5 py-3 rounded-2xl bg-white text-slate-900 font-extrabold hover:bg-slate-100 text-xs sm:text-sm border-none cursor-pointer shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+            >
+              <span>▶ {t('dash_continue_learning', 'Lanjut Belajar')}</span>
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* 📢 Papan Pengumuman Banner (if there are active announcements) */}
+      {announcements.length > 0 && (
+        <div
+          onClick={() => setShowAnnouncementModal(true)}
+          className="bg-gradient-to-r from-red-600/10 via-rose-500/5 to-amber-500/10 dark:from-red-950/40 dark:via-rose-950/20 dark:to-amber-950/30 rounded-3xl p-4 sm:p-5 border border-red-500/20 dark:border-red-800/40 shadow-xs mb-6 flex items-center justify-between gap-4 cursor-pointer hover:border-red-500/40 transition-all hover:shadow-md group"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="size-10 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center text-xl shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              📢
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                  Papan Pengumuman Dojo
+                </span>
+                {unreadAnnouncements.length > 0 ? (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs animate-pulse">
+                    {unreadAnnouncements.length} Belum Dibaca
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    ✓ Terkini
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-1">
+                {announcements[0]?.title || 'Klik untuk melihat informasi dan pembaruan resmi terbaru.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 text-xs font-extrabold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
+            <span>Buka</span>
+            <span>→</span>
+          </div>
+        </div>
+      )}
 
       {/* 🎯 Daily Mission Dashboard Widget */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm mb-6 flex flex-col gap-4">
@@ -1303,6 +1393,18 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* 📢 Announcement Pop-up Modal */}
+      <AnnouncementModal
+        isOpen={showAnnouncementModal}
+        onClose={() => setShowAnnouncementModal(false)}
+        announcements={unreadAnnouncements.length > 0 ? unreadAnnouncements : announcements}
+        onMarkRead={(id) => {
+          setUnreadAnnouncements(prev => prev.filter(a => a.id !== id))
+        }}
+        onMarkAllRead={() => {
+          setUnreadAnnouncements([])
+        }}
+      />
     </main>
   )
 }

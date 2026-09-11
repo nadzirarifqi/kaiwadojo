@@ -15,6 +15,13 @@ import {
   getChapterSettingsMap,
   type ChapterSetting
 } from '../lib/chapterService'
+import {
+  type Announcement,
+  fetchActiveAnnouncementsForUser,
+  ANNOUNCEMENT_UPDATE_EVENT,
+  subscribeToAnnouncementRealtime,
+} from '../lib/announcementService'
+import AnnouncementModal from '../components/AnnouncementModal'
 import LoadingScreen from '../components/LoadingScreen'
 
 export default function InstructorDashboard() {
@@ -24,18 +31,33 @@ export default function InstructorDashboard() {
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [reservations, setReservations] = useState<ClassReservation[]>([])
   const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState<Announcement[]>([])
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const [loading, setLoading] = useState(true)
 
   async function loadData() {
     setLoading(true)
-    const [sData, rData, cData] = await Promise.all([
+    const [sData, rData, cData, annRes] = await Promise.all([
       fetchSchedules(),
       fetchReservations(),
       getChapterSettingsMap(),
+      fetchActiveAnnouncementsForUser(profile),
     ])
     setSchedules(sortSchedules(sData))
     setReservations(rData)
     setChapterSettings(cData)
+    setAnnouncements(annRes.announcements)
+    setUnreadAnnouncements(annRes.unreadAnnouncements)
+
+    if (annRes.unreadAnnouncements.length > 0) {
+      const sessionSeenKey = `kaiwa_ann_seen_session_${profile?.id || 'instructor'}`
+      const alreadySeen = sessionStorage.getItem(sessionSeenKey)
+      if (!alreadySeen) {
+        setShowAnnouncementModal(true)
+        sessionStorage.setItem(sessionSeenKey, 'true')
+      }
+    }
     setLoading(false)
   }
 
@@ -47,17 +69,21 @@ export default function InstructorDashboard() {
     }
     window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
     window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
     window.addEventListener('storage', handleSync)
 
     const unsubscribeRealtime = subscribeToScheduleRealtime(handleSync)
+    const unsubscribeAnnouncementRealtime = subscribeToAnnouncementRealtime(handleSync)
 
     return () => {
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
       window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
+      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
       window.removeEventListener('storage', handleSync)
       unsubscribeRealtime()
+      unsubscribeAnnouncementRealtime()
     }
-  }, [])
+  }, [profile])
 
   if (loading) {
     return <LoadingScreen message="Memuat Dashboard Pengajar..." fullScreen={false} />
@@ -108,6 +134,19 @@ export default function InstructorDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {announcements.length > 0 && (
+            <button
+              onClick={() => setShowAnnouncementModal(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
+            >
+              <span>📢 Pengumuman</span>
+              {unreadAnnouncements.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-white text-rose-700 text-[0.65rem] font-black animate-pulse">
+                  {unreadAnnouncements.length} Baru
+                </span>
+              )}
+            </button>
+          )}
           <button
             onClick={() => navigate('/kelola-kursus')}
             className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center gap-2"
@@ -324,6 +363,19 @@ export default function InstructorDashboard() {
           </div>
         </div>
       </div>
+
+      {/* 📢 Announcement Pop-up Modal */}
+      <AnnouncementModal
+        isOpen={showAnnouncementModal}
+        onClose={() => setShowAnnouncementModal(false)}
+        announcements={unreadAnnouncements.length > 0 ? unreadAnnouncements : announcements}
+        onMarkRead={(id) => {
+          setUnreadAnnouncements(prev => prev.filter(a => a.id !== id))
+        }}
+        onMarkAllRead={() => {
+          setUnreadAnnouncements([])
+        }}
+      />
     </main>
   )
 }
