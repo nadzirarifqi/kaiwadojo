@@ -1756,11 +1756,10 @@ export default function MyCourses() {
                     </button>
                   )
                 })}
-              </div>
-            </div>
           </div>
         </div>
-      )}
+      ) : null}
+
       {/* Beautiful Custom Alert Modal */}
       <CustomAlertModal {...alertConfig} />
     </main>
