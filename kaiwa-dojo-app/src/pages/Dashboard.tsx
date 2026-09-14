@@ -560,6 +560,21 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                         ✓ Terdaftar
                       </span>
                     </div>
+
+                    {sch.type === 'online' && (
+                      <div className="mt-0.5 flex justify-end">
+                        <a
+                          href={sch.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 active:scale-95 text-white text-[0.68rem] font-extrabold shadow-sm transition-all no-underline"
+                        >
+                          <span>🎥</span>
+                          <span>Bergabung →</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )
               }
@@ -663,11 +678,28 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                   <div className="font-extrabold text-slate-800 dark:text-white">👨‍🏫 Pengajar (Sensei):</div>
                   <div className="font-bold text-slate-700 dark:text-slate-200 text-sm">{selectedScheduleItem.schedule.instructor}</div>
                   {selectedScheduleItem.schedule.type === 'online' && (
-                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-400 block mb-1 font-semibold">🔗 Link Ruangan Zoom:</span>
-                      <span className="text-sky-600 dark:text-sky-400 font-mono font-bold select-all bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-lg inline-block">
-                        https://zoom.us/j/kaiwadojo-live-session
-                      </span>
+                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2.5">
+                      <div>
+                        <span className="text-slate-400 block mb-1 font-semibold">🔗 Link Ruangan:</span>
+                        <a
+                          href={selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sky-600 dark:text-sky-400 font-mono text-[0.72rem] font-bold select-all bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1.5 rounded-lg inline-block break-all hover:underline transition-all"
+                        >
+                          {selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
+                        </a>
+                      </div>
+                      <a
+                        href={selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 active:scale-95 text-white text-xs font-extrabold shadow-md transition-all no-underline"
+                      >
+                        <span>🎥</span>
+                        <span>Bergabung ke Kelas Online Sekarang</span>
+                        <span>→</span>
+                      </a>
                     </div>
                   )}
                 </div>
