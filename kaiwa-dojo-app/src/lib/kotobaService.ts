@@ -42,6 +42,43 @@ export interface GlobalKotobaSummary {
 export const KOTOBA_TRACKER_UPDATE_EVENT = 'kaiwa_kotoba_tracker_updated'
 
 /**
+ * Mengambil ringkasan global kotoba secara cepat dan ringan (hanya hitungan via HEAD query),
+ * tanpa perlu mengunduh seluruh baris kata atau daftar lengkap akun pelajar.
+ */
+export async function fetchKotobaSummary(): Promise<GlobalKotobaSummary> {
+  try {
+    const [{ count: totalKotoba }, { count: masteredKotoba }] = await Promise.all([
+      supabase.from('user_kotoba_submissions').select('*', { count: 'exact', head: true }),
+      supabase.from('user_kotoba_submissions').select('*', { count: 'exact', head: true }).eq('is_mastered', true),
+    ])
+
+    const total = totalKotoba || 0
+    const mastered = masteredKotoba || 0
+    const unmastered = Math.max(0, total - mastered)
+    const rate = total > 0 ? Math.round((mastered / total) * 100) : 0
+
+    return {
+      totalStudents: 0,
+      activeStudents: 0,
+      totalKotoba: total,
+      masteredKotoba: mastered,
+      unmasteredKotoba: unmastered,
+      globalMasteryRate: rate,
+    }
+  } catch (error) {
+    console.warn('fetchKotobaSummary error:', error)
+    return {
+      totalStudents: 0,
+      activeStudents: 0,
+      totalKotoba: 0,
+      masteredKotoba: 0,
+      unmasteredKotoba: 0,
+      globalMasteryRate: 0,
+    }
+  }
+}
+
+/**
  * Mengambil seluruh data setoran kotoba dari seluruh siswa dan menghitung statistik agregasi.
  */
 export async function fetchAllStudentKotobaStats(): Promise<{

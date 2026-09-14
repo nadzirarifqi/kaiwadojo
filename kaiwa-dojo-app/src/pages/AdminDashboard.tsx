@@ -1,38 +1,65 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
 import { fetchInstructors, type InstructorAccount } from '../lib/instructorService'
-import { fetchStudents, type StudentAccount } from '../lib/studentService'
+import { fetchStudentsCount } from '../lib/studentService'
 import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
 import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
-import { fetchAllStudentKotobaStats, type GlobalKotobaSummary, KOTOBA_TRACKER_UPDATE_EVENT } from '../lib/kotobaService'
+import { fetchKotobaSummary, type GlobalKotobaSummary, KOTOBA_TRACKER_UPDATE_EVENT } from '../lib/kotobaService'
 import { fetchAnnouncements, type Announcement, ANNOUNCEMENT_UPDATE_EVENT } from '../lib/announcementService'
 
 import LoadingScreen from '../components/LoadingScreen'
 import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
 
+const ADMIN_CACHE_KEY = 'kaiwa_admin_dashboard_cache_v2'
+
+interface AdminCacheData {
+  instructors: InstructorAccount[]
+  studentCount: number
+  schedules: ClassSchedule[]
+  reservations: ClassReservation[]
+  chapterSettings: Record<number, ChapterSetting>
+  feedbacks: FeedbackItem[]
+  kotobaSummary: GlobalKotobaSummary | null
+  announcements: Announcement[]
+  groups: KaiwaGroup[]
+}
+
+function getInitialCache(): AdminCacheData | null {
+  try {
+    const raw = sessionStorage.getItem(ADMIN_CACHE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return null
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { profile } = useAuth()
 
-  const [instructors, setInstructors] = useState<InstructorAccount[]>([])
-  const [students, setStudents] = useState<StudentAccount[]>([])
-  const [schedules, setSchedules] = useState<ClassSchedule[]>([])
-  const [reservations, setReservations] = useState<ClassReservation[]>([])
-  const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>({})
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
-  const [kotobaSummary, setKotobaSummary] = useState<GlobalKotobaSummary | null>(null)
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [loading, setLoading] = useState(true)
+  // Instant SWR Cache: tampilkan data seketika jika ada di sesi tab
+  const initialCache = useRef(getInitialCache()).current
+
+  const [instructors, setInstructors] = useState<InstructorAccount[]>(() => initialCache?.instructors || [])
+  const [studentCount, setStudentCount] = useState<number>(() => initialCache?.studentCount || 0)
+  const [schedules, setSchedules] = useState<ClassSchedule[]>(() => initialCache?.schedules || [])
+  const [reservations, setReservations] = useState<ClassReservation[]>(() => initialCache?.reservations || [])
+  const [chapterSettings, setChapterSettings] = useState<Record<number, ChapterSetting>>(() => initialCache?.chapterSettings || {})
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(() => initialCache?.feedbacks || [])
+  const [kotobaSummary, setKotobaSummary] = useState<GlobalKotobaSummary | null>(() => initialCache?.kotobaSummary || null)
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => initialCache?.announcements || [])
+  const [groups, setGroups] = useState<KaiwaGroup[]>(() => initialCache?.groups || [])
+
+  // Jika cache sudah ada, jangan pernah blokir layar dengan spinner!
+  const [loading, setLoading] = useState<boolean>(() => !initialCache)
 
   // Broadcast WA Modal state
   const [showBroadcastModal, setShowBroadcastModal] = useState(false)
 
   // Group management state
-  const [groups, setGroups] = useState<KaiwaGroup[]>([])
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupKeywords, setNewGroupKeywords] = useState('')
   const [groupLoading, setGroupLoading] = useState(false)
@@ -41,11 +68,6 @@ export default function AdminDashboard() {
   function showGroupToast(msg: string) {
     setGroupToast(msg)
     setTimeout(() => setGroupToast(null), 3000)
-  }
-
-  async function loadGroups() {
-    const data = await fetchGroups(true)
-    setGroups(data)
   }
 
   async function handleAddGroup() {
@@ -59,7 +81,8 @@ export default function AdminDashboard() {
     if (res.success) {
       setNewGroupName('')
       setNewGroupKeywords('')
-      await loadGroups()
+      const updatedGroups = await fetchGroups(true)
+      setGroups(updatedGroups)
       showGroupToast(`Grup "${name}" berhasil ditambahkan!`)
     } else {
       showGroupToast(`Gagal: ${res.error}`)
@@ -72,7 +95,8 @@ export default function AdminDashboard() {
     setGroupLoading(true)
     const res = await deleteGroup(id, name)
     if (res.success) {
-      await loadGroups()
+      const updatedGroups = await fetchGroups(true)
+      setGroups(updatedGroups)
       showGroupToast(`Grup "${name}" dihapus.`)
     } else {
       showGroupToast(`Gagal: ${res.error}`)
@@ -80,74 +104,109 @@ export default function AdminDashboard() {
     setGroupLoading(false)
   }
 
+  async function loadData(showSpinner = false) {
+    if (showSpinner) {
+      setLoading(true)
+    }
 
-  async function loadData() {
-    setLoading(true)
-    const [instData, stdData, schData, resData, chapData, fbData, kotobaData, annData] = await Promise.all([
-      fetchInstructors(),
-      fetchStudents(),
-      fetchSchedules(),
-      fetchReservations(),
-      getChapterSettingsMap(),
-      fetchFeedbacks(),
-      fetchAllStudentKotobaStats(),
-      fetchAnnouncements(),
-    ])
-    setInstructors(instData)
-    setStudents(stdData)
-    setSchedules(sortSchedules(schData))
-    setReservations(resData)
-    setChapterSettings(chapData)
-    setFeedbacks(fbData)
-    setKotobaSummary(kotobaData.summary)
-    setAnnouncements(annData)
-    setLoading(false)
+    try {
+      // 9 query cepat berjalan secara parallel, tanpa query berat/duplikat
+      const [
+        instData,
+        stdCount,
+        schData,
+        resData,
+        chapData,
+        fbData,
+        kotobaSummaryData,
+        annData,
+        grpData,
+      ] = await Promise.all([
+        fetchInstructors(),
+        fetchStudentsCount(),
+        fetchSchedules(),
+        fetchReservations(),
+        getChapterSettingsMap(),
+        fetchFeedbacks(),
+        fetchKotobaSummary(),
+        fetchAnnouncements(),
+        fetchGroups(true),
+      ])
+
+      const sortedSchedules = sortSchedules(schData)
+
+      setInstructors(instData)
+      setStudentCount(stdCount)
+      setSchedules(sortedSchedules)
+      setReservations(resData)
+      setChapterSettings(chapData)
+      setFeedbacks(fbData)
+      setKotobaSummary(kotobaSummaryData)
+      setAnnouncements(annData)
+      setGroups(grpData)
+
+      // Simpan snapshot ke sessionStorage untuk instant loading berikutnya
+      const cacheToSave: AdminCacheData = {
+        instructors: instData,
+        studentCount: stdCount,
+        schedules: sortedSchedules,
+        reservations: resData,
+        chapterSettings: chapData,
+        feedbacks: fbData,
+        kotobaSummary: kotobaSummaryData,
+        announcements: annData,
+        groups: grpData,
+      }
+      sessionStorage.setItem(ADMIN_CACHE_KEY, JSON.stringify(cacheToSave))
+    } catch (err) {
+      console.warn('Admin loadData error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    loadData()
-    loadGroups()
+    // Muat data awal (tampilkan spinner hanya jika belum ada cache sama sekali)
+    loadData(!initialCache)
 
-    const handleReservationSync = () => {
-      loadData()
-      loadGroups()
+    // Debounce realtime sync agar jika ada event beruntun tidak spam query
+    let syncTimer: any = null
+    const handleSync = () => {
+      clearTimeout(syncTimer)
+      syncTimer = setTimeout(() => {
+        loadData(false) // Revalidasi di latar belakang tanpa spinner
+      }, 300)
     }
-    window.addEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
-    window.addEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
-    window.addEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
-    window.addEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
-    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleReservationSync)
-    window.addEventListener('storage', handleReservationSync)
+
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+    window.addEventListener(GROUP_UPDATE_EVENT, handleSync)
+    window.addEventListener(FEEDBACK_UPDATE_EVENT, handleSync)
+    window.addEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleSync)
+    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
+    window.addEventListener('storage', handleSync)
 
     // Realtime Supabase listener
     const channel = supabase
       .channel('admin_dashboard_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, () => {
-        handleReservationSync()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, () => {
-        handleReservationSync()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        handleReservationSync()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-        handleReservationSync()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_reservations' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, handleSync)
       .subscribe()
 
     return () => {
-      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleReservationSync)
-      window.removeEventListener(GROUP_UPDATE_EVENT, handleReservationSync)
-      window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleReservationSync)
-      window.removeEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleReservationSync)
-      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleReservationSync)
-      window.removeEventListener('storage', handleReservationSync)
+      clearTimeout(syncTimer)
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
+      window.removeEventListener(GROUP_UPDATE_EVENT, handleSync)
+      window.removeEventListener(FEEDBACK_UPDATE_EVENT, handleSync)
+      window.removeEventListener(KOTOBA_TRACKER_UPDATE_EVENT, handleSync)
+      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
+      window.removeEventListener('storage', handleSync)
       supabase.removeChannel(channel)
     }
   }, [])
 
-  if (loading) {
+  if (loading && !initialCache) {
     return <LoadingScreen message="Memuat Dashboard Admin..." fullScreen={false} />
   }
 
@@ -246,7 +305,7 @@ export default function AdminDashboard() {
             },
             {
               label: 'Total Pelajar',
-              value: students.length,
+              value: studentCount,
               unit: 'Siswa',
               sub: '🎓 Akun Terdaftar',
               icon: '🎓',

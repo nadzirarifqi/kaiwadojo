@@ -30,6 +30,27 @@ export function normalizeGroup(raw: string | null | undefined): string {
 }
 
 /**
+ * Mengambil total jumlah akun pelajar secara instan via HEAD count query
+ */
+export async function fetchStudentsCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'pelajar')
+
+    if (error) {
+      console.warn('DB fetchStudentsCount error:', error.message)
+      return 0
+    }
+    return count || 0
+  } catch (e) {
+    console.warn('fetchStudentsCount catch:', e)
+    return 0
+  }
+}
+
+/**
  * Mengambil seluruh data akun pelajar langsung dari Supabase Database (profiles)
  */
 export async function fetchStudents(): Promise<StudentAccount[]> {
