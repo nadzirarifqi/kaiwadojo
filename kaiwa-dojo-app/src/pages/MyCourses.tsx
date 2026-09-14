@@ -1031,74 +1031,107 @@ export default function MyCourses() {
           )}
         </button>
 
-        <button
-          onClick={() => setSelectedJilid(2)}
-          className={`p-5 rounded-2xl border text-left cursor-pointer transition-all flex items-center gap-4 ${
-            selectedJilid === 2
-              ? 'bg-gradient-to-br from-emerald-600 to-teal-500 text-white border-emerald-600 shadow-lg scale-[1.01]'
-              : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-400 hover:bg-slate-50 shadow-sm'
-          }`}
+        <div
+          className="p-5 rounded-2xl border text-left transition-all flex items-center gap-4 relative overflow-hidden opacity-70 cursor-not-allowed bg-slate-50 border-slate-200 shadow-sm select-none"
         >
-          <div className={`size-14 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 ${
-            selectedJilid === 2 ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
-          }`}>
+          {/* Coming Soon Ribbon */}
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-400 text-amber-900 text-[0.6rem] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm">
+            🔒 Coming Soon
+          </div>
+          <div className="size-14 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 bg-slate-100 text-slate-400 grayscale">
             📗
           </div>
           <div className="min-w-0 flex-1">
-            <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${selectedJilid === 2 ? 'text-white/80' : 'text-slate-400'}`}>
+            <div className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-400">
               {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}
             </div>
-            <div className="text-base sm:text-lg font-extrabold truncate leading-tight">
+            <div className="text-base sm:text-lg font-extrabold truncate leading-tight text-slate-500">
               {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
             </div>
-            <div className={`text-xs font-semibold mt-1 ${selectedJilid === 2 ? 'text-white/90' : 'text-slate-500'}`}>
-              {t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}
+            <div className="text-xs font-semibold mt-1 text-slate-400">
+              Segera Hadir • Bab 26 s/d Bab 50
             </div>
           </div>
-          {selectedJilid === 2 && (
-            <span className="text-xl shrink-0 text-white font-bold">✓</span>
-          )}
-        </button>
+        </div>
       </div>
 
-      {/* ── Progress & Filter Bar ── */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="w-full sm:w-auto flex-1 min-w-0">
-          <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5 text-slate-700">
-            <span>{t('dash_book_progress_title', 'Progress Minna no Nihongo')} (Jilid {selectedJilid})</span>
-            <span className="text-primary font-black">{completedLessonsCount} / {totalLessonsCount} {t('completed', 'Selesai')} ({totalProgressPct}%)</span>
+      {/* ── Progress & Filter Bar (only Jilid 1) ── */}
+      {selectedJilid === 1 && (
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="w-full sm:w-auto flex-1 min-w-0">
+            <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5 text-slate-700">
+              <span>{t('dash_book_progress_title', 'Progress Minna no Nihongo')} (Jilid {selectedJilid})</span>
+              <span className="text-primary font-black">{completedLessonsCount} / {totalLessonsCount} {t('completed', 'Selesai')} ({totalProgressPct}%)</span>
+            </div>
+            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500"
+                style={{ width: `${totalProgressPct}%` }}
+              />
+            </div>
           </div>
-          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500"
-              style={{ width: `${totalProgressPct}%` }}
+
+          {/* Search Bab */}
+          <div className="w-full sm:w-64 relative shrink-0">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <input
+              type="text"
+              placeholder={t('mc_search_placeholder', 'Cari bab atau materi...')}
+              value={searchBab}
+              onChange={e => setSearchBab(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-primary bg-slate-50 font-medium"
             />
           </div>
         </div>
+      )}
 
-        {/* Search Bab */}
-        <div className="w-full sm:w-64 relative shrink-0">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder={t('mc_search_placeholder', 'Cari bab atau materi...')}
-            value={searchBab}
-            onChange={e => setSearchBab(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-primary bg-slate-50 font-medium"
-          />
+      {/* ── Coming Soon Panel (Jilid 2) ── */}
+      {selectedJilid === 2 && (
+        <div className="flex flex-col items-center justify-center py-16 px-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center gap-5">
+          <div className="relative">
+            <div className="size-24 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-5xl shadow-lg">
+              📗
+            </div>
+            <div className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[0.65rem] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow border border-amber-300">
+              Coming Soon
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-800 mb-2">
+              Minna no Nihongo — Jilid 2
+            </h3>
+            <p className="text-sm text-slate-500 font-semibold max-w-sm mx-auto leading-relaxed">
+              Materi <strong>Bab 26 s/d Bab 50</strong> sedang dalam persiapan oleh tim Kaiwa Dojo.<br />
+              Selesaikan dulu Jilid 1 ya! 💪
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 text-xs font-bold text-slate-400">
+            {[26,27,28,29,30,31,32,33,34,35].map(n => (
+              <span key={n} className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 grayscale opacity-60">
+                第{n}課
+              </span>
+            ))}
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-300">…+15 Bab</span>
+          </div>
+          <button
+            onClick={() => setSelectedJilid(1)}
+            className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-extrabold text-sm border-none cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-md"
+          >
+            ← Kembali ke Jilid 1
+          </button>
         </div>
-      </div>
+      )}
 
       {/* ── Chapters List (25 Bab Grid/Accordion) ── */}
-      {loading ? (
+      {selectedJilid === 1 && loading ? (
         <CourseCardSkeleton count={5} />
-      ) : filteredChapters.length === 0 ? (
+      ) : selectedJilid === 1 && filteredChapters.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 flex flex-col items-center gap-3">
           <span className="text-4xl">🔎</span>
           <h3 className="text-base font-bold text-slate-700">Tidak ada bab yang cocok</h3>
           <p className="text-xs text-slate-400">Coba ubah kata kunci pencarianmu.</p>
         </div>
-      ) : (
+      ) : selectedJilid === 1 ? (
         <div className="flex flex-col gap-4">
           {filteredChapters.map(chap => {
             const isExpanded = expandedBabs.has(chap.bab_number)
