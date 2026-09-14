@@ -1323,7 +1323,7 @@ export default function MyCourses() {
             )
           })}
         </div>
-      )}
+      ) : null}
 
       {/* ── Video Player & Placeholder Modal ── */}
       {activeLesson && (
@@ -1756,9 +1756,11 @@ export default function MyCourses() {
                     </button>
                   )
                 })}
+              </div>
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       {/* Beautiful Custom Alert Modal */}
       <CustomAlertModal {...alertConfig} />
