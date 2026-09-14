@@ -768,13 +768,19 @@ export default function Dashboard() {
         setAnnouncements(annRes.announcements)
         setUnreadAnnouncements(annRes.unreadAnnouncements)
 
-        // Auto pop-up on login / initial mount if there is any unread announcement
+        // Auto pop-up setiap kali user login baru — gunakan fingerprint dari session token Supabase.
+        // Setiap login menghasilkan access_token baru, sehingga popup selalu muncul di login baru.
+        // Saat hanya reload halaman, token tetap sama → popup tidak muncul lagi.
         if (annRes.unreadAnnouncements.length > 0) {
-          const sessionSeenKey = `kaiwa_ann_seen_session_${effectiveUserId}`
-          const alreadySeenInSession = sessionStorage.getItem(sessionSeenKey)
-          if (!alreadySeenInSession) {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          // Gunakan 24 karakter pertama access_token sebagai fingerprint unik per login
+          const loginFingerprint = currentSession?.access_token?.slice(0, 24) || `fallback_${effectiveUserId}`
+          const loginSeenKey = `kaiwa_ann_popup_${effectiveUserId}_${loginFingerprint}`
+
+          const alreadyShownThisLogin = sessionStorage.getItem(loginSeenKey)
+          if (!alreadyShownThisLogin) {
             setShowAnnouncementModal(true)
-            sessionStorage.setItem(sessionSeenKey, 'true')
+            sessionStorage.setItem(loginSeenKey, 'true')
           }
         }
       } catch (err) {
