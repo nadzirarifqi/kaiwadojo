@@ -89,10 +89,10 @@ export async function fetchAllStudentKotobaStats(): Promise<{
     // 1. Ambil daftar seluruh pelajar
     const students: StudentAccount[] = await fetchStudents()
 
-    // 2. Ambil seluruh data setoran kotoba
+    // 2. Ambil seluruh data setoran kotoba — hanya kolom yang diperlukan (tanpa image_url)
     const { data: rawKotoba, error } = await supabase
       .from('user_kotoba_submissions')
-      .select('*')
+      .select('id, user_id, japanese, romaji, meaning, is_mastered, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {

@@ -117,6 +117,9 @@ export default function SetoranKotobaPage() {
     onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
   })
 
+  // Debounce timer ref for realtime reloads (prevents flood during bulk inserts)
+  const realtimeDebounceRef = { current: 0 as ReturnType<typeof setTimeout> }
+
   // Load Kotoba from Database and Local Storage Backup with Realtime Sync
   useEffect(() => {
     localStorage.removeItem('kaiwa_user_kotoba_active_global')
@@ -128,21 +131,18 @@ export default function SetoranKotobaPage() {
 
     loadKotobaList()
 
-    const handleSync = () => {
-      loadKotobaList()
-    }
-    window.addEventListener('storage', handleSync)
-
-    // Realtime Postgres listener for user_kotoba_submissions across all devices
+    // Realtime Postgres listener — debounced so bulk inserts don't trigger N re-fetches
     const channel = supabase
       .channel('kotoba_realtime_' + effectiveUserId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, () => {
-        loadKotobaList()
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions',
+        filter: `user_id=eq.${effectiveUserId}` }, () => {
+        clearTimeout(realtimeDebounceRef.current)
+        realtimeDebounceRef.current = setTimeout(() => loadKotobaList(), 800)
       })
       .subscribe()
 
     return () => {
-      window.removeEventListener('storage', handleSync)
+      clearTimeout(realtimeDebounceRef.current)
       supabase.removeChannel(channel)
     }
   }, [user?.id, profile?.id, effectiveUserId])
@@ -173,32 +173,32 @@ export default function SetoranKotobaPage() {
       setLoading(true)
     }
 
-    // 2. Auto-migrate any local-only items (id starting with 'kotoba-') to Supabase
+    // 2. Auto-migrate local-only items (id 'kotoba-*') to Supabase — BATCH insert, not serial
     if (effectiveUserId && effectiveUserId !== 'guest') {
       const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
       if (unsyncedLocals.length > 0) {
-        for (const un of unsyncedLocals) {
-          try {
-            await supabase.from('user_kotoba_submissions').insert({
+        try {
+          await supabase.from('user_kotoba_submissions').insert(
+            unsyncedLocals.map(un => ({
               user_id: effectiveUserId,
               japanese: un.japanese,
               romaji: un.romaji,
               meaning: un.meaning,
               image_url: un.image_url || null,
               is_mastered: un.is_mastered || false,
-            })
-          } catch (e) {
-            console.warn('Auto-sync kotoba note:', e)
-          }
+            }))
+          )
+        } catch (e) {
+          console.warn('Auto-sync kotoba batch note:', e)
         }
       }
     }
 
-    // 3. Fetch authoritative DB records from Supabase
+    // 3. Fetch from DB — select specific columns (image_url excluded for list view performance)
     let dbItems: UserKotoba[] = []
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
-      .select('*')
+      .select('id, user_id, japanese, romaji, meaning, is_mastered, created_at')
       .eq('user_id', effectiveUserId)
       .order('created_at', { ascending: false })
 
@@ -221,8 +221,8 @@ export default function SetoranKotobaPage() {
       const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
       localStorage.setItem(storageKey, JSON.stringify(updatedList))
     }
+    // Dispatch mission event only — NOT 'storage' to avoid triggering redundant loadKotobaList
     window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
-    window.dispatchEvent(new Event('storage'))
   }
 
   function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -276,6 +276,7 @@ export default function SetoranKotobaPage() {
 
     setSaving(true)
 
+    // Image compression runs before UI closes (required to get the URL)
     const processedImageUrl = formData.image_url.trim()
       ? await compressImageDataUrl(formData.image_url.trim())
       : undefined
@@ -283,6 +284,7 @@ export default function SetoranKotobaPage() {
     const targetUid = profile?.id || user?.id || effectiveUserId || ''
 
     if (editingItem) {
+      // ── EDIT: Update local state immediately, then sync DB in background ──
       const updated = kotobaList.map(item =>
         item.id === editingItem.id
           ? {
@@ -298,50 +300,22 @@ export default function SetoranKotobaPage() {
       setIsModalOpen(false)
       setSaving(false)
 
-      try {
-        await supabase
-          .from('user_kotoba_submissions')
-          .update({
-            japanese: formData.japanese.trim(),
-            romaji: formData.romaji.trim(),
-            meaning: formData.meaning.trim(),
-            image_url: processedImageUrl || null,
-          })
-          .eq('id', editingItem.id)
-      } catch (err) {
-        console.warn('Update kotoba DB error:', err)
-      }
+      // Fire-and-forget DB update — UI is already responsive
+      supabase
+        .from('user_kotoba_submissions')
+        .update({
+          japanese: formData.japanese.trim(),
+          romaji: formData.romaji.trim(),
+          meaning: formData.meaning.trim(),
+          image_url: processedImageUrl || null,
+        })
+        .eq('id', editingItem.id)
+        .then(({ error }) => { if (error) console.warn('Update kotoba DB error:', error) })
     } else {
-      let finalId = `kotoba-${Date.now()}`
-
-      // Attempt DB Insert
-      if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
-        try {
-          const { data, error } = await supabase
-            .from('user_kotoba_submissions')
-            .insert({
-              user_id: targetUid,
-              japanese: formData.japanese.trim(),
-              romaji: formData.romaji.trim(),
-              meaning: formData.meaning.trim(),
-              image_url: processedImageUrl || null,
-              is_mastered: false,
-            })
-            .select()
-            .single()
-
-          if (!error && data?.id) {
-            finalId = data.id
-          } else if (error) {
-            console.warn('Insert kotoba DB note:', error)
-          }
-        } catch (err) {
-          console.warn('Insert kotoba DB catch:', err)
-        }
-      }
-
+      // ── CREATE: Insert into local state first, then DB in background ──
+      const tempId = `kotoba-${Date.now()}`
       const newItem: UserKotoba = {
-        id: finalId,
+        id: tempId,
         user_id: targetUid,
         japanese: formData.japanese.trim(),
         romaji: formData.romaji.trim(),
@@ -351,29 +325,63 @@ export default function SetoranKotobaPage() {
         created_at: new Date().toISOString(),
       }
 
+      // UI closes immediately with optimistic local state
       const updated = [newItem, ...kotobaList]
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
 
-      // Update lesson progress & daily missions
+      // DB insert + mission sync run in background (non-blocking)
       if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
-        try {
-          await supabase.from('lesson_progress').upsert({
-            student_id: targetUid,
-            lesson_id: `user_kotoba_${finalId}`,
-            is_completed: true,
-            last_watched_at: new Date().toISOString(),
-          }, { onConflict: 'student_id,lesson_id' })
+        ;(async () => {
+          try {
+            const { data, error } = await supabase
+              .from('user_kotoba_submissions')
+              .insert({
+                user_id: targetUid,
+                japanese: formData.japanese.trim(),
+                romaji: formData.romaji.trim(),
+                meaning: formData.meaning.trim(),
+                image_url: processedImageUrl || null,
+                is_mastered: false,
+              })
+              .select('id')
+              .single()
 
-          const todayStr = new Date().toISOString().split('T')[0]
-          const mission = (await fetchDailyMission(targetUid, todayStr)) || getDailyMission(targetUid, todayStr)
-          if (mission) {
-            await calculateMissionProgress(targetUid, mission)
+            if (!error && data?.id) {
+              // Replace temp id with real DB id in local state + cache
+              const storageKey = `kaiwa_user_kotoba_${targetUid}`
+              setKotobaList(prev => prev.map(k => k.id === tempId ? { ...k, id: data.id } : k))
+              const cached = localStorage.getItem(storageKey)
+              if (cached) {
+                try {
+                  const parsed: UserKotoba[] = JSON.parse(cached)
+                  localStorage.setItem(storageKey, JSON.stringify(
+                    parsed.map(k => k.id === tempId ? { ...k, id: data.id } : k)
+                  ))
+                } catch {}
+              }
+
+              // Mission progress sync (also background)
+              supabase.from('lesson_progress').upsert({
+                student_id: targetUid,
+                lesson_id: `user_kotoba_${data.id}`,
+                is_completed: true,
+                last_watched_at: new Date().toISOString(),
+              }, { onConflict: 'student_id,lesson_id' }).then(async () => {
+                try {
+                  const todayStr = new Date().toISOString().split('T')[0]
+                  const mission = (await fetchDailyMission(targetUid, todayStr)) || getDailyMission(targetUid, todayStr)
+                  if (mission) await calculateMissionProgress(targetUid, mission)
+                } catch {}
+              })
+            } else if (error) {
+              console.warn('Insert kotoba DB note:', error)
+            }
+          } catch (err) {
+            console.warn('Insert kotoba DB catch:', err)
           }
-        } catch (e) {
-          console.warn('Mission sync note:', e)
-        }
+        })()
       }
     }
   }
