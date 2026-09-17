@@ -67,6 +67,15 @@ export function matchGroupFromInstitution(
   return ''
 }
 
+/**
+ * Sorts KaiwaGroup array alphabetically A-Z by name (natural & case-insensitive)
+ */
+export function sortGroupsAlphabetically(list: KaiwaGroup[]): KaiwaGroup[] {
+  return [...list].sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base', numeric: true })
+  )
+}
+
 const LOCAL_STORAGE_KEY = 'kaiwa_custom_groups_v1'
 
 /**
@@ -78,7 +87,7 @@ function getLocalGroups(): KaiwaGroup[] {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
+        return sortGroupsAlphabetically(parsed)
       }
     }
   } catch (e) {
@@ -92,19 +101,20 @@ function getLocalGroups(): KaiwaGroup[] {
  */
 function saveLocalGroups(list: KaiwaGroup[]) {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list))
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sortGroupsAlphabetically(list)))
   } catch (e) {
     console.warn('saveLocalGroups error:', e)
   }
 }
 
 /**
- * Fetch all groups from DB (kaiwa_groups table) with auto-migration/localStorage fallback
+ * Fetch all groups from DB (kaiwa_groups table) with auto-migration/localStorage fallback,
+ * guaranteed sorted alphabetically A-Z.
  */
 export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
   const now = Date.now()
   if (!forceRefresh && cachedGroups.length > 0 && now - cacheTimestamp < CACHE_TTL_MS) {
-    return cachedGroups
+    return sortGroupsAlphabetically(cachedGroups)
   }
 
   try {
@@ -115,14 +125,16 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
       .order('name', { ascending: true })
 
     if (!error && data && data.length > 0) {
-      const formatted: KaiwaGroup[] = data.map((g: any) => ({
-        id: String(g.id || g.name),
-        name: g.name,
-        keywords: g.keywords || '',
-        description: g.description || '',
-        created_at: g.created_at,
-        updated_at: g.updated_at,
-      }))
+      const formatted: KaiwaGroup[] = sortGroupsAlphabetically(
+        data.map((g: any) => ({
+          id: String(g.id || g.name),
+          name: g.name,
+          keywords: g.keywords || '',
+          description: g.description || '',
+          created_at: g.created_at,
+          updated_at: g.updated_at,
+        }))
+      )
 
       cachedGroups = formatted
       cacheTimestamp = now
@@ -137,12 +149,14 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
       .order('name', { ascending: true })
 
     if (fallbackData && fallbackData.length > 0) {
-      const formatted: KaiwaGroup[] = fallbackData.map((g: any) => ({
-        id: String(g.id || g.name),
-        name: g.name,
-        keywords: '',
-        description: '',
-      }))
+      const formatted: KaiwaGroup[] = sortGroupsAlphabetically(
+        fallbackData.map((g: any) => ({
+          id: String(g.id || g.name),
+          name: g.name,
+          keywords: '',
+          description: '',
+        }))
+      )
       cachedGroups = formatted
       cacheTimestamp = now
       saveLocalGroups(formatted)
@@ -155,9 +169,10 @@ export async function fetchGroups(forceRefresh = false): Promise<KaiwaGroup[]> {
   // 3. Check localStorage if DB is not reachable
   const local = getLocalGroups()
   if (local.length > 0) {
-    cachedGroups = local
+    const sorted = sortGroupsAlphabetically(local)
+    cachedGroups = sorted
     cacheTimestamp = now
-    return local
+    return sorted
   }
 
   // 4. Return empty — admin harus set grup via Group Manager di database
@@ -192,7 +207,10 @@ export async function createGroup(group: {
 
   // Update memory & local storage immediately
   const existing = await fetchGroups(false)
-  const updatedList = [...existing.filter(g => g.name.toLowerCase() !== cleanName.toLowerCase()), newGroupObj]
+  const updatedList = sortGroupsAlphabetically([
+    ...existing.filter(g => g.name.toLowerCase() !== cleanName.toLowerCase()),
+    newGroupObj,
+  ])
   cachedGroups = updatedList
   saveLocalGroups(updatedList)
 
@@ -249,7 +267,7 @@ export async function updateGroup(
     description: updates.description !== undefined ? updates.description.trim() : '',
     updated_at: new Date().toISOString(),
   }
-  const updatedGroups = [...otherGroups, updatedObj]
+  const updatedGroups = sortGroupsAlphabetically([...otherGroups, updatedObj])
   cachedGroups = updatedGroups
   saveLocalGroups(updatedGroups)
 
@@ -316,7 +334,9 @@ export async function updateGroup(
 export async function deleteGroup(id: string, name: string): Promise<{ success: boolean; error?: string }> {
   // Update local memory & storage
   const currentGroups = await fetchGroups(false)
-  const updatedGroups = currentGroups.filter(g => g.id !== id && g.name.toLowerCase() !== name.toLowerCase())
+  const updatedGroups = sortGroupsAlphabetically(
+    currentGroups.filter(g => g.id !== id && g.name.toLowerCase() !== name.toLowerCase())
+  )
   cachedGroups = updatedGroups
   saveLocalGroups(updatedGroups)
 

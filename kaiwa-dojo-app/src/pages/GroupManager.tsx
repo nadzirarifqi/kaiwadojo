@@ -9,6 +9,7 @@ import {
   syncAllStudentsWithGroups,
   matchGroupFromInstitution,
   parseKeywords,
+  sortGroupsAlphabetically,
   type KaiwaGroup,
 } from '../lib/groupService'
 import { fetchStudents, type StudentAccount } from '../lib/studentService'
@@ -50,7 +51,7 @@ export default function GroupManagerPage() {
       fetchGroups(true),
       fetchStudents(),
     ])
-    setGroups(groupsData)
+    setGroups(sortGroupsAlphabetically(groupsData))
     setStudents(studentsData)
     setLoading(false)
   }
@@ -90,10 +91,12 @@ export default function GroupManagerPage() {
     if (editingGroup) {
       // 1. Instant UI update
       setGroups(prev =>
-        prev.map(g =>
-          g.id === editingGroup.id || g.name.toLowerCase() === editingGroup.name.toLowerCase()
-            ? { ...g, name, keywords: formKeywords, description: formDescription }
-            : g
+        sortGroupsAlphabetically(
+          prev.map(g =>
+            g.id === editingGroup.id || g.name.toLowerCase() === editingGroup.name.toLowerCase()
+              ? { ...g, name, keywords: formKeywords, description: formDescription }
+              : g
+          )
         )
       )
 

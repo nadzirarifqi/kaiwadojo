@@ -12,7 +12,7 @@ import {
   approveStudentAccount,
   rejectStudentAccount,
 } from '../lib/studentService'
-import { fetchGroups, matchGroupFromInstitution, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { fetchGroups, matchGroupFromInstitution, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { calculateUserPresence } from '../lib/presenceUtils'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
@@ -79,7 +79,7 @@ export default function StudentManager() {
   async function loadGroups() {
     try {
       const data = await fetchGroups(true)
-      setAvailableGroups(data)
+      setAvailableGroups(sortGroupsAlphabetically(data))
     } catch {
       setAvailableGroups([])
     }

@@ -7,7 +7,7 @@ import {
   type BroadcastLog,
 } from '../lib/whatsappService'
 import { fetchStudents, type StudentAccount } from '../lib/studentService'
-import { fetchGroups, type KaiwaGroup } from '../lib/groupService'
+import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup } from '../lib/groupService'
 
 interface Props {
   adminId: string
@@ -55,7 +55,7 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
         fetchBroadcastLogs(10),
       ])
       setStudents(stds)
-      setGroups(grps)
+      setGroups(sortGroupsAlphabetically(grps))
       setLogs(ls)
       setLoadingData(false)
     }

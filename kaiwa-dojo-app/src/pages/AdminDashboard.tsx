@@ -6,7 +6,7 @@ import { fetchInstructors, type InstructorAccount } from '../lib/instructorServi
 import { fetchStudentsCount } from '../lib/studentService'
 import { fetchSchedules, fetchReservations, type ClassSchedule, type ClassReservation, sortSchedules, RESERVATION_UPDATE_EVENT } from '../lib/scheduleService'
 import { getChapterSettingsMap, type ChapterSetting } from '../lib/chapterService'
-import { fetchGroups, createGroup, deleteGroup, parseKeywords, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { fetchGroups, createGroup, deleteGroup, parseKeywords, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { fetchFeedbacks, type FeedbackItem, CATEGORY_META, FEEDBACK_UPDATE_EVENT } from '../lib/feedbackService'
 import { fetchKotobaSummary, type GlobalKotobaSummary, KOTOBA_TRACKER_UPDATE_EVENT } from '../lib/kotobaService'
 import { fetchAnnouncements, type Announcement, ANNOUNCEMENT_UPDATE_EVENT } from '../lib/announcementService'
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(() => initialCache?.feedbacks || [])
   const [kotobaSummary, setKotobaSummary] = useState<GlobalKotobaSummary | null>(() => initialCache?.kotobaSummary || null)
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => initialCache?.announcements || [])
-  const [groups, setGroups] = useState<KaiwaGroup[]>(() => initialCache?.groups || [])
+  const [groups, setGroups] = useState<KaiwaGroup[]>(() => sortGroupsAlphabetically(initialCache?.groups || []))
 
   // Jika cache sudah ada, jangan pernah blokir layar dengan spinner!
   const [loading, setLoading] = useState<boolean>(() => !initialCache)

@@ -16,7 +16,7 @@ import {
   type ChapterSetting,
   type CourseHeaderSettings,
 } from '../lib/chapterService'
-import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { CourseCardSkeleton } from '../components/Skeleton'
 
 export default function CourseEditor() {
@@ -243,7 +243,7 @@ export default function CourseEditor() {
     ])
     setChapterMap(map)
     setHeaderSettings(header)
-    setGroups(groupList)
+    setGroups(sortGroupsAlphabetically(groupList))
     setEditPageTitle(header.page_title)
     setEditPageSubtitle(header.page_subtitle)
     setLoading(false)

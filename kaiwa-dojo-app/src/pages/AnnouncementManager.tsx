@@ -16,7 +16,7 @@ import {
   ANNOUNCEMENT_UPDATE_EVENT,
   subscribeToAnnouncementRealtime,
 } from '../lib/announcementService'
-import { fetchGroups, type KaiwaGroup } from '../lib/groupService'
+import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup } from '../lib/groupService'
 import LoadingScreen from '../components/LoadingScreen'
 import AnnouncementModal from '../components/AnnouncementModal'
 
@@ -71,7 +71,7 @@ export default function AnnouncementManager() {
     ])
     setAnnouncements(annList)
     setReadStats(stats)
-    setGroups(groupList)
+    setGroups(sortGroupsAlphabetically(groupList))
     setLoading(false)
   }
 

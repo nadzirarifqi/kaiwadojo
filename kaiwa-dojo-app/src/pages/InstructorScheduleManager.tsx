@@ -17,7 +17,7 @@ import {
   RESERVATION_UPDATE_EVENT,
   subscribeToScheduleRealtime,
 } from '../lib/scheduleService'
-import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
+import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { parseTargetGroups } from '../lib/chapterService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
@@ -87,7 +87,7 @@ export default function InstructorScheduleManagerPage() {
   async function loadGroups() {
     try {
       const data = await fetchGroups(true)
-      setAvailableGroups(data)
+      setAvailableGroups(sortGroupsAlphabetically(data))
     } catch {
       setAvailableGroups([])
     }

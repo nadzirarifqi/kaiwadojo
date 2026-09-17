@@ -8,7 +8,7 @@ import {
   type GlobalKotobaSummary,
   KOTOBA_TRACKER_UPDATE_EVENT,
 } from '../lib/kotobaService'
-import { fetchGroups, type KaiwaGroup } from '../lib/groupService'
+import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup } from '../lib/groupService'
 import LoadingScreen from '../components/LoadingScreen'
 
 /* ── Helper: Format Relative Time ── */
@@ -85,7 +85,7 @@ export default function KotobaTrackerPage() {
       ])
       setStats(kotobaRes.stats)
       setSummary(kotobaRes.summary)
-      setGroups(groupList)
+      setGroups(sortGroupsAlphabetically(groupList))
 
       // If a student modal is currently open, keep their data updated
       if (selectedStudent) {
