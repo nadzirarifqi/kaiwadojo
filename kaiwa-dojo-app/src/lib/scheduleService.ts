@@ -862,18 +862,46 @@ export function subscribeToScheduleRealtime(onUpdate: () => void) {
 }
 
 /**
+ * Returns today's date formatted as YYYY-MM-DD in local time
+ */
+export function getTodayDateString(): string {
+  const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+/**
+ * Checks if an online class schedule has already passed today's date
+ */
+export function isOnlineSchedulePast(schedule: ClassSchedule, todayStr: string = getTodayDateString()): boolean {
+  if (schedule.type !== 'online') return false
+  const schDate = schedule.date || schedule.start_date || ''
+  if (!schDate) return false
+  return schDate < todayStr
+}
+
+/**
  * Determines if a class schedule is accessible to a given user (supports multiple target groups).
- * - Admin and Pemateri can access all schedules.
+ * - Admin and Pemateri can access all schedules (including past schedules).
+ * - For students, online class schedules that have passed today's date are hidden.
  * - Schedules without target_group (or "semua siswa", "all", "publik") are open to ALL students.
  * - Schedules with target_group are accessible to students matching ANY of the target groups.
  */
 export function isScheduleAccessibleForUser(
   schedule: ClassSchedule,
   userProfile: { role?: string; group_name?: string | null; institution?: string | null } | null | undefined,
-  groups: KaiwaGroup[] = []
+  groups: KaiwaGroup[] = [],
+  filterPastOnline = true
 ): boolean {
   if (userProfile?.role === 'admin' || userProfile?.role === 'pemateri') {
     return true
+  }
+
+  // Sembunyikan jadwal kelas online yang sudah lewat dari tanggal hari ini untuk pelajar
+  if (filterPastOnline && isOnlineSchedulePast(schedule)) {
+    return false
   }
 
   const rawGroup = (schedule.target_group || '').trim()
