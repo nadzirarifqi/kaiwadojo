@@ -243,3 +243,31 @@ export function subscribeToKotobaRealtime(callback: () => void): () => void {
     supabase.removeChannel(channel)
   }
 }
+
+/**
+ * Mengambil jumlah setoran kotoba per user secara ringan.
+ * Hanya mengambil kolom user_id (tanpa isi kata) lalu menghitung di client.
+ * Mengembalikan Map<user_id, total_setoran>.
+ */
+export async function fetchKotobaCountsByUser(): Promise<Map<string, number>> {
+  try {
+    const { data, error } = await supabase
+      .from('user_kotoba_submissions')
+      .select('user_id')
+
+    if (error) {
+      console.warn('fetchKotobaCountsByUser error:', error.message)
+      return new Map()
+    }
+
+    const counts = new Map<string, number>()
+    for (const row of data || []) {
+      const uid = (row as { user_id: string }).user_id
+      counts.set(uid, (counts.get(uid) || 0) + 1)
+    }
+    return counts
+  } catch (e) {
+    console.warn('Catch fetchKotobaCountsByUser:', e)
+    return new Map()
+  }
+}

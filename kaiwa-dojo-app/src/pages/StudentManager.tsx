@@ -16,6 +16,7 @@ import { fetchGroups, matchGroupFromInstitution, sortGroupsAlphabetically, type 
 import { calculateUserPresence } from '../lib/presenceUtils'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
+import { fetchKotobaCountsByUser } from '../lib/kotobaService'
 
 export default function StudentManager() {
   const navigate = useNavigate()
@@ -48,10 +49,17 @@ export default function StudentManager() {
   // Available groups from kaiwa_groups table
   const [availableGroups, setAvailableGroups] = useState<KaiwaGroup[]>([])
 
+  // Kotoba submission counts per user_id
+  const [kotobaCounts, setKotobaCounts] = useState<Map<string, number>>(new Map())
+
   async function loadData() {
     setLoading(true)
-    const data = await fetchStudents()
+    const [data, counts] = await Promise.all([
+      fetchStudents(),
+      fetchKotobaCountsByUser(),
+    ])
     setStudents(data)
+    setKotobaCounts(counts)
     setLoading(false)
   }
 
@@ -577,6 +585,7 @@ export default function StudentManager() {
                   <th className="pb-3 px-2">No. WhatsApp</th>
                   <th className="pb-3 px-2">Asal Lembaga / PT</th>
                   <th className="pb-3 px-2">Grup</th>
+                  <th className="pb-3 px-2">📚 Setoran Kotoba</th>
                   <th className="pb-3 px-2">Status Verifikasi</th>
                   <th className="pb-3 px-2 text-right">Aksi Verifikasi Admin</th>
                 </tr>
@@ -666,6 +675,20 @@ export default function StudentManager() {
                             🌐 Siswa Biasa
                           </span>
                         )}
+                      </td>
+
+                      {/* Setoran Kotoba Column */}
+                      <td className="py-3 px-2">
+                        {(() => {
+                          const count = kotobaCounts.get(std.id) || 0
+                          return count > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 text-[0.68rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
+                              📚 {count} kata
+                            </span>
+                          ) : (
+                            <span className="text-[0.65rem] text-slate-400 dark:text-slate-600 italic">— Belum ada</span>
+                          )
+                        })()}
                       </td>
 
                       {/* Status Verifikasi Column */}
