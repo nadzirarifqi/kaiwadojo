@@ -180,13 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut(reason?: string) {
-    try {
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-    } catch {}
-
-    // Purge all Supabase auth keys and Kaiwa session storage
+    // Purge all Supabase auth keys and Kaiwa session storage FIRST
+    // so no stale data lingers if the network call fails
     sessionStorage.clear()
-    sessionStorage.setItem('kaiwa_session_active', 'false')
 
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i)
@@ -197,21 +193,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    setSession(null)
-    setProfile(null)
-    setLoading(false)
-
-    window.dispatchEvent(new Event('kaiwa_profile_updated'))
-    if (profileBroadcastChannel) {
-      try {
-        profileBroadcastChannel.postMessage({ type: 'kaiwa_profile_updated', profile: null })
-      } catch {}
-    }
-
     if (reason) {
       localStorage.setItem('kaiwa_session_expired_reason', reason)
-      setSessionExpiredNotice(reason)
     }
+
+    // Revoke the server-side refresh token so it cannot be reused
+    // scope: 'global' also invalidates all other active sessions for this user
+    try {
+      await supabase.auth.signOut({ scope: 'global' })
+    } catch {}
+
+    // Hard redirect to root — completely resets all in-memory React state
+    // This prevents any residual data from the previous account leaking into a new login
+    window.location.replace('/')
   }
 
   useEffect(() => {

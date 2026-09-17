@@ -172,7 +172,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin KaiwaDojo.'
       : 'Akun Anda masih dalam proses verifikasi Admin.'
     signOut(reasonMsg)
-    return <Navigate to="/login" replace />
+    return null  // signOut() performs window.location.replace('/') — no need to render Navigate
   }
 
   return <>{children}</>
