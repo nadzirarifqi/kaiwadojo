@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -283,35 +283,72 @@ export default function StudentManager() {
   const approvedCount = students.filter(s => s.status === 'approved').length
   const onlineCount = students.filter(s => calculateUserPresence(s.last_active_at).isOnline).length
 
-  const filteredStudents = students.filter(std => {
-    if (statusFilter === 'pending' && std.status !== 'pending') return false
-    if (statusFilter === 'approved' && std.status !== 'approved') return false
+  const filteredStudents = useMemo(() => {
+    return students
+      .filter(std => {
+        if (statusFilter === 'pending' && std.status !== 'pending') return false
+        if (statusFilter === 'approved' && std.status !== 'approved') return false
 
-    if (groupFilter !== 'all') {
-      if (groupFilter === 'no_group') {
-        if (std.group_name) return false
-      } else if (std.group_name !== groupFilter) {
-        return false
-      }
-    }
+        if (groupFilter !== 'all') {
+          if (groupFilter === 'no_group') {
+            if (std.group_name) return false
+          } else if (std.group_name !== groupFilter) {
+            return false
+          }
+        }
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
-      const digitsOnlyQ = q.replace(/\D/g, '')
-      const matchesName = (std.full_name || '').toLowerCase().includes(q)
-      const matchesUsername = (std.username || '').toLowerCase().includes(q)
-      const matchesEmail = (std.email || '').toLowerCase().includes(q)
-      const matchesPhone =
-        (std.phone_number || '').toLowerCase().includes(q) ||
-        (digitsOnlyQ.length >= 3 && (std.phone_number || '').replace(/\D/g, '').includes(digitsOnlyQ))
-      const matchesInstitution = (std.institution || '').toLowerCase().includes(q)
-      const matchesGroup = (std.group_name || '').toLowerCase().includes(q)
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim()
+          const digitsOnlyQ = q.replace(/\D/g, '')
+          const matchesName = (std.full_name || '').toLowerCase().includes(q)
+          const matchesUsername = (std.username || '').toLowerCase().includes(q)
+          const matchesEmail = (std.email || '').toLowerCase().includes(q)
+          const matchesPhone =
+            (std.phone_number || '').toLowerCase().includes(q) ||
+            (digitsOnlyQ.length >= 3 && (std.phone_number || '').replace(/\D/g, '').includes(digitsOnlyQ))
+          const matchesInstitution = (std.institution || '').toLowerCase().includes(q)
+          const matchesGroup = (std.group_name || '').toLowerCase().includes(q)
 
-      return matchesName || matchesUsername || matchesEmail || matchesPhone || matchesInstitution || matchesGroup
-    }
+          return matchesName || matchesUsername || matchesEmail || matchesPhone || matchesInstitution || matchesGroup
+        }
 
-    return true
-  })
+        return true
+      })
+      .sort((a, b) => {
+        // Prioritas 1: Online vs Offline (Online didahulukan)
+        const isOnlineA = calculateUserPresence(a.last_active_at).isOnline
+        const isOnlineB = calculateUserPresence(b.last_active_at).isOnline
+        if (isOnlineA !== isOnlineB) {
+          return isOnlineA ? -1 : 1
+        }
+
+        // Prioritas 2: Status Verifikasi (Menunggu persetujuan -> Terverifikasi -> Ditolak)
+        const getVerificationRank = (status?: string): number => {
+          if (status === 'pending') return 1
+          if (status === 'approved') return 2
+          if (status === 'rejected') return 3
+          return 4
+        }
+        const rankA = getVerificationRank(a.status)
+        const rankB = getVerificationRank(b.status)
+        if (rankA !== rankB) {
+          return rankA - rankB
+        }
+
+        // Prioritas 3: Nama Grup (A-Z)
+        const groupA = (a.group_name || '').trim()
+        const groupB = (b.group_name || '').trim()
+        const groupComp = groupA.localeCompare(groupB, undefined, { sensitivity: 'base', numeric: true })
+        if (groupComp !== 0) {
+          return groupComp
+        }
+
+        // Prioritas 4: Nama Siswa (A-Z)
+        const nameA = (a.full_name || a.username || '').trim()
+        const nameB = (b.full_name || b.username || '').trim()
+        return nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true })
+      })
+  }, [students, statusFilter, groupFilter, searchQuery])
 
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
