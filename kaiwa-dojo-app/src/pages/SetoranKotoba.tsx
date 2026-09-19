@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -97,6 +97,9 @@ export default function SetoranKotobaPage() {
   })
   const [saving, setSaving]           = useState(false)
 
+  // Ref untuk scroll-to-modal saat form dibuka
+  const modalRef = useRef<HTMLDivElement>(null)
+
   // Flashcard Test Mode State
   const [isTestActive, setIsTestActive]       = useState(false)
   const [testItems, setTestItems]             = useState<UserKotoba[]>([])
@@ -194,34 +197,20 @@ export default function SetoranKotobaPage() {
       }
     }
 
-    // 3. Fetch dari DB tanpa image_url (hemat egress — base64 bisa 50-200KB per kata)
-    //    image_url dipulihkan dari localStorage cache di langkah merge bawah
+    // 3. Fetch dari DB dengan image_url — data milik user sendiri, jumlahnya terbatas
     let dbItems: UserKotoba[] = []
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
-      .select('id, user_id, japanese, romaji, meaning, is_mastered, created_at')
+      .select('id, user_id, japanese, romaji, meaning, image_url, is_mastered, created_at')
       .eq('user_id', effectiveUserId)
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      // Buat lookup map dari localStorage cache untuk restore image_url
-      const imageCache = new Map<string, string | undefined>()
-      for (const item of localItems) {
-        if (item.id && item.image_url) {
-          imageCache.set(item.id, item.image_url)
-        }
-      }
-
-      // Merge: metadata segar dari DB + image_url dari cache lokal
-      dbItems = (data as UserKotoba[]).map(dbItem => ({
-        ...dbItem,
-        image_url: imageCache.get(dbItem.id), // undefined jika belum pernah di-cache
-      }))
+      dbItems = data as UserKotoba[]
     }
 
     if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
       setKotobaList(dbItems)
-      // Cache selalu disimpan WITH image_url agar tetap hangat untuk kunjungan berikutnya
       localStorage.setItem(storageKey, JSON.stringify(dbItems))
     } else if (localItems.length > 0) {
       setKotobaList(localItems)
@@ -252,6 +241,11 @@ export default function SetoranKotobaPage() {
     reader.readAsDataURL(file)
   }
 
+  function scrollToModal() {
+    // Scroll halaman ke atas agar modal overlay (fixed) terlihat penuh di viewport
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   function handleOpenCreateModal() {
     setEditingItem(null)
     setFormData({
@@ -261,6 +255,7 @@ export default function SetoranKotobaPage() {
       image_url: '',
     })
     setIsModalOpen(true)
+    scrollToModal()
   }
 
   async function handleOpenEditModal(item: UserKotoba) {
@@ -292,6 +287,7 @@ export default function SetoranKotobaPage() {
       image_url: imageUrl,
     })
     setIsModalOpen(true)
+    scrollToModal()
   }
 
   async function handleSubmitForm(e: React.FormEvent) {
@@ -1029,7 +1025,7 @@ export default function SetoranKotobaPage() {
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in overscroll-contain">
+        <div ref={modalRef} className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in overscroll-contain">
           <div className="flex min-h-full items-start justify-center p-2.5 sm:p-6 pt-4 sm:pt-10 md:pt-12 pb-16 sm:pb-12">
             <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden">
             
