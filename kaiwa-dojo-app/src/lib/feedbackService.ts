@@ -200,7 +200,7 @@ export async function fetchFeedbacks(): Promise<FeedbackItem[]> {
   try {
     const { data, error } = await supabase
       .from('feedback_suggestions')
-      .select('*')
+      .select('id, user_id, name, email, phone_number, role, category, rating, title, message, page_url, status, admin_notes, created_at, updated_at')
       .order('created_at', { ascending: false })
 
     if (error) {

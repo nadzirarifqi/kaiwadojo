@@ -56,11 +56,17 @@ export const INITIAL_INSTRUCTORS: InstructorAccount[] = [
   },
 ]
 
+// Kolom untuk list pemateri — bio, current_session_id dll tidak perlu di list
+const INSTRUCTOR_LIST_COLUMNS = [
+  'id', 'full_name', 'username', 'email', 'phone_number',
+  'avatar_url', 'last_active_at', 'created_at',
+].join(', ')
+
 export async function fetchInstructors(): Promise<InstructorAccount[]> {
   try {
     const { data: profData, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(INSTRUCTOR_LIST_COLUMNS)
       .eq('role', 'pemateri')
 
     if (!error && profData && profData.length > 0) {

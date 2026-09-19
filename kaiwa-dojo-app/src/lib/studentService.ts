@@ -53,11 +53,18 @@ export async function fetchStudentsCount(): Promise<number> {
 /**
  * Mengambil seluruh data akun pelajar langsung dari Supabase Database (profiles)
  */
+// Kolom yang diambil untuk list pelajar — bio dihilangkan (tidak ditampilkan di tabel, hemat egress)
+const STUDENT_LIST_COLUMNS = [
+  'id', 'full_name', 'username', 'email', 'phone_number',
+  'institution', 'group_name', 'avatar_url',
+  'streak_days', 'status', 'last_active_at', 'created_at',
+].join(', ')
+
 export async function fetchStudents(): Promise<StudentAccount[]> {
   try {
     const { data: profData, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(STUDENT_LIST_COLUMNS)
       .eq('role', 'pelajar')
       .order('created_at', { ascending: false })
 

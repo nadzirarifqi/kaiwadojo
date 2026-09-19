@@ -55,6 +55,19 @@ export interface DateScheduleStatus {
 const LOCAL_SCHEDULES_KEY = 'kaiwa_class_schedules'
 const LOCAL_RESERVATIONS_KEY = 'kaiwa_class_reservations'
 
+// ── In-memory cache with TTL (reduces Supabase egress for read-heavy schedule data) ──
+const SCHEDULE_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const RESERVATION_CACHE_TTL_MS = 3 * 60 * 1000 // 3 minutes
+
+let _schedulesCache: { data: ClassSchedule[]; fetchedAt: number } | null = null
+let _reservationsCache: { data: ClassReservation[]; fetchedAt: number } | null = null
+
+/** Invalidate both caches — call after any write operation */
+export function invalidateScheduleCache() {
+  _schedulesCache = null
+  _reservationsCache = null
+}
+
 export function isUUID(str: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return uuidRegex.test(str)
@@ -510,6 +523,11 @@ export async function seedInitialSchedulesIfEmpty() {
 }
 
 export async function fetchSchedules(): Promise<ClassSchedule[]> {
+  // 0. Return in-memory cache if still fresh (avoids Supabase round-trip)
+  if (_schedulesCache && Date.now() - _schedulesCache.fetchedAt < SCHEDULE_CACHE_TTL_MS) {
+    return _schedulesCache.data
+  }
+
   // 1. Fetch from Supabase DB first (Source of truth)
   try {
     const { data, error } = await supabase.from('class_schedules').select('*')
@@ -521,6 +539,7 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
       }))
       const sortedData = sortSchedules(cleanedData)
       localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(sortedData))
+      _schedulesCache = { data: sortedData, fetchedAt: Date.now() }
       return sortedData
     }
   } catch (e) {
@@ -546,6 +565,11 @@ export async function fetchSchedules(): Promise<ClassSchedule[]> {
 }
 
 export async function fetchReservations(): Promise<ClassReservation[]> {
+  // 0. Return in-memory cache if still fresh
+  if (_reservationsCache && Date.now() - _reservationsCache.fetchedAt < RESERVATION_CACHE_TTL_MS) {
+    return _reservationsCache.data
+  }
+
   // 1. Fetch from Supabase DB first (Source of truth)
   try {
     const { data, error } = await supabase.from('class_reservations').select('*')
@@ -554,6 +578,7 @@ export async function fetchReservations(): Promise<ClassReservation[]> {
         r => !r.id.startsWith('res-demo-') && !r.user_email?.includes('@example.com')
       )
       localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(realData))
+      _reservationsCache = { data: realData, fetchedAt: Date.now() }
       return realData
     }
   } catch (e) {
@@ -565,6 +590,7 @@ export async function fetchReservations(): Promise<ClassReservation[]> {
 }
 
 export async function saveSchedule(scheduleData: Omit<ClassSchedule, 'id' | 'created_at' | 'week_range_id' | 'month_range_id'>): Promise<ClassSchedule> {
+  invalidateScheduleCache() // Bust cache on write
   const week_range_id = getWeekRangeId(scheduleData.date)
   const month_range_id = getMonthRangeId(scheduleData.date)
 
@@ -725,6 +751,7 @@ export async function saveMultipleSchedules(
 }
 
 export async function updateSchedule(scheduleId: string, scheduleData: Partial<ClassSchedule>): Promise<ClassSchedule> {
+  invalidateScheduleCache() // Bust cache on write
   const targetId = scheduleId
   const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
 
@@ -786,6 +813,7 @@ export async function updateSchedule(scheduleId: string, scheduleData: Partial<C
 }
 
 export async function deleteSchedule(scheduleId: string): Promise<void> {
+  invalidateScheduleCache() // Bust cache on write
   const targetId = scheduleId
   const dbScheduleId = ensureUUID(scheduleId, '00000000-0000-0000-0001-')
 

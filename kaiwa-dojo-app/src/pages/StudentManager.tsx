@@ -73,10 +73,12 @@ export default function StudentManager() {
     }
     window.addEventListener(GROUP_UPDATE_EVENT, handleGroupSync)
 
-    // Auto-refresh presence every 30 seconds
+    // Auto-refresh presence every 5 minutes — only when tab is visible (saves egress)
     const refreshInterval = setInterval(() => {
-      fetchStudents().then(data => setStudents(data))
-    }, 30000)
+      if (document.visibilityState === 'visible') {
+        fetchStudents().then(data => setStudents(data))
+      }
+    }, 5 * 60 * 1000)
 
     return () => {
       window.removeEventListener(GROUP_UPDATE_EVENT, handleGroupSync)

@@ -47,13 +47,15 @@ export const KOTOBA_TRACKER_UPDATE_EVENT = 'kaiwa_kotoba_tracker_updated'
  */
 export async function fetchKotobaSummary(): Promise<GlobalKotobaSummary> {
   try {
-    const [{ count: totalKotoba }, { count: masteredKotoba }] = await Promise.all([
-      supabase.from('user_kotoba_submissions').select('*', { count: 'exact', head: true }),
-      supabase.from('user_kotoba_submissions').select('*', { count: 'exact', head: true }).eq('is_mastered', true),
-    ])
+    // Single query fetching only is_mastered column — count both totals in JS (1 round-trip instead of 2)
+    const { data, error } = await supabase
+      .from('user_kotoba_submissions')
+      .select('is_mastered')
 
-    const total = totalKotoba || 0
-    const mastered = masteredKotoba || 0
+    if (error) throw error
+
+    const total = (data || []).length
+    const mastered = (data || []).filter((r: { is_mastered: boolean }) => r.is_mastered).length
     const unmastered = Math.max(0, total - mastered)
     const rate = total > 0 ? Math.round((mastered / total) * 100) : 0
 

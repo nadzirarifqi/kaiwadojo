@@ -24,6 +24,15 @@ export interface CourseHeaderSettings {
 const SETTINGS_KEY = 'kaiwa_chapter_settings_v2'
 const HEADER_KEY = 'kaiwa_course_header_v2'
 
+// ── In-memory cache (10 min TTL) — chapter settings rarely change ──
+const CHAPTER_CACHE_TTL_MS = 10 * 60 * 1000
+let _chapterCache: { data: Record<number, ChapterSetting>; fetchedAt: number } | null = null
+
+/** Invalidate chapter settings cache — call after admin saves changes */
+export function invalidateChapterCache() {
+  _chapterCache = null
+}
+
 /**
  * Parse comma-separated or array target groups into clean unique list of group names.
  */
@@ -160,20 +169,22 @@ export const DEFAULT_JILID_2: { [key: number]: { title: string; subtitle: string
 
 /* ── Fetch Chapter Settings (Merged from Supabase & LocalStorage) ── */
 export async function getChapterSettingsMap(): Promise<Record<number, ChapterSetting>> {
+  // 0. Return in-memory cache if still fresh
+  if (_chapterCache && Date.now() - _chapterCache.fetchedAt < CHAPTER_CACHE_TTL_MS) {
+    return _chapterCache.data
+  }
+
   const result: Record<number, ChapterSetting> = {}
 
   // Populate default 1-50
   for (let i = 1; i <= 50; i++) {
     const def = i <= 25 ? DEFAULT_JILID_1[i] : DEFAULT_JILID_2[i]
-    // Default rule: Only Bab 1 & 2 have video uploaded right now.
-    // Bab 3-50 without video are hidden by default from students until admin uploads/publishes them.
     const isDefaultVisible = def?.has_video || false
-
     result[i] = {
       bab_number: i,
       title: def?.title || `Bab ${i}`,
       subtitle: def?.subtitle || '',
-      is_hidden: !isDefaultVisible, // If no video, default to hidden for students
+      is_hidden: !isDefaultVisible,
       has_video: isDefaultVisible,
     }
   }
@@ -212,17 +223,16 @@ export async function getChapterSettingsMap(): Promise<Record<number, ChapterSet
             custom_video_s1: item.custom_video_s1 ?? null,
             custom_video_s2: item.custom_video_s2 ?? null,
             custom_video_s3: item.custom_video_s3 ?? null,
-            target_group: item.target_group ? item.target_group.trim() : null, // DB is authoritative!
+            target_group: item.target_group ? item.target_group.trim() : null,
           }
         }
       })
 
-      // Update LocalStorage cache with fresh DB data
+      // Update LocalStorage cache and in-memory cache with fresh DB data
       try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(result))
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) { /* ignore */ }
+      _chapterCache = { data: result, fetchedAt: Date.now() }
     }
   } catch (err) {
     // Graceful fallback to LocalStorage if DB table doesn't exist

@@ -123,7 +123,7 @@ export default function LoginPage() {
         try {
           const { data: dbAdmin } = await supabase
             .from('profiles')
-            .select('*')
+            .select('full_name, username, bio, avatar_url')
             .eq('id', adminId)
             .maybeSingle()
 
@@ -354,7 +354,7 @@ export default function LoginPage() {
       if (authData?.user?.id) {
         const { data: profData } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, username, email, phone_number, institution, group_name, avatar_url, bio, role, streak_days, status, last_active_at, created_at, updated_at')
           .eq('id', authData.user.id)
           .maybeSingle()
 
