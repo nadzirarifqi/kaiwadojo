@@ -194,7 +194,8 @@ export default function SetoranKotobaPage() {
       }
     }
 
-    // 3. Fetch from DB — select specific columns (image_url excluded for list view performance)
+    // 3. Fetch dari DB tanpa image_url (hemat egress — base64 bisa 50-200KB per kata)
+    //    image_url dipulihkan dari localStorage cache di langkah merge bawah
     let dbItems: UserKotoba[] = []
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
@@ -203,11 +204,24 @@ export default function SetoranKotobaPage() {
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      dbItems = data as UserKotoba[]
+      // Buat lookup map dari localStorage cache untuk restore image_url
+      const imageCache = new Map<string, string | undefined>()
+      for (const item of localItems) {
+        if (item.id && item.image_url) {
+          imageCache.set(item.id, item.image_url)
+        }
+      }
+
+      // Merge: metadata segar dari DB + image_url dari cache lokal
+      dbItems = (data as UserKotoba[]).map(dbItem => ({
+        ...dbItem,
+        image_url: imageCache.get(dbItem.id), // undefined jika belum pernah di-cache
+      }))
     }
 
     if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
       setKotobaList(dbItems)
+      // Cache selalu disimpan WITH image_url agar tetap hangat untuk kunjungan berikutnya
       localStorage.setItem(storageKey, JSON.stringify(dbItems))
     } else if (localItems.length > 0) {
       setKotobaList(localItems)
@@ -249,13 +263,33 @@ export default function SetoranKotobaPage() {
     setIsModalOpen(true)
   }
 
-  function handleOpenEditModal(item: UserKotoba) {
+  async function handleOpenEditModal(item: UserKotoba) {
+    // Jika image_url tidak ada di state (tidak ter-cache), fetch dari DB dulu
+    // agar edit modal selalu menampilkan gambar yang benar
+    let imageUrl = item.image_url || ''
+    if (!imageUrl && item.id && !item.id.startsWith('kotoba-')) {
+      try {
+        const { data } = await supabase
+          .from('user_kotoba_submissions')
+          .select('image_url')
+          .eq('id', item.id)
+          .maybeSingle()
+        if (data?.image_url) {
+          imageUrl = data.image_url
+          // Update item di state + cache agar tidak perlu fetch lagi nanti
+          setKotobaList(prev => prev.map(k => k.id === item.id ? { ...k, image_url: data.image_url } : k))
+        }
+      } catch (e) {
+        console.warn('Fetch image_url for edit note:', e)
+      }
+    }
+
     setEditingItem(item)
     setFormData({
       japanese: item.japanese,
       romaji: item.romaji,
       meaning: item.meaning,
-      image_url: item.image_url || '',
+      image_url: imageUrl,
     })
     setIsModalOpen(true)
   }
@@ -301,14 +335,21 @@ export default function SetoranKotobaPage() {
       setSaving(false)
 
       // Fire-and-forget DB update — UI is already responsive
+      // image_url hanya diupdate ke DB jika user memang mengubah gambarnya
+      // (mencegah gambar terhapus jika image tidak ter-load di cache)
+      const imageChanged = formData.image_url !== (editingItem.image_url || '')
+      const updatePayload: Record<string, unknown> = {
+        japanese: formData.japanese.trim(),
+        romaji: formData.romaji.trim(),
+        meaning: formData.meaning.trim(),
+      }
+      if (imageChanged) {
+        updatePayload.image_url = processedImageUrl || null
+      }
+
       supabase
         .from('user_kotoba_submissions')
-        .update({
-          japanese: formData.japanese.trim(),
-          romaji: formData.romaji.trim(),
-          meaning: formData.meaning.trim(),
-          image_url: processedImageUrl || null,
-        })
+        .update(updatePayload)
         .eq('id', editingItem.id)
         .then(({ error }) => { if (error) console.warn('Update kotoba DB error:', error) })
     } else {
