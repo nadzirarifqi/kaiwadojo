@@ -159,12 +159,20 @@ export default function SetoranKotobaPage() {
 
     const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
 
-    // 1. Instant local cache render (scoped strictly to this user)
+    // 1. Baca cache localStorage — buat image recovery map dari cache
+    //    (cache mungkin punya image_url yang sudah hilang dari DB akibat bug sebelumnya)
     const localData = localStorage.getItem(storageKey)
     let localItems: UserKotoba[] = []
+    const localImageCache = new Map<string, string>()
     if (localData) {
       try {
         localItems = JSON.parse(localData)
+        // Bangun map: id → image_url dari cache lokal
+        for (const item of localItems) {
+          if (item.id && item.image_url) {
+            localImageCache.set(item.id, item.image_url)
+          }
+        }
         if (localItems.length > 0) {
           setKotobaList(localItems)
           setLoading(false)
@@ -176,7 +184,7 @@ export default function SetoranKotobaPage() {
       setLoading(true)
     }
 
-    // 2. Auto-migrate local-only items (id 'kotoba-*') to Supabase — BATCH insert, not serial
+    // 2. Auto-migrate local-only items (id 'kotoba-*') ke Supabase — BATCH insert
     if (effectiveUserId && effectiveUserId !== 'guest') {
       const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
       if (unsyncedLocals.length > 0) {
@@ -197,7 +205,7 @@ export default function SetoranKotobaPage() {
       }
     }
 
-    // 3. Fetch dari DB dengan image_url — data milik user sendiri, jumlahnya terbatas
+    // 3. Fetch dari DB dengan image_url
     let dbItems: UserKotoba[] = []
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
@@ -206,7 +214,33 @@ export default function SetoranKotobaPage() {
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      dbItems = data as UserKotoba[]
+      // Recovery: jika DB punya null image_url tapi localStorage masih punya → pulihkan
+      const itemsNeedingDbHeal: Array<{ id: string; image_url: string }> = []
+
+      dbItems = (data as UserKotoba[]).map(dbItem => {
+        if (!dbItem.image_url && localImageCache.has(dbItem.id)) {
+          // DB kehilangan gambar (akibat bug sebelumnya) — ambil dari cache lokal
+          const recoveredImage = localImageCache.get(dbItem.id)!
+          itemsNeedingDbHeal.push({ id: dbItem.id, image_url: recoveredImage })
+          return { ...dbItem, image_url: recoveredImage }
+        }
+        return dbItem
+      })
+
+      // Heal DB di background: restore image_url yang hilang
+      if (itemsNeedingDbHeal.length > 0) {
+        ;(async () => {
+          for (const item of itemsNeedingDbHeal) {
+            supabase
+              .from('user_kotoba_submissions')
+              .update({ image_url: item.image_url })
+              .eq('id', item.id)
+              .then(({ error: e }) => {
+                if (!e) console.log(`✅ Gambar dipulihkan ke DB: ${item.id}`)
+              })
+          }
+        })()
+      }
     }
 
     if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
@@ -216,6 +250,7 @@ export default function SetoranKotobaPage() {
       setKotobaList(localItems)
     }
     setLoading(false)
+
   }
 
   function saveToLocal(updatedList: UserKotoba[]) {
@@ -302,6 +337,25 @@ export default function SetoranKotobaPage() {
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
       })
       return
+    }
+
+    // ── Duplicate Check (CREATE only) ──
+    if (!editingItem) {
+      const inputJapanese = formData.japanese.trim().toLowerCase()
+      const duplicate = kotobaList.find(
+        k => k.japanese.trim().toLowerCase() === inputJapanese
+      )
+      if (duplicate) {
+        setAlertConfig({
+          isOpen: true,
+          title: 'Kosakata Sudah Ada ⚠️',
+          message: `Kosakata "${duplicate.japanese}" (${duplicate.romaji}) sudah pernah kamu catat sebelumnya. Silakan cek daftarmu atau gunakan tombol Edit jika ingin mengubah datanya.`,
+          type: 'warning',
+          buttonText: 'Mengerti',
+          onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+        })
+        return
+      }
     }
 
     setSaving(true)
