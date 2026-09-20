@@ -390,41 +390,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setDateScope('all')}
-              className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                dateScope === 'all'
-                  ? 'bg-primary text-white border-primary shadow-xs'
-                  : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>Semua</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
-                dateScope === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-              }`}>
-                {categoryFiltered.length}
-              </span>
-            </button>
 
-            {pastTimeline.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setDateScope('past')}
-                className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                  dateScope === 'past'
-                    ? 'bg-primary text-white border-primary shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <span>Riwayat Lampau</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
-                  dateScope === 'past' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500'
-                }`}>
-                  {pastTimeline.length}
-                </span>
-              </button>
-            )}
           </div>
 
           <span className="text-[0.68rem] text-slate-400 font-semibold hidden sm:inline shrink-0">
@@ -449,15 +415,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               >
                 + Susun Agenda Sekarang →
               </button>
-              {dateScope === 'upcoming' && pastTimeline.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setDateScope('past')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer hover:bg-slate-300 transition-all text-xs"
-                >
-                  Lihat Riwayat Lampau ({pastTimeline.length})
-                </button>
-              )}
+
             </div>
           </div>
         ) : (
@@ -561,20 +519,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                       </span>
                     </div>
 
-                    {sch.type === 'online' && (
-                      <div className="mt-0.5 flex justify-end">
-                        <a
-                          href={sch.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 active:scale-95 text-white text-[0.68rem] font-extrabold shadow-sm transition-all no-underline"
-                        >
-                          <span>🎥</span>
-                          <span>Bergabung →</span>
-                        </a>
-                      </div>
-                    )}
+
                   </div>
                 )
               }
@@ -690,16 +635,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                           {selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
                         </a>
                       </div>
-                      <a
-                        href={selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 active:scale-95 text-white text-xs font-extrabold shadow-md transition-all no-underline"
-                      >
-                        <span>🎥</span>
-                        <span>Bergabung ke Kelas Online Sekarang</span>
-                        <span>→</span>
-                      </a>
+
                     </div>
                   )}
                 </div>
