@@ -46,7 +46,9 @@ export function detectJapaneseScript(text: string) {
 }
 
 /* ── Image Compressor Helper for Fast DB Saves ── */
-async function compressImageDataUrl(dataUrl: string, maxWidth = 800, quality = 0.75): Promise<string> {
+const MAX_IMAGE_SIZE_BYTES = 400 * 1024 // 400 KB limit for base64 image in DB
+
+async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0.6): Promise<string> {
   if (!dataUrl || !dataUrl.startsWith('data:image')) return dataUrl
   return new Promise((resolve) => {
     const img = new Image()
@@ -66,7 +68,25 @@ async function compressImageDataUrl(dataUrl: string, maxWidth = 800, quality = 0
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
+        let result = canvas.toDataURL('image/jpeg', quality)
+        // If still too large, compress further with lower quality
+        if (result.length > MAX_IMAGE_SIZE_BYTES * 1.37) { // base64 overhead ~1.37x
+          result = canvas.toDataURL('image/jpeg', 0.4)
+        }
+        // If still too large, scale down further
+        if (result.length > MAX_IMAGE_SIZE_BYTES * 1.37) {
+          const smallCanvas = document.createElement('canvas')
+          const smallW = Math.round(width * 0.6)
+          const smallH = Math.round(height * 0.6)
+          smallCanvas.width = smallW
+          smallCanvas.height = smallH
+          const ctx2 = smallCanvas.getContext('2d')
+          if (ctx2) {
+            ctx2.drawImage(img, 0, 0, smallW, smallH)
+            result = smallCanvas.toDataURL('image/jpeg', 0.5)
+          }
+        }
+        resolve(result)
       } else {
         resolve(dataUrl)
       }
@@ -468,11 +488,30 @@ export default function SetoranKotobaPage() {
               })
             } else if (error) {
               console.warn('Insert kotoba DB note:', error)
+              // Show error alert to user so they know the save failed
+              setAlertConfig({
+                isOpen: true,
+                title: 'Gagal Menyimpan ke Server ⚠️',
+                message: `Kosakata berhasil dicatat secara lokal, namun gagal tersimpan ke server database. Kemungkinan penyebab: sesi login berakhir atau koneksi terputus. Silakan coba logout dan login kembali, lalu tambahkan kosakata ulang.\n\nDetail: ${error.message || 'Unknown error'}`,
+                type: 'warning',
+                buttonText: 'Mengerti',
+                onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+              })
             }
           } catch (err) {
             console.warn('Insert kotoba DB catch:', err)
           }
         })()
+      } else {
+        // User session not found — warn clearly
+        setAlertConfig({
+          isOpen: true,
+          title: 'Sesi Login Tidak Ditemukan ⚠️',
+          message: 'Kosakata berhasil dicatat secara lokal, namun tidak dapat disimpan ke server karena sesi login kamu tidak ditemukan. Silakan logout dan login kembali untuk sinkronisasi data.',
+          type: 'warning',
+          buttonText: 'Mengerti',
+          onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+        })
       }
     }
   }

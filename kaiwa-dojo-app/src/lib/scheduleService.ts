@@ -1175,6 +1175,10 @@ export async function bookClass(
   const updatedReservations = [finalReservation, ...reservations]
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updatedReservations))
 
+  // Invalidate in-memory cache so next fetchReservations() fetches fresh data from DB
+  // This prevents stale cache from causing booked/locked states to appear on wrong classes
+  _reservationsCache = { data: updatedReservations, fetchedAt: Date.now() }
+
   // Dispatch window event for instant same-browser sync
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: finalReservation }))
 
@@ -1190,6 +1194,9 @@ export async function cancelClassBooking(reservationId: string): Promise<boolean
   const targetRes = reservations.find(r => r.id === reservationId)
   const updated = reservations.filter(r => r.id !== reservationId)
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(updated))
+
+  // Update in-memory cache to reflect the cancellation immediately
+  _reservationsCache = { data: updated, fetchedAt: Date.now() }
 
   // Dispatch custom window event for instant local tab sync
   window.dispatchEvent(new CustomEvent(RESERVATION_UPDATE_EVENT, { detail: reservationId }))
