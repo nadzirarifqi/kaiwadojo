@@ -178,6 +178,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/* ── Floating Widgets (hidden for Admin) ────────── */
+function FloatingWidgets() {
+  const { profile } = useAuth()
+  if (profile?.role === 'admin') return null
+  return <WhatsAppWidget />
+}
+
 /* ── Router ─────────────────────────────────────── */
 export function AppRoutes() {
   return (
@@ -215,7 +222,7 @@ export function AppRoutes() {
                 </Routes>
               </Suspense>
             </PageTransition>
-            <WhatsAppWidget />
+            <FloatingWidgets />
           </BrowserRouter>
         </AuthProvider>
       </LanguageProvider>
