@@ -45,7 +45,7 @@ jobs:
           pass: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 22 }}
           local_path: './dist/*'
-          remote_path: ${{ secrets.FTP_SERVER_DIR || 'public_html' }}
+          remote_path: ${{ secrets.FTP_SERVER_DIR || './' }}
           sftpArgs: '-o ConnectTimeout=60'
 
 
