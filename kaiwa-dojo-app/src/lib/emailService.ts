@@ -5,6 +5,8 @@
  * Anda dapat mengedit judul, teks, dan template HTML email persetujuan di file ini.
  */
 
+import { AppConfig } from '../config/appConfig'
+
 export interface ApprovalEmailParams {
   toEmail: string
   fullName: string
@@ -51,7 +53,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
 
         <!-- Action Button -->
         <div style="text-align: center; margin-top: 28px; margin-bottom: 24px;">
-          <a href="https://kaiwadojo.inaconnext.it.com/login" style="display: inline-block; background-color: #b91c1c; color: #ffffff; padding: 14px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 14px;">
+          <a href="${AppConfig.app.websiteUrl}/login" style="display: inline-block; background-color: #b91c1c; color: #ffffff; padding: 14px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 14px;">
             Masuk ke Dashboard Sekarang →
           </a>
         </div>
@@ -69,8 +71,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
   `
 
   try {
-    const apiBase = import.meta.env.VITE_API_BASE || '/api'
-    const res = await fetch(`${apiBase}/notify.php?action=email`, {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

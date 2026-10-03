@@ -1,16 +1,12 @@
 import { useState } from 'react'
 import FeedbackModal from './FeedbackModal'
+import { AppConfig } from '../config/appConfig'
 
 export default function WhatsAppWidget() {
   const [isWaOpen, setIsWaOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
-  const rawAdminNumber = import.meta.env.VITE_ADMIN_WA_NUMBER || '6287875018001'
-  let adminWaNumber = rawAdminNumber.replace(/[^0-9]/g, '')
-  if (adminWaNumber.startsWith('0')) {
-    adminWaNumber = '62' + adminWaNumber.slice(1)
-  }
-
+  const adminWaNumber = AppConfig.contacts.getAdminWaFormatted()
   const defaultMessage = encodeURIComponent('Halo Admin KaiwaDojo, saya ingin bertanya mengenai aplikasi...')
   const waUrl = `https://wa.me/${adminWaNumber}?text=${defaultMessage}`
 

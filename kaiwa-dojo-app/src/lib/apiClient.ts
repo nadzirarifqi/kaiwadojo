@@ -12,6 +12,8 @@ export interface Session {
   user: User
 }
 
+import { AppConfig } from '../config/appConfig'
+
 export interface User {
   id: string
   email?: string | null
@@ -22,8 +24,8 @@ export interface User {
 
 export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'USER_UPDATED'
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api'
-const TOKEN_STORAGE_KEY = 'kaiwa_jwt_session'
+const API_BASE = AppConfig.api.baseUrl
+const TOKEN_STORAGE_KEY = AppConfig.storageKeys.jwtSession
 
 // ── Auth Token State ──
 let currentSession: Session | null = null
@@ -326,7 +328,7 @@ class RealtimeManager {
 
   private static ensurePolling() {
     if (!this.pollTimer && typeof window !== 'undefined') {
-      this.pollTimer = setInterval(() => this.poll(), 12000) // Poll tiap 12 detik
+      this.pollTimer = setInterval(() => this.poll(), AppConfig.auth.realtimePollIntervalMs)
       this.poll()
     }
   }

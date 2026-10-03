@@ -5,6 +5,7 @@
  */
 
 import { supabase } from './supabaseClient'
+import { AppConfig } from '../config/appConfig'
 
 
 /**
@@ -36,8 +37,7 @@ export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpP
   const messageText = `[KaiwaDojo] Kode OTP Pendaftaran Akun Anda adalah: ${otpCode}\n\nMasukkan kode ini pada aplikasi KaiwaDojo untuk memverifikasi pendaftaran. Jangan berikan kode ini kepada siapapun.`
 
   try {
-    const apiBase = import.meta.env.VITE_API_BASE || '/api'
-    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,8 +84,7 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
   const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
 
   try {
-    const apiBase = import.meta.env.VITE_API_BASE || '/api'
-    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,11 +155,7 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isV
  * Menghasilkan URL direct link WhatsApp ke Admin dengan pre-filled text pendaftaran
  */
 export function getAdminWhatsAppUrl(username: string): string {
-  const adminWa = import.meta.env.VITE_ADMIN_WA_NUMBER || '087875018001'
-  let formatted = adminWa.replace(/[^0-9]/g, '')
-  if (formatted.startsWith('0')) {
-    formatted = '62' + formatted.slice(1)
-  }
+  const formatted = AppConfig.contacts.getAdminWaFormatted()
   const cleanUser = (username || '').replace(/^@/, '')
   const messageText = `Halo Admin KaiwaDojo, akun saya @${cleanUser} sudah registrasi.`
   return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
@@ -170,11 +165,7 @@ export function getAdminWhatsAppUrl(username: string): string {
  * Menghasilkan URL direct link WhatsApp ke Admin untuk pengajuan hapus akun
  */
 export function getAdminWhatsAppDeleteAccountUrl(username?: string, fullName?: string, email?: string): string {
-  const adminWa = import.meta.env.VITE_ADMIN_WA_NUMBER || '087875018001'
-  let formatted = adminWa.replace(/[^0-9]/g, '')
-  if (formatted.startsWith('0')) {
-    formatted = '62' + formatted.slice(1)
-  }
+  const formatted = AppConfig.contacts.getAdminWaFormatted()
   const cleanUser = (username || '').replace(/^@/, '')
   const nameStr = fullName ? ` (${fullName})` : ''
   const emailStr = email ? `\n• Email: ${email}` : ''
@@ -246,8 +237,7 @@ export async function sendWhatsAppBroadcast(
   const multiTarget = formattedNumbers.join(',')
 
   try {
-    const apiBase = import.meta.env.VITE_API_BASE || '/api'
-    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

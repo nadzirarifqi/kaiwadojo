@@ -37,28 +37,16 @@ jobs:
           cp -r api dist/api
           cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via FTPS ke Server
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy via SFTP ke Server
+        uses: wlixcc/sftp-action@v3.0
         with:
-          server: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT || 21 }}
-          protocol: ${{ secrets.FTP_PROTOCOL || 'ftp' }}
-          security: loose
-          local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR || 'public_html/' }}
-          dangerous-clean-slate: false
-          state-name: .ftp-deploy-sync-state.json
-          timeout: 60000
-          log-level: verbose
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            .ftp-deploy-sync-state.json
-            uploads/**
-            kaiwa-1-courses/**
-            kaiwa-2-courses/**
+          host: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
+          user: ${{ secrets.FTP_USERNAME }}
+          pass: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 22 }}
+          local_path: './dist/*'
+          remote_path: ${{ secrets.FTP_SERVER_DIR || 'public_html' }}
+          sftpArgs: '-o ConnectTimeout=60'
+
 
 
