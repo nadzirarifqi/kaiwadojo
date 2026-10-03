@@ -1,4 +1,4 @@
-name: Deploy KaiwaDoJo ke Rumahweb
+﻿name: Deploy KaiwaDoJo ke CyberPanel / Hosting
 
 on:
   push:
@@ -8,17 +8,19 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy ke Rumahweb (FTP)
+    name: Build & Deploy via SFTP
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: kaiwa-dojo-app/package-lock.json
 
@@ -30,25 +32,22 @@ jobs:
         working-directory: kaiwa-dojo-app
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE || '/api' }}
+          VITE_ADMIN_WA_NUMBER: ${{ secrets.VITE_ADMIN_WA_NUMBER || '087875018001' }}
 
-      - name: Copy .htaccess ke dist/
+      - name: Copy API Backend & .htaccess ke dist/
         working-directory: kaiwa-dojo-app
-        run: cp public/.htaccess dist/.htaccess
+        run: |
+          cp -r api dist/api
+          cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via FTP ke Rumahweb
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy via SFTP ke Server
+        uses: wlixcc/sftp-action@v3.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./kaiwa-dojo-app/dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          dangerous-clean-slate: false
-          state-name: .ftp-deploy-sync-state.json
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            .ftp-deploy-sync-state.json
+          host: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
+          user: ${{ secrets.FTP_USERNAME }}
+          pass: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 22 }}
+          local_path: './kaiwa-dojo-app/dist/*'
+          remote_path: ${{ secrets.FTP_SERVER_DIR || './' }}
+          sftpArgs: '-o ConnectTimeout=60'
