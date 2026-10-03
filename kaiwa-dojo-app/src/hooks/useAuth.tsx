@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { Session, User } from '../lib/supabaseClient'
 import { supabase } from '../lib/supabaseClient'
 
 export type UserRole = 'pelajar' | 'pemateri' | 'admin'

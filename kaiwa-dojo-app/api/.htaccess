@@ -1,0 +1,11 @@
+# api/.htaccess - Proteksi direktori API
+
+# Larang akses langsung ke file konfigurasi & library
+<FilesMatch "^(config.*\.php|schema\.json)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^lib/ - [F,L]
+</IfModule>

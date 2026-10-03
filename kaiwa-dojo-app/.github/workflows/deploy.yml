@@ -1,4 +1,4 @@
-name: Deploy KaiwaDoJo ke Rumahweb
+name: Deploy KaiwaDoJo ke CyberPanel / Hosting
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy ke Rumahweb (FTPS)
+    name: Build & Deploy via FTPS
     runs-on: ubuntu-latest
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
@@ -29,24 +29,25 @@ jobs:
       - name: Build Production Bundle
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_FONNTE_TOKEN: ${{ secrets.VITE_FONNTE_TOKEN }}
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE || '/api' }}
+          VITE_ADMIN_WA_NUMBER: ${{ secrets.VITE_ADMIN_WA_NUMBER || '087875018001' }}
 
-      - name: Copy .htaccess ke dist/
-        run: cp public/.htaccess dist/.htaccess || true
+      - name: Copy API Backend & .htaccess ke dist/
+        run: |
+          cp -r api dist/api
+          cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via FTPS ke Rumahweb
+      - name: Deploy via FTPS ke Server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          protocol: ftps
+          port: ${{ secrets.FTP_PORT || 21 }}
+          protocol: ${{ secrets.FTP_PROTOCOL || 'ftp' }}
           security: loose
           local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR || 'public_html/' }}
           dangerous-clean-slate: false
           state-name: .ftp-deploy-sync-state.json
           timeout: 60000
@@ -56,4 +57,8 @@ jobs:
             **/.git*/**
             **/node_modules/**
             .ftp-deploy-sync-state.json
+            uploads/**
+            kaiwa-1-courses/**
+            kaiwa-2-courses/**
+
 

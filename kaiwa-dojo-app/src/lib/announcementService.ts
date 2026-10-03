@@ -490,7 +490,7 @@ export async function fetchAnnouncementReadStats(): Promise<Record<string, numbe
       .select('announcement_id')
 
     if (!error && data) {
-      data.forEach(row => {
+      data.forEach((row: any) => {
         stats[row.announcement_id] = (stats[row.announcement_id] || 0) + 1
       })
     }

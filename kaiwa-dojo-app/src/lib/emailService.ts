@@ -12,8 +12,6 @@ export interface ApprovalEmailParams {
 }
 
 export async function sendApprovalEmail({ toEmail, fullName, username }: ApprovalEmailParams): Promise<boolean> {
-  const resendApiKey = import.meta.env.VITE_RESEND_API_KEY || ''
-
   // Template HTML Email Persetujuan Akun oleh Admin
   const emailHtml = `
     <!DOCTYPE html>
@@ -70,20 +68,14 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
     </html>
   `
 
-  if (!resendApiKey) {
-    console.warn('VITE_RESEND_API_KEY belum diset. Simulasi pengiriman email approval berhasil ke:', toEmail)
-    return true
-  }
-
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const apiBase = import.meta.env.VITE_API_BASE || '/api'
+    const res = await fetch(`${apiBase}/notify.php?action=email`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'KaiwaDojo Admin <onboarding@resend.dev>',
         to: [toEmail],
         subject: '🎉 Selamat! Akun KaiwaDojo Anda Telah Disetujui Admin',
         html: emailHtml,
@@ -91,15 +83,15 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
     })
 
     if (res.ok) {
-      console.log('Email approval berhasil dikirim via Resend ke:', toEmail)
+      console.log('Email approval berhasil dikirim via server ke:', toEmail)
       return true
     } else {
-      const errJson = await res.json()
-      console.warn('Resend API response note:', errJson)
+      const errJson = await res.json().catch(() => ({}))
+      console.warn('Server notify email response note:', errJson)
       return false
     }
   } catch (err) {
-    console.error('Error sending approval email via Resend:', err)
+    console.error('Error sending approval email via server:', err)
     return false
   }
 }

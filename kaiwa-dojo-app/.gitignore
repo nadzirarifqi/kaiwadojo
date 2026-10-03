@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Secrets & migration backups (berisi kredensial & data user)
+.env
+**/.env
+backups/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -56,7 +56,7 @@ export default function CatalogPage() {
         .eq('student_id', activeUserId)
 
       if (enrollData) {
-        enrolledCourseIds = new Set(enrollData.map(e => e.course_id))
+        enrolledCourseIds = new Set(enrollData.map((e: any) => e.course_id))
       }
     }
 

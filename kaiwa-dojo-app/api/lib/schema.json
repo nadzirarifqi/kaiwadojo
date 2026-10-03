@@ -1,0 +1,1175 @@
+{
+  "generated_at": "2026-10-03T16:38:27.498Z",
+  "tables": {
+    "announcements": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "content": {
+          "type": "text",
+          "nullable": false
+        },
+        "category": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "info"
+        },
+        "target_audience": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "all"
+        },
+        "target_group": {
+          "type": "text",
+          "nullable": true
+        },
+        "is_active": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": true
+        },
+        "is_pinned": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "author_id": {
+          "type": "uuid",
+          "nullable": true
+        },
+        "author_name": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "Admin Dojo"
+        },
+        "action_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "action_text": {
+          "type": "text",
+          "nullable": true
+        },
+        "expires_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "broadcast_logs": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "sent_by_id": {
+          "type": "text",
+          "nullable": false
+        },
+        "sent_by_name": {
+          "type": "text",
+          "nullable": false
+        },
+        "message": {
+          "type": "text",
+          "nullable": false
+        },
+        "filter_label": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "Semua Pelajar"
+        },
+        "target_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "sent_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "skipped_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "failed_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        }
+      }
+    },
+    "chapter_settings": {
+      "pk": [
+        "bab_number"
+      ],
+      "unique": [],
+      "columns": {
+        "bab_number": {
+          "type": "int",
+          "nullable": false
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "subtitle": {
+          "type": "text",
+          "nullable": false,
+          "default_value": ""
+        },
+        "is_hidden": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "has_video": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "duration_s1": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "15"
+        },
+        "duration_s2": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "15"
+        },
+        "duration_s3": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "12"
+        },
+        "custom_video_s1": {
+          "type": "text",
+          "nullable": true
+        },
+        "custom_video_s2": {
+          "type": "text",
+          "nullable": true
+        },
+        "custom_video_s3": {
+          "type": "text",
+          "nullable": true
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        },
+        "target_group": {
+          "type": "text",
+          "nullable": true
+        }
+      }
+    },
+    "class_reservations": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "schedule_id",
+          "user_id"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "schedule_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "user_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "user_name": {
+          "type": "text",
+          "nullable": false
+        },
+        "user_email": {
+          "type": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "class_schedules": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "type": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "online"
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "subtitle_chapter": {
+          "type": "text",
+          "nullable": false
+        },
+        "instructor_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "instructor_name": {
+          "type": "text",
+          "nullable": false
+        },
+        "date": {
+          "type": "date",
+          "nullable": false
+        },
+        "start_time": {
+          "type": "time",
+          "nullable": false
+        },
+        "end_time": {
+          "type": "time",
+          "nullable": false
+        },
+        "week_range_id": {
+          "type": "text",
+          "nullable": false
+        },
+        "month_range_id": {
+          "type": "text",
+          "nullable": false
+        },
+        "meet_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "location": {
+          "type": "text",
+          "nullable": true
+        },
+        "max_quota": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 10
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "start_date": {
+          "type": "date",
+          "nullable": true
+        },
+        "end_date": {
+          "type": "date",
+          "nullable": true
+        },
+        "target_group": {
+          "type": "text",
+          "nullable": true
+        }
+      }
+    },
+    "comments": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "lesson_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "user_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "parent_id": {
+          "type": "uuid",
+          "nullable": true
+        },
+        "body": {
+          "type": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "course_sections": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "course_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "order_index": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        }
+      }
+    },
+    "courses": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "slug"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "instructor_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "slug": {
+          "type": "text",
+          "nullable": false
+        },
+        "description": {
+          "type": "text",
+          "nullable": true
+        },
+        "thumbnail_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "level": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "pemula"
+        },
+        "language": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "Bahasa Indonesia"
+        },
+        "category": {
+          "type": "text",
+          "nullable": true
+        },
+        "tags": {
+          "type": "json",
+          "nullable": true,
+          "default": "value",
+          "default_value": []
+        },
+        "is_published": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "total_duration_minutes": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "total_lessons": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "daily_missions": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "student_id",
+          "date"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "text",
+          "nullable": false
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "date": {
+          "type": "date",
+          "nullable": false
+        },
+        "selected_videos": {
+          "type": "json",
+          "nullable": false,
+          "default": "value",
+          "default_value": []
+        },
+        "target_replay_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 3
+        },
+        "target_quiz_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 1
+        },
+        "target_kotoba_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 1
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        },
+        "baseline_snapshot": {
+          "type": "json",
+          "nullable": true,
+          "default": "value",
+          "default_value": {}
+        }
+      }
+    },
+    "enrollments": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "student_id",
+          "course_id"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "course_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "enrolled_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "completed_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "progress_pct": {
+          "type": "decimal",
+          "nullable": false,
+          "default_value": 0
+        }
+      }
+    },
+    "feedback_suggestions": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "user_id": {
+          "type": "uuid",
+          "nullable": true
+        },
+        "name": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "Anonim"
+        },
+        "email": {
+          "type": "text",
+          "nullable": true
+        },
+        "phone_number": {
+          "type": "text",
+          "nullable": true
+        },
+        "role": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "tamu"
+        },
+        "category": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "saran_fitur"
+        },
+        "rating": {
+          "type": "int",
+          "nullable": true,
+          "default_value": 5
+        },
+        "title": {
+          "type": "text",
+          "nullable": true
+        },
+        "message": {
+          "type": "text",
+          "nullable": false
+        },
+        "page_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "status": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "unread"
+        },
+        "admin_notes": {
+          "type": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        }
+      }
+    },
+    "instructor_profiles": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "expertise": {
+          "type": "json",
+          "nullable": true,
+          "default": "value",
+          "default_value": []
+        },
+        "total_students": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "rating_avg": {
+          "type": "decimal",
+          "nullable": false,
+          "default_value": 0
+        },
+        "verified": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        }
+      }
+    },
+    "kaiwa_groups": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "name"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "name": {
+          "type": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        },
+        "keywords": {
+          "type": "text",
+          "nullable": true,
+          "default_value": ""
+        },
+        "description": {
+          "type": "text",
+          "nullable": true,
+          "default_value": ""
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        }
+      }
+    },
+    "learning_streaks": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "student_id",
+          "date"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "date": {
+          "type": "date",
+          "nullable": false,
+          "default": "today"
+        }
+      }
+    },
+    "lesson_kotoba": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "lesson_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "kanji_kana": {
+          "type": "text",
+          "nullable": false
+        },
+        "romaji": {
+          "type": "text",
+          "nullable": true
+        },
+        "meaning": {
+          "type": "text",
+          "nullable": false
+        },
+        "order_index": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "lesson_progress": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "student_id",
+          "lesson_id"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "lesson_id": {
+          "type": "text",
+          "nullable": false
+        },
+        "course_id": {
+          "type": "uuid",
+          "nullable": true
+        },
+        "is_completed": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "last_watched_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "watch_duration_seconds": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "replay_count": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        }
+      }
+    },
+    "lessons": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "section_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "course_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "title": {
+          "type": "text",
+          "nullable": false
+        },
+        "content_type": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "video"
+        },
+        "video_provider": {
+          "type": "text",
+          "nullable": true
+        },
+        "video_id": {
+          "type": "text",
+          "nullable": true
+        },
+        "content_body": {
+          "type": "text",
+          "nullable": true
+        },
+        "duration_minutes": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "order_index": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "is_free_preview": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        }
+      }
+    },
+    "profiles": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "username"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "full_name": {
+          "type": "text",
+          "nullable": false
+        },
+        "username": {
+          "type": "text",
+          "nullable": false
+        },
+        "avatar_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "bio": {
+          "type": "text",
+          "nullable": true
+        },
+        "role": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "pelajar"
+        },
+        "streak_days": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "last_active_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "email": {
+          "type": "text",
+          "nullable": true
+        },
+        "phone_number": {
+          "type": "text",
+          "nullable": true
+        },
+        "status": {
+          "type": "text",
+          "nullable": true,
+          "default_value": "pending"
+        },
+        "institution": {
+          "type": "text",
+          "nullable": true
+        },
+        "group_name": {
+          "type": "text",
+          "nullable": true
+        },
+        "current_session_id": {
+          "type": "text",
+          "nullable": true
+        },
+        "current_device_info": {
+          "type": "text",
+          "nullable": true
+        },
+        "last_session_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        }
+      }
+    },
+    "quiz_attempts": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "lesson_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "answers": {
+          "type": "json",
+          "nullable": false
+        },
+        "score": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "passed": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": false
+        },
+        "attempted_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "quiz_questions": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "lesson_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "question": {
+          "type": "text",
+          "nullable": false
+        },
+        "options": {
+          "type": "json",
+          "nullable": false
+        },
+        "order_index": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        }
+      }
+    },
+    "ratings": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "student_id",
+          "course_id"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "student_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "course_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "rating": {
+          "type": "int",
+          "nullable": false
+        },
+        "comment": {
+          "type": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "user_announcement_reads": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "user_id",
+          "announcement_id"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "user_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "announcement_id": {
+          "type": "uuid",
+          "nullable": false
+        },
+        "read_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "user_kotoba_submissions": {
+      "pk": [
+        "id"
+      ],
+      "unique": [],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "user_id": {
+          "type": "uuid",
+          "nullable": true
+        },
+        "japanese": {
+          "type": "text",
+          "nullable": false
+        },
+        "romaji": {
+          "type": "text",
+          "nullable": false
+        },
+        "meaning": {
+          "type": "text",
+          "nullable": false
+        },
+        "image_url": {
+          "type": "text",
+          "nullable": true
+        },
+        "is_mastered": {
+          "type": "bool",
+          "nullable": true,
+          "default_value": false
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": true,
+          "default": "now"
+        }
+      }
+    }
+  }
+}

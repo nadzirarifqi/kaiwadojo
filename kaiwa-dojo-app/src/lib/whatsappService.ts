@@ -26,7 +26,6 @@ export interface SendWhatsAppOtpParams {
 }
 
 export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpParams): Promise<{ success: boolean; reason?: string }> {
-  const fonnteToken = getFonnteToken()
 
   // Format nomor HP agar standar (misal 081234... -> 6281234...)
   let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
@@ -37,31 +36,30 @@ export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpP
   const messageText = `[KaiwaDojo] Kode OTP Pendaftaran Akun Anda adalah: ${otpCode}\n\nMasukkan kode ini pada aplikasi KaiwaDojo untuk memverifikasi pendaftaran. Jangan berikan kode ini kepada siapapun.`
 
   try {
-    const formData = new FormData()
-    formData.append('target', formattedPhone)
-    formData.append('message', messageText)
-    formData.append('countryCode', '62')
-
-    const res = await fetch('https://api.fonnte.com/send', {
+    const apiBase = import.meta.env.VITE_API_BASE || '/api'
+    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
       method: 'POST',
       headers: {
-        'Authorization': fonnteToken,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        target: formattedPhone,
+        message: messageText,
+      }),
     })
 
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
 
     if (data.status) {
-      console.log('OTP WhatsApp berhasil terkirim via Fonnte ke:', formattedPhone, 'menggunakan token:', `${fonnteToken.slice(0, 6)}...`)
+      console.log('OTP WhatsApp berhasil terkirim via server ke:', formattedPhone)
       return { success: true }
     } else {
-      console.warn('Fonnte API response note:', data.reason || data)
+      console.warn('WA API response note:', data.reason || data)
       return { success: false, reason: data.reason || 'Perangkat Fonnte tidak terhubung/offline.' }
     }
   } catch (err: any) {
-    console.error('Error sending WA OTP via Fonnte:', err)
-    return { success: false, reason: err?.message || 'Gagal terhubung ke server Fonnte.' }
+    console.error('Error sending WA OTP via server:', err)
+    return { success: false, reason: err?.message || 'Gagal terhubung ke server.' }
   }
 }
 
@@ -72,7 +70,6 @@ export interface SendWhatsAppApprovalParams {
 }
 
 export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, username }: SendWhatsAppApprovalParams): Promise<boolean> {
-  const fonnteToken = getFonnteToken()
 
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {
@@ -87,24 +84,24 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
   const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
 
   try {
-    const formData = new FormData()
-    formData.append('target', formattedPhone)
-    formData.append('message', messageText)
-
-    const res = await fetch('https://api.fonnte.com/send', {
+    const apiBase = import.meta.env.VITE_API_BASE || '/api'
+    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
       method: 'POST',
       headers: {
-        'Authorization': fonnteToken,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        target: formattedPhone,
+        message: messageText,
+      }),
     })
 
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     if (data.status) {
       console.log('Notifikasi WA persetujuan berhasil terkirim ke:', formattedPhone)
       return true
     } else {
-      console.warn('Fonnte API WA approval note:', data.reason || data)
+      console.warn('WA API approval note:', data.reason || data)
       return false
     }
   } catch (err) {
@@ -224,7 +221,6 @@ export async function sendWhatsAppBroadcast(
   targets: BroadcastTarget[],
   message: string
 ): Promise<BroadcastResult> {
-  const fonnteToken = getFonnteToken()
 
   const skippedTargets = targets.filter(t => !t.phone_number || t.phone_number.trim().length < 8)
   const validTargets = targets.filter(t => t.phone_number && t.phone_number.trim().length >= 8)
@@ -250,21 +246,22 @@ export async function sendWhatsAppBroadcast(
   const multiTarget = formattedNumbers.join(',')
 
   try {
-    const formData = new FormData()
-    formData.append('target', multiTarget)
-    formData.append('message', message)
-    formData.append('countryCode', '62')
-
-    const res = await fetch('https://api.fonnte.com/send', {
+    const apiBase = import.meta.env.VITE_API_BASE || '/api'
+    const res = await fetch(`${apiBase}/notify.php?action=whatsapp`, {
       method: 'POST',
-      headers: { 'Authorization': fonnteToken },
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        target: multiTarget,
+        message: message,
+      }),
     })
 
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
 
     if (data.status) {
-      console.log(`[Broadcast WA] Terkirim ke ${validTargets.length} target via Fonnte.`)
+      console.log(`[Broadcast WA] Terkirim ke ${validTargets.length} target via server.`)
       return {
         totalTargets: targets.length,
         sent: validTargets.length,
@@ -272,13 +269,13 @@ export async function sendWhatsAppBroadcast(
         failed: 0,
       }
     } else {
-      console.warn('[Broadcast WA] Fonnte response note:', data.reason || data)
+      console.warn('[Broadcast WA] response note:', data.reason || data)
       return {
         totalTargets: targets.length,
         sent: 0,
         skipped: skippedTargets.length,
         failed: validTargets.length,
-        failReason: data.reason || 'Perangkat Fonnte tidak terhubung / offline.',
+        failReason: data.reason || 'Perangkat WhatsApp tidak terhubung / offline.',
       }
     }
   } catch (err: any) {
@@ -288,7 +285,7 @@ export async function sendWhatsAppBroadcast(
       sent: 0,
       skipped: skippedTargets.length,
       failed: validTargets.length,
-      failReason: err?.message || 'Gagal terhubung ke server Fonnte.',
+      failReason: err?.message || 'Gagal terhubung ke server WhatsApp.',
     }
   }
 }

@@ -610,7 +610,7 @@ export async function calculateMissionProgress(
         .eq('student_id', userId)
 
       if (streaksData) {
-        const streakDates = new Set(streaksData.map((s: any) => s.date))
+        const streakDates = new Set<string>(streaksData.map((s: any) => String(s.date)))
         const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
         await supabase
           .from('profiles')
@@ -638,7 +638,7 @@ export async function calculateMissionProgress(
         .eq('student_id', userId)
 
       if (streaksData) {
-        const streakDates = new Set(streaksData.map((s: any) => s.date))
+        const streakDates = new Set<string>(streaksData.map((s: any) => String(s.date)))
         const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
         await supabase
           .from('profiles')
@@ -792,7 +792,7 @@ export async function backfillHistoricalStreakCaps(userId: string): Promise<void
       .eq('student_id', userId)
 
     if (allStreaks) {
-      const allDates = new Set(allStreaks.map((s: any) => s.date))
+      const allDates = new Set<string>(allStreaks.map((s: any) => String(s.date)))
       const streakCount = calculateStreakFromDates(allDates, today)
       await supabase
         .from('profiles')
