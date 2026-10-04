@@ -60,7 +60,6 @@ jobs:
             set net:reconnect-interval-base 2
             open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT $FTP_HOST
             mirror --reverse \
-                   --delete=false \
                    --verbose \
                    --exclude-glob uploads/ \
                    --exclude-glob kaiwa-1-courses/ \
