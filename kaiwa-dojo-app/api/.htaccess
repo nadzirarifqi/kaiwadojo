@@ -1,9 +1,16 @@
 # api/.htaccess - Proteksi direktori API
 
-# Larang akses langsung ke file konfigurasi & library
-<FilesMatch "^(config.*\.php|schema\.json)$">
-    Require all denied
-</FilesMatch>
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(config.*\.php|schema\.json)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(config.*\.php|schema\.json)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On

@@ -8,18 +8,55 @@ class DB {
 
     public static function get(): PDO {
         if (self::$instance === null) {
-            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
-            try {
-                self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
-            } catch (PDOException $e) {
+            if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4";
+            }
+
+            // Daftar host alternatif (127.0.0.1 vs localhost) untuk MariaDB di Linux / CyberPanel
+            $hosts = array_unique([DB_HOST, '127.0.0.1', 'localhost']);
+            $lastException = null;
+
+            foreach ($hosts as $h) {
+                try {
+                    $dsn = "mysql:host=$h;port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+                    self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+                    break;
+                } catch (PDOException $e) {
+                    $lastException = $e;
+                }
+            }
+
+            // Jika TCP masih gagal, coba UNIX socket umum MariaDB CyberPanel / OpenLiteSpeed
+            if (self::$instance === null) {
+                $sockets = ['/var/lib/mysql/mysql.sock', '/tmp/mysql.sock', '/var/run/mysqld/mysqld.sock'];
+                foreach ($sockets as $sock) {
+                    if (file_exists($sock)) {
+                        try {
+                            $dsn = "mysql:unix_socket=$sock;dbname=" . DB_NAME . ";charset=utf8mb4";
+                            self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+                            break;
+                        } catch (PDOException $e) {
+                            $lastException = $e;
+                        }
+                    }
+                }
+            }
+
+            if (self::$instance === null) {
                 http_response_code(500);
                 header('Content-Type: application/json');
-                echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
+                echo json_encode([
+                    'data'  => null,
+                    'error' => [
+                        'message' => 'Koneksi MariaDB gagal: ' . ($lastException ? $lastException->getMessage() : 'Gagal menghubungkan ke database'),
+                        'code'    => $lastException ? $lastException->getCode() : 500
+                    ]
+                ]);
                 exit;
             }
         }

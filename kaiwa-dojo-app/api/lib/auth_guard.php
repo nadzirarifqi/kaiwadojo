@@ -57,21 +57,48 @@ class AuthGuard {
         $db = DB::get();
 
         // Ambil data profile terbaru untuk memastikan role & status valid
-        $stmt = $db->prepare("SELECT p.*, u.email as auth_email FROM profiles p LEFT JOIN users u ON p.id = u.id WHERE p.id = ? LIMIT 1");
-        $stmt->execute([$userId]);
-        $profile = $stmt->fetch();
+        $stmt = $db->prepare("SELECT p.*, u.email as auth_email, u.raw_user_meta_data FROM users u LEFT JOIN profiles p ON u.id = p.id WHERE u.id = ? OR p.id = ? LIMIT 1");
+        $stmt->execute([$userId, $userId]);
+        $row = $stmt->fetch();
 
-        if (!$profile) {
-            return null;
+        if (!$row) {
+            // Master admin hardcoded fallback
+            if ($userId === '00000000-0000-0000-0000-000000000099') {
+                self::$currentUser = [
+                    'id'       => $userId,
+                    'email'    => 'admin@kaiwadojo.com',
+                    'username' => 'kaiwahiroshima',
+                    'role'     => 'admin',
+                    'status'   => 'approved',
+                    'profile'  => ['id' => $userId, 'role' => 'admin', 'status' => 'approved', 'username' => 'kaiwahiroshima']
+                ];
+                return self::$currentUser;
+            }
+
+            // Fallback from JWT payload directly if user was deleted or table desynced
+            $jwtRole = $payload['role'] ?? ($payload['user_metadata']['role'] ?? 'pelajar');
+            self::$currentUser = [
+                'id'       => $userId,
+                'email'    => $payload['email'] ?? '',
+                'username' => $payload['user_metadata']['username'] ?? 'User',
+                'role'     => $jwtRole,
+                'status'   => 'approved',
+                'profile'  => ['id' => $userId, 'role' => $jwtRole, 'status' => 'approved']
+            ];
+            return self::$currentUser;
         }
 
+        $meta = !empty($row['raw_user_meta_data']) ? json_decode($row['raw_user_meta_data'], true) : [];
+        $role = $row['role'] ?? $meta['role'] ?? ($userId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar');
+        $status = $row['status'] ?? $meta['status'] ?? 'approved';
+
         self::$currentUser = [
-            'id'       => $profile['id'],
-            'email'    => $profile['email'] ?? $profile['auth_email'],
-            'username' => $profile['username'],
-            'role'     => $profile['role'],
-            'status'   => $profile['status'],
-            'profile'  => $profile
+            'id'       => $row['id'] ?? $userId,
+            'email'    => $row['email'] ?? $row['auth_email'] ?? $payload['email'] ?? '',
+            'username' => $row['username'] ?? $meta['username'] ?? 'User',
+            'role'     => $role,
+            'status'   => $status,
+            'profile'  => $row
         ];
 
         return self::$currentUser;

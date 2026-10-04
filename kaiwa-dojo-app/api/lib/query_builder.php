@@ -76,6 +76,9 @@ class QueryBuilder {
 
     private static function prepareValueInput($v, string $type) {
         if ($v === null) return null;
+        if (is_bool($v)) {
+            return $v ? 1 : 0;
+        }
         switch ($type) {
             case 'bool':
                 return $v ? 1 : 0;
@@ -83,16 +86,19 @@ class QueryBuilder {
                 return (int)$v;
             case 'bigint':
             case 'decimal':
-                return $v;
+                return is_numeric($v) ? $v : 0;
             case 'json':
                 return is_string($v) ? $v : json_encode($v, JSON_UNESCAPED_UNICODE);
             case 'datetime':
                 if (is_string($v)) {
                     $ts = strtotime($v);
-                    return $ts ? gmdate('Y-m-d H:i:s.u', $ts) : $v;
+                    return $ts ? gmdate('Y-m-d H:i:s', $ts) : $v;
                 }
                 return $v;
             default:
+                if (is_array($v) || is_object($v)) {
+                    return json_encode($v, JSON_UNESCAPED_UNICODE);
+                }
                 return $v;
         }
     }
@@ -322,7 +328,7 @@ class QueryBuilder {
                         $cols[] = "`$k`";
                         $placeholders[] = "?";
                         $vals[] = self::prepareValueInput($v, $meta['columns'][$k]['type']);
-                        if (!in_array($k, $conflictCols)) {
+                        if (!in_array($k, $conflictCols) && !in_array($k, $meta['pk'] ?? [])) {
                             $updateAssignments[] = "`$k` = VALUES(`$k`)";
                         }
                     }
