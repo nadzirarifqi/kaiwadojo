@@ -8,8 +8,9 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy via LFTP
+    name: Build & Deploy (ZIP via FTP + ekstrak di server)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
@@ -41,7 +42,34 @@ jobs:
           cp -r api dist/api
           cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via LFTP ke Server
+      - name: Paketkan hasil build jadi 1 file ZIP + skrip ekstrak
+        run: |
+          # Folder video/uploads tidak ada di dist, jadi tidak akan tertimpa
+          (cd kaiwa-dojo-app/dist && zip -qr ../../deploy.zip .)
+          ls -lh deploy.zip
+
+          # Token acak sekali pakai (hanya dikenal workflow ini)
+          TOKEN=$(openssl rand -hex 24)
+          echo "::add-mask::$TOKEN"
+          echo "DEPLOY_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+          cat > deploy_extract.php <<'PHP'
+          <?php
+          header('Content-Type: text/plain');
+          if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(403); exit('forbidden'); }
+          if (!class_exists('ZipArchive')) { http_response_code(500); exit('ZipArchive tidak tersedia di PHP server'); }
+          $zip = new ZipArchive();
+          if ($zip->open(__DIR__ . '/deploy.zip') !== true) { http_response_code(500); exit('gagal membuka deploy.zip'); }
+          $n  = $zip->numFiles;
+          $ok = $zip->extractTo(__DIR__);
+          $zip->close();
+          @unlink(__DIR__ . '/deploy.zip');
+          @unlink(__FILE__);
+          echo $ok ? "OK: $n file diekstrak" : 'GAGAL mengekstrak';
+          PHP
+          sed -i "s/__TOKEN__/$TOKEN/" deploy_extract.php
+
+      - name: Upload ZIP via FTP (hanya 2 file)
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
@@ -51,19 +79,24 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -qq -y lftp
           lftp -c "
+            set cmd:fail-exit yes
             set ftp:ssl-allow yes
             set ssl:verify-certificate no
             set ftp:passive-mode on
-            set net:connection-limit 1
-            set net:max-retries 10
-            set net:timeout 30
-            set net:reconnect-interval-base 2
+            set net:max-retries 3
+            set net:timeout 25
+            set net:reconnect-interval-base 3
             open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT $FTP_HOST
-            mirror --reverse \
-                   --verbose \
-                   --exclude-glob uploads/ \
-                   --exclude-glob kaiwa-1-courses/ \
-                   --exclude-glob kaiwa-2-courses/ \
-                   ./kaiwa-dojo-app/dist/ $FTP_DIR
+            cd \"$FTP_DIR\"
+            put deploy.zip
+            put deploy_extract.php
             bye
           "
+
+      - name: Ekstrak ZIP di server
+        env:
+          SITE_URL: ${{ secrets.SITE_URL || 'https://kaiwadojo.inaconnext.it.com' }}
+        run: |
+          curl -fsS --retry 3 --retry-delay 5 --max-time 180 \
+            "$SITE_URL/deploy_extract.php?t=$DEPLOY_TOKEN"
+          echo
