@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy via SFTP
+    name: Build & Deploy via LFTP
     runs-on: ubuntu-latest
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
@@ -41,13 +41,30 @@ jobs:
           cp -r api dist/api
           cp public/.htaccess dist/.htaccess || true
 
-      - name: Deploy via SFTP ke Server
-        uses: wlixcc/sftp-action@v3.0
-        with:
-          host: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
-          user: ${{ secrets.FTP_USERNAME }}
-          pass: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT || 22 }}
-          local_path: './kaiwa-dojo-app/dist/*'
-          remote_path: ${{ secrets.FTP_SERVER_DIR || './' }}
-          sftpArgs: '-o ConnectTimeout=60'
+      - name: Deploy via LFTP ke Server
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER || '36.50.114.44' }}
+          FTP_PORT: ${{ secrets.FTP_PORT || 21 }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR || './' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -qq -y lftp
+          lftp -c "
+            set ftp:ssl-allow yes
+            set ssl:verify-certificate no
+            set ftp:passive-mode on
+            set net:connection-limit 1
+            set net:max-retries 10
+            set net:timeout 30
+            set net:reconnect-interval-base 2
+            open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT $FTP_HOST
+            mirror --reverse \
+                   --delete=false \
+                   --verbose \
+                   --exclude-glob uploads/ \
+                   --exclude-glob kaiwa-1-courses/ \
+                   --exclude-glob kaiwa-2-courses/ \
+                   ./kaiwa-dojo-app/dist/ $FTP_DIR
+            bye
+          "
