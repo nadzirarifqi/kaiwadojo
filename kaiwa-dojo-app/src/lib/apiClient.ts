@@ -89,7 +89,9 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
   }
 
   select(columns: string = '*', options?: { count?: 'exact' | 'planned' | 'estimated'; head?: boolean }) {
-    this.payload.action = 'select'
+    if (!this.payload.action || this.payload.action === 'select') {
+      this.payload.action = 'select'
+    }
     this.payload.columns = columns
     if (options?.count) this.payload.count = options.count
     if (options?.head) this.payload.head = options.head

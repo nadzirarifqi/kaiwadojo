@@ -117,18 +117,18 @@ class QueryBuilder {
             case 'insert':
                 $rows = isset($payload['rows']) ? $payload['rows'] : (isset($payload['row']) ? [$payload['row']] : []);
                 if (empty($rows)) return ['data' => [], 'error' => null];
-                return self::handleInsert($db, $table, $meta, $rows, $user);
+                return self::handleInsert($db, $table, $meta, $rows, $user, $payload);
 
             case 'update':
                 $updates = $payload['updates'] ?? [];
-                $filters = $payload['filters'] ?? [];
                 Policies::enforceUpdate($table, $updates, $user);
-                return self::handleUpdate($db, $table, $meta, $updates, $filters);
+                $payload['updates'] = $updates;
+                return self::handleUpdate($db, $table, $meta, $payload);
 
             case 'upsert':
                 $rows = isset($payload['rows']) ? $payload['rows'] : (isset($payload['row']) ? [$payload['row']] : []);
                 $onConflict = $payload['onConflict'] ?? ($meta['pk'][0] ?? 'id');
-                return self::handleUpsert($db, $table, $meta, $rows, $onConflict, $user);
+                return self::handleUpsert($db, $table, $meta, $rows, $onConflict, $user, $payload);
 
             case 'delete':
                 Policies::enforceDelete($table, $user);
@@ -224,7 +224,7 @@ class QueryBuilder {
         return ['data' => $formatted, 'count' => $totalCount, 'error' => null];
     }
 
-    private static function handleInsert(PDO $db, string $table, array $meta, array $rows, ?array $user): array {
+    private static function handleInsert(PDO $db, string $table, array $meta, array $rows, ?array $user, array $payload = []): array {
         $insertedRows = [];
         $db->beginTransaction();
         try {
@@ -269,10 +269,19 @@ class QueryBuilder {
             throw $e;
         }
 
+        if (!empty($payload['single'])) {
+            return ['data' => $insertedRows[0] ?? null, 'error' => null];
+        }
+        if (!empty($payload['maybeSingle'])) {
+            return ['data' => $insertedRows[0] ?? null, 'error' => null];
+        }
+
         return ['data' => $insertedRows, 'error' => null];
     }
 
-    private static function handleUpdate(PDO $db, string $table, array $meta, array $updates, array $filters): array {
+    private static function handleUpdate(PDO $db, string $table, array $meta, array $payload): array {
+        $updates = $payload['updates'] ?? [];
+        $filters = $payload['filters'] ?? [];
         if (empty($updates)) {
             return ['data' => [], 'error' => null];
         }
@@ -300,10 +309,28 @@ class QueryBuilder {
 
         self::logChange($table, 'UPDATE', $updates);
 
-        return ['data' => $updates, 'error' => null];
+        // Ambil data yang ter-update jika diminta select() atau single()
+        $selectWhere = [];
+        $selectParams = [];
+        self::buildWhere($meta, $filters, $selectWhere, $selectParams);
+        $selectWhereSql = $selectWhere ? ' WHERE ' . implode(' AND ', $selectWhere) : '';
+
+        $stmtSelect = $db->prepare("SELECT * FROM `$table`" . $selectWhereSql);
+        $stmtSelect->execute($selectParams);
+        $rows = $stmtSelect->fetchAll();
+        $formatted = array_map(fn($r) => self::formatRowOutput($r, $meta), $rows);
+
+        if (!empty($payload['single'])) {
+            return ['data' => $formatted[0] ?? null, 'error' => null];
+        }
+        if (!empty($payload['maybeSingle'])) {
+            return ['data' => $formatted[0] ?? null, 'error' => null];
+        }
+
+        return ['data' => $formatted, 'error' => null];
     }
 
-    private static function handleUpsert(PDO $db, string $table, array $meta, array $rows, string $onConflict, ?array $user): array {
+    private static function handleUpsert(PDO $db, string $table, array $meta, array $rows, string $onConflict, ?array $user, array $payload = []): array {
         $conflictCols = array_map('trim', explode(',', $onConflict));
         $upsertedRows = [];
 
@@ -353,6 +380,13 @@ class QueryBuilder {
         } catch (Throwable $e) {
             $db->rollBack();
             throw $e;
+        }
+
+        if (!empty($payload['single'])) {
+            return ['data' => $upsertedRows[0] ?? null, 'error' => null];
+        }
+        if (!empty($payload['maybeSingle'])) {
+            return ['data' => $upsertedRows[0] ?? null, 'error' => null];
         }
 
         return ['data' => $upsertedRows, 'error' => null];

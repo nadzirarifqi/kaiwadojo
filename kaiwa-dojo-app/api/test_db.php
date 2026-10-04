@@ -81,9 +81,55 @@ try {
     // 4. Test Operasi UPDATE / INSERT (Write Test)
     try {
         $pdo->query("INSERT INTO change_log (table_name, event, new_row, created_at) VALUES ('__diag__', 'INSERT', '{\"test\":1}', CURRENT_TIMESTAMP(3))");
-        $diag['write_test']['change_log_insert'] = 'SUCCESS';
+        $diag['write_test']['direct_sql_insert'] = 'SUCCESS';
     } catch (Exception $e) {
-        $diag['write_test']['change_log_insert'] = 'FAILED: ' . $e->getMessage();
+        $diag['write_test']['direct_sql_insert'] = 'FAILED: ' . $e->getMessage();
+    }
+
+    require_once __DIR__ . '/lib/query_builder.php';
+    require_once __DIR__ . '/lib/policies.php';
+
+    // Test QueryBuilder UPDATE
+    $mockAdmin = [
+        'id' => '00000000-0000-0000-0000-000000000099',
+        'role' => 'admin',
+        'status' => 'approved',
+        'username' => 'kaiwahiroshima'
+    ];
+    try {
+        $res = QueryBuilder::execute([
+            'table' => 'profiles',
+            'action' => 'update',
+            'updates' => ['updated_at' => date('Y-m-d H:i:s')],
+            'filters' => [['column' => 'id', 'op' => 'eq', 'value' => '00000000-0000-0000-0000-000000000099']]
+        ], $mockAdmin);
+        $diag['write_test']['query_builder_update_profiles'] = 'SUCCESS';
+    } catch (Throwable $e) {
+        $diag['write_test']['query_builder_update_profiles'] = 'FAILED: ' . $e->getMessage();
+    }
+
+    // Test QueryBuilder UPSERT
+    try {
+        $res = QueryBuilder::execute([
+            'table' => 'chapter_settings',
+            'action' => 'upsert',
+            'onConflict' => 'bab_number',
+            'row' => [
+                'bab_number' => 999,
+                'title' => '__Test Bab Diagnostik__',
+                'is_hidden' => true,
+                'has_video' => false,
+                'duration_s1' => '10',
+                'duration_s2' => '10',
+                'duration_s3' => '10',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]
+        ], $mockAdmin);
+        $diag['write_test']['query_builder_upsert_chapter'] = 'SUCCESS';
+        // Cleanup test bab
+        $pdo->query("DELETE FROM chapter_settings WHERE bab_number = 999");
+    } catch (Throwable $e) {
+        $diag['write_test']['query_builder_upsert_chapter'] = 'FAILED: ' . $e->getMessage();
     }
 
     // 5. Cek Schema.json
