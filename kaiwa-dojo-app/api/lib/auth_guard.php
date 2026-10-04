@@ -14,17 +14,40 @@ class AuthGuard {
         }
         self::$evaluated = true;
 
-        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_AUTHORIZATION'] ?? '';
+        if (!$authHeader && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $k => $v) {
+                    if (strcasecmp($k, 'Authorization') === 0 || strcasecmp($k, 'X-Authorization') === 0) {
+                        $authHeader = $v;
+                        break;
+                    }
+                }
+            }
+        }
         if (!$authHeader && function_exists('apache_request_headers')) {
             $headers = apache_request_headers();
-            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+            if (is_array($headers)) {
+                foreach ($headers as $k => $v) {
+                    if (strcasecmp($k, 'Authorization') === 0 || strcasecmp($k, 'X-Authorization') === 0) {
+                        $authHeader = $v;
+                        break;
+                    }
+                }
+            }
         }
 
         if (!preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-            return null;
+            // Fallback jika dikirim via query string token saat debugging
+            if (!empty($_GET['access_token'])) {
+                $token = $_GET['access_token'];
+            } else {
+                return null;
+            }
+        } else {
+            $token = $matches[1];
         }
-
-        $token = $matches[1];
         $payload = JWT::decode($token);
         if (!$payload || empty($payload['sub'])) {
             return null;

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import AdaptiveIcon from '../components/AdaptiveIcon'
 import {
   getChapterSettingsMap,
   saveChapterSetting,
@@ -1189,7 +1188,7 @@ export default function CourseEditor() {
                 {/* Video File Auto-Path Preview Info & Save Bab Button */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[0.72rem]">
                   <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                    <AdaptiveIcon src="/video.png" alt="Video Path" className="size-4 object-contain shrink-0" />
+                    <span className="text-sm">🎥</span>
                     <span>File Video di Hosting:</span>
                     <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
                       {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mov, S2.mov, S3.mov

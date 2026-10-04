@@ -5,6 +5,13 @@
 Options -MultiViews
 RewriteEngine On
 
+# Pass Authorization Header to FastCGI/PHP-FPM/LiteSpeed
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
 # Force HTTPS (Rumahweb + Cloudflare + cPanel Compatible)
 RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https

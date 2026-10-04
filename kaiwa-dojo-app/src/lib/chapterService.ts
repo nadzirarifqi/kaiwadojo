@@ -316,21 +316,21 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
 
     if (error) {
       if (error.message.includes('target_group') || error.code === '42703' || error.code === 'PGRST204') {
-        console.warn('Kolom target_group belum aktif di database Supabase. Harap jalankan migration 033 di Supabase Dashboard SQL Editor.')
+        console.warn('Kolom target_group belum aktif di database.')
         // Fallback without target_group column if column not yet in DB schema
         delete payload.target_group
         const fallbackRes = await supabase.from('chapter_settings').upsert(payload, { onConflict: 'bab_number' })
         if (fallbackRes.error) {
-          console.error('Supabase fallback upsert error:', fallbackRes.error.message)
-          throw new Error(`Gagal menyimpan ke database Supabase: ${fallbackRes.error.message}`)
+          console.error('Database fallback upsert error:', fallbackRes.error.message)
+          throw new Error(`Gagal menyimpan ke database: ${fallbackRes.error.message}`)
         }
       } else {
-        console.error('Supabase chapter_settings upsert error:', error.message)
-        throw new Error(`Gagal menyimpan ke database Supabase: ${error.message}`)
+        console.error('Database chapter_settings upsert error:', error.message)
+        throw new Error(`Gagal menyimpan ke database: ${error.message}`)
       }
     }
   } catch (err: any) {
-    console.error('Supabase saveChapterSetting error:', err)
+    console.error('Database saveChapterSetting error:', err)
     if (err?.message?.includes('database')) {
       throw err
     }

@@ -238,6 +238,7 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
       }
       if (currentSession?.access_token) {
         headers['Authorization'] = `Bearer ${currentSession.access_token}`
+        headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
       }
 
       const res = await fetch(`${API_BASE}/query.php`, {
@@ -400,6 +401,7 @@ export const supabase = {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
         if (currentSession?.access_token) {
           headers['Authorization'] = `Bearer ${currentSession.access_token}`
+          headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
         }
         await fetch(`${API_BASE}/auth.php?action=signout`, {
           method: 'POST',
@@ -422,6 +424,7 @@ export const supabase = {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
         if (currentSession?.access_token) {
           headers['Authorization'] = `Bearer ${currentSession.access_token}`
+          headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
         }
         const res = await fetch(`${API_BASE}/auth.php?action=update_user`, {
           method: 'POST',
@@ -459,6 +462,7 @@ export const supabase = {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (currentSession?.access_token) {
         headers['Authorization'] = `Bearer ${currentSession.access_token}`
+        headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
       }
       const res = await fetch(`${API_BASE}/rpc.php?fn=${encodeURIComponent(fn)}`, {
         method: 'POST',
