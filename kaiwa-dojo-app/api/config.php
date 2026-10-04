@@ -1,6 +1,26 @@
 <?php
 // api/config.php - Konfigurasi Database & Keamanan Kaiwa Dojo
 
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+// Global Exception Handler agar selalu merespons format JSON jika terjadi crash
+set_exception_handler(function(Throwable $e) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+    }
+    echo json_encode([
+        'data' => null,
+        'error' => [
+            'message' => $e->getMessage(),
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine()
+        ]
+    ]);
+    exit;
+});
+
 // Jika ada config lokal/server khusus di luar git, utamakan itu
 if (file_exists(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';

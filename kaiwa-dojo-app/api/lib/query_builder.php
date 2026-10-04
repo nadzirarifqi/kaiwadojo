@@ -33,7 +33,7 @@ class QueryBuilder {
                 $newRow !== null ? json_encode($newRow, JSON_UNESCAPED_UNICODE) : null,
                 $oldRow !== null ? json_encode($oldRow, JSON_UNESCAPED_UNICODE) : null
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // Non-blocking logger
         }
     }
@@ -258,7 +258,7 @@ class QueryBuilder {
                 $insertedRows[] = self::formatRowOutput($row, $meta);
             }
             $db->commit();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $db->rollBack();
             throw $e;
         }
@@ -344,7 +344,7 @@ class QueryBuilder {
                 $upsertedRows[] = self::formatRowOutput($row, $meta);
             }
             $db->commit();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $db->rollBack();
             throw $e;
         }
@@ -465,6 +465,6 @@ class QueryBuilder {
             } else {
                 $db->prepare("UPDATE profiles SET streak_days = 1, last_active_at = CURRENT_TIMESTAMP(3) WHERE id = ?")->execute([$studentId]);
             }
-        } catch (Exception $e) {}
+        } catch (Throwable $e) {}
     }
 }

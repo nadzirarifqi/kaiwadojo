@@ -299,8 +299,8 @@ export async function saveDailyMission(
   }, { onConflict: 'student_id,date' })
 
   if (error) {
-    console.error('Supabase saveDailyMission error:', error)
-    throw new Error(`Gagal menyimpan ke database: ${error.message || 'Error pada Supabase DB'}`)
+    console.error('Database saveDailyMission error:', error)
+    throw new Error(`Gagal menyimpan ke database: ${error.message || 'Error pada database'}`)
   }
 
   // 2. Sync LocalStorage cache after successful DB write

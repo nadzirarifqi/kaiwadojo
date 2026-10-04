@@ -24,7 +24,7 @@ $user = AuthGuard::getUser();
 try {
     $result = QueryBuilder::execute($payload, $user);
     echo json_encode($result);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(400);
     echo json_encode(['data' => null, 'error' => ['message' => $e->getMessage()]]);
 }

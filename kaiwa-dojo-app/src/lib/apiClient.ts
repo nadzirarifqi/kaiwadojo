@@ -247,7 +247,14 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
         body: JSON.stringify(this.payload),
       })
 
-      const json = await res.json()
+      const rawText = await res.text()
+      let json: any = null
+      try {
+        json = JSON.parse(rawText)
+      } catch {
+        return { data: null, error: { message: `Server HTTP ${res.status}: ${rawText.slice(0, 300) || 'Respons kosong dari server'}` } }
+      }
+
       if (!res.ok && !json.error) {
         return { data: null, error: { message: `HTTP Error ${res.status}` } }
       }
