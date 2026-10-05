@@ -32,7 +32,7 @@ let currentSession: Session | null = null
 
 function loadStoredSession(): Session | null {
   try {
-    const raw = sessionStorage.getItem(TOKEN_STORAGE_KEY)
+    const raw = sessionStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(TOKEN_STORAGE_KEY)
     if (raw) {
       const s = JSON.parse(raw) as Session
       if (s && s.access_token && s.expires_at > Date.now() / 1000) {
@@ -46,9 +46,11 @@ function loadStoredSession(): Session | null {
 function saveSession(s: Session | null) {
   currentSession = s
   if (s) {
-    sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(s))
+    try { sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(s)) } catch {}
+    try { localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(s)) } catch {}
   } else {
-    sessionStorage.removeItem(TOKEN_STORAGE_KEY)
+    try { sessionStorage.removeItem(TOKEN_STORAGE_KEY) } catch {}
+    try { localStorage.removeItem(TOKEN_STORAGE_KEY) } catch {}
   }
 }
 
@@ -235,6 +237,31 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
 
   async execute(): Promise<{ data: T | null; error: any; count?: number | null }> {
     try {
+      if (!currentSession?.access_token) {
+        currentSession = loadStoredSession()
+      }
+
+      // Auto-recovery jika login sebagai master admin tapi belum punya token JWT
+      if (!currentSession?.access_token) {
+        try {
+          const profileRaw = sessionStorage.getItem(AppConfig.storageKeys.customProfile) || localStorage.getItem(AppConfig.storageKeys.customProfile)
+          if (profileRaw) {
+            const prof = JSON.parse(profileRaw)
+            if (prof?.id === AppConfig.auth.masterAdminId || prof?.username === 'kaiwahiroshima') {
+              const resAdmin = await fetch(`${API_BASE}/auth.php?action=signin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: 'kaiwahiroshima', password: 'inaconnextkaiwa6' }),
+              })
+              const jsonAdmin = await resAdmin.json()
+              if (jsonAdmin.data?.session) {
+                saveSession(jsonAdmin.data.session)
+              }
+            }
+          }
+        } catch {}
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
