@@ -105,6 +105,11 @@ export default function LoginPage() {
     if (inputClean === 'kaiwahiroshima') {
       if (password === 'inaconnextkaiwa6') {
         const adminId = '00000000-0000-0000-0000-000000000099'
+        await supabase.auth.signInWithPassword({
+          email: 'kaiwahiroshima',
+          password: 'inaconnextkaiwa6',
+        })
+
         let adminProf = {
           id: adminId,
           full_name: 'Admin Hiroshima',
@@ -135,15 +140,6 @@ export default function LoginPage() {
               bio: dbAdmin.bio || adminProf.bio,
               avatar_url: dbAdmin.avatar_url || adminProf.avatar_url,
             }
-          } else {
-            await supabase.from('profiles').upsert({
-              id: adminId,
-              full_name: 'Admin Hiroshima',
-              username: 'kaiwahiroshima',
-              email: 'admin@kaiwadojo.com',
-              role: 'admin',
-              status: 'approved',
-            })
           }
         } catch (e) {
           console.warn('Admin upsert note:', e)
