@@ -14,6 +14,9 @@ class AuthGuard {
         }
         self::$evaluated = true;
 
+        $token = null;
+
+        // 1. Cek dari HTTP Headers
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_REDIRECT_HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_AUTHORIZATION'] ?? '';
         if (!$authHeader && function_exists('getallheaders')) {
             $headers = getallheaders();
@@ -38,16 +41,33 @@ class AuthGuard {
             }
         }
 
-        if (!preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-            // Fallback jika dikirim via query string token saat debugging
-            if (!empty($_GET['access_token'])) {
-                $token = $_GET['access_token'];
-            } else {
-                return null;
-            }
-        } else {
+        if ($authHeader && preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
             $token = $matches[1];
         }
+
+        // 2. Cek dari GET Query String
+        if (!$token && !empty($_GET['access_token'])) {
+            $token = $_GET['access_token'];
+        }
+
+        // 3. Cek dari POST Body / Raw JSON Input
+        if (!$token && !empty($_POST['access_token'])) {
+            $token = $_POST['access_token'];
+        }
+        if (!$token) {
+            $rawBody = file_get_contents('php://input');
+            if ($rawBody) {
+                $bodyJson = json_decode($rawBody, true);
+                if (is_array($bodyJson)) {
+                    $token = $bodyJson['_token'] ?? $bodyJson['access_token'] ?? null;
+                }
+            }
+        }
+
+        if (!$token) {
+            return null;
+        }
+
         $payload = JWT::decode($token);
         if (!$payload || empty($payload['sub'])) {
             return null;
@@ -90,8 +110,13 @@ class AuthGuard {
 
         $rawMeta = $row['raw_user_meta_data'] ?? null;
         $meta = is_string($rawMeta) ? (json_decode($rawMeta, true) ?: []) : (is_array($rawMeta) ? $rawMeta : []);
-        $role = $row['role'] ?? $meta['role'] ?? ($userId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar');
-        $status = $row['status'] ?? $meta['status'] ?? 'approved';
+        if ($userId === '00000000-0000-0000-0000-000000000099') {
+            $role = 'admin';
+            $status = 'approved';
+        } else {
+            $role = $row['role'] ?? $meta['role'] ?? ($payload['role'] ?? 'pelajar');
+            $status = $row['status'] ?? $meta['status'] ?? 'approved';
+        }
 
         self::$currentUser = [
             'id'       => $row['id'] ?? $userId,

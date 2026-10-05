@@ -265,15 +265,20 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
+      let queryUrl = `${API_BASE}/query.php`
+      const bodyPayload = { ...this.payload }
+
       if (currentSession?.access_token) {
         headers['Authorization'] = `Bearer ${currentSession.access_token}`
         headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
+        queryUrl += `?access_token=${encodeURIComponent(currentSession.access_token)}`
+        ;(bodyPayload as any)._token = currentSession.access_token
       }
 
-      const res = await fetch(`${API_BASE}/query.php`, {
+      const res = await fetch(queryUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify(this.payload),
+        body: JSON.stringify(bodyPayload),
       })
 
       const rawText = await res.text()

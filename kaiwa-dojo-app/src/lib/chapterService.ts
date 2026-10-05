@@ -337,6 +337,7 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
   }
 
   // 2. Save to LocalStorage cache
+  // 2. Save to LocalStorage cache & In-memory cache
   try {
     let map: Record<number, ChapterSetting> = {}
     const localStr = localStorage.getItem(SETTINGS_KEY)
@@ -345,8 +346,15 @@ export async function saveChapterSetting(setting: ChapterSetting): Promise<boole
     }
     map[setting.bab_number] = setting
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
+    if (_chapterCache?.data) {
+      _chapterCache.data[setting.bab_number] = { ..._chapterCache.data[setting.bab_number], ...setting }
+      _chapterCache.fetchedAt = Date.now()
+    } else {
+      invalidateChapterCache()
+    }
   } catch (e) {
     console.error('LocalStorage save error:', e)
+    invalidateChapterCache()
   }
 
   notifyChapterChanged(setting)
@@ -398,7 +406,7 @@ export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): 
     }
   }
 
-  // 2. Save to LocalStorage cache
+  // 2. Save to LocalStorage cache & In-memory cache
   try {
     let map: Record<number, ChapterSetting> = {}
     const localStr = localStorage.getItem(SETTINGS_KEY)
@@ -407,10 +415,19 @@ export async function saveBatchChapterSettings(settingsList: ChapterSetting[]): 
     }
     settingsList.forEach(s => {
       map[s.bab_number] = s
+      if (_chapterCache?.data) {
+        _chapterCache.data[s.bab_number] = { ..._chapterCache.data[s.bab_number], ...s }
+      }
     })
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(map))
+    if (_chapterCache) {
+      _chapterCache.fetchedAt = Date.now()
+    } else {
+      invalidateChapterCache()
+    }
   } catch (e) {
     console.error('LocalStorage batch save error:', e)
+    invalidateChapterCache()
   }
 
   notifyChapterChanged(settingsList)
