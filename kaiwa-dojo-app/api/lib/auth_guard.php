@@ -88,7 +88,8 @@ class AuthGuard {
             return self::$currentUser;
         }
 
-        $meta = !empty($row['raw_user_meta_data']) ? json_decode($row['raw_user_meta_data'], true) : [];
+        $rawMeta = $row['raw_user_meta_data'] ?? null;
+        $meta = is_string($rawMeta) ? (json_decode($rawMeta, true) ?: []) : (is_array($rawMeta) ? $rawMeta : []);
         $role = $row['role'] ?? $meta['role'] ?? ($userId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar');
         $status = $row['status'] ?? $meta['status'] ?? 'approved';
 

@@ -54,8 +54,8 @@ foreach ($rows as $r) {
         'id'         => $id,
         'table'      => $r['table_name'],
         'event'      => $r['event'],
-        'new'        => json_decode($r['new_row'] ?? '', true),
-        'old'        => json_decode($r['old_row'] ?? '', true),
+        'new'        => !empty($r['new_row']) && is_string($r['new_row']) ? json_decode($r['new_row'], true) : $r['new_row'],
+        'old'        => !empty($r['old_row']) && is_string($r['old_row']) ? json_decode($r['old_row'], true) : $r['old_row'],
         'created_at' => $r['created_at']
     ];
 }

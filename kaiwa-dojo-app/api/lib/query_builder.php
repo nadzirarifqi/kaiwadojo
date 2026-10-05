@@ -59,13 +59,21 @@ class QueryBuilder {
                     $out[$k] = is_numeric($v) ? (float)$v : $v;
                     break;
                 case 'json':
-                    $decoded = json_decode($v, true);
-                    $out[$k] = $decoded !== null ? $decoded : $v;
+                    if (is_string($v)) {
+                        $decoded = json_decode($v, true);
+                        $out[$k] = $decoded !== null ? $decoded : $v;
+                    } else {
+                        $out[$k] = $v;
+                    }
                     break;
                 case 'datetime':
                     // Ubah datetime database ke format ISO-8601 UTC
-                    $ts = strtotime($v . ' UTC');
-                    $out[$k] = $ts ? gmdate('Y-m-d\TH:i:s.000\Z', $ts) : $v;
+                    if (is_string($v)) {
+                        $ts = strtotime($v . ' UTC');
+                        $out[$k] = $ts ? gmdate('Y-m-d\TH:i:s.000\Z', $ts) : $v;
+                    } else {
+                        $out[$k] = $v;
+                    }
                     break;
                 default:
                     $out[$k] = $v;
