@@ -221,6 +221,36 @@ export function areDatesOverlapping(dates1: string[], dates2: string[]): boolean
   return dates1.some(d => dates2.includes(d))
 }
 
+/**
+ * Helper: Check if schedule date / time has already passed (expired).
+ * A schedule is considered past if its end_date (or start_date/date) is before today,
+ * or if today and its end_time has already elapsed.
+ */
+export function isSchedulePast(sch: ClassSchedule, now = new Date()): boolean {
+  const targetDateStr = (sch.end_date || sch.start_date || sch.date || '').slice(0, 10)
+  if (!targetDateStr) return false
+
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const todayStr = `${year}-${month}-${day}`
+
+  if (targetDateStr < todayStr) {
+    return true
+  }
+
+  // If today, check end_time (e.g. "11:00" or "11:00:00")
+  if (targetDateStr === todayStr && sch.end_time) {
+    const currentHourMin = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const endTimeHourMin = sch.end_time.slice(0, 5)
+    if (endTimeHourMin && endTimeHourMin < currentHourMin) {
+      return true
+    }
+  }
+
+  return false
+}
+
 // Helper: Get human readable week label (e.g. "Minggu ke-1 Agustus 2026")
 export function getWeekLabel(weekRangeIdOrDate: string, dateStr?: string): string {
   const monthNames = [
@@ -998,7 +1028,15 @@ export async function bookClass(
   userProfile?: { role?: string; group_name?: string | null; institution?: string | null } | null,
   groups?: KaiwaGroup[]
 ): Promise<{ success: boolean; message: string; reservation?: ClassReservation }> {
-  // 0. Restriction Check (if userProfile provided)
+  // 0. Past / Expired Date Check
+  if (isSchedulePast(schedule)) {
+    return {
+      success: false,
+      message: 'Jadwal kelas ini sudah lewat dari tanggal pelaksanaan dan tidak dapat didaftarkan lagi.',
+    }
+  }
+
+  // 0b. Restriction Check (if userProfile provided)
   if (userProfile && schedule.target_group && !isScheduleAccessibleForUser(schedule, userProfile, groups || [])) {
     return {
       success: false,

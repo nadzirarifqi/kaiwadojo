@@ -21,6 +21,7 @@ import {
   getScheduleDatesList,
   areDatesOverlapping,
   isScheduleAccessibleForUser,
+  isSchedulePast,
 } from '../lib/scheduleService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
 
@@ -131,6 +132,11 @@ export default function ClassReservationPage() {
   function checkLockStatus(sch: ClassSchedule): { isLocked: boolean; reason?: string } {
     if (getUserReservation(sch.id)) return { isLocked: false }
 
+    // -1. Expired / Past Date Check
+    if (isSchedulePast(sch)) {
+      return { isLocked: true, reason: 'Jadwal Sudah Lewat' }
+    }
+
     // 0. Group restriction check
     if (!isScheduleAccessibleForUser(sch, profile, groups)) {
       const grpList = parseTargetGroups(sch.target_group)
@@ -226,9 +232,15 @@ export default function ClassReservationPage() {
 
   // User's group determination (strictly from profile.group_name)
   const resolvedUserGroup = (profile?.group_name || '').trim()
+  const isPrivileged = profile?.role === 'admin' || profile?.role === 'pemateri'
 
   // Filter schedules that the current user has permission/access to see
-  const accessibleSchedules = schedules.filter(sch => isScheduleAccessibleForUser(sch, profile, groups))
+  // Hides past/expired schedules for regular students to prevent misclicks
+  const accessibleSchedules = schedules.filter(sch => {
+    if (!isScheduleAccessibleForUser(sch, profile, groups)) return false
+    if (!isPrivileged && isSchedulePast(sch)) return false
+    return true
+  })
 
   const availableWeeks = Array.from(new Set(accessibleSchedules.map(s => s.week_range_id))).sort()
   const availableMonths = Array.from(new Set(accessibleSchedules.map(s => s.month_range_id))).sort()
