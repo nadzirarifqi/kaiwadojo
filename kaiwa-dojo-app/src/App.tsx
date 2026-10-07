@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './contexts/LanguageContext'
 import Sidebar from './components/Sidebar'
@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
+import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
    Jika chunk gagal load (network error / stale hash setelah deploy baru di server),
@@ -110,7 +111,7 @@ function MobileTopbar({ onMenuClick }: { onMenuClick: () => void }) {
    • Mobile  → drawer slide-in/out
    • Desktop → shift konten + lebar sidebar (buka/tutup)
    ─────────────────────────────────────────────── */
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({ children }: { children?: React.ReactNode }) {
   // Default false = sidebar disembunyikan (hidden) secara default
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
@@ -146,7 +147,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
           ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-0'}
         `}
       >
-        {children}
+        <Suspense fallback={<LoadingScreen fullScreen={false} message="Memuat halaman..." />}>
+          {children || <Outlet />}
+        </Suspense>
       </div>
     </div>
   )
@@ -154,7 +157,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 /* ── Protected Route ────────────────────────────── */
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   const { session, profile, loading, signOut } = useAuth()
 
   if (loading) {
@@ -177,7 +180,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null  // signOut() performs window.location.replace('/') — no need to render Navigate
   }
 
-  return <>{children}</>
+  return <>{children || <Outlet />}</>
 }
 
 /* ── Floating Widgets (hidden for Admin) ────────── */
@@ -189,6 +192,10 @@ function FloatingWidgets() {
 
 /* ── Router ─────────────────────────────────────── */
 export function AppRoutes() {
+  useEffect(() => {
+    prefetchCommonRoutes()
+  }, [])
+
   return (
     <ErrorBoundary>
       <LanguageProvider>
@@ -203,24 +210,32 @@ export function AppRoutes() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/admin"    element={<AdminLoginPage />} />
 
-                  {/* Protected routes */}
-                  <Route path="/dashboard"       element={<ProtectedRoute><AppShell><DashboardRoute /></AppShell></ProtectedRoute>} />
-                  <Route path="/my-courses"      element={<ProtectedRoute><AppShell><MyCourses /></AppShell></ProtectedRoute>} />
-                  <Route path="/learning-plan"   element={<ProtectedRoute><AppShell><LearningPlanPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kotoba"          element={<ProtectedRoute><AppShell><SetoranKotobaPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/reservasi-kelas" element={<ProtectedRoute><AppShell><ClassReservationPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-jadwal"   element={<ProtectedRoute><AppShell><InstructorScheduleManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-kursus"   element={<ProtectedRoute><AppShell><CourseEditorPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-pemateri" element={<ProtectedRoute><AppShell><InstructorManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-pelajar"  element={<ProtectedRoute><AppShell><StudentManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-grup"       element={<ProtectedRoute><AppShell><GroupManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-pengumuman" element={<ProtectedRoute><AppShell><AnnouncementManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/kelola-masukan"  element={<ProtectedRoute><AppShell><FeedbackManagerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/tracker-kotoba"  element={<ProtectedRoute><AppShell><KotobaTrackerPage /></AppShell></ProtectedRoute>} />
-                  <Route path="/profile"         element={<ProtectedRoute><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
-                  <Route path="/settings"        element={<ProtectedRoute><AppShell><SettingsPage /></AppShell></ProtectedRoute>} />
-                  <Route path="*"                element={<Navigate to="/" replace />} />
+                  {/* Protected routes wrapped in persistent AppShell layout */}
+                  <Route
+                    element={
+                      <ProtectedRoute>
+                        <AppShell />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route path="/dashboard"       element={<DashboardRoute />} />
+                    <Route path="/my-courses"      element={<MyCourses />} />
+                    <Route path="/learning-plan"   element={<LearningPlanPage />} />
+                    <Route path="/kotoba"          element={<SetoranKotobaPage />} />
+                    <Route path="/reservasi-kelas" element={<ClassReservationPage />} />
+                    <Route path="/kelola-jadwal"   element={<InstructorScheduleManagerPage />} />
+                    <Route path="/kelola-kursus"   element={<CourseEditorPage />} />
+                    <Route path="/kelola-pemateri" element={<InstructorManagerPage />} />
+                    <Route path="/kelola-pelajar"  element={<StudentManagerPage />} />
+                    <Route path="/kelola-grup"       element={<GroupManagerPage />} />
+                    <Route path="/kelola-pengumuman" element={<AnnouncementManagerPage />} />
+                    <Route path="/kelola-masukan"  element={<FeedbackManagerPage />} />
+                    <Route path="/tracker-kotoba"  element={<KotobaTrackerPage />} />
+                    <Route path="/profile"         element={<ProfilePage />} />
+                    <Route path="/settings"        element={<SettingsPage />} />
+                  </Route>
 
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
             </PageTransition>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { prefetchRoute } from '../utils/routePrefetch'
 
 interface SidebarProps {
   isOpen: boolean
@@ -322,6 +323,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               key={item.to}
               to={item.to}
               onClick={onClose}
+              onMouseEnter={() => prefetchRoute(item.to)}
+              onTouchStart={() => prefetchRoute(item.to)}
               className={({ isActive }) => `${navBase} ${isActive ? navActive : navInactive}`}
             >
               {item.icon}
@@ -367,6 +370,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                 {/* 1. Lihat Profil */}
                 <button
                   type="button"
+                  onMouseEnter={() => prefetchRoute('/profile')}
+                  onTouchStart={() => prefetchRoute('/profile')}
                   onClick={() => {
                     setUserMenuOpen(false)
                     navigate('/profile')
@@ -385,6 +390,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                 {/* 2. Pengaturan */}
                 <button
                   type="button"
+                  onMouseEnter={() => prefetchRoute('/settings')}
+                  onTouchStart={() => prefetchRoute('/settings')}
                   onClick={() => {
                     setUserMenuOpen(false)
                     navigate('/settings')
