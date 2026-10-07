@@ -588,18 +588,16 @@ export default function RegisterPage() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="pointer-events-auto inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl shadow-md hover:border-primary/40 transition-all cursor-pointer touch-manipulation"
+          title="Kembali"
+          className="pointer-events-auto size-9 sm:size-10 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-black text-sm shadow-md hover:border-primary/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
         >
-          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span>Landing Page</span>
+          &lt;
         </button>
 
         <button
           type="button"
           onClick={toggleTheme}
-          title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+          title={isDark ? 'Mode Terang' : 'Mode Gelap'}
           className="pointer-events-auto size-9 sm:size-10 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95"
         >
           {isDark ? (
@@ -834,7 +832,7 @@ export default function RegisterPage() {
                     onClick={handleNextStep}
                     className="group w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
                   >
-                    <span>Lanjut ke Domisili</span>
+                    <span>Lanjut</span>
                     <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
                       &gt;
                     </span>
@@ -926,9 +924,11 @@ export default function RegisterPage() {
                       setStepError(null)
                       setCurrentStep(1)
                     }}
-                    className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
+                    className="group w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
                   >
-                    <span>&larr;</span>
+                    <span className="size-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.65rem] font-black group-hover:-translate-x-0.5 transition-transform">
+                      &lt;
+                    </span>
                     <span>Kembali</span>
                   </button>
                   <button
@@ -936,7 +936,7 @@ export default function RegisterPage() {
                     onClick={handleNextStep}
                     className="group w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
                   >
-                    <span>Lanjut ke Keamanan</span>
+                    <span>Lanjut</span>
                     <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
                       &gt;
                     </span>
@@ -1075,9 +1075,11 @@ export default function RegisterPage() {
                       setStepError(null)
                       setCurrentStep(2)
                     }}
-                    className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
+                    className="group w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
                   >
-                    <span>&larr;</span>
+                    <span className="size-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.65rem] font-black group-hover:-translate-x-0.5 transition-transform">
+                      &lt;
+                    </span>
                     <span>Kembali</span>
                   </button>
                   <button
@@ -1086,10 +1088,7 @@ export default function RegisterPage() {
                     disabled={loading}
                     className="group w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-[0.99] disabled:opacity-60"
                   >
-                    <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
-                    </svg>
-                    <span>{loading ? 'Memproses...' : 'Kirim OTP WA'}</span>
+                    <span>{loading ? 'Memproses...' : 'Kirim OTP'}</span>
                     <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
                       &gt;
                     </span>

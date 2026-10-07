@@ -393,22 +393,76 @@ export default function LoginPage() {
     }
   }
 
+  // Theme State
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+
+  useEffect(() => {
+    const handleStorage = () => {
+      if (typeof document !== 'undefined') {
+        setIsDark(document.documentElement.classList.contains('dark'))
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  const toggleTheme = () => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.remove('dark')
+      localStorage.setItem('kaiwa_theme', 'light')
+      setIsDark(false)
+    } else {
+      root.classList.add('dark')
+      localStorage.setItem('kaiwa_theme', 'dark')
+      setIsDark(true)
+    }
+    window.dispatchEvent(new Event('storage'))
+  }
+
   return (
     <div
       className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 py-8 transition-colors relative"
       style={{
-        backgroundImage:
-          "linear-gradient(to bottom, rgba(15,23,42,0.75), rgba(15,23,42,0.88)), url('/japan-background(5).jpg')",
+        backgroundImage: isDark
+          ? "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.95)), url('/japan-background(5).jpg')"
+          : "linear-gradient(to bottom, rgba(255,255,255,0.88), rgba(241,245,249,0.96)), url('/japan-background(5).jpg')",
       }}
     >
 
-      {/* Floating Back to Landing Page Button */}
-      <button
-        onClick={() => navigate('/')}
-        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[40px]"
-      >
-        <span>← Kembali ke Landing Page</span>
-      </button>
+      {/* Floating Top Navigation: Back & Theme Toggle */}
+      <div className="fixed top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 z-50 flex items-center justify-between pointer-events-none">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          title="Kembali"
+          className="pointer-events-auto size-9 sm:size-10 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-black text-sm shadow-md hover:border-primary/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
+        >
+          &lt;
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+          className="pointer-events-auto size-9 sm:size-10 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95"
+        >
+          {isDark ? (
+            <svg className="size-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+            <svg className="size-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
