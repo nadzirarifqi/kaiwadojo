@@ -461,18 +461,20 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 py-8 transition-colors relative"
+      className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-3 sm:p-6 md:p-8 py-8 sm:py-12 transition-colors relative"
       style={{
         backgroundImage:
-          "linear-gradient(to bottom, rgba(15,23,42,0.75), rgba(15,23,42,0.88)), url('/japan-background(5).jpg')",
+          "linear-gradient(to bottom, rgba(15,23,42,0.8), rgba(15,23,42,0.92)), url('/japan-background(5).jpg')",
       }}
     >
       {/* Floating Back to Landing Page Button */}
       <button
+        type="button"
         onClick={() => navigate('/')}
-        className="fixed top-4 left-4 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[40px]"
+        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs sm:text-xs rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[38px]"
       >
-        <span>← Kembali ke Landing Page</span>
+        <span>←</span>
+        <span className="hidden xs:inline sm:inline">Landing Page</span>
       </button>
 
       {/* Background decoration */}
@@ -481,311 +483,370 @@ export default function RegisterPage() {
         <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-primary/10 dark:bg-primary/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="w-full max-w-md animate-scale-up relative z-10">
-        {/* Header Logo */}
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="size-16 bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 overflow-hidden">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-11 object-contain" />
+      <div className="w-full max-w-3xl animate-scale-up relative z-10 my-auto">
+        {/* Header Logo & Title */}
+        <div className="flex flex-col items-center mb-5 sm:mb-7 text-center">
+          <div className="size-14 sm:size-16 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 overflow-hidden">
+            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-10 sm:size-11 object-contain" />
           </div>
-          <h1 className="text-2xl font-black text-primary dark:text-red-400 tracking-tight">KaiwaDoJo</h1>
-          <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">Platform Belajar Bahasa Jepang</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 text-primary dark:text-red-400 text-[0.7rem] font-black uppercase tracking-wider mb-1.5">
+            <span>🌸</span>
+            <span>Registrasi Siswa</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Buat Akun KaiwaDoJo
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-300 dark:text-slate-400 mt-1 max-w-md font-medium">
+            Lengkapi data di bawah ini untuk memulai belajar bahasa Jepang bersama komunitas kami.
+          </p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8">
-          <div className="mb-6 text-left">
-            <h2 className="text-xl font-black text-slate-800 dark:text-white">Buat Akun Baru</h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Daftar sekarang dan verifikasi OTP untuk mendaftar akun KaiwaDojo.
-            </p>
-          </div>
-
-          <form onSubmit={handleStartRegistration} className="flex flex-col gap-4">
-            {/* Nama Lengkap */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-fullname" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Nama Lengkap
-              </label>
-              <input
-                id="reg-fullname"
-                type="text"
-                autoComplete="name"
-                autoCapitalize="words"
-                autoCorrect="off"
-                enterKeyHint="next"
-                placeholder="Budi Santoso"
-                required
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-              />
-            </div>
-
-            {/* Username */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-username" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Username
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold select-none">@</span>
-                <input
-                  id="reg-username"
-                  type="text"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  enterKeyHint="next"
-                  placeholder="budisantoso"
-                  required
-                  value={username}
-                  onChange={e => {
-                    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
-                    if (usernameError) setUsernameError(null)
-                  }}
-                  onBlur={handleCheckUsernameOnBlur}
-                  className={`w-full pl-9 pr-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
-                    usernameError
-                      ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                      : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
-                  }`}
-                />
-              </div>
-              {usernameError && (
-                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                  ⚠️ {usernameError}
+        {/* Main Form Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-8 md:p-9 backdrop-blur-xl">
+          <form onSubmit={handleStartRegistration} className="flex flex-col gap-6">
+            
+            {/* ── SECTION 1: DATA PRIBADI & KONTAK ── */}
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="size-6 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 flex items-center justify-center text-xs font-black">
+                  1
                 </span>
-              )}
-            </div>
+                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+                  Informasi Pribadi & Kontak
+                </h2>
+              </div>
 
-            {/* No Telepon */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-phone" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Nomor WhatsApp
-              </label>
-              <input
-                id="reg-phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                enterKeyHint="next"
-                placeholder="081234567890"
-                required
-                value={phoneNumber}
-                onChange={e => {
-                  setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
-                  if (phoneError) setPhoneError(null)
-                }}
-                onBlur={handleCheckPhoneOnBlur}
-                className={`w-full px-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
-                  phoneError
-                    ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                    : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
-                }`}
-              />
-              {phoneError && (
-                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                  ⚠️ {phoneError}
-                </span>
-              )}
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Nama Lengkap */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-fullname" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Nama Lengkap</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-fullname"
+                    type="text"
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    enterKeyHint="next"
+                    placeholder="Contoh: Budi Santoso"
+                    required
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                  />
+                </div>
 
-            {/* Asal Lembaga / Perguruan Tinggi */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-institution" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Asal Lembaga / Perguruan Tinggi
-              </label>
-              <input
-                id="reg-institution"
-                type="text"
-                autoCapitalize="words"
-                autoCorrect="off"
-                enterKeyHint="next"
-                placeholder="Contoh: Nama Group | Institusi"
-                required
-                value={institution}
-                onChange={e => setInstitution(e.target.value)}
-                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-              />
-              <div className="text-[0.68rem] text-slate-400 dark:text-slate-500 leading-relaxed bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800">
-                <span className="font-bold text-slate-500 dark:text-slate-400">Format:</span>{' '}
-                <code className="text-primary dark:text-red-400 font-bold">Nama Group | Institusi</code>{' '}
-                <span className="text-slate-400">(atau cukup <code className="text-primary dark:text-red-400 font-bold">Nama Group</code> jika belum ada institusi)</span>
+                {/* Username */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-username" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Username</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold select-none">@</span>
+                    <input
+                      id="reg-username"
+                      type="text"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="next"
+                      placeholder="budisantoso"
+                      required
+                      value={username}
+                      onChange={e => {
+                        setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
+                        if (usernameError) setUsernameError(null)
+                      }}
+                      onBlur={handleCheckUsernameOnBlur}
+                      className={`w-full pl-8 pr-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
+                        usernameError
+                          ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
+                          : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
+                      }`}
+                    />
+                  </div>
+                  {usernameError && (
+                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                      ⚠️ {usernameError}
+                    </span>
+                  )}
+                </div>
+
+                {/* No Telepon WhatsApp */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-phone" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Nomor WhatsApp (Aktif)</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    enterKeyHint="next"
+                    placeholder="Contoh: 081234567890"
+                    required
+                    value={phoneNumber}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
+                      if (phoneError) setPhoneError(null)
+                    }}
+                    onBlur={handleCheckPhoneOnBlur}
+                    className={`w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
+                      phoneError
+                        ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
+                        : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
+                    }`}
+                  />
+                  {phoneError ? (
+                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                      ⚠️ {phoneError}
+                    </span>
+                  ) : (
+                    <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
+                      Kode OTP akan dikirim via WhatsApp ke nomor ini.
+                    </span>
+                  )}
+                </div>
+
+                {/* Asal Lembaga / Instansi */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-institution" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Asal Lembaga / Kampus</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-institution"
+                    type="text"
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    enterKeyHint="next"
+                    placeholder="Contoh: LPK Kaiwa / Universitas X"
+                    required
+                    value={institution}
+                    onChange={e => setInstitution(e.target.value)}
+                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                  />
+                  <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
+                    Format opsional: <code className="text-primary dark:text-red-400 font-bold">Nama Group | Institusi</code>
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Alamat Domisili Lengkap */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-domisili" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                <span>📍</span> Alamat Domisili
-              </label>
-              <input
-                id="reg-domisili"
-                type="text"
-                autoCapitalize="words"
-                autoCorrect="off"
-                enterKeyHint="next"
-                placeholder="Jl. / RT / RW / No. Rumah"
-                required
-                value={domisili}
-                onChange={e => setDomisili(e.target.value)}
-                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-              />
-            </div>
+            {/* ── SECTION 2: DOMISILI & WILAYAH ── */}
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="size-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black">
+                  2
+                </span>
+                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+                  Alamat Domisili & Wilayah
+                </h2>
+              </div>
 
-            {/* Grid Wilayah: Kelurahan, Kecamatan, Kabupaten/Kota */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Kelurahan / Desa */}
+              {/* Alamat Domisili Lengkap */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="reg-kelurahan" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Kelurahan / Desa
+                <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <span>Alamat Domisili (Jalan / RT / RW / No. Rumah)</span>
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
-                  id="reg-kelurahan"
+                  id="reg-domisili"
                   type="text"
                   autoCapitalize="words"
                   autoCorrect="off"
                   enterKeyHint="next"
-                  placeholder="Contoh: Sukamaju"
+                  placeholder="Contoh: Jl. Melati No. 12 RT 03 / RW 05"
                   required
-                  value={kelurahan}
-                  onChange={e => setKelurahan(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+                  value={domisili}
+                  onChange={e => setDomisili(e.target.value)}
+                  className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
                 />
               </div>
 
-              {/* Kecamatan */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="reg-kecamatan" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Kecamatan
-                </label>
-                <input
-                  id="reg-kecamatan"
-                  type="text"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  enterKeyHint="next"
-                  placeholder="Contoh: Cilodong"
-                  required
-                  value={kecamatan}
-                  onChange={e => setKecamatan(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-                />
-              </div>
+              {/* Grid 3 Kolom: Kelurahan, Kecamatan, Kabupaten */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Kelurahan / Desa */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Kelurahan / Desa</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-kelurahan"
+                    type="text"
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    enterKeyHint="next"
+                    placeholder="Contoh: Sukamaju"
+                    required
+                    value={kelurahan}
+                    onChange={e => setKelurahan(e.target.value)}
+                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                  />
+                </div>
 
-              {/* Kabupaten / Kota */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="reg-kabupaten" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Kabupaten / Kota
-                </label>
-                <input
-                  id="reg-kabupaten"
-                  type="text"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  enterKeyHint="next"
-                  placeholder="Contoh: Kota Depok"
-                  required
-                  value={kabupaten}
-                  onChange={e => setKabupaten(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-                />
+                {/* Kecamatan */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Kecamatan</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-kecamatan"
+                    type="text"
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    enterKeyHint="next"
+                    placeholder="Contoh: Cilodong"
+                    required
+                    value={kecamatan}
+                    onChange={e => setKecamatan(e.target.value)}
+                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                  />
+                </div>
+
+                {/* Kabupaten / Kota */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Kabupaten / Kota</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-kabupaten"
+                    type="text"
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    enterKeyHint="next"
+                    placeholder="Contoh: Kota Depok"
+                    required
+                    value={kabupaten}
+                    onChange={e => setKabupaten(e.target.value)}
+                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                  />
+                </div>
               </div>
             </div>
 
-
-            {/* Email */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-email" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Email
-              </label>
-              <input
-                id="reg-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="next"
-                placeholder="nama@email.com"
-                required
-                value={email}
-                onChange={e => {
-                  setEmail(e.target.value)
-                  if (emailError) setEmailError(null)
-                }}
-                onBlur={handleCheckEmailOnBlur}
-                className={`w-full px-4 py-3.5 sm:py-3 rounded-xl border text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation ${
-                  emailError
-                    ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                    : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10'
-                }`}
-              />
-              {emailError && (
-                <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                  ⚠️ {emailError}
+            {/* ── SECTION 3: KEAMANAN AKUN (EMAIL & PASSWORD) ── */}
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="size-6 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-black">
+                  3
                 </span>
-              )}
-            </div>
+                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+                  Kredensial & Keamanan Akun
+                </h2>
+              </div>
 
-            {/* Password */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="reg-password" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="reg-password"
-                  type={showPass ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  enterKeyHint="done"
-                  placeholder="Min. 8 karakter"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 sm:py-3 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(p => !p)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base border-none bg-transparent cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
-                  aria-label="Toggle password visibility"
-                >
-                  {showPass ? '🙈' : '👁️'}
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Email */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-email" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Email Aktif</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    placeholder="nama@email.com"
+                    required
+                    value={email}
+                    onChange={e => {
+                      setEmail(e.target.value)
+                      if (emailError) setEmailError(null)
+                    }}
+                    onBlur={handleCheckEmailOnBlur}
+                    className={`w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
+                      emailError
+                        ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
+                        : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
+                    }`}
+                  />
+                  {emailError && (
+                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
+                      ⚠️ {emailError}
+                    </span>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-password" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <span>Password</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="reg-password"
+                      type={showPass ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="done"
+                      placeholder="Min. 8 karakter"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full pl-3.5 pr-11 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(p => !p)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm border-none bg-transparent cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center touch-manipulation rounded-lg"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showPass ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                  <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
+                    Gunakan minimal 8 karakter dengan kombinasi huruf & angka.
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Error Message Alert */}
             {error && (
-              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 text-xs sm:text-sm text-red-600 dark:text-red-400 font-bold">
-                ⚠️ {error}
+              <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-xl p-3.5 text-xs sm:text-sm text-red-600 dark:text-red-400 font-bold flex items-start gap-2 animate-fade-in">
+                <span className="text-base shrink-0">⚠️</span>
+                <span className="leading-relaxed">{error}</span>
               </div>
             )}
 
             {/* Submit Button */}
-            <button
-              id="btn-register"
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none mt-2 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 min-h-[48px] touch-manipulation"
-            >
-              <span>💬</span>
-              <span>{loading ? 'Memproses...' : 'Kirim Kode OTP via WhatsApp →'}</span>
-            </button>
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                id="btn-register"
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-700 hover:via-emerald-600 hover:to-teal-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 active:scale-[0.99] flex items-center justify-center gap-2.5 min-h-[48px] touch-manipulation"
+              >
+                <span className="text-base">💬</span>
+                <span>{loading ? 'Memproses Pendaftaran...' : 'Kirim Kode OTP via WhatsApp →'}</span>
+              </button>
+            </div>
           </form>
 
           {/* Login Link */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center flex flex-col items-center gap-3">
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center flex flex-col items-center gap-2">
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Sudah punya akun?{' '}
-              <Link to="/login" className="text-primary dark:text-red-400 font-extrabold hover:underline">
-                Masuk di sini
+              Sudah memiliki akun?{' '}
+              <Link to="/login" className="text-primary dark:text-red-400 font-extrabold hover:underline ml-1">
+                Masuk ke Akun di sini →
               </Link>
             </p>
           </div>
