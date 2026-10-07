@@ -8,6 +8,38 @@ import { sanitizeInput, sanitizeUsername, sanitizePhoneNumber, isValidEmail, Sec
 export default function RegisterPage() {
   const navigate = useNavigate()
 
+  // Theme State
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+
+  useEffect(() => {
+    const handleStorage = () => {
+      if (typeof document !== 'undefined') {
+        setIsDark(document.documentElement.classList.contains('dark'))
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  const toggleTheme = () => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.remove('dark')
+      localStorage.setItem('kaiwa_theme', 'light')
+      setIsDark(false)
+    } else {
+      root.classList.add('dark')
+      localStorage.setItem('kaiwa_theme', 'dark')
+      setIsDark(true)
+    }
+    window.dispatchEvent(new Event('storage'))
+  }
+
   // Multi-step Wizard State
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
 
@@ -164,7 +196,7 @@ export default function RegisterPage() {
     if (!username.trim()) return
     const res = await performDuplicateCheck(username, '', '')
     if (res.isUserDupe) {
-      setUsernameError(`Username @${username.trim().toLowerCase()} sudah terdaftar. Silakan gunakan username lain.`)
+      setUsernameError(`Username @${username.trim().toLowerCase()} sudah terdaftar.`)
     }
   }
 
@@ -172,7 +204,7 @@ export default function RegisterPage() {
     if (!phoneNumber.trim()) return
     const res = await performDuplicateCheck('', '', phoneNumber)
     if (res.isPhoneDupe) {
-      setPhoneError(`Nomor WhatsApp ${phoneNumber.trim()} sudah terdaftar. Silakan gunakan nomor lain.`)
+      setPhoneError(`Nomor WhatsApp ${phoneNumber.trim()} sudah terdaftar.`)
     }
   }
 
@@ -180,7 +212,7 @@ export default function RegisterPage() {
     if (!email.trim()) return
     const res = await performDuplicateCheck('', email, '')
     if (res.isEmailDupe) {
-      setEmailError(`Email ${email.trim().toLowerCase()} sudah terdaftar. Silakan gunakan email lain.`)
+      setEmailError(`Email ${email.trim().toLowerCase()} sudah terdaftar.`)
     }
   }
 
@@ -481,30 +513,30 @@ export default function RegisterPage() {
   // ── Success & Pending Admin Verification Screen ─────────────────────
   if (done) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-10 max-w-md w-full text-center animate-scale-up">
-          <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-5">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-10 max-w-md w-full text-center animate-scale-up">
+          <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center mx-auto mb-5">
             <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-3">
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             <span>Verifikasi OTP Berhasil</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
             Menunggu Verifikasi Admin
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
-            Pendaftaran akun <span className="font-bold text-white">{fullName}</span> telah selesai. Akun Anda saat ini sedang dalam proses aktivasi oleh Admin KaiwaDojo.
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+            Pendaftaran akun <span className="font-bold text-slate-900 dark:text-white">{fullName}</span> telah selesai. Akun Anda saat ini sedang dalam proses aktivasi oleh Admin KaiwaDojo.
           </p>
 
-          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-300 mb-6 text-left leading-relaxed flex items-start gap-2.5">
-            <svg className="size-5 shrink-0 text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 mb-6 text-left leading-relaxed flex items-start gap-2.5">
+            <svg className="size-5 shrink-0 text-amber-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>Konfirmasikan pendaftaran Anda ke Admin via WhatsApp untuk mempercepat proses persetujuan akun.</span>
@@ -515,21 +547,26 @@ export default function RegisterPage() {
               href={getAdminWhatsAppUrl(username)}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 no-underline shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
+              className="group w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 no-underline shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
             >
               <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
               </svg>
               <span>Konfirmasi ke WhatsApp Admin</span>
+              <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                &gt;
+              </span>
             </a>
 
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
+              className="group w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 cursor-pointer"
             >
               <span>Ke Halaman Login</span>
-              <span>&rarr;</span>
+              <span className="size-4.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                &gt;
+              </span>
             </button>
           </div>
         </div>
@@ -541,38 +578,58 @@ export default function RegisterPage() {
     <div
       className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-3 sm:p-6 md:p-8 py-8 sm:py-12 transition-colors relative"
       style={{
-        backgroundImage:
-          "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.95)), url('/japan-background(5).jpg')",
+        backgroundImage: isDark
+          ? "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.95)), url('/japan-background(5).jpg')"
+          : "linear-gradient(to bottom, rgba(255,255,255,0.88), rgba(241,245,249,0.96)), url('/japan-background(5).jpg')",
       }}
     >
-      {/* Floating Back Navigation */}
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white font-bold text-xs rounded-xl shadow-lg hover:border-slate-700 transition-all cursor-pointer touch-manipulation"
-      >
-        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span>Landing Page</span>
-      </button>
+      {/* Floating Top Navigation: Back & Theme Toggle */}
+      <div className="fixed top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 z-50 flex items-center justify-between pointer-events-none">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="pointer-events-auto inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl shadow-md hover:border-primary/40 transition-all cursor-pointer touch-manipulation"
+        >
+          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Landing Page</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+          className="pointer-events-auto size-9 sm:size-10 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95"
+        >
+          {isDark ? (
+            <svg className="size-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+            <svg className="size-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       <div className="w-full max-w-2xl animate-scale-up relative z-10 my-auto">
         {/* Header Branding */}
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="size-14 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 flex items-center justify-center mb-3">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-10 object-contain" />
+          <div className="size-13 sm:size-14 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 p-2">
+            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-full object-contain" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Pendaftaran Akun
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-sm">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
             Bergabung bersama KaiwaDoJo untuk belajar bahasa Jepang interaktif.
           </p>
         </div>
 
         {/* Multi-Step Card */}
-        <div className="bg-slate-900/95 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-8 backdrop-blur-xl">
+        <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-8 backdrop-blur-xl transition-colors">
           
           {/* ── STEPPER BAR ── */}
           <div className="mb-6">
@@ -594,10 +651,10 @@ export default function RegisterPage() {
                     }}
                     className={`flex items-center gap-2 p-2 sm:p-2.5 rounded-xl border text-left transition-all ${
                       isActive
-                        ? 'bg-primary/10 border-primary/40 text-white shadow-sm'
+                        ? 'bg-primary/10 border-primary/40 text-primary dark:text-red-400 shadow-xs'
                         : isCompleted
-                        ? 'bg-emerald-950/20 border-emerald-500/30 text-slate-300 hover:bg-slate-800 cursor-pointer'
-                        : 'bg-slate-800/40 border-slate-800 text-slate-500 opacity-60 cursor-not-allowed'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60 cursor-not-allowed'
                     }`}
                   >
                     <div
@@ -605,8 +662,8 @@ export default function RegisterPage() {
                         isActive
                           ? 'bg-primary text-white'
                           : isCompleted
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-800 text-slate-400'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       {isCompleted ? (
@@ -618,7 +675,7 @@ export default function RegisterPage() {
                       )}
                     </div>
                     <div className="hidden xs:block sm:block min-w-0">
-                      <p className={`text-xs font-bold leading-tight truncate ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                      <p className={`text-xs font-bold leading-tight truncate ${isActive ? 'text-primary dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
                         {item.title}
                       </p>
                       <p className="text-[0.65rem] text-slate-400 truncate">{item.desc}</p>
@@ -629,7 +686,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Visual Progress Line */}
-            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div
                 className="bg-primary h-full transition-all duration-300 ease-out"
                 style={{
@@ -648,12 +705,12 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Nama Lengkap */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-fullname" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-fullname" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Nama Lengkap</span>
-                      <span className="text-[0.68rem] text-slate-400">Wajib</span>
+                      <span className="text-[0.68rem] text-red-500">*Wajib</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -666,19 +723,19 @@ export default function RegisterPage() {
                         placeholder="Contoh: Budi Santoso"
                         value={fullName}
                         onChange={e => setFullName(e.target.value)}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Username */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-username" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-username" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Username</span>
                       <span className="text-[0.68rem] text-slate-400">Tanpa spasi</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono font-bold">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono font-bold">
                         @
                       </div>
                       <input
@@ -694,15 +751,15 @@ export default function RegisterPage() {
                           if (usernameError) setUsernameError(null)
                         }}
                         onBlur={handleCheckUsernameOnBlur}
-                        className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                        className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 ${
                           usernameError
                             ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                            : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/10'
                         }`}
                       />
                     </div>
                     {usernameError && (
-                      <span className="text-[0.7rem] font-semibold text-red-400 flex items-center gap-1">
+                      <span className="text-[0.7rem] font-semibold text-red-500 dark:text-red-400">
                         {usernameError}
                       </span>
                     )}
@@ -710,12 +767,12 @@ export default function RegisterPage() {
 
                   {/* Nomor WhatsApp */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-phone" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-phone" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Nomor WhatsApp Aktif</span>
-                      <span className="text-[0.68rem] text-emerald-400">Untuk OTP</span>
+                      <span className="text-[0.68rem] text-emerald-600 dark:text-emerald-400">Untuk OTP</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
@@ -731,15 +788,15 @@ export default function RegisterPage() {
                           if (phoneError) setPhoneError(null)
                         }}
                         onBlur={handleCheckPhoneOnBlur}
-                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 ${
                           phoneError
                             ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                            : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/10'
                         }`}
                       />
                     </div>
                     {phoneError && (
-                      <span className="text-[0.7rem] font-semibold text-red-400">
+                      <span className="text-[0.7rem] font-semibold text-red-500 dark:text-red-400">
                         {phoneError}
                       </span>
                     )}
@@ -747,12 +804,12 @@ export default function RegisterPage() {
 
                   {/* Asal Lembaga */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-institution" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-institution" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Asal Lembaga / Kampus</span>
-                      <span className="text-[0.68rem] text-slate-400">Wajib</span>
+                      <span className="text-[0.68rem] text-red-500">*Wajib</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
@@ -764,7 +821,7 @@ export default function RegisterPage() {
                         placeholder="Contoh: LPK Kaiwa / Universitas X"
                         value={institution}
                         onChange={e => setInstitution(e.target.value)}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                       />
                     </div>
                   </div>
@@ -775,10 +832,12 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
+                    className="group w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
                   >
                     <span>Lanjut ke Domisili</span>
-                    <span>&rarr;</span>
+                    <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      &gt;
+                    </span>
                   </button>
                 </div>
               </div>
@@ -789,12 +848,12 @@ export default function RegisterPage() {
               <div className="space-y-4 animate-fade-in">
                 {/* Alamat Domisili */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                     <span>Alamat Domisili Lengkap</span>
                     <span className="text-[0.68rem] text-slate-400">Jalan / RT / RW / No. Rumah</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3.5 top-3 text-slate-500">
+                    <div className="absolute left-3.5 top-3 text-slate-400">
                       <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -806,7 +865,7 @@ export default function RegisterPage() {
                       placeholder="Contoh: Jl. Melati No. 12 RT 03 / RW 05"
                       value={domisili}
                       onChange={e => setDomisili(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all resize-none"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all resize-none"
                     />
                   </div>
                 </div>
@@ -815,7 +874,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   {/* Kelurahan */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-300">
+                    <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       Kelurahan / Desa
                     </label>
                     <input
@@ -824,13 +883,13 @@ export default function RegisterPage() {
                       placeholder="Contoh: Sukamaju"
                       value={kelurahan}
                       onChange={e => setKelurahan(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
 
                   {/* Kecamatan */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-300">
+                    <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       Kecamatan
                     </label>
                     <input
@@ -839,13 +898,13 @@ export default function RegisterPage() {
                       placeholder="Contoh: Cilodong"
                       value={kecamatan}
                       onChange={e => setKecamatan(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
 
                   {/* Kabupaten / Kota */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-300">
+                    <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       Kabupaten / Kota
                     </label>
                     <input
@@ -854,7 +913,7 @@ export default function RegisterPage() {
                       placeholder="Contoh: Depok"
                       value={kabupaten}
                       onChange={e => setKabupaten(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
                 </div>
@@ -867,7 +926,7 @@ export default function RegisterPage() {
                       setStepError(null)
                       setCurrentStep(1)
                     }}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                    className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                   >
                     <span>&larr;</span>
                     <span>Kembali</span>
@@ -875,10 +934,12 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
+                    className="group w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
                   >
                     <span>Lanjut ke Keamanan</span>
-                    <span>&rarr;</span>
+                    <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      &gt;
+                    </span>
                   </button>
                 </div>
               </div>
@@ -890,12 +951,12 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Email */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-email" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-email" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Email Aktif</span>
                       <span className="text-[0.68rem] text-slate-400">Untuk Login</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
@@ -913,15 +974,15 @@ export default function RegisterPage() {
                           if (emailError) setEmailError(null)
                         }}
                         onBlur={handleCheckEmailOnBlur}
-                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 ${
                           emailError
                             ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                            : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/10'
                         }`}
                       />
                     </div>
                     {emailError && (
-                      <span className="text-[0.7rem] font-semibold text-red-400">
+                      <span className="text-[0.7rem] font-semibold text-red-500 dark:text-red-400">
                         {emailError}
                       </span>
                     )}
@@ -929,12 +990,12 @@ export default function RegisterPage() {
 
                   {/* Password */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-password" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="reg-password" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                       <span>Password Akun</span>
                       <span className="text-[0.68rem] text-slate-400">Min. 8 Karakter</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -947,12 +1008,12 @@ export default function RegisterPage() {
                         placeholder="Minimal 8 karakter"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPass(p => !p)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white border-none bg-transparent cursor-pointer p-1"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white border-none bg-transparent cursor-pointer p-1"
                         aria-label="Toggle password"
                       >
                         {showPass ? (
@@ -972,17 +1033,17 @@ export default function RegisterPage() {
 
                 {/* Password Strength Indicator */}
                 {password && (
-                  <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 space-y-2">
+                  <div className="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Kekuatan Sandi:</span>
-                      <span className="font-bold text-white">{passStrength.label}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Kekuatan Sandi:</span>
+                      <span className="font-bold text-slate-800 dark:text-white">{passStrength.label}</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 h-1.5">
                       {[1, 2, 3, 4].map(idx => (
                         <div
                           key={idx}
                           className={`rounded-full transition-all duration-300 ${
-                            idx <= passStrength.score ? passStrength.color : 'bg-slate-800'
+                            idx <= passStrength.score ? passStrength.color : 'bg-slate-200 dark:bg-slate-800'
                           }`}
                         />
                       ))}
@@ -991,14 +1052,14 @@ export default function RegisterPage() {
                 )}
 
                 {/* Ringkasan Singkat Data */}
-                <div className="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 space-y-1.5">
+                <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Nama & Username:</span>
-                    <span className="font-bold text-white">{fullName} (@{username})</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{fullName} (@{username})</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">WhatsApp:</span>
-                    <span className="font-mono text-emerald-400 font-bold">{phoneNumber}</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{phoneNumber}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Domisili:</span>
@@ -1014,7 +1075,7 @@ export default function RegisterPage() {
                       setStepError(null)
                       setCurrentStep(2)
                     }}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                    className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                   >
                     <span>&larr;</span>
                     <span>Kembali</span>
@@ -1023,13 +1084,15 @@ export default function RegisterPage() {
                     id="btn-register"
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-[0.99] disabled:opacity-60"
+                    className="group w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-[0.99] disabled:opacity-60"
                   >
                     <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
                     </svg>
                     <span>{loading ? 'Memproses...' : 'Kirim OTP WA'}</span>
-                    <span>&rarr;</span>
+                    <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      &gt;
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1037,8 +1100,8 @@ export default function RegisterPage() {
 
             {/* Error Notification Alert */}
             {(stepError || error) && (
-              <div className="bg-red-950/60 border border-red-800 text-red-300 rounded-xl p-3 text-xs flex items-center gap-2 animate-fade-in">
-                <svg className="size-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 rounded-xl p-3 text-xs flex items-center gap-2 animate-fade-in">
+                <svg className="size-4 shrink-0 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span>{stepError || error}</span>
@@ -1047,50 +1110,51 @@ export default function RegisterPage() {
           </form>
 
           {/* Login Redirection */}
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
-            <p className="text-xs text-slate-400">
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Sudah memiliki akun?{' '}
-              <Link to="/login" className="text-primary hover:underline font-bold ml-1">
-                Masuk ke Akun &rarr;
+              <Link to="/login" className="inline-flex items-center gap-1 text-primary dark:text-red-400 hover:underline font-bold ml-1">
+                <span>Masuk ke Akun</span>
+                <span>&rarr;</span>
               </Link>
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-slate-500 mt-6">
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6">
           &copy; {new Date().getFullYear()} KaiwaDoJo. All rights reserved.
         </p>
       </div>
 
       {/* ── OTP MODAL (WHATSAPP) ── */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-800 flex flex-col">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col">
             
             {/* Modal Header */}
-            <div className="px-5 py-4 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between">
+            <div className="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 dark:from-emerald-950 dark:via-slate-900 dark:to-slate-900 border-b border-emerald-500/30 dark:border-slate-800 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="size-9 rounded-xl bg-white/20 dark:bg-emerald-500/10 border border-white/20 dark:border-emerald-500/20 text-white dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
                   </svg>
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-white">Verifikasi Kode OTP</h3>
-                  <p className="text-[0.68rem] text-slate-400">Dikirim via WhatsApp ke {phoneNumber}</p>
+                  <p className="text-[0.68rem] text-emerald-100 dark:text-slate-400">Dikirim via WhatsApp ke {phoneNumber}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowOtpModal(false)}
-                className="size-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white border-none cursor-pointer flex items-center justify-center transition-colors"
+                className="size-8 rounded-lg bg-black/20 text-white hover:bg-black/30 border-none cursor-pointer flex items-center justify-center transition-colors"
               >
                 &times;
               </button>
             </div>
 
             <form onSubmit={handleVerifyOtpSubmit} className="p-5 sm:p-6 flex flex-col gap-4">
-              <p className="text-xs text-slate-300 text-center leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-300 text-center leading-relaxed">
                 Silakan masukkan 6-digit kode OTP yang telah dikirimkan ke nomor WhatsApp Anda.
               </p>
 
@@ -1108,19 +1172,19 @@ export default function RegisterPage() {
                     value={digit}
                     onChange={e => handleOtpDigitChange(idx, e.target.value)}
                     onKeyDown={e => handleOtpKeyDown(idx, e)}
-                    className="size-11 sm:size-12 rounded-xl border-2 border-slate-700 text-center text-xl sm:text-2xl font-black text-white bg-slate-950 focus:border-primary focus:bg-slate-900 outline-none transition-all shadow-inner"
+                    className="size-11 sm:size-12 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-center text-xl sm:text-2xl font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950 focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none transition-all shadow-xs"
                   />
                 ))}
               </div>
 
               {otpError && (
-                <div className="text-center text-xs font-bold text-red-400 bg-red-950/50 p-2.5 rounded-xl border border-red-850">
+                <div className="text-center text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 p-2.5 rounded-xl border border-red-200 dark:border-red-900">
                   {otpError}
                 </div>
               )}
 
               {/* Resend Cooldown */}
-              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
                 <span>
                   {otpTimer > 0 ? `Waktu tersisa: ${otpTimer}d` : 'Waktu habis'}
                 </span>
@@ -1128,7 +1192,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={generateNewOtp}
                   disabled={otpTimer > 0}
-                  className="text-xs text-primary hover:underline font-bold border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
+                  className="text-xs text-primary dark:text-red-400 hover:underline font-bold border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                 >
                   Kirim Ulang OTP
                 </button>
@@ -1137,9 +1201,12 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={verifyingOtp}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl text-sm border-none cursor-pointer transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-60"
+                className="group w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl text-sm border-none cursor-pointer transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi & Selesaikan Pendaftaran'}
+                <span>{verifyingOtp ? 'Memverifikasi...' : 'Verifikasi & Selesaikan Pendaftaran'}</span>
+                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                  &gt;
+                </span>
               </button>
             </form>
           </div>
