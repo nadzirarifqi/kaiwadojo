@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   type Announcement,
@@ -32,6 +33,19 @@ function formatDate(dateStr: string): string {
   }
 }
 
+/**
+ * Sanitasi konten pengumuman agar bebas dari penulisan panah (->, →) dan simbol ceklis (✓, ✔).
+ */
+function sanitizeNoticeText(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/-->/g, ' — ')
+    .replace(/->/g, ' — ')
+    .replace(/→/g, ' — ')
+    .replace(/=>/g, ' — ')
+    .replace(/[\u2713\u2714\u2611\u2705]/g, '• ')
+}
+
 export default function AnnouncementModal({
   isOpen,
   onClose,
@@ -44,12 +58,32 @@ export default function AnnouncementModal({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [marking, setMarking] = useState(false)
 
-  // Reset index when modal opens or announcements change
+  // Reset index saat modal dibuka atau daftar pengumuman berubah
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0)
     }
   }, [isOpen, announcements.length])
+
+  // Kunci scroll halaman belakang dan dukung tombol Escape
+  useEffect(() => {
+    if (!isOpen) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen || announcements.length === 0) {
     return null
@@ -104,25 +138,33 @@ export default function AnnouncementModal({
     }
   }
 
-  return (
+  const modalElement = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="announcement-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 select-none"
+      onClick={onClose}
     >
-      {/* Modal Card */}
+      {/* ── Modern Notice Board Card (Papan Pengumuman Modern) ── */}
       <div
-        className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800/90 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all transform scale-100"
+        className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[88vh] sm:max-h-[82vh] transition-all transform scale-100 my-auto select-text"
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Japanese Dojo Accent Banner */}
-        <div className={`h-2.5 w-full bg-gradient-to-r ${catConfig.bgGradient.replace('to-transparent', 'to-primary')} bg-primary`} />
+        {/* Decorative Top Board Pin */}
+        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center pointer-events-none">
+          <div className="size-3.5 rounded-full bg-gradient-to-br from-primary via-red-500 to-amber-500 shadow-md ring-4 ring-white dark:ring-slate-900 flex items-center justify-center">
+            <div className="size-1 rounded-full bg-white/90" />
+          </div>
+        </div>
 
-        {/* Modal Header */}
-        <div className="p-5 sm:p-6 pb-3 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-4">
+        {/* Top Japanese Dojo Accent Strip */}
+        <div className={`h-2 w-full bg-gradient-to-r ${catConfig.bgGradient.replace('to-transparent', 'to-primary')} bg-primary`} />
+
+        {/* ── Board Header ── */}
+        <div className="pt-5 sm:pt-6 px-5 sm:px-6 pb-3.5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 bg-gradient-to-b from-amber-50/40 via-white to-transparent dark:from-slate-850/60 dark:via-slate-900">
           <div className="flex items-center gap-3">
-            <div className="size-11 rounded-2xl bg-gradient-to-br from-primary/15 to-red-500/20 text-primary dark:text-red-400 flex items-center justify-center text-xl shadow-xs border border-primary/20 shrink-0">
+            <div className="size-10 sm:size-11 rounded-2xl bg-gradient-to-br from-primary/15 to-red-500/20 text-primary dark:text-red-400 flex items-center justify-center text-lg sm:text-xl shadow-xs border border-primary/20 shrink-0">
               {current.category === 'important' ? (
                 <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               ) : current.category === 'update' ? (
@@ -137,13 +179,12 @@ export default function AnnouncementModal({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-black uppercase tracking-wider text-primary dark:text-red-400 font-jp">
-                  お知らせ • PENGUMUMAN DOJO
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-primary dark:text-red-400 font-jp">
+                  掲示板 • PAPAN PENGUMUMAN DOJO
                 </span>
                 {current.is_pinned && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                    <svg className="size-2.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
-                    <span>Di-Pin</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                    <span>📌 Disematkan</span>
                   </span>
                 )}
                 <span
@@ -152,7 +193,7 @@ export default function AnnouncementModal({
                   {catConfig.label}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                 {current.author_name || 'Admin Dojo'} • {formatDate(current.created_at)}
               </p>
             </div>
@@ -167,74 +208,98 @@ export default function AnnouncementModal({
           </button>
         </div>
 
-        {/* Multiple announcements pagination tabs */}
+        {/* ── Multiple Announcements Pagination Bar ── */}
         {isMultiple && (
-          <div className="px-6 py-2 bg-slate-50/80 dark:bg-slate-850/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-            <span className="font-semibold">
-              Pengumuman {currentIndex + 1} dari {total}
-            </span>
+          <div className="px-5 sm:px-6 py-2 bg-slate-50/90 dark:bg-slate-850/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-700 dark:text-slate-200">
+                Pengumuman {currentIndex + 1} dari {total}
+              </span>
+              <div className="flex items-center gap-1 ml-1">
+                {announcements.map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === currentIndex
+                        ? 'w-4 bg-primary'
+                        : 'w-1.5 bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
             <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={handlePrev}
-                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-750 transition-all cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-750 transition-all cursor-pointer"
               >
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                <span>Sebelumnya</span>
+                Sebelumnya
               </button>
               <button
+                type="button"
                 onClick={handleNext}
-                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-750 transition-all cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-750 transition-all cursor-pointer"
               >
-                <span>Berikutnya</span>
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                Selanjutnya
               </button>
             </div>
           </div>
         )}
 
-        {/* Modal Body / Content */}
-        <div className="p-6 overflow-y-auto flex-1 text-slate-700 dark:text-slate-200 space-y-4">
+        {/* ── Board Body / Announcement Content ── */}
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
           <h2
             id="announcement-title"
-            className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight"
+            className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-snug"
           >
-            {current.title}
+            {sanitizeNoticeText(current.title)}
           </h2>
 
-          <div className="text-sm sm:text-base leading-relaxed whitespace-pre-line break-words font-normal text-slate-700 dark:text-slate-200 space-y-2.5 bg-slate-50/70 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-            {current.content}
+          {/* Styled Notice Sheet on the Board */}
+          <div className="bg-gradient-to-br from-slate-50/90 to-amber-50/20 dark:from-slate-950/60 dark:to-slate-900/40 p-4 sm:p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 shadow-xs">
+            <div className="text-sm sm:text-base leading-relaxed whitespace-pre-line break-words font-medium text-slate-700 dark:text-slate-200 space-y-2">
+              {sanitizeNoticeText(current.content)}
+            </div>
           </div>
 
           {/* Optional Action Button */}
           {current.action_url && current.action_text && (
-            <div className="pt-2">
+            <div className="pt-1">
               <button
+                type="button"
                 onClick={() => handleActionClick(current.action_url!)}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-primary text-white font-bold text-sm shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-sm shadow-md hover:shadow-lg active:scale-[0.99] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
               >
-                <span>{current.action_text}</span>
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                <span>{sanitizeNoticeText(current.action_text)}</span>
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </button>
             </div>
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+        {/* ── Board Footer ── */}
+        <div className="p-4 sm:p-5 bg-slate-50/90 dark:bg-slate-950/70 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left flex items-center gap-2">
             {current.is_read ? (
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                <span>Sudah pernah Anda baca</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                <span>Sudah pernah dibaca</span>
               </span>
             ) : (
-              <span>Pengumuman resmi dari manajemen KaiwaDojo.</span>
+              <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
+                <span className="size-1.5 rounded-full bg-primary" />
+                <span>Pengumuman resmi KaiwaDojo</span>
+              </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {isMultiple && (
               <button
+                type="button"
                 onClick={handleAcknowledgeAll}
                 disabled={marking}
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-750 transition-all cursor-pointer"
@@ -244,11 +309,11 @@ export default function AnnouncementModal({
             )}
 
             <button
+              type="button"
               onClick={handleDismissCurrent}
               disabled={marking}
-              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs font-black shadow-sm transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs font-black shadow-sm transition-all border-none cursor-pointer"
             >
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span>{marking ? 'Menyimpan...' : 'Saya Mengerti'}</span>
             </button>
           </div>
@@ -256,4 +321,6 @@ export default function AnnouncementModal({
       </div>
     </div>
   )
+
+  return createPortal(modalElement, document.body)
 }

@@ -46,9 +46,11 @@ export function detectJapaneseScript(text: string) {
 }
 
 /* ── Image Compressor Helper for Fast DB Saves ── */
-const MAX_IMAGE_SIZE_BYTES = 400 * 1024 // 400 KB limit for base64 image in DB
+// Target base64 character length under 56KB so it fits within even standard MySQL TEXT (64KB limit)
+// and loads instantly on mobile networks without triggering "Data too long for column" error.
+const MAX_IMAGE_BASE64_CHARS = 56 * 1024
 
-async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0.6): Promise<string> {
+async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0.65): Promise<string> {
   if (!dataUrl || !dataUrl.startsWith('data:image')) return dataUrl
   return new Promise((resolve) => {
     const img = new Image()
@@ -69,15 +71,17 @@ async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height)
         let result = canvas.toDataURL('image/jpeg', quality)
-        // If still too large, compress further with lower quality
-        if (result.length > MAX_IMAGE_SIZE_BYTES * 1.37) { // base64 overhead ~1.37x
-          result = canvas.toDataURL('image/jpeg', 0.4)
+
+        // Pass 1: If still above safe threshold, lower quality to 0.45
+        if (result.length > MAX_IMAGE_BASE64_CHARS) {
+          result = canvas.toDataURL('image/jpeg', 0.45)
         }
-        // If still too large, scale down further
-        if (result.length > MAX_IMAGE_SIZE_BYTES * 1.37) {
+
+        // Pass 2: If still above safe threshold, downscale dimensions
+        if (result.length > MAX_IMAGE_BASE64_CHARS) {
           const smallCanvas = document.createElement('canvas')
-          const smallW = Math.round(width * 0.6)
-          const smallH = Math.round(height * 0.6)
+          const smallW = Math.round(width * 0.7)
+          const smallH = Math.round(height * 0.7)
           smallCanvas.width = smallW
           smallCanvas.height = smallH
           const ctx2 = smallCanvas.getContext('2d')
@@ -86,6 +90,21 @@ async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0
             result = smallCanvas.toDataURL('image/jpeg', 0.5)
           }
         }
+
+        // Pass 3: Ultra safety fallback for dense phone camera photos
+        if (result.length > MAX_IMAGE_BASE64_CHARS) {
+          const tinyCanvas = document.createElement('canvas')
+          const tinyW = Math.round(width * 0.5)
+          const tinyH = Math.round(height * 0.5)
+          tinyCanvas.width = tinyW
+          tinyCanvas.height = tinyH
+          const ctx3 = tinyCanvas.getContext('2d')
+          if (ctx3) {
+            ctx3.drawImage(img, 0, 0, tinyW, tinyH)
+            result = tinyCanvas.toDataURL('image/jpeg', 0.4)
+          }
+        }
+
         resolve(result)
       } else {
         resolve(dataUrl)
@@ -290,7 +309,7 @@ export default function SetoranKotobaPage() {
     const reader = new FileReader()
     reader.onloadend = async () => {
       const rawUrl = reader.result as string
-      const compressed = await compressImageDataUrl(rawUrl, 900, 0.8)
+      const compressed = await compressImageDataUrl(rawUrl, 640, 0.65)
       setFormData(prev => ({ ...prev, image_url: compressed }))
     }
     reader.readAsDataURL(file)

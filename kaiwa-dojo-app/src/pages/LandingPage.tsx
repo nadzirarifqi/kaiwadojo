@@ -416,15 +416,6 @@ export default function LandingPage() {
                 Pelajari 50 bab percakapan praktis Minna no Nihongo, hafalan kotoba harian dengan Daily SRS, dan asah kemampuan berbicara langsung bersama Sensei.
               </p>
 
-              {/* Social Proof / Rating */}
-              <div className="flex items-center gap-2 mb-2 sm:mb-3.5 text-[0.68rem] sm:text-xs text-slate-500 dark:text-slate-400 font-bold bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs px-3 py-1 rounded-full border border-slate-200/60 dark:border-slate-800/60">
-                <div className="flex items-center text-amber-400 tracking-tighter text-xs">
-                  ★ ★ ★ ★ ★
-                </div>
-                <span className="text-slate-800 dark:text-slate-200 font-black">4.9/5</span>
-                <span className="text-slate-300 dark:text-slate-600">•</span>
-                <span>500+ Pembelajar Aktif</span>
-              </div>
 
               {/* Mobile Hero Illustration (2 People Conversing & Core Features) */}
               <div className="lg:hidden w-full max-w-[300px] xs:max-w-xs mx-auto my-2 relative">

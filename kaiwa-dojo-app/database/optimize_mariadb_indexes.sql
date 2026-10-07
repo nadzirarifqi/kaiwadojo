@@ -15,6 +15,13 @@ ALTER TABLE `kaiw_database`.`profiles`
   ADD COLUMN IF NOT EXISTS `kecamatan` TEXT NULL DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `kabupaten` TEXT NULL DEFAULT NULL;
 
+-- 0.1 Perbaiki tipe kolom image_url & avatar_url agar mampu menampung gambar base64 foto kamera HP (mencegah error "1406 Data too long")
+ALTER TABLE `kaiw_database`.`user_kotoba_submissions`
+  MODIFY COLUMN `image_url` LONGTEXT NULL;
+
+ALTER TABLE `kaiw_database`.`profiles`
+  MODIFY COLUMN `avatar_url` LONGTEXT NULL;
+
 -- 1. Optimasi tabel jadwal kelas (class_schedules)
 CREATE INDEX IF NOT EXISTS `idx_class_schedules_date` ON `kaiw_database`.`class_schedules` (`date`);
 CREATE INDEX IF NOT EXISTS `idx_class_schedules_start_date` ON `kaiw_database`.`class_schedules` (`start_date`);
