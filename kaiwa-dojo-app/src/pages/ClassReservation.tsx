@@ -316,59 +316,25 @@ export default function ClassReservationPage() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary dark:text-red-400">
-            <span className="size-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs">
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-            </span>
-            <span>{t('cr_tag', 'Jadwal & Interaktif Class')}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white mt-1">
-            {t('cr_title', 'Reservasi Kelas Online & Offline')}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {t('cr_subtitle', 'Pilih hari dan jam terbaik untuk mengasah percakapan (Kaiwa) dengan instruktur.')}
-          </p>
-        </div>
-
-        {/* User Role & Group Badge */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-xs shrink-0">
-          <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-lg font-serif">
-            学
-          </div>
-          <div>
-            <div className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400">Login Sebagai</div>
-            <div className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200">{userName}</div>
-            <div className="text-[0.68rem] font-extrabold mt-0.5 flex items-center gap-1 text-slate-500 dark:text-slate-400">
-              {resolvedUserGroup ? (
-                <span className="text-violet-600 dark:text-violet-400 font-black flex items-center gap-1">
-                  <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                  <span>{resolvedUserGroup}</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                  <span>Siswa Reguler</span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── MANDATORY ONLINE CLASS BANNER ────────────────────── */}
       <div className="bg-gradient-to-r from-slate-900 via-primary/90 to-primary text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/10 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="relative z-10 flex-1">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[0.7rem] font-extrabold uppercase tracking-wider text-white">
               Target Wajib Bulanan
             </span>
             <span className="text-xs text-white/80 font-bold">({reqStatus.currentMonthLabel})</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-white/90 text-xs font-semibold backdrop-blur-xs">
+              <span>{userName}</span>
+              {resolvedUserGroup ? (
+                <span className="font-extrabold text-amber-300">({resolvedUserGroup})</span>
+              ) : (
+                <span className="text-white/70">(Reguler)</span>
+              )}
+            </span>
           </div>
           <h2 className="text-lg sm:text-xl font-black text-white">
-            *{t('cr_requirement', 'Wajib Mengambil Minimal 2 Kelas Online / Bulan')}
+            {t('cr_requirement', 'Wajib Mengambil Minimal 2 Kelas Online / Bulan')}
           </h2>
           <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
             {t('cr_requirement_sub', 'Untuk memastikan kemampuan percakapan Bahasa Jepang kamu terus terasah, setiap siswa diwajibkan mengikuti sekurang-kurangnya 2 sesi kelas online live per minggu/bulan.')}
@@ -541,7 +507,7 @@ export default function ClassReservationPage() {
                 return (
                   <div
                     key={sch.id}
-                    className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md relative overflow-hidden ${
+                    className={`bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md relative overflow-hidden group ${
                       userRes
                         ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10'
                         : isLocked
@@ -549,122 +515,122 @@ export default function ClassReservationPage() {
                           : 'border-slate-200 dark:border-slate-800 hover:border-primary/40'
                     }`}
                   >
-                    {/* Top Ribbon Badge */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                        userRes
-                          ? sch.type === 'online'
-                            ? 'bg-sky-600 text-white shadow-xs'
-                            : 'bg-emerald-600 text-white shadow-xs'
-                          : sch.type === 'online'
-                            ? 'bg-transparent border border-sky-400 text-sky-600 dark:text-sky-300 font-extrabold'
-                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400 font-black'
-                      }`}>
-                        {sch.type === 'online' ? (
-                          <>
-                            <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            <span>ONLINE (G-Meet)</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                            <span>OFFLINE ({badgeLabel})</span>
-                          </>
-                        )}
-                      </span>
+                    {/* Header: Class Mode & Quota Status */}
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                          sch.type === 'online'
+                            ? 'bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
+                            : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        }`}>
+                          {sch.type === 'online' ? (
+                            <>
+                              <svg className="size-3.5 shrink-0 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                              <span>Online (Google Meet)</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                              <span>Offline ({badgeLabel})</span>
+                            </>
+                          )}
+                        </span>
 
-                      {/* Quota Badge */}
-                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 ${
-                        isFull
-                          ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
-                          : enrolledCount >= 8
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
-                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                      }`}>
-                        <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                        <span>{enrolledCount} / {sch.max_quota} Siswa</span>
-                      </span>
-                    </div>
+                        {/* Quota Badge */}
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
+                          isFull
+                            ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-900/60'
+                            : enrolledCount >= sch.max_quota - 2
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60'
+                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700'
+                        }`}>
+                          <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                          <span>{enrolledCount}/{sch.max_quota} Siswa</span>
+                        </span>
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex flex-col gap-2 mb-4">
-                      {/* Target Group Restriction Pill */}
-                      <div>
-                        {(() => {
-                          const grpList = parseTargetGroups(sch.target_group)
-                          if (grpList.length > 0) {
-                            return (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-300/80 dark:border-violet-700/80">
+                      {/* Group Restriction Pill */}
+                      {(() => {
+                        const grpList = parseTargetGroups(sch.target_group)
+                        if (grpList.length > 0) {
+                          return (
+                            <div className="mb-2">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-50 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
                                 <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
                                 <span>Khusus ({grpList.length} Grup): {grpList.join(', ')}</span>
                               </span>
-                            )
-                          }
-                          return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                              <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                              <span>Terbuka untuk Semua Siswa</span>
-                            </span>
+                            </div>
                           )
-                        })()}
-                      </div>
+                        }
+                        return null
+                      })()}
 
+                      {/* Title & Topic Subtitle */}
                       <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2">
                         {sch.title}
                       </h3>
-                      <p className="text-xs text-primary dark:text-red-400 font-bold line-clamp-2 bg-primary/5 dark:bg-primary/20 p-2.5 rounded-xl border border-primary/10">
-                        {sch.subtitle_chapter}
-                      </p>
+                      {sch.subtitle_chapter && (
+                        <p className="text-xs font-bold text-primary dark:text-red-400 mt-1 line-clamp-1">
+                          {sch.subtitle_chapter}
+                        </p>
+                      )}
 
-                      {/* Date & Time */}
-                      <div className="mt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        {isOfflineMultiDay ? (
-                          <>
-                            <div className="flex items-start gap-2 bg-emerald-50/80 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200">
-                              <svg className="size-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                              <div className="text-[0.72rem] leading-snug">
-                                <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-[0.65rem] tracking-wider mb-0.5">
-                                  Jadwal 3 Hari 2 Malam:
-                                </div>
-                                <span className="font-extrabold">{formattedRange}</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                              <span className="font-extrabold">{formatDateIndonesian(sDateStr, language)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                              <span>{formatTimeShort(sch.start_time)} - {formatTimeShort(sch.end_time)} WIB</span>
-                            </div>
-                          </>
-                        )}
-
-                        <div className="flex items-center gap-2">
-                          <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                          <span className="font-bold text-slate-700 dark:text-slate-200">{sch.instructor_name}</span>
+                      {/* Structured Info Box */}
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 space-y-2 text-xs border border-slate-100 dark:border-slate-800/80 my-3.5">
+                        {/* Row 1: Tanggal */}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 flex items-center gap-1.5">
+                            <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span>Tanggal:</span>
+                          </span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200 text-right">
+                            {isOfflineMultiDay ? formattedRange : formatDateIndonesian(sDateStr, language)}
+                          </span>
                         </div>
 
-                        {/* Location / Meet info */}
-                        {sch.type === 'online' ? (
-                          <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 font-semibold truncate pt-1">
-                            <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            <span className="truncate">Google Meet Sesi Live</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold truncate pt-1">
-                            <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            <span className="truncate">{sch.location || 'Kaiwa Dojo Center'}</span>
+                        {/* Row 2: Jam Pelaksanaan (for single-day) */}
+                        {!isOfflineMultiDay && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 flex items-center gap-1.5">
+                              <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                              <span>Waktu:</span>
+                            </span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">
+                              {formatTimeShort(sch.start_time)} - {formatTimeShort(sch.end_time)} WIB
+                            </span>
                           </div>
                         )}
+
+                        {/* Row 3: Instruktur */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 flex items-center gap-1.5">
+                            <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            <span>Instruktur:</span>
+                          </span>
+                          <span className="font-extrabold text-primary dark:text-red-400">
+                            {sch.instructor_name}
+                          </span>
+                        </div>
+
+                        {/* Row 4: Metode / Tempat */}
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 flex items-center gap-1.5">
+                            {sch.type === 'online' ? (
+                              <svg className="size-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            ) : (
+                              <svg className="size-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            )}
+                            <span>Metode:</span>
+                          </span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate text-right">
+                            {sch.type === 'online' ? 'Google Meet Live' : (sch.location || 'Kaiwa Dojo Center')}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Action Button */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       {userRes ? (
                         <div className="flex items-center gap-2">
                           <div className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-white font-extrabold text-xs text-center flex items-center justify-center gap-1.5 shadow-sm">

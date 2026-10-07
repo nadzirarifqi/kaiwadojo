@@ -84,9 +84,9 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   if (isFreeze) {
     return {
       level: 'Istirahat',
-      stageName: 'Sakura Salju (Fuyuzakura)',
+      stageName: 'Pohon Sakura Salju',
       japaneseName: '冬桜',
-      description: 'Dahan sakura dilindungi salju es; streak kamu aman bertambah.',
+      description: 'Dahan sakura dilindungi salju es; streak kamu aman terjaga.',
       nextGoal: streakDays < 7 ? 7 : streakDays < 30 ? 30 : 100,
       colorClass: 'text-sky-500',
       bgClass: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-400/30',
@@ -96,9 +96,9 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   if (streakDays >= 100) {
     return {
       level: 'Master',
-      stageName: 'Pohon Sakura Emas Abadi',
-      japaneseName: '黄金の桜',
-      description: 'Pencapaian legendaris 100 hari! Pohon sakura mekar abadi di dojo kamu.',
+      stageName: 'Pohon Sakura Abadi',
+      japaneseName: '悠久の桜',
+      description: 'Pencapaian legendaris 100+ hari! Pohon sakura kokoh mekar abadi di dojo kamu.',
       nextGoal: 365,
       colorClass: 'text-amber-500',
       bgClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-400/30',
@@ -106,9 +106,9 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   } else if (streakDays >= 30) {
     return {
       level: 'Pakar',
-      stageName: 'Taman Sakura Rimbun (Mankai)',
+      stageName: 'Pohon Sakura Rimbun',
       japaneseName: '満開の桜',
-      description: '30+ hari konsisten! Kelopak sakura merah muda rimbun menghiasi belajarmu.',
+      description: '30+ hari konsisten! Mahkota sakura rimbun memesona menghiasi perjalanan belajarmu.',
       nextGoal: 100,
       colorClass: 'text-rose-500',
       bgClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-400/30',
@@ -116,9 +116,9 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   } else if (streakDays >= 7) {
     return {
       level: 'Aktif',
-      stageName: 'Bunga Sakura Mekar',
+      stageName: 'Pohon Sakura Mekar',
       japaneseName: '開花の桜',
-      description: '7 hari berturut-turut! Bunga sakura mekar penuh dan menebarkan semangat.',
+      description: '7+ hari berturut-turut! Bunga sakura mekar penuh menebarkan semangat belajar.',
       nextGoal: 30,
       colorClass: 'text-pink-500',
       bgClass: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-400/30',
@@ -126,9 +126,9 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   } else if (streakDays >= 3) {
     return {
       level: 'Tekun',
-      stageName: 'Kuncup Sakura Merekah',
-      japaneseName: '蕾の桜',
-      description: '3 hari berturut-turut! Kuncup bunga sakura merona siap mekar.',
+      stageName: 'Pohon Muda Sakura',
+      japaneseName: '若木の桜',
+      description: '3+ hari berturut-turut! Pohon muda bertumbuh kuat dengan kuncup bunga pertama.',
       nextGoal: 7,
       colorClass: 'text-pink-400',
       bgClass: 'bg-pink-500/10 text-pink-500 border-pink-400/30',
@@ -136,20 +136,20 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   } else if (streakDays >= 1) {
     return {
       level: 'Awal',
-      stageName: 'Tunas Muda Sakura',
-      japaneseName: '若芽の桜',
-      description: 'Langkah awal! Tunas muda baru bersemi di dahan dojo kamu.',
-      nextGoal: 7,
+      stageName: 'Tunas Bunga Sakura',
+      japaneseName: '桜の若芽',
+      description: 'Langkah awal! Tunas muda baru bersemi segar mengawali ketekunan belajarmu.',
+      nextGoal: 3,
       colorClass: 'text-emerald-500',
       bgClass: 'bg-emerald-500/10 text-emerald-600 border-emerald-400/30',
     }
   } else {
     return {
       level: 'Mulai',
-      stageName: 'Benih Sakura',
+      stageName: 'Benih Bunga Sakura',
       japaneseName: '桜の種',
-      description: 'Selesaikan misi harian hari ini untuk menumbuhkan tunas sakura pertama!',
-      nextGoal: 7,
+      description: 'Selesaikan rencana harian hari ini untuk menumbuhkan tunas sakura pertama!',
+      nextGoal: 1,
       colorClass: 'text-slate-400',
       bgClass: 'bg-slate-500/10 text-slate-500 border-slate-300 dark:border-slate-700',
     }
@@ -364,10 +364,10 @@ function StreakCard({
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-black text-slate-800 dark:text-white leading-tight">
-              Streak Sakura Belajar
+              {sakuraInfo.stageName}
             </h2>
             <span className="text-[0.68rem] text-slate-400 font-semibold block">
-              {sakuraInfo.stageName} • {sakuraInfo.japaneseName}
+              {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
             </span>
           </div>
         </div>
@@ -502,9 +502,11 @@ function StreakCard({
             onClick={() => navigate('/learning-plan')}
             className="group px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto touch-manipulation min-h-[36px]"
           >
-            <span>Buka Misi</span>
-            <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-              &gt;
+            <span>Buka Rencana</span>
+            <span className="size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <svg className="size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </span>
           </button>
         )}
@@ -518,7 +520,7 @@ function StreakCard({
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-rose-500" />
                 <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-white">
-                  Tahapan Mekar Bunga Sakura
+                  Tahapan Pertumbuhan Pohon Sakura
                 </h3>
               </div>
               <button
@@ -532,14 +534,22 @@ function StreakCard({
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Di KaiwaDojo, konsistensi belajar diibaratkan bunga sakura yang tumbuh subur seiring bertambahnya streak harian Anda:
+              Di KaiwaDojo, konsistensi belajar diibaratkan pohon sakura yang bertumbuh semakin megah seiring bertambahnya streak Anda:
             </p>
 
             <div className="space-y-2 text-xs">
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
+                  <div className="font-extrabold text-slate-800 dark:text-white">0 Hari</div>
+                  <div className="text-[0.68rem] text-slate-400">Benih Bunga Sakura</div>
+                </div>
+                <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 font-bold text-[0.65rem]">Tahap 0</span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div>
                   <div className="font-extrabold text-slate-800 dark:text-white">1 - 2 Hari</div>
-                  <div className="text-[0.68rem] text-slate-400">Tunas Muda Sakura Bersemi</div>
+                  <div className="text-[0.68rem] text-slate-400">Tunas Bunga Sakura</div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold text-[0.65rem]">Tahap 1</span>
               </div>
@@ -547,7 +557,7 @@ function StreakCard({
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                   <div className="font-extrabold text-slate-800 dark:text-white">3 - 6 Hari</div>
-                  <div className="text-[0.68rem] text-slate-400">Kuncup Sakura Mulai Merekah</div>
+                  <div className="text-[0.68rem] text-slate-400">Pohon Muda Sakura</div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 font-bold text-[0.65rem]">Tahap 2</span>
               </div>
@@ -555,7 +565,7 @@ function StreakCard({
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                   <div className="font-extrabold text-slate-800 dark:text-white">7 - 29 Hari</div>
-                  <div className="text-[0.68rem] text-slate-400">Bunga Sakura Mekar Sempurna (Mankai)</div>
+                  <div className="text-[0.68rem] text-slate-400">Pohon Sakura Mekar (Kaika)</div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-[0.65rem]">Tahap 3</span>
               </div>
@@ -563,7 +573,7 @@ function StreakCard({
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                   <div className="font-extrabold text-slate-800 dark:text-white">30 - 99 Hari</div>
-                  <div className="text-[0.68rem] text-slate-400">Taman Sakura Rimbun & Berkilau</div>
+                  <div className="text-[0.68rem] text-slate-400">Pohon Sakura Rimbun (Mankai)</div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-[0.65rem]">Tahap 4</span>
               </div>
@@ -571,7 +581,7 @@ function StreakCard({
               <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
                 <div>
                   <div className="font-extrabold text-amber-900 dark:text-amber-200">100+ Hari</div>
-                  <div className="text-[0.68rem] text-amber-700 dark:text-amber-300">Pohon Sakura Emas Abadi</div>
+                  <div className="text-[0.68rem] text-amber-700 dark:text-amber-300">Pohon Sakura Abadi</div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-[0.65rem]">Master</span>
               </div>
@@ -706,8 +716,10 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
             className="group px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
           >
             <span>Kalender</span>
-            <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black group-hover:translate-x-0.5 transition-transform">
-              &gt;
+            <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <svg className="size-2 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </span>
           </button>
         </div>
@@ -787,8 +799,10 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               className="group px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all text-xs shadow-xs flex items-center gap-1.5"
             >
               <span>Susun Agenda</span>
-              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                &gt;
+              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </button>
           </div>
@@ -1321,8 +1335,10 @@ export default function Dashboard() {
             >
               <svg className="size-3.5 fill-current text-primary" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
               <span>{t('dash_continue_learning', 'Lanjut Belajar')}</span>
-              <span className="size-4.5 rounded-full bg-slate-200 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                &gt;
+              <span className="size-4.5 rounded-full bg-slate-200 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2.5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </button>
           </div>
@@ -1364,8 +1380,10 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-1.5 text-xs font-extrabold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
             <span>Buka</span>
-            <span className="size-4.5 rounded-full bg-primary/10 flex items-center justify-center text-[0.6rem] font-black">
-              &gt;
+            <span className="size-4.5 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <svg className="size-2.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </span>
           </div>
         </div>
@@ -1455,8 +1473,10 @@ export default function Dashboard() {
                       </div>
                       <div className="text-[0.68rem] font-extrabold text-primary dark:text-red-400 flex items-center justify-between">
                         <span>Tonton Video</span>
-                        <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                          &gt;
+                        <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                          <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
                         </span>
                       </div>
                     </div>
@@ -1508,8 +1528,10 @@ export default function Dashboard() {
                   </div>
                   <div className="text-[0.68rem] font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
                     <span>Mulai Kuis</span>
-                    <span className="size-4 rounded-full bg-indigo-500/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                      &gt;
+                    <span className="size-4 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                      <svg className="size-2 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </span>
                   </div>
                 </div>
@@ -1555,8 +1577,10 @@ export default function Dashboard() {
                   </div>
                   <div className="text-[0.68rem] font-extrabold text-amber-600 dark:text-amber-400 flex items-center justify-between">
                     <span>Buka Setoran</span>
-                    <span className="size-4 rounded-full bg-amber-500/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                      &gt;
+                    <span className="size-4 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                      <svg className="size-2 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </span>
                   </div>
                 </div>
@@ -1578,8 +1602,10 @@ export default function Dashboard() {
               className="group px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[38px]"
             >
               <span>Susun Misi Harian</span>
-              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                &gt;
+              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </button>
           </div>
@@ -1608,8 +1634,10 @@ export default function Dashboard() {
                 <div className="text-xs sm:text-sm font-black leading-tight">Jurnal Kosakata</div>
                 <div className="text-white/80 text-[0.68rem] mt-0.5">Catatan Kotoba</div>
               </div>
-              <span className="ml-auto size-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-black group-hover:translate-x-0.5 transition-transform shrink-0">
-                &gt;
+              <span className="ml-auto size-6 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
+                <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </button>
 
@@ -1627,8 +1655,10 @@ export default function Dashboard() {
                 <div className="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-tight">Reservasi Kelas</div>
                 <div className="text-slate-400 text-[0.68rem] mt-0.5">Live & Offline</div>
               </div>
-              <span className="ml-auto size-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black group-hover:translate-x-0.5 transition-transform shrink-0">
-                &gt;
+              <span className="ml-auto size-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
+                <svg className="size-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </span>
             </button>
           </div>
@@ -1657,8 +1687,10 @@ export default function Dashboard() {
             className="group text-primary dark:text-red-400 text-xs sm:text-sm font-bold bg-transparent border-none cursor-pointer flex items-center gap-1.5 touch-manipulation"
           >
             <span>{t('dash_open_course_btn', 'Buka Kursus')}</span>
-            <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-              &gt;
+            <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </span>
           </button>
         </div>
