@@ -14,10 +14,15 @@ $tablesStr = trim($_GET['tables'] ?? '');
 
 $db = DB::get();
 
-// Pembersihan berkala change_log lebih lama dari 2 jam
-try {
-    $db->query("DELETE FROM change_log WHERE created_at < DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 2 HOUR)");
-} catch (Exception $e) {}
+// Pembersihan berkala change_log lebih lama dari 2 jam (dijalankan maksimal setiap 15 menit, bukan di tiap polling)
+$cleanFlag = sys_get_temp_dir() . '/kaiwa_changelog_clean.ts';
+$lastClean = file_exists($cleanFlag) ? (int)@file_get_contents($cleanFlag) : 0;
+if (time() - $lastClean > 900) {
+    try {
+        $db->query("DELETE FROM change_log WHERE created_at < DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 2 HOUR)");
+        @file_put_contents($cleanFlag, (string)time());
+    } catch (Exception $e) {}
+}
 
 $where = ["id > ?"];
 $params = [$since];

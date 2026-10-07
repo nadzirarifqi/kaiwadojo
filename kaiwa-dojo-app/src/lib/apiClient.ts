@@ -66,6 +66,9 @@ function notifyAuth(event: AuthChangeEvent, s: Session | null) {
   })
 }
 
+// ── In-Flight Request Deduplication ──
+const inFlightQueries = new Map<string, Promise<{ data: any; error: any; count?: number | null }>>()
+
 // ── Query Builder Shim ──
 class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; count?: number | null }> {
   private payload: {
@@ -236,66 +239,87 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
   }
 
   async execute(): Promise<{ data: T | null; error: any; count?: number | null }> {
-    try {
-      if (!currentSession?.access_token) {
-        currentSession = loadStoredSession()
-      }
+    const isSelect = this.payload.action === 'select'
+    const dedupeKey = isSelect
+      ? `${this.payload.table}:${JSON.stringify(this.payload)}:${currentSession?.access_token || ''}`
+      : null
 
-      // Auto-recovery jika login sebagai master admin tapi belum punya token JWT
-      if (!currentSession?.access_token) {
-        try {
-          const profileRaw = sessionStorage.getItem(AppConfig.storageKeys.customProfile) || localStorage.getItem(AppConfig.storageKeys.customProfile)
-          if (profileRaw) {
-            const prof = JSON.parse(profileRaw)
-            if (prof?.id === AppConfig.auth.masterAdminId || prof?.username === 'kaiwahiroshima') {
-              const resAdmin = await fetch(`${API_BASE}/auth.php?action=signin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: 'kaiwahiroshima', password: 'inaconnextkaiwa6' }),
-              })
-              const jsonAdmin = await resAdmin.json()
-              if (jsonAdmin.data?.session) {
-                saveSession(jsonAdmin.data.session)
+    if (dedupeKey && inFlightQueries.has(dedupeKey)) {
+      return inFlightQueries.get(dedupeKey)!
+    }
+
+    const execPromise = (async () => {
+      try {
+        if (!currentSession?.access_token) {
+          currentSession = loadStoredSession()
+        }
+
+        // Auto-recovery jika login sebagai master admin tapi belum punya token JWT
+        if (!currentSession?.access_token) {
+          try {
+            const profileRaw = sessionStorage.getItem(AppConfig.storageKeys.customProfile) || localStorage.getItem(AppConfig.storageKeys.customProfile)
+            if (profileRaw) {
+              const prof = JSON.parse(profileRaw)
+              if (prof?.id === AppConfig.auth.masterAdminId || prof?.username === 'kaiwahiroshima') {
+                const resAdmin = await fetch(`${API_BASE}/auth.php?action=signin`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: 'kaiwahiroshima', password: 'inaconnextkaiwa6' }),
+                })
+                const jsonAdmin = await resAdmin.json()
+                if (jsonAdmin.data?.session) {
+                  saveSession(jsonAdmin.data.session)
+                }
               }
             }
-          }
-        } catch {}
-      }
+          } catch {}
+        }
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      let queryUrl = `${API_BASE}/query.php`
-      const bodyPayload = { ...this.payload }
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        }
+        let queryUrl = `${API_BASE}/query.php`
+        const bodyPayload = { ...this.payload }
 
-      if (currentSession?.access_token) {
-        headers['Authorization'] = `Bearer ${currentSession.access_token}`
-        headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
-        queryUrl += `?access_token=${encodeURIComponent(currentSession.access_token)}`
-        ;(bodyPayload as any)._token = currentSession.access_token
-      }
+        if (currentSession?.access_token) {
+          headers['Authorization'] = `Bearer ${currentSession.access_token}`
+          headers['X-Authorization'] = `Bearer ${currentSession.access_token}`
+          queryUrl += `?access_token=${encodeURIComponent(currentSession.access_token)}`
+          ;(bodyPayload as any)._token = currentSession.access_token
+        }
 
-      const res = await fetch(queryUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(bodyPayload),
-      })
+        const res = await fetch(queryUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(bodyPayload),
+        })
 
-      const rawText = await res.text()
-      let json: any = null
-      try {
-        json = JSON.parse(rawText)
-      } catch {
-        return { data: null, error: { message: `Server HTTP ${res.status}: ${rawText.slice(0, 300) || 'Respons kosong dari server'}` } }
-      }
+        const rawText = await res.text()
+        let json: any = null
+        try {
+          json = JSON.parse(rawText)
+        } catch {
+          return { data: null, error: { message: `Server HTTP ${res.status}: ${rawText.slice(0, 300) || 'Respons kosong dari server'}` } }
+        }
 
-      if (!res.ok && !json.error) {
-        return { data: null, error: { message: `HTTP Error ${res.status}` } }
+        if (!res.ok && !json.error) {
+          return { data: null, error: { message: `HTTP Error ${res.status}` } }
+        }
+        return json
+      } catch (err: any) {
+        return { data: null, error: { message: err.message || 'Koneksi API gagal' } }
+      } finally {
+        if (dedupeKey) {
+          inFlightQueries.delete(dedupeKey)
+        }
       }
-      return json
-    } catch (err: any) {
-      return { data: null, error: { message: err.message || 'Koneksi API gagal' } }
+    })()
+
+    if (dedupeKey) {
+      inFlightQueries.set(dedupeKey, execPromise)
     }
+
+    return execPromise
   }
 
   then<TResult1 = { data: T | null; error: any; count?: number | null }, TResult2 = never>(

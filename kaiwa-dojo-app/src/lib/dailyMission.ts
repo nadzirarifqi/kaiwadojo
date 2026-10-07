@@ -112,9 +112,26 @@ export async function fetchDailyMission(userId: string, targetDate: string): Pro
   return getDailyMission(userId, targetDate)
 }
 
+const MISSIONS_CACHE_TTL_MS = 30_000 // 30 seconds
+const _missionsCache = new Map<string, { data: Map<string, DailyMissionData>; fetchedAt: number }>()
+
+export function invalidateUserMissionsCache(userId?: string) {
+  if (userId) {
+    _missionsCache.delete(userId)
+  } else {
+    _missionsCache.clear()
+  }
+}
+
 export async function fetchAllUserMissions(userId: string): Promise<Map<string, DailyMissionData>> {
   const missionMap = new Map<string, DailyMissionData>()
   if (!userId || userId === 'active_user') return missionMap
+
+  // 0. Return in-memory cache if fresh
+  const cached = _missionsCache.get(userId)
+  if (cached && Date.now() - cached.fetchedAt < MISSIONS_CACHE_TTL_MS) {
+    return new Map(cached.data)
+  }
 
   // 1. Fetch all missions from Supabase DB for this user
   try {
@@ -167,6 +184,9 @@ export async function fetchAllUserMissions(userId: string): Promise<Map<string, 
   } catch (e) {
     // Ignore local storage error
   }
+
+  // Cache in-memory
+  _missionsCache.set(userId, { data: new Map(missionMap), fetchedAt: Date.now() })
 
   return missionMap
 }
@@ -304,6 +324,7 @@ export async function saveDailyMission(
   }
 
   // 2. Sync LocalStorage cache after successful DB write
+  invalidateUserMissionsCache(userId)
   localStorage.setItem(`kaiwa_daily_mission_${userId}_${dateStr}`, JSON.stringify(mission))
   if (dateStr === getTodayDateString()) {
     localStorage.setItem(`kaiwa_daily_mission_${userId}`, JSON.stringify(mission))
@@ -324,6 +345,7 @@ export function subscribeToDailyMissionRealtime(onUpdate: () => void) {
   const channel = supabase
     .channel('public_daily_missions_realtime_channel')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_missions' }, () => {
+      invalidateUserMissionsCache()
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(DAILY_MISSION_UPDATE_EVENT))
       }

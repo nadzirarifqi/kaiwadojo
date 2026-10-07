@@ -9,8 +9,16 @@ class QueryBuilder {
 
     public static function getSchema(): array {
         if (self::$schema === null) {
-            $json = file_get_contents(__DIR__ . '/schema.json');
-            self::$schema = json_decode($json, true) ?: [];
+            $cachePhp = __DIR__ . '/schema.cache.php';
+            if (file_exists($cachePhp)) {
+                self::$schema = require $cachePhp;
+            } else {
+                $json = file_get_contents(__DIR__ . '/schema.json');
+                self::$schema = json_decode($json, true) ?: [];
+                if (!empty(self::$schema)) {
+                    @file_put_contents($cachePhp, '<?php return ' . var_export(self::$schema, true) . ';');
+                }
+            }
         }
         return self::$schema;
     }
@@ -169,17 +177,85 @@ class QueryBuilder {
             }
         }
 
+        // Deteksi ekspresi relasi: alias:table!fk(cols) atau table(cols) atau alias:table(cols)
+        $relations = [];
+        $cleanColumnsReq = $columnsReq;
+
+        if (is_string($columnsReq) && $columnsReq !== '*') {
+            $pattern = '/(?:([a-zA-Z0-9_]+):)?([a-zA-Z0-9_]+)(?:!([a-zA-Z0-9_]+))?\(([^)]*)\)/';
+            if (preg_match_all($pattern, $columnsReq, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $m) {
+                    $fullMatch   = $m[0];
+                    $alias       = !empty($m[1]) ? $m[1] : $m[2];
+                    $targetTable = $m[2];
+                    $fkHint      = $m[3] ?? '';
+                    $subCols     = trim($m[4] ?? '*');
+
+                    // Cari foreign key column di tabel utama:
+                    $fkCol = null;
+                    if ($fkHint && preg_match('/_([a-zA-Z0-9_]+_id)_fkey/', $fkHint, $fkMatch)) {
+                        $candidate = $fkMatch[1];
+                        if (isset($meta['columns'][$candidate])) {
+                            $fkCol = $candidate;
+                        }
+                    }
+
+                    if (!$fkCol) {
+                        $candidates = [
+                            $alias . '_id',
+                            rtrim($targetTable, 's') . '_id',
+                            'user_id',
+                            'student_id',
+                            'instructor_id',
+                            'course_id',
+                            'schedule_id',
+                            'lesson_id',
+                            'section_id',
+                        ];
+                        foreach ($candidates as $cand) {
+                            if (isset($meta['columns'][$cand])) {
+                                $fkCol = $cand;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($fkCol) {
+                        $relations[] = [
+                            'alias'       => $alias,
+                            'targetTable' => $targetTable,
+                            'subCols'     => $subCols,
+                            'fkCol'       => $fkCol,
+                        ];
+                    }
+
+                    // Hapus token relasi dari string columns utama
+                    $cleanColumnsReq = str_replace($fullMatch, '', $cleanColumnsReq);
+                }
+            }
+        }
+
         // Columns select
         $selectCols = '*';
-        if ($columnsReq !== '*' && is_string($columnsReq)) {
-            $reqList = array_map('trim', explode(',', $columnsReq));
+        if ($cleanColumnsReq !== '*' && is_string($cleanColumnsReq)) {
+            $reqList = array_filter(array_map('trim', explode(',', $cleanColumnsReq)));
             $validList = [];
             foreach ($reqList as $c) {
+                if ($c === '*') {
+                    $validList = ['*'];
+                    break;
+                }
                 if (isset($meta['columns'][$c])) {
                     $validList[] = "`$c`";
                 }
             }
-            if ($validList) {
+            // Pastikan foreign key column relasi ikut diselect
+            foreach ($relations as $rel) {
+                if ($validList !== ['*'] && !in_array("`{$rel['fkCol']}`", $validList)) {
+                    $validList[] = "`{$rel['fkCol']}`";
+                }
+            }
+            if ($validList && $validList !== ['*']) {
                 $selectCols = implode(', ', $validList);
             }
         }
@@ -217,6 +293,57 @@ class QueryBuilder {
         $rows = $stmt->fetchAll();
 
         $formatted = array_map(fn($r) => self::formatRowOutput($r, $meta), $rows);
+
+        // Hydrate relations jika diminta
+        if (!empty($relations) && !empty($formatted)) {
+            $schema = self::getSchema();
+            foreach ($relations as $rel) {
+                $targetTable = $rel['targetTable'];
+                $alias       = $rel['alias'];
+                $fkCol       = $rel['fkCol'];
+                $subColsReq  = $rel['subCols'];
+
+                $targetMeta  = $schema['tables'][$targetTable] ?? null;
+                if (!$targetMeta) continue;
+
+                $fkValues = array_values(array_unique(array_filter(array_column($formatted, $fkCol))));
+                if (empty($fkValues)) {
+                    foreach ($formatted as &$row) {
+                        $row[$alias] = null;
+                    }
+                    unset($row);
+                    continue;
+                }
+
+                $targetSelect = '*';
+                if ($subColsReq !== '*' && !empty($subColsReq)) {
+                    $subList = array_map('trim', explode(',', $subColsReq));
+                    $validSub = ["`id`"];
+                    foreach ($subList as $sc) {
+                        if (isset($targetMeta['columns'][$sc])) {
+                            $validSub[] = "`$sc`";
+                        }
+                    }
+                    $targetSelect = implode(', ', array_unique($validSub));
+                }
+
+                $placeholders = implode(',', array_fill(0, count($fkValues), '?'));
+                $targetStmt = $db->prepare("SELECT $targetSelect FROM `$targetTable` WHERE `id` IN ($placeholders)");
+                $targetStmt->execute($fkValues);
+                $targetRows = $targetStmt->fetchAll();
+
+                $targetMap = [];
+                foreach ($targetRows as $tr) {
+                    $targetMap[$tr['id']] = self::formatRowOutput($tr, $targetMeta);
+                }
+
+                foreach ($formatted as &$row) {
+                    $fkVal = $row[$fkCol] ?? null;
+                    $row[$alias] = ($fkVal && isset($targetMap[$fkVal])) ? $targetMap[$fkVal] : null;
+                }
+                unset($row);
+            }
+        }
 
         if (!empty($payload['single'])) {
             if (count($formatted) === 0) {

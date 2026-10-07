@@ -20,6 +20,9 @@ import {
   SCHEDULE_UPDATE_EVENT,
   RESERVATION_UPDATE_EVENT,
   subscribeToScheduleRealtime,
+  fetchSchedules,
+  fetchReservations,
+  matchScheduleId,
 } from '../lib/scheduleService'
 import { useLanguage } from '../contexts/LanguageContext'
 import { DashboardSkeleton } from '../components/Skeleton'
@@ -620,47 +623,71 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
   const [userReservations, setUserReservations] = useState<any[]>([])
   const [userMissions, setUserMissions]         = useState<{ date: string; mission: DailyMissionData }[]>([])
   const [loading, setLoading]                   = useState(true)
-  const [activeFilter, setActiveFilter]         = useState<'all' | 'mission' | 'class'>('all')
-  const [dateScope, setDateScope]               = useState<'upcoming' | 'all' | 'past'>('upcoming')
 
   const todayStr = getTodayDateString()
 
   useEffect(() => {
     async function loadSchedulesAndMissions() {
-      if (!userId) return
+      if (!userId) {
+        setLoading(false)
+        return
+      }
       setLoading(true)
 
-      const { data } = await supabase
-        .from('class_reservations')
-        .select(`
-          id, created_at,
-          schedule:class_schedules!class_reservations_schedule_id_fkey(*)
-        `)
-        .eq('user_id', userId)
+      try {
+        const [missionsMap, allSchedules, allReservations] = await Promise.all([
+          fetchAllUserMissions(userId),
+          fetchSchedules(),
+          fetchReservations(),
+        ])
 
-      let resList: any[] = []
-      if (data) {
-        resList = data
-          .map((r: any) => r.schedule)
-          .filter(Boolean)
-          .sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''))
-        setUserReservations(resList)
+        // User reservations starting from today
+        const myReservations = allReservations.filter(r => r.user_id === userId)
+        const myReservedSchedules = myReservations
+          .map(r => {
+            const sch = allSchedules.find(s => matchScheduleId(s.id, r.schedule_id))
+            return sch ? { ...sch, reservationId: r.id } : null
+          })
+          .filter((sch): sch is NonNullable<typeof sch> => Boolean(sch && (sch.date || sch.start_date || '') >= todayStr))
+          .sort((a, b) => (a.date || a.start_date || '').localeCompare(b.date || b.start_date || ''))
+
+        setUserReservations(myReservedSchedules)
+
+        // User missions starting from today
+        const missionsList: { date: string; mission: DailyMissionData }[] = Array.from(missionsMap.entries())
+          .filter(([date]) => date >= todayStr)
+          .map(([date, mission]) => ({ date, mission }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+
+        setUserMissions(missionsList)
+      } catch (err) {
+        console.error('Error loading schedule widget:', err)
+      } finally {
+        setLoading(false)
       }
-
-      const missionsMap = await fetchAllUserMissions(userId)
-      const missionsList: { date: string; mission: DailyMissionData }[] = Array.from(missionsMap.entries()).map(
-        ([date, mission]) => ({ date, mission })
-      )
-
-      missionsList.sort((a, b) => a.date.localeCompare(b.date))
-      setUserMissions(missionsList)
-      setLoading(false)
     }
 
     loadSchedulesAndMissions()
+
+    const handleUpdate = () => {
+      loadSchedulesAndMissions()
+    }
+
+    window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleUpdate)
+    window.addEventListener(RESERVATION_UPDATE_EVENT, handleUpdate)
+    window.addEventListener(SCHEDULE_UPDATE_EVENT, handleUpdate)
+    window.addEventListener('storage', handleUpdate)
+
+    return () => {
+      window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleUpdate)
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleUpdate)
+      window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleUpdate)
+      window.removeEventListener('storage', handleUpdate)
+    }
   }, [userId, todayStr])
 
-  const combinedTimeline = [
+  // Combined plans starting from today
+  const displayedTimeline = [
     ...userMissions.map(m => ({
       id: `mission-${m.date}`,
       type: 'mission' as const,
@@ -670,25 +697,15 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
     ...userReservations.map(r => ({
       id: `class-${r.id}`,
       type: 'class' as const,
-      date: r.date,
+      date: r.date || r.start_date || '',
       schedule: r,
     })),
-  ].sort((a, b) => a.date.localeCompare(b.date))
-
-  const categoryFiltered = combinedTimeline.filter(item => {
-    if (activeFilter === 'mission') return item.type === 'mission'
-    if (activeFilter === 'class') return item.type === 'class'
-    return true
-  })
-
-  const upcomingTimeline = categoryFiltered.filter(item => item.date >= todayStr)
-  const pastTimeline     = categoryFiltered.filter(item => item.date < todayStr)
-
-  const displayedTimeline = dateScope === 'upcoming'
-    ? upcomingTimeline
-    : dateScope === 'past'
-      ? pastTimeline.slice().reverse()
-      : categoryFiltered
+  ]
+    .filter(item => item.date >= todayStr)
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date)
+      return a.type === 'class' ? -1 : 1
+    })
 
   const [selectedScheduleItem, setSelectedScheduleItem] = useState<any | null>(null)
 
@@ -707,7 +724,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               <h2 className="text-base sm:text-lg font-black text-slate-800 dark:text-white leading-tight">
                 Jadwal & Agenda Saya
               </h2>
-              <span className="text-[0.68rem] text-slate-400 font-medium">Linimasa Misi Harian & Kelas Live</span>
+              <span className="text-[0.68rem] text-slate-400 font-medium">Rencana Belajar Mulai Hari Ini</span>
             </div>
           </div>
 
@@ -724,63 +741,17 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           </button>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 mb-2.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full overflow-x-auto shrink-0">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-3 py-1 rounded-lg text-[0.68rem] font-bold border-none cursor-pointer transition-all shrink-0 ${
-              activeFilter === 'all'
-                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Semua ({combinedTimeline.length})
-          </button>
-          <button
-            onClick={() => setActiveFilter('mission')}
-            className={`px-3 py-1 rounded-lg text-[0.68rem] font-bold border-none cursor-pointer transition-all shrink-0 ${
-              activeFilter === 'mission'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'text-slate-500 hover:text-amber-500'
-            }`}
-          >
-            Misi Mandiri ({userMissions.length})
-          </button>
-          <button
-            onClick={() => setActiveFilter('class')}
-            className={`px-3 py-1 rounded-lg text-[0.68rem] font-bold border-none cursor-pointer transition-all shrink-0 ${
-              activeFilter === 'class'
-                ? 'bg-sky-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-sky-600'
-            }`}
-          >
-            Kelas Live ({userReservations.length})
-          </button>
-        </div>
-
-        {/* Date Scope Pills */}
-        <div className="flex items-center justify-between gap-2 mb-3 px-0.5">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setDateScope('upcoming')}
-              className={`px-2.5 py-1 rounded-lg text-[0.7rem] font-bold border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                dateScope === 'upcoming'
-                  ? 'bg-primary text-white border-primary shadow-xs'
-                  : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>Mulai Hari Ini</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[0.6rem] font-black ${
-                dateScope === 'upcoming' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-              }`}>
-                {upcomingTimeline.length}
-              </span>
-            </button>
+        {/* Subheader info: Today & Count */}
+        <div className="flex items-center justify-between mb-3 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-xs shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Hari ini:</span>
+            <span className="font-extrabold text-slate-800 dark:text-white">
+              {formatIndonesianFullDate(todayStr).split(',')[0]}
+            </span>
           </div>
-
-          <span className="text-[0.68rem] text-slate-400 font-semibold hidden sm:inline shrink-0">
-            Hari Ini: <strong className="text-slate-700 dark:text-slate-200">{formatIndonesianFullDate(todayStr).split(',')[0]}</strong>
+          <span className="px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-black text-[0.68rem]">
+            {displayedTimeline.length} Rencana Terjadwal
           </span>
         </div>
 
@@ -789,16 +760,12 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           <div className="py-8 text-center text-xs text-slate-400">Memuat linimasa jadwalku...</div>
         ) : displayedTimeline.length === 0 ? (
           <div className="p-6 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-3 flex-1 justify-center">
-            <span>
-              {dateScope === 'upcoming'
-                ? `Belum ada agenda aktif mulai hari ini ke depan.`
-                : 'Belum ada agenda yang tersusun untuk kategori ini.'}
-            </span>
+            <span>Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
             <button
               onClick={() => navigate('/learning-plan')}
               className="group px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all text-xs shadow-xs flex items-center gap-1.5"
             >
-              <span>Susun Agenda</span>
+              <span>Susun Rencana di Kalender</span>
               <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                 <svg className="size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -807,7 +774,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
             </button>
           </div>
         ) : (
-          <div className="space-y-2 overflow-y-auto pr-1 max-h-[250px]">
+          <div className="space-y-2 overflow-y-auto pr-1 max-h-[300px]">
             {displayedTimeline.map(item => {
               const isToday = item.date === todayStr
               const relLabel = getRelativeDayLabel(item.date, todayStr)
@@ -893,7 +860,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
                     </div>
 
                     <div className="text-[0.68rem] opacity-80 flex items-center justify-between">
-                      <span>Sensei: {sch.instructor}</span>
+                      <span>Sensei: {sch.instructor_name || sch.instructor || 'Sensei Dojo'}</span>
                       <span className="font-black px-1.5 py-0.2 rounded bg-white/80 dark:bg-slate-900/60">
                         Terdaftar
                       </span>
@@ -986,7 +953,9 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
 
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
                   <div className="font-extrabold text-slate-800 dark:text-white">Pengajar (Sensei):</div>
-                  <div className="font-bold text-slate-700 dark:text-slate-200 text-xs">{selectedScheduleItem.schedule.instructor}</div>
+                  <div className="font-bold text-slate-700 dark:text-slate-200 text-xs">
+                    {selectedScheduleItem.schedule.instructor_name || selectedScheduleItem.schedule.instructor || 'Sensei Dojo'}
+                  </div>
                   {selectedScheduleItem.schedule.type === 'online' && (
                     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                       <span className="text-slate-400 block mb-1 font-semibold text-[0.7rem]">Tautan Kelas:</span>

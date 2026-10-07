@@ -133,6 +133,7 @@ CREATE TABLE `class_reservations` (
   UNIQUE KEY `class_reservations_schedule_id_user_id_key` (`schedule_id`, `user_id`),
   KEY `idx_class_reservations_schedule_id` (`schedule_id`),
   KEY `idx_class_reservations_user_id` (`user_id`),
+  KEY `idx_class_reservations_user_created` (`user_id`, `created_at`),
   CONSTRAINT `class_reservations_fk1` FOREIGN KEY (`schedule_id`) REFERENCES `class_schedules` (`id`) ON DELETE CASCADE,
   CONSTRAINT `class_reservations_fk2` FOREIGN KEY (`user_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -160,6 +161,11 @@ CREATE TABLE `class_schedules` (
   `end_date` DATE NULL,
   `target_group` TEXT NULL,
   PRIMARY KEY (`id`),
+  KEY `idx_class_schedules_date` (`date`),
+  KEY `idx_class_schedules_start_date` (`start_date`),
+  KEY `idx_class_schedules_instructor` (`instructor_id`),
+  KEY `idx_class_schedules_type` (`type`),
+  KEY `idx_class_schedules_created` (`created_at`),
   CONSTRAINT `class_schedules_fk1` FOREIGN KEY (`instructor_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -230,7 +236,8 @@ CREATE TABLE `daily_missions` (
   `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
   `baseline_snapshot` LONGTEXT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `daily_missions_student_id_date_key` (`student_id`, `date`)
+  UNIQUE KEY `daily_missions_student_id_date_key` (`student_id`, `date`),
+  KEY `idx_daily_missions_date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── enrollments ─────────────────────────────────────────
@@ -310,6 +317,7 @@ CREATE TABLE `learning_streaks` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `learning_streaks_student_id_date_key` (`student_id`, `date`),
   KEY `idx_learning_streaks_student` (`student_id`),
+  KEY `idx_learning_streaks_date` (`date`),
   CONSTRAINT `learning_streaks_fk1` FOREIGN KEY (`student_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -387,11 +395,19 @@ CREATE TABLE `profiles` (
   `status` TEXT NULL DEFAULT 'pending',
   `institution` TEXT NULL,
   `group_name` TEXT NULL,
+  `domisili` TEXT NULL,
+  `kelurahan` TEXT NULL,
+  `kecamatan` TEXT NULL,
+  `kabupaten` TEXT NULL,
   `current_session_id` TEXT NULL,
   `current_device_info` TEXT NULL,
   `last_session_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `profiles_username_key` (`username`),
+  KEY `idx_profiles_role` (`role`),
+  KEY `idx_profiles_status` (`status`(191)),
+  KEY `idx_profiles_group_name` (`group_name`(191)),
+  KEY `idx_profiles_last_active` (`last_active_at`),
   CONSTRAINT `profiles_fk1` FOREIGN KEY (`id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -406,6 +422,8 @@ CREATE TABLE `quiz_attempts` (
   `passed` TINYINT(1) NOT NULL DEFAULT 0,
   `attempted_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
+  KEY `idx_quiz_attempts_student` (`student_id`),
+  KEY `idx_quiz_attempts_student_lesson` (`student_id`, `lesson_id`),
   CONSTRAINT `quiz_attempts_fk1` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quiz_attempts_fk2` FOREIGN KEY (`student_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -419,6 +437,7 @@ CREATE TABLE `quiz_questions` (
   `options` LONGTEXT NOT NULL,
   `order_index` INT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
+  KEY `idx_quiz_questions_lesson` (`lesson_id`, `order_index`),
   CONSTRAINT `quiz_questions_fk1` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
