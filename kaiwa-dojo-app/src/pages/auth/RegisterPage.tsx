@@ -1112,9 +1112,8 @@ export default function RegisterPage() {
           <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Sudah memiliki akun?{' '}
-              <Link to="/login" className="inline-flex items-center gap-1 text-primary dark:text-red-400 hover:underline font-bold ml-1">
-                <span>Masuk ke Akun</span>
-                <span>&rarr;</span>
+              <Link to="/login" className="text-primary dark:text-red-400 font-bold underline hover:opacity-80 ml-1">
+                Masuk ke Akun
               </Link>
             </p>
           </div>

@@ -57,22 +57,38 @@ export default function CustomAlertModal({
   const typeStyles = {
     lock: {
       bgIcon: 'bg-amber-500/10 border-amber-500/30 text-amber-500',
-      icon: '🔒',
+      icon: (
+        <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
       btn: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20',
     },
     warning: {
       bgIcon: 'bg-rose-500/10 border-rose-500/30 text-rose-500',
-      icon: '⚠️',
+      icon: (
+        <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      ),
       btn: 'bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-md shadow-rose-500/20',
     },
     info: {
       bgIcon: 'bg-sky-500/10 border-sky-500/30 text-sky-500',
-      icon: '💡',
+      icon: (
+        <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
       btn: 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white shadow-md shadow-sky-500/20',
     },
     success: {
       bgIcon: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500',
-      icon: '🎉',
+      icon: (
+        <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
       btn: 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md shadow-emerald-500/20',
     },
   }
@@ -86,7 +102,7 @@ export default function CustomAlertModal({
         <div className={`absolute top-0 left-0 right-0 h-1.5 ${currentStyle.btn.split(' ')[0]}`} />
 
         {/* Icon Circle */}
-        <div className={`size-16 rounded-2xl border flex items-center justify-center text-3xl shadow-xs mt-1 ${currentStyle.bgIcon}`}>
+        <div className={`size-16 rounded-2xl border flex items-center justify-center shadow-xs mt-1 ${currentStyle.bgIcon}`}>
           {currentStyle.icon}
         </div>
 
@@ -107,7 +123,7 @@ export default function CustomAlertModal({
               rel="noopener noreferrer"
               className="w-full py-3 rounded-2xl text-xs sm:text-sm font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white text-center no-underline shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              {actionText || '💬 Hubungi Admin via WhatsApp'}
+              {actionText || 'Hubungi Admin via WhatsApp'}
             </a>
           )}
 

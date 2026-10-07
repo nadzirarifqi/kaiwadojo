@@ -75,7 +75,7 @@ export default function LoginPage() {
     const inputClean = sanitizeInput(username).toLowerCase().replace(/^@/, '')
 
     if (!inputClean) {
-      showAlert('⚠️ Username Belum Diisi', 'Silakan masukkan username atau email Anda terlebih dahulu.')
+      showAlert('Username Belum Diisi', 'Silakan masukkan username atau email Anda terlebih dahulu.')
       return
     }
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
       const remainingSecs = lockoutSeconds || rateCheck.lockoutSecondsLeft
       setLockoutSeconds(remainingSecs)
       showAlert(
-        '🚫 Terlalu Banyak Percobaan',
+        'Terlalu Banyak Percobaan',
         `Akses login untuk akun ini dikunci sementara karena terlalu banyak percobaan gagal. Silakan coba kembali dalam ${remainingSecs} detik.`,
         'lock',
         'Tutup'
@@ -95,7 +95,7 @@ export default function LoginPage() {
     }
 
     if (!password) {
-      showAlert('🔒 Password Belum Diisi', 'Silakan masukkan password akun Anda terlebih dahulu.', 'lock', 'Isi Password')
+      showAlert('Password Belum Diisi', 'Silakan masukkan password akun Anda terlebih dahulu.', 'lock', 'Isi Password')
       return
     }
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
       } else {
         setLoading(false)
         showAlert(
-          '🔑 Password Salah',
+          'Password Salah',
           `Password yang Anda masukkan untuk akun Admin "${username}" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi.`,
           'lock',
           'Coba Password Lagi'
@@ -176,12 +176,12 @@ export default function LoginPage() {
       if (studentMatch.status === 'pending') {
         setLoading(false)
         showAlert(
-          '⏳ Akun Menunggu Verifikasi Admin',
+          'Akun Menunggu Verifikasi Admin',
           `Pendaftaran akun Anda ("${studentMatch.full_name}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
           'Tutup',
           getAdminWhatsAppUrl(studentMatch.username),
-          '💬 Konfirmasi ke WhatsApp Admin'
+          'Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -189,7 +189,7 @@ export default function LoginPage() {
       if (studentMatch.status === 'rejected') {
         setLoading(false)
         showAlert(
-          '❌ Akun Ditolak / Nonaktif',
+          'Akun Ditolak / Nonaktif',
           `Akun Anda ("${studentMatch.full_name}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo. Silakan hubungi tim pengelola jika terjadi kekeliruan.`,
           'warning',
           'Mengerti'
@@ -217,7 +217,7 @@ export default function LoginPage() {
         // Username is NOT found in database
         setLoading(false)
         showAlert(
-          '❌ Username Tidak Ditemukan',
+          'Username Tidak Ditemukan',
           `Username "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan username Anda atau daftar akun baru jika belum memiliki akun.`,
           'warning',
           'Periksa Username'
@@ -228,12 +228,12 @@ export default function LoginPage() {
       if (userProfile.status === 'pending') {
         setLoading(false)
         showAlert(
-          '⏳ Akun Menunggu Verifikasi Admin',
+          'Akun Menunggu Verifikasi Admin',
           `Pendaftaran akun Anda ("${userProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
           'Tutup',
           getAdminWhatsAppUrl(userProfile.username || username),
-          '💬 Konfirmasi ke WhatsApp Admin'
+          'Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -241,7 +241,7 @@ export default function LoginPage() {
       if (userProfile.status === 'rejected') {
         setLoading(false)
         showAlert(
-          '❌ Akun Ditolak / Nonaktif',
+          'Akun Ditolak / Nonaktif',
           `Akun Anda ("${userProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
           'warning',
           'Mengerti'
@@ -252,7 +252,7 @@ export default function LoginPage() {
       if (!userProfile.email) {
         setLoading(false)
         showAlert(
-          '⚠️ Email Tidak Terkait',
+          'Email Tidak Terkait',
           `Akun untuk username "**${username}**" belum memiliki email aktif di database.`,
           'warning'
         )
@@ -272,12 +272,12 @@ export default function LoginPage() {
       if (emailProfile?.status === 'pending') {
         setLoading(false)
         showAlert(
-          '⏳ Akun Menunggu Verifikasi Admin',
+          'Akun Menunggu Verifikasi Admin',
           `Pendaftaran akun Anda ("${emailProfile.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
           'warning',
           'Tutup',
           getAdminWhatsAppUrl(username),
-          '💬 Konfirmasi ke WhatsApp Admin'
+          'Konfirmasi ke WhatsApp Admin'
         )
         return
       }
@@ -285,7 +285,7 @@ export default function LoginPage() {
       if (emailProfile?.status === 'rejected') {
         setLoading(false)
         showAlert(
-          '❌ Akun Ditolak / Nonaktif',
+          'Akun Ditolak / Nonaktif',
           `Akun Anda ("${emailProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
           'warning',
           'Mengerti'
@@ -308,7 +308,7 @@ export default function LoginPage() {
       if (res.locked) {
         setLockoutSeconds(res.lockoutSecondsLeft)
         showAlert(
-          '🚫 Akun Terkunci Sementara',
+          'Akun Terkunci Sementara',
           `Terlalu banyak percobaan login gagal untuk akun ini. Sistem mengunci percobaan login selama ${res.lockoutSecondsLeft} detik untuk mencegah pembajakan akun.`,
           'lock',
           'Mengerti'
@@ -318,7 +318,7 @@ export default function LoginPage() {
 
       if (authError.message === 'Email not confirmed') {
         showAlert(
-          '✉️ Email Belum Dikonfirmasi',
+          'Email Belum Dikonfirmasi',
           `Email untuk akun ini belum dikonfirmasi.\n\nSilakan cek inbox atau folder spam email Anda untuk verifikasi.`,
           'info',
           'Mengerti'
@@ -326,21 +326,21 @@ export default function LoginPage() {
       } else if (authError.message === 'Invalid login credentials') {
         if (!userFoundInDb && inputClean.includes('@')) {
           showAlert(
-            '❌ Email Tidak Ditemukan',
+            'Email Tidak Ditemukan',
             `Email "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan email Anda atau buat akun baru. (Sisa percobaan: ${res.remainingAttempts}x)`,
             'warning',
             'Periksa Email'
           )
         } else {
           showAlert(
-            '🔑 Password Salah',
+            'Password Salah',
             `Password yang Anda masukkan untuk akun "**${username}**" salah.\n\nSilakan periksa kembali huruf besar/kecil (Caps Lock) password Anda dan coba lagi. (Sisa percobaan: ${res.remainingAttempts}x sebelum akun terkunci)`,
             'lock',
             'Coba Password Lagi'
           )
         }
       } else {
-        showAlert('⚠️ Gagal Masuk', `Terjadi kendala saat login: ${authError.message}`, 'warning')
+        showAlert('Gagal Masuk', `Terjadi kendala saat login: ${authError.message}`, 'warning')
       }
     } else {
       // Reset rate limit on success
@@ -357,12 +357,12 @@ export default function LoginPage() {
         if (profData?.status === 'pending') {
           setLoading(false)
           showAlert(
-            '⏳ Akun Menunggu Verifikasi Admin',
+            'Akun Menunggu Verifikasi Admin',
             `Pendaftaran akun Anda ("${profData.full_name || username}") telah berhasil memverifikasi OTP.\n\nNamun saat ini akun Anda masih dalam **proses peninjauan & verifikasi oleh Admin**. Silakan hubungi Admin via WhatsApp untuk mempercepat verifikasi.`,
             'warning',
             'Tutup',
             getAdminWhatsAppUrl(profData.username || username),
-            '💬 Konfirmasi ke WhatsApp Admin'
+            'Konfirmasi ke WhatsApp Admin'
           )
           return
         }
@@ -370,7 +370,7 @@ export default function LoginPage() {
         if (profData?.status === 'rejected') {
           setLoading(false)
           showAlert(
-            '❌ Akun Ditolak / Nonaktif',
+            'Akun Ditolak / Nonaktif',
             `Akun Anda ("${profData.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
             'warning',
             'Mengerti'
@@ -493,7 +493,9 @@ export default function LoginPage() {
           {sessionExpiredNotice && (
             <div className="mb-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3.5 flex items-start justify-between gap-3 text-xs text-amber-800 dark:text-amber-200 font-semibold animate-fade-in">
               <div className="flex items-center gap-2">
-                <span className="text-base shrink-0">🔒</span>
+                <svg className="size-4 shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
                 <span>{sessionExpiredNotice}</span>
               </div>
               <button
@@ -607,24 +609,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Registration Link & Back to Landing Page */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center flex flex-col items-center gap-3">
+          {/* Registration Link */}
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
               Belum punya akun?{' '}
-              <Link to="/register" className="inline-flex items-center gap-1 text-primary dark:text-red-400 font-extrabold hover:underline ml-1">
-                <span>Daftar sekarang</span>
-                <span>&rarr;</span>
+              <Link to="/register" className="text-primary dark:text-red-400 font-extrabold underline hover:opacity-80 ml-1">
+                Daftar sekarang
               </Link>
             </p>
-            <button
-              onClick={() => navigate('/')}
-              className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-red-400 transition-colors border-none bg-transparent cursor-pointer flex items-center gap-1.5"
-            >
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Kembali ke Landing Page</span>
-            </button>
           </div>
         </div>
 
