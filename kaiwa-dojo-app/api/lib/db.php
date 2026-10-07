@@ -59,8 +59,31 @@ class DB {
                 ]);
                 exit;
             }
+
+            self::ensureProfileAddressColumns();
         }
         return self::$instance;
+    }
+
+    public static function ensureProfileAddressColumns(): void {
+        static $checked = false;
+        if ($checked || self::$instance === null) return;
+        $checked = true;
+        try {
+            $cols = ['domisili', 'kelurahan', 'kecamatan', 'kabupaten'];
+            $stmt = self::$instance->query("SHOW COLUMNS FROM profiles");
+            $existing = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $existing[strtolower($row['Field'])] = true;
+            }
+            foreach ($cols as $col) {
+                if (!isset($existing[$col])) {
+                    self::$instance->exec("ALTER TABLE profiles ADD COLUMN `$col` TEXT NULL DEFAULT NULL");
+                }
+            }
+        } catch (Throwable $e) {
+            // Silently ignore if table does not exist yet
+        }
     }
 
     public static function generateUuid(): string {

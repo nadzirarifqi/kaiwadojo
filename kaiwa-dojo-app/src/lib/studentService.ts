@@ -11,6 +11,10 @@ export interface StudentAccount {
   phone_number?: string
   institution?: string
   group_name?: string  // Matches admin registered group (e.g. 'VLI2608'), or empty for regular student
+  domisili?: string
+  kelurahan?: string
+  kecamatan?: string
+  kabupaten?: string
   role: 'pelajar'
   avatar_url?: string
   bio?: string
@@ -56,8 +60,8 @@ export async function fetchStudentsCount(): Promise<number> {
 // Kolom yang diambil untuk list pelajar — bio dihilangkan (tidak ditampilkan di tabel, hemat egress)
 const STUDENT_LIST_COLUMNS = [
   'id', 'full_name', 'username', 'email', 'phone_number',
-  'institution', 'group_name', 'avatar_url',
-  'streak_days', 'status', 'last_active_at', 'created_at',
+  'institution', 'group_name', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
+  'avatar_url', 'streak_days', 'status', 'last_active_at', 'created_at',
 ].join(', ')
 
 export async function fetchStudents(): Promise<StudentAccount[]> {
@@ -82,6 +86,10 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         phone_number: p.phone_number,
         institution: p.institution,
         group_name: p.group_name ? p.group_name.trim() : undefined,
+        domisili: p.domisili || undefined,
+        kelurahan: p.kelurahan || undefined,
+        kecamatan: p.kecamatan || undefined,
+        kabupaten: p.kabupaten || undefined,
         role: 'pelajar',
         avatar_url: p.avatar_url,
         bio: p.bio,
@@ -109,6 +117,10 @@ export async function createStudentAccount(data: {
   phone_number?: string
   institution?: string
   group_name?: string | null
+  domisili?: string | null
+  kelurahan?: string | null
+  kecamatan?: string | null
+  kabupaten?: string | null
   bio?: string
   status?: StudentStatus
 }): Promise<StudentAccount | null> {
@@ -129,6 +141,10 @@ export async function createStudentAccount(data: {
     phone_number: data.phone_number,
     institution: data.institution,
     group_name: resolvedGroup || undefined,
+    domisili: data.domisili || undefined,
+    kelurahan: data.kelurahan || undefined,
+    kecamatan: data.kecamatan || undefined,
+    kabupaten: data.kabupaten || undefined,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
     bio: data.bio || 'Siswa Kaiwa Dojo',
@@ -146,6 +162,10 @@ export async function createStudentAccount(data: {
       phone_number: newStudent.phone_number,
       institution: newStudent.institution,
       group_name: resolvedGroup,
+      domisili: data.domisili || null,
+      kelurahan: data.kelurahan || null,
+      kecamatan: data.kecamatan || null,
+      kabupaten: data.kabupaten || null,
       role: 'pelajar',
       avatar_url: newStudent.avatar_url,
       bio: newStudent.bio,
@@ -239,6 +259,10 @@ export async function updateStudentAccount(
     email: string
     institution?: string
     group_name?: string | null
+    domisili?: string | null
+    kelurahan?: string | null
+    kecamatan?: string | null
+    kabupaten?: string | null
     bio?: string
     status?: StudentStatus
   }
@@ -259,6 +283,10 @@ export async function updateStudentAccount(
       email: cleanEmail,
       institution: data.institution !== undefined ? (data.institution?.trim() || null) : undefined,
       group_name: resolvedGroup,
+      domisili: data.domisili !== undefined ? (data.domisili?.trim() || null) : undefined,
+      kelurahan: data.kelurahan !== undefined ? (data.kelurahan?.trim() || null) : undefined,
+      kecamatan: data.kecamatan !== undefined ? (data.kecamatan?.trim() || null) : undefined,
+      kabupaten: data.kabupaten !== undefined ? (data.kabupaten?.trim() || null) : undefined,
       bio: data.bio,
       status: data.status,
     }

@@ -973,6 +973,22 @@
           "type": "text",
           "nullable": true
         },
+        "domisili": {
+          "type": "text",
+          "nullable": true
+        },
+        "kelurahan": {
+          "type": "text",
+          "nullable": true
+        },
+        "kecamatan": {
+          "type": "text",
+          "nullable": true
+        },
+        "kabupaten": {
+          "type": "text",
+          "nullable": true
+        },
         "current_session_id": {
           "type": "text",
           "nullable": true

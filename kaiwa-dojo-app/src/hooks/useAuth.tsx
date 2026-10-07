@@ -10,6 +10,7 @@ const LAST_ACTIVITY_KEY   = 'kaiwa_last_activity_timestamp'
 // Kolom yang diambil dari tabel profiles — spesifik, bukan SELECT *
 const PROFILE_SELECT_FIELDS = [
   'id', 'full_name', 'username', 'email', 'phone_number', 'institution', 'group_name',
+  'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
   'avatar_url', 'bio', 'role', 'streak_days', 'status',
   'last_active_at', 'current_session_id', 'current_device_info', 'last_session_at',
   'created_at', 'updated_at',
@@ -23,6 +24,10 @@ export interface Profile {
   phone_number: string | null
   institution?: string | null
   group_name?: string | null
+  domisili?: string | null
+  kelurahan?: string | null
+  kecamatan?: string | null
+  kabupaten?: string | null
   avatar_url: string | null
   bio: string | null
   role: UserRole
@@ -261,6 +266,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('kaiwa_profile_updated', handleProfileUpdate)
 
+    // Realtime channel for logged-in user profile changes
+    let activeProfileChannel: any = null
+    const setupProfileRealtime = (userId: string) => {
+      if (activeProfileChannel) {
+        supabase.removeChannel(activeProfileChannel)
+      }
+      const chId = 'profile_rt_' + userId + '_' + Math.random().toString(36).slice(2)
+      activeProfileChannel = supabase
+        .channel(chId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+          () => {
+            fetchProfile(userId)
+          }
+        )
+        .subscribe()
+    }
+
     // Check browser session status
     const isBrowserSessionActive = sessionStorage.getItem('kaiwa_session_active') === 'true'
     if (!isBrowserSessionActive) {
@@ -342,25 +366,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
     })
-
-    // Realtime channel for logged-in user profile changes
-    let activeProfileChannel: any = null
-    const setupProfileRealtime = (userId: string) => {
-      if (activeProfileChannel) {
-        supabase.removeChannel(activeProfileChannel)
-      }
-      const chId = 'profile_rt_' + userId + '_' + Math.random().toString(36).slice(2)
-      activeProfileChannel = supabase
-        .channel(chId)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
-          () => {
-            fetchProfile(userId)
-          }
-        )
-        .subscribe()
-    }
 
     // Cross-tab broadcast listener
     const handleProfileBroadcast = (e: MessageEvent) => {

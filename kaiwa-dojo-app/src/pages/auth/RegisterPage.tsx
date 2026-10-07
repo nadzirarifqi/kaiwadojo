@@ -12,6 +12,10 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [institution, setInstitution] = useState('')
+  const [domisili, setDomisili] = useState('')
+  const [kelurahan, setKelurahan] = useState('')
+  const [kecamatan, setKecamatan] = useState('')
+  const [kabupaten, setKabupaten] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -288,6 +292,10 @@ export default function RegisterPage() {
     const cleanEmail = email.trim().toLowerCase()
     const cleanPhone = sanitizePhoneNumber(phoneNumber)
     const cleanInstitution = sanitizeInput(institution, 150)
+    const cleanDomisili = sanitizeInput(domisili, 255)
+    const cleanKelurahan = sanitizeInput(kelurahan, 100)
+    const cleanKecamatan = sanitizeInput(kecamatan, 100)
+    const cleanKabupaten = sanitizeInput(kabupaten, 100)
 
     let authUserId: string | undefined
 
@@ -301,6 +309,10 @@ export default function RegisterPage() {
             username: cleanUsername,
             phone_number: cleanPhone,
             institution: cleanInstitution,
+            domisili: cleanDomisili,
+            kelurahan: cleanKelurahan,
+            kecamatan: cleanKecamatan,
+            kabupaten: cleanKabupaten,
             role: 'pelajar',
             status: 'pending',
           },
@@ -374,6 +386,10 @@ export default function RegisterPage() {
       email: cleanEmail,
       phone_number: cleanPhone,
       institution: cleanInstitution,
+      domisili: cleanDomisili,
+      kelurahan: cleanKelurahan,
+      kecamatan: cleanKecamatan,
+      kabupaten: cleanKabupaten,
       bio: 'Siswa Baru Kaiwa Dojo',
       status: 'pending',
     })
@@ -595,6 +611,85 @@ export default function RegisterPage() {
                 <span className="font-bold text-slate-500 dark:text-slate-400">Format:</span>{' '}
                 <code className="text-primary dark:text-red-400 font-bold">Nama Group | Institusi</code>{' '}
                 <span className="text-slate-400">(atau cukup <code className="text-primary dark:text-red-400 font-bold">Nama Group</code> jika belum ada institusi)</span>
+              </div>
+            </div>
+
+            {/* Alamat Domisili Lengkap */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reg-domisili" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                <span>📍</span> Alamat Domisili
+              </label>
+              <input
+                id="reg-domisili"
+                type="text"
+                autoCapitalize="words"
+                autoCorrect="off"
+                enterKeyHint="next"
+                placeholder="Jl. / RT / RW / No. Rumah"
+                required
+                value={domisili}
+                onChange={e => setDomisili(e.target.value)}
+                className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+              />
+            </div>
+
+            {/* Grid Wilayah: Kelurahan, Kecamatan, Kabupaten/Kota */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Kelurahan / Desa */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reg-kelurahan" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Kelurahan / Desa
+                </label>
+                <input
+                  id="reg-kelurahan"
+                  type="text"
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  enterKeyHint="next"
+                  placeholder="Contoh: Sukamaju"
+                  required
+                  value={kelurahan}
+                  onChange={e => setKelurahan(e.target.value)}
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+                />
+              </div>
+
+              {/* Kecamatan */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reg-kecamatan" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Kecamatan
+                </label>
+                <input
+                  id="reg-kecamatan"
+                  type="text"
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  enterKeyHint="next"
+                  placeholder="Contoh: Cilodong"
+                  required
+                  value={kecamatan}
+                  onChange={e => setKecamatan(e.target.value)}
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+                />
+              </div>
+
+              {/* Kabupaten / Kota */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reg-kabupaten" className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Kabupaten / Kota
+                </label>
+                <input
+                  id="reg-kabupaten"
+                  type="text"
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  enterKeyHint="next"
+                  placeholder="Contoh: Kota Depok"
+                  required
+                  value={kabupaten}
+                  onChange={e => setKabupaten(e.target.value)}
+                  className="w-full px-4 py-3.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-2 focus:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 font-medium min-h-[44px] touch-manipulation"
+                />
               </div>
             </div>
 

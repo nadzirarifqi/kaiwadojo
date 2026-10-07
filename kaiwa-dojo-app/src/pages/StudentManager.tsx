@@ -39,6 +39,10 @@ export default function StudentManager() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [institution, setInstitution] = useState('')
+  const [domisili, setDomisili] = useState('')
+  const [kelurahan, setKelurahan] = useState('')
+  const [kecamatan, setKecamatan] = useState('')
+  const [kabupaten, setKabupaten] = useState('')
   const [bio, setBio] = useState('')
   const [status, setStatus] = useState<StudentStatus>('approved')
   const [groupName, setGroupName] = useState('') // normalized group
@@ -105,6 +109,10 @@ export default function StudentManager() {
     setUsername('')
     setEmail('')
     setInstitution('')
+    setDomisili('')
+    setKelurahan('')
+    setKecamatan('')
+    setKabupaten('')
     setBio('')
     setStatus('approved')
     setGroupName('')
@@ -117,6 +125,10 @@ export default function StudentManager() {
     setUsername(std.username)
     setEmail(std.email)
     setInstitution(std.institution || '')
+    setDomisili(std.domisili || '')
+    setKelurahan(std.kelurahan || '')
+    setKecamatan(std.kecamatan || '')
+    setKabupaten(std.kabupaten || '')
     setBio(std.bio || '')
     setStatus(std.status || 'approved')
     setGroupName(std.group_name || '')
@@ -186,6 +198,10 @@ export default function StudentManager() {
       username: username.trim().toLowerCase(),
       email: email.trim().toLowerCase(),
       institution: institution.trim(),
+      domisili: domisili.trim() || undefined,
+      kelurahan: kelurahan.trim() || undefined,
+      kecamatan: kecamatan.trim() || undefined,
+      kabupaten: kabupaten.trim() || undefined,
       group_name: targetGroup,
       bio: bio.trim(),
       status,
@@ -222,6 +238,10 @@ export default function StudentManager() {
               username: username.trim().toLowerCase(),
               email: email.trim().toLowerCase(),
               institution: institution.trim(),
+              domisili: domisili.trim() || undefined,
+              kelurahan: kelurahan.trim() || undefined,
+              kecamatan: kecamatan.trim() || undefined,
+              kabupaten: kabupaten.trim() || undefined,
               group_name: targetGroup || undefined,
               bio: bio.trim(),
               status,
@@ -236,6 +256,10 @@ export default function StudentManager() {
       username: username.trim().toLowerCase(),
       email: email.trim().toLowerCase(),
       institution: institution.trim(),
+      domisili: domisili.trim() || null,
+      kelurahan: kelurahan.trim() || null,
+      kecamatan: kecamatan.trim() || null,
+      kabupaten: kabupaten.trim() || null,
       group_name: targetGroup,
       bio: bio.trim(),
       status,
@@ -665,6 +689,12 @@ export default function StudentManager() {
                       </td>
                       <td className="py-3 px-2">
                         <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
+                        {(std.kabupaten || std.kecamatan || std.domisili) && (
+                          <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1 truncate max-w-[170px]" title={[std.domisili, std.kelurahan, std.kecamatan, std.kabupaten].filter(Boolean).join(', ')}>
+                            <span>📍</span>
+                            <span>{[std.kelurahan, std.kecamatan, std.kabupaten || std.domisili].filter(Boolean).join(', ') || std.domisili}</span>
+                          </div>
+                        )}
                       </td>
                       {/* Grup Column */}
                       <td className="py-3 px-2">
@@ -911,6 +941,60 @@ export default function StudentManager() {
                         className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                       />
                     </div>
+
+                    {/* Alamat Domisili */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        📍 Alamat Domisili
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Jl. / RT / RW / No. Rumah"
+                        value={domisili}
+                        onChange={e => setDomisili(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    {/* Grid: Kelurahan, Kecamatan, Kabupaten */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kelurahan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kelurahan"
+                          value={kelurahan}
+                          onChange={e => setKelurahan(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kecamatan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kecamatan"
+                          value={kecamatan}
+                          onChange={e => setKecamatan(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kabupaten/Kota
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kabupaten"
+                          value={kabupaten}
+                          onChange={e => setKabupaten(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1018,6 +1102,60 @@ export default function StudentManager() {
                         <option value="pending">⏳ Menunggu Persetujuan</option>
                         <option value="rejected">✕ Nonaktif / Ditolak</option>
                       </select>
+                    </div>
+
+                    {/* Alamat Domisili */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                        📍 Alamat Domisili
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Jl. / RT / RW / No. Rumah"
+                        value={domisili}
+                        onChange={e => setDomisili(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    {/* Grid: Kelurahan, Kecamatan, Kabupaten */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kelurahan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kelurahan"
+                          value={kelurahan}
+                          onChange={e => setKelurahan(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kecamatan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kecamatan"
+                          value={kecamatan}
+                          onChange={e => setKecamatan(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[0.68rem] font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                          Kabupaten/Kota
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Kabupaten"
+                          value={kabupaten}
+                          onChange={e => setKabupaten(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
+                        />
+                      </div>
                     </div>
                   </div>
 

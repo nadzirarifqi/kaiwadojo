@@ -139,6 +139,10 @@ function issueTokenForUser(PDO $db, string $userId): void {
             'username'     => $profile['username'],
             'phone_number' => $profile['phone_number'],
             'institution'  => $profile['institution'] ?? null,
+            'domisili'     => $profile['domisili'] ?? null,
+            'kelurahan'    => $profile['kelurahan'] ?? null,
+            'kecamatan'    => $profile['kecamatan'] ?? null,
+            'kabupaten'    => $profile['kabupaten'] ?? null,
             'status'       => $profile['status']
         ]
     ];
@@ -168,6 +172,10 @@ function handleSignUp(PDO $db, array $input): void {
     $username = strtolower(trim($meta['username'] ?? ''));
     $phone = trim($meta['phone_number'] ?? '');
     $institution = trim($meta['institution'] ?? '');
+    $domisili = trim($meta['domisili'] ?? '');
+    $kelurahan = trim($meta['kelurahan'] ?? '');
+    $kecamatan = trim($meta['kecamatan'] ?? '');
+    $kabupaten = trim($meta['kabupaten'] ?? '');
     $status = $meta['status'] ?? 'pending';
 
     if (!$email || !$password) {
@@ -232,8 +240,8 @@ function handleSignUp(PDO $db, array $input): void {
 
         // 3. Simpan ke profiles
         $stmtProf = $db->prepare("
-            INSERT INTO profiles (id, full_name, username, email, phone_number, role, status, institution, group_name, streak_days, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 'pelajar', ?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+            INSERT INTO profiles (id, full_name, username, email, phone_number, role, status, institution, group_name, domisili, kelurahan, kecamatan, kabupaten, streak_days, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'pelajar', ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
         ");
         $stmtProf->execute([
             $userId,
@@ -243,7 +251,11 @@ function handleSignUp(PDO $db, array $input): void {
             $phone ?: null,
             $status,
             $institution ?: null,
-            $matchedGroup
+            $matchedGroup,
+            $domisili ?: null,
+            $kelurahan ?: null,
+            $kecamatan ?: null,
+            $kabupaten ?: null
         ]);
 
         $db->commit();

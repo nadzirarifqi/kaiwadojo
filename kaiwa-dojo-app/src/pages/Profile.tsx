@@ -49,6 +49,10 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [institution, setInstitution] = useState('')
+  const [domisili, setDomisili] = useState('')
+  const [kelurahan, setKelurahan] = useState('')
+  const [kecamatan, setKecamatan] = useState('')
+  const [kabupaten, setKabupaten] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -82,6 +86,10 @@ export default function ProfilePage() {
       setFullName(profile.full_name || '')
       setUsername(profile.username || '')
       setInstitution(profile.institution || '')
+      setDomisili(profile.domisili || '')
+      setKelurahan(profile.kelurahan || '')
+      setKecamatan(profile.kecamatan || '')
+      setKabupaten(profile.kabupaten || '')
       setBio(profile.bio || '')
       setAvatarUrl(profile.avatar_url || '')
     }
@@ -282,6 +290,10 @@ export default function ProfilePage() {
       // 2. Save directly to Supabase DB profiles table
       const cleanFullName = sanitizeInput(fullName, 100)
       const cleanInstitution = sanitizeInput(institution, 150)
+      const cleanDomisili = sanitizeInput(domisili, 255)
+      const cleanKelurahan = sanitizeInput(kelurahan, 100)
+      const cleanKecamatan = sanitizeInput(kecamatan, 100)
+      const cleanKabupaten = sanitizeInput(kabupaten, 100)
       const cleanBio = sanitizeInput(bio, 500)
       const cleanAvatar = sanitizeInput(finalAvatarUrl, 500)
 
@@ -289,6 +301,10 @@ export default function ProfilePage() {
         full_name: cleanFullName,
         institution: cleanInstitution,
         group_name: normalizeGroup(cleanInstitution),
+        domisili: cleanDomisili || null,
+        kelurahan: cleanKelurahan || null,
+        kecamatan: cleanKecamatan || null,
+        kabupaten: cleanKabupaten || null,
         bio: cleanBio,
         avatar_url: cleanAvatar || null,
         updated_at: new Date().toISOString(),
@@ -307,6 +323,10 @@ export default function ProfilePage() {
           username: (profile?.username || username).trim(),
           institution: cleanInstitution,
           group_name: normalizeGroup(cleanInstitution),
+          domisili: cleanDomisili || null,
+          kelurahan: cleanKelurahan || null,
+          kecamatan: cleanKecamatan || null,
+          kabupaten: cleanKabupaten || null,
           bio: cleanBio,
           avatar_url: cleanAvatar || null,
           role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
@@ -324,6 +344,10 @@ export default function ProfilePage() {
         username: (profile?.username || username).trim(),
         institution: cleanInstitution,
         group_name: normalizeGroup(cleanInstitution),
+        domisili: cleanDomisili || null,
+        kelurahan: cleanKelurahan || null,
+        kecamatan: cleanKecamatan || null,
+        kabupaten: cleanKabupaten || null,
         bio: cleanBio,
         avatar_url: cleanAvatar || null,
         role: profile?.role || (targetUserId === '00000000-0000-0000-0000-000000000099' ? 'admin' : 'pelajar'),
@@ -719,9 +743,65 @@ export default function ProfilePage() {
                   type="text"
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
-                  placeholder="Contoh: Universitas Indonesia / LPK Sakura"
+                  placeholder="Contoh: Nama Group | Institusi"
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
                 />
+              </div>
+
+              {/* Alamat Domisili */}
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                  <span>📍</span> Alamat Domisili
+                </label>
+                <input
+                  type="text"
+                  value={domisili}
+                  onChange={(e) => setDomisili(e.target.value)}
+                  placeholder="Jl. / RT / RW / No. Rumah"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                />
+              </div>
+
+              {/* Grid: Kelurahan, Kecamatan, Kabupaten/Kota */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Kelurahan / Desa
+                  </label>
+                  <input
+                    type="text"
+                    value={kelurahan}
+                    onChange={(e) => setKelurahan(e.target.value)}
+                    placeholder="Contoh: Sukamaju"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Kecamatan
+                  </label>
+                  <input
+                    type="text"
+                    value={kecamatan}
+                    onChange={(e) => setKecamatan(e.target.value)}
+                    placeholder="Contoh: Cilodong"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Kabupaten / Kota
+                  </label>
+                  <input
+                    type="text"
+                    value={kabupaten}
+                    onChange={(e) => setKabupaten(e.target.value)}
+                    placeholder="Contoh: Kota Depok"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
+                  />
+                </div>
               </div>
 
               {/* Bio */}
@@ -783,6 +863,15 @@ export default function ProfilePage() {
                     {profile?.institution || '-'}
                   </span>
                 </div>
+
+                {(profile?.kabupaten || profile?.kecamatan || profile?.domisili) && (
+                  <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 font-semibold">Domisili / Wilayah</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]" title={[profile?.domisili, profile?.kelurahan, profile?.kecamatan, profile?.kabupaten].filter(Boolean).join(', ')}>
+                      {profile?.kabupaten || profile?.kecamatan || profile?.domisili}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktif Terakhir</span>
