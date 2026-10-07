@@ -139,8 +139,7 @@ export default function ClassReservationPage() {
 
     // 0. Group restriction check
     if (!isScheduleAccessibleForUser(sch, profile, groups)) {
-      const grpList = parseTargetGroups(sch.target_group)
-      return { isLocked: true, reason: `Khusus Grup ${grpList.join(', ')}` }
+      return { isLocked: true, reason: 'Khusus Grup Tertentu' }
     }
 
     const enrolled = getEnrolledCount(sch.id)
@@ -549,22 +548,6 @@ export default function ClassReservationPage() {
                         </span>
                       </div>
 
-                      {/* Group Restriction Pill */}
-                      {(() => {
-                        const grpList = parseTargetGroups(sch.target_group)
-                        if (grpList.length > 0) {
-                          return (
-                            <div className="mb-2">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-50 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
-                                <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                                <span>Khusus ({grpList.length} Grup): {grpList.join(', ')}</span>
-                              </span>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
-
                       {/* Title & Topic Subtitle */}
                       <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2">
                         {sch.title}
@@ -609,21 +592,6 @@ export default function ClassReservationPage() {
                           </span>
                           <span className="font-extrabold text-primary dark:text-red-400">
                             {sch.instructor_name}
-                          </span>
-                        </div>
-
-                        {/* Row 4: Metode / Tempat */}
-                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
-                          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0 flex items-center gap-1.5">
-                            {sch.type === 'online' ? (
-                              <svg className="size-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            ) : (
-                              <svg className="size-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            )}
-                            <span>Metode:</span>
-                          </span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate text-right">
-                            {sch.type === 'online' ? 'Google Meet Live' : (sch.location || 'Kaiwa Dojo Center')}
                           </span>
                         </div>
                       </div>

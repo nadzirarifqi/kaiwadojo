@@ -361,8 +361,16 @@ function StreakCard({
       <div className="flex justify-between items-center relative z-10">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
-            <svg className="size-4 sm:size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <svg className="size-4 sm:size-4.5" viewBox="0 0 24 24" fill="currentColor">
+              {[0, 72, 144, 216, 288].map(deg => (
+                <path
+                  key={deg}
+                  transform={`rotate(${deg} 12 12)`}
+                  d="M12 2.8 C10 6.2, 9.6 9.5, 12 12 C14.4 9.5, 14 6.2, 12 2.8 Z"
+                />
+              ))}
+              <circle cx="12" cy="12" r="2.2" className="fill-white dark:fill-slate-900" />
+              <circle cx="12" cy="12" r="1.1" className="fill-rose-500" />
             </svg>
           </div>
           <div className="min-w-0">
@@ -378,7 +386,7 @@ function StreakCard({
         <button
           type="button"
           onClick={() => setShowSakuraModal(true)}
-          className={`text-[0.62rem] sm:text-[0.68rem] font-extrabold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0 ${sakuraInfo.bgClass}`}
+          className={`text-[0.6rem] sm:text-[0.65rem] font-extrabold px-2 sm:px-2.5 py-0.5 rounded-full border cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0 ${sakuraInfo.bgClass}`}
         >
           {sakuraInfo.level}
         </button>
@@ -730,7 +738,7 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
 
           <button
             onClick={() => navigate('/learning-plan')}
-            className="group px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-[0.7rem] sm:text-xs rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+            className="group px-2 sm:px-2.5 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-[0.65rem] sm:text-xs rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0"
           >
             <span>Kalender</span>
             <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -763,11 +771,11 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
             <span className="text-[0.72rem] sm:text-xs">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
             <button
               onClick={() => navigate('/learning-plan')}
-              className="group px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all text-[0.7rem] sm:text-xs shadow-xs flex items-center gap-1.5"
+              className="group px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all text-[0.68rem] sm:text-xs shadow-xs flex items-center gap-1.5 min-h-[30px] sm:min-h-[34px]"
             >
               <span>Susun Rencana di Kalender</span>
-              <span className="size-4 sm:size-4.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                <svg className="size-2 sm:size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </span>
@@ -1256,20 +1264,13 @@ export default function Dashboard() {
             )}
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-                <span className="bg-white/20 backdrop-blur-md text-white text-[0.62rem] sm:text-[0.68rem] font-bold px-2 sm:px-2.5 py-0.5 rounded-full border border-white/30 flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-rose-300 animate-pulse" />
-                  <span>{t('dash_welcome_student', 'Pelajar KaiwaDoJo')}</span>
-                </span>
-                {profile?.group_name && (
+              {profile?.group_name && (
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
                   <span className="bg-white/15 backdrop-blur-md text-white text-[0.62rem] sm:text-[0.68rem] font-bold px-2 sm:px-2.5 py-0.5 rounded-full border border-white/20 truncate max-w-[150px]">
                     Grup: {profile.group_name}
                   </span>
-                )}
-                <span className="bg-amber-400/20 backdrop-blur-md text-amber-200 text-[0.62rem] sm:text-[0.68rem] font-bold px-2 sm:px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                  {t('dash_jlpt_n5_target', 'Target JLPT N5')}
-                </span>
-              </div>
+                </div>
+              )}
 
               <h1 className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight truncate">
                 {greetingJp}, {profile?.full_name || 'Pelajar'}!
@@ -1284,14 +1285,14 @@ export default function Dashboard() {
             {announcements.length > 0 && (
               <button
                 onClick={() => setShowAnnouncementModal(true)}
-                className="flex-1 sm:flex-initial justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs border border-white/30 backdrop-blur-md cursor-pointer transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm hover:scale-105 active:scale-95 touch-manipulation min-h-[38px] sm:min-h-[42px]"
+                className="flex-1 sm:flex-initial justify-center px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-white/15 hover:bg-white/25 text-white font-extrabold text-[0.7rem] sm:text-xs border border-white/30 backdrop-blur-md cursor-pointer transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95 touch-manipulation min-h-[32px] sm:min-h-[36px]"
               >
-                <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="size-3.5 sm:size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 <span>Pengumuman</span>
                 {unreadAnnouncements.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-900 text-[0.6rem] font-black animate-pulse">
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-900 text-[0.58rem] sm:text-[0.6rem] font-black animate-pulse">
                     {unreadAnnouncements.length}
                   </span>
                 )}
@@ -1300,12 +1301,12 @@ export default function Dashboard() {
 
             <button
               onClick={() => navigate('/my-courses')}
-              className="flex-1 sm:flex-initial justify-center group px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-white text-slate-900 font-extrabold hover:bg-slate-100 text-xs sm:text-sm border-none cursor-pointer shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 touch-manipulation min-h-[38px] sm:min-h-[42px]"
+              className="flex-1 sm:flex-initial justify-center group px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-white text-slate-900 font-extrabold hover:bg-slate-100 text-[0.7rem] sm:text-xs border-none cursor-pointer shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 touch-manipulation min-h-[32px] sm:min-h-[36px]"
             >
-              <svg className="size-3.5 fill-current text-primary shrink-0" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-              <span>{t('dash_continue_learning', 'Lanjut Belajar')}</span>
-              <span className="size-4 sm:size-4.5 rounded-full bg-slate-200 flex items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
-                <svg className="size-2 sm:size-2.5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <svg className="size-3 sm:size-3.5 fill-current text-primary shrink-0" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span>{bookProgress.jilid1DoneItems > 0 || bookProgress.jilid2DoneItems > 0 ? t('dash_continue_learning', 'Lanjut Belajar') : t('dash_start_learning', 'Mulai Belajar')}</span>
+              <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 flex items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
+                <svg className="size-2 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </span>
@@ -1393,9 +1394,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/learning-plan')}
-            className="group px-2.5 sm:px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[0.7rem] sm:text-xs font-bold rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 flex items-center gap-1.5 touch-manipulation min-h-[34px] sm:min-h-[38px]"
+            className="group px-2 sm:px-2.5 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[0.65rem] sm:text-xs font-extrabold rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 flex items-center gap-1 touch-manipulation min-h-[28px] sm:min-h-[32px]"
           >
-            <svg className="size-3 sm:size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             <span>{dailyMission ? 'Ubah Misi' : 'Buat Misi'}</span>
@@ -1568,11 +1569,11 @@ export default function Dashboard() {
             </p>
             <button
               onClick={() => navigate('/learning-plan')}
-              className="group px-3.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary-dark text-white text-[0.72rem] sm:text-xs font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[34px] sm:min-h-[38px]"
+              className="group px-3 sm:px-3.5 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white text-[0.68rem] sm:text-xs font-extrabold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[30px] sm:min-h-[34px]"
             >
               <span>Susun Misi Harian</span>
-              <span className="size-4 sm:size-4.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                <svg className="size-2 sm:size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </span>
@@ -1653,11 +1654,11 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => navigate('/my-courses')}
-            className="group text-primary dark:text-red-400 text-xs sm:text-sm font-bold bg-transparent border-none cursor-pointer flex items-center gap-1.5 touch-manipulation shrink-0"
+            className="group px-2 sm:px-2.5 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-[0.65rem] sm:text-xs rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0"
           >
             <span>{t('dash_open_course_btn', 'Buka Kursus')}</span>
-            <span className="size-3.5 sm:size-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-              <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <svg className="size-2 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </span>
