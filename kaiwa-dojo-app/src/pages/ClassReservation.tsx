@@ -285,7 +285,9 @@ export default function ClassReservationPage() {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col items-center gap-4 max-w-sm text-center">
-          <span className="text-5xl">🔒</span>
+          <div className="size-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
           <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Login Diperlukan</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Kamu perlu login terlebih dahulu untuk melihat jadwal dan melakukan reservasi kelas.
@@ -305,7 +307,11 @@ export default function ClassReservationPage() {
             ? 'bg-emerald-500 text-white border-emerald-600'
             : 'bg-red-500 text-white border-red-600'
         }`}>
-          <span className="text-xl">{toastMessage.type === 'success' ? '✅' : '⚠️'}</span>
+          {toastMessage.type === 'success' ? (
+            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          ) : (
+            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          )}
           <span className="text-xs sm:text-sm font-bold">{toastMessage.text}</span>
         </div>
       )}
@@ -315,7 +321,7 @@ export default function ClassReservationPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary dark:text-red-400">
             <span className="size-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center font-bold text-xs">
-              💻
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
             </span>
             <span>{t('cr_tag', 'Jadwal & Interaktif Class')}</span>
           </div>
@@ -337,9 +343,15 @@ export default function ClassReservationPage() {
             <div className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200">{userName}</div>
             <div className="text-[0.68rem] font-extrabold mt-0.5 flex items-center gap-1 text-slate-500 dark:text-slate-400">
               {resolvedUserGroup ? (
-                <span className="text-violet-600 dark:text-violet-400 font-black">🏷️ {resolvedUserGroup}</span>
+                <span className="text-violet-600 dark:text-violet-400 font-black flex items-center gap-1">
+                  <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                  <span>{resolvedUserGroup}</span>
+                </span>
               ) : (
-                <span>🌐 Siswa Reguler</span>
+                <span className="flex items-center gap-1">
+                  <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                  <span>Siswa Reguler</span>
+                </span>
               )}
             </div>
           </div>
@@ -376,7 +388,17 @@ export default function ClassReservationPage() {
               ? 'bg-emerald-400 text-slate-950'
               : 'bg-amber-400 text-slate-950'
           }`}>
-            {reqStatus.isFulfilled ? '✅ Target Terpenuhi' : '⚠️ Belum Terpenuhi'}
+            {reqStatus.isFulfilled ? (
+              <>
+                <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                <span>Target Terpenuhi</span>
+              </>
+            ) : (
+              <>
+                <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Belum Terpenuhi</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -399,35 +421,38 @@ export default function ClassReservationPage() {
 
           <button
             onClick={() => setActiveTab('online')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'online'
                 ? 'bg-sky-600 text-white shadow-md'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>{t('cr_tab_online', '💻 Kelas Online (Mingguan)')}</span> ({accessibleSchedules.filter(s => s.type === 'online').length})
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <span>{t('cr_tab_online', 'Kelas Online (Mingguan)')}</span> ({accessibleSchedules.filter(s => s.type === 'online').length})
           </button>
 
           <button
             onClick={() => setActiveTab('offline')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'offline'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>{t('cr_tab_offline', '🏢 Kelas Offline (Bulanan)')}</span> ({accessibleSchedules.filter(s => s.type === 'offline').length})
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <span>{t('cr_tab_offline', 'Kelas Offline (Bulanan)')}</span> ({accessibleSchedules.filter(s => s.type === 'offline').length})
           </button>
 
           <button
             onClick={() => setActiveTab('my-schedules')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-2 ml-auto ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-auto ${
               activeTab === 'my-schedules'
                 ? 'bg-orange-500 text-white shadow-md'
                 : 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60'
             }`}
           >
-            <span>{t('cr_tab_my_booking', '📌 Jadwal Saya')} ({myReservationsList.length})</span>
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            <span>{t('cr_tab_my_booking', 'Jadwal Saya')} ({myReservationsList.length})</span>
           </button>
         </div>
 
@@ -443,7 +468,9 @@ export default function ClassReservationPage() {
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary"
               />
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 flex items-center pointer-events-none">
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
             </div>
 
             {/* Week & Month Filter — 2 columns on mobile, inline on sm+ */}
@@ -490,7 +517,9 @@ export default function ClassReservationPage() {
             <ScheduleCardSkeleton count={6} />
           ) : filteredSchedules.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
-              <span className="text-5xl">📅</span>
+              <div className="size-16 rounded-3xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
               <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">Tidak ada jadwal kelas ditemukan</h3>
               <p className="text-xs sm:text-sm text-slate-400 max-w-md">
                 Coba ubah kata kunci pencarian atau filter minggu/bulan untuk melihat jadwal lain.
@@ -531,18 +560,29 @@ export default function ClassReservationPage() {
                             ? 'bg-transparent border border-sky-400 text-sky-600 dark:text-sky-300 font-extrabold'
                             : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400 font-black'
                       }`}>
-                        {sch.type === 'online' ? '💻 ONLINE (G-Meet)' : `⛺ OFFLINE (${badgeLabel})`}
+                        {sch.type === 'online' ? (
+                          <>
+                            <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <span>ONLINE (G-Meet)</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            <span>OFFLINE ({badgeLabel})</span>
+                          </>
+                        )}
                       </span>
 
                       {/* Quota Badge */}
-                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 ${
                         isFull
                           ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
                           : enrolledCount >= 8
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
                             : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                       }`}>
-                        👥 {enrolledCount} / {sch.max_quota} Orang
+                        <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        <span>{enrolledCount} / {sch.max_quota} Siswa</span>
                       </span>
                     </div>
 
@@ -555,14 +595,14 @@ export default function ClassReservationPage() {
                           if (grpList.length > 0) {
                             return (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 border border-violet-300/80 dark:border-violet-700/80">
-                                <span>👥</span>
+                                <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
                                 <span>Khusus ({grpList.length} Grup): {grpList.join(', ')}</span>
                               </span>
                             )
                           }
                           return (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                              <span>🌐</span>
+                              <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
                               <span>Terbuka untuk Semua Siswa</span>
                             </span>
                           )
@@ -581,7 +621,7 @@ export default function ClassReservationPage() {
                         {isOfflineMultiDay ? (
                           <>
                             <div className="flex items-start gap-2 bg-emerald-50/80 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200">
-                              <span className="text-base shrink-0">⛺</span>
+                              <svg className="size-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                               <div className="text-[0.72rem] leading-snug">
                                 <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-[0.65rem] tracking-wider mb-0.5">
                                   Jadwal 3 Hari 2 Malam:
@@ -593,30 +633,30 @@ export default function ClassReservationPage() {
                         ) : (
                           <>
                             <div className="flex items-center gap-2">
-                              <span>📅</span>
+                              <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                               <span className="font-extrabold">{formatDateIndonesian(sDateStr, language)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span>⏰</span>
+                              <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                               <span>{formatTimeShort(sch.start_time)} - {formatTimeShort(sch.end_time)} WIB</span>
                             </div>
                           </>
                         )}
 
                         <div className="flex items-center gap-2">
-                          <span>👨‍🏫</span>
+                          <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           <span className="font-bold text-slate-700 dark:text-slate-200">{sch.instructor_name}</span>
                         </div>
 
                         {/* Location / Meet info */}
                         {sch.type === 'online' ? (
                           <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 font-semibold truncate pt-1">
-                            <span>🔗</span>
+                            <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                             <span className="truncate">Google Meet Sesi Live</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold truncate pt-1">
-                            <span>📍</span>
+                            <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <span className="truncate">{sch.location || 'Kaiwa Dojo Center'}</span>
                           </div>
                         )}
@@ -628,7 +668,8 @@ export default function ClassReservationPage() {
                       {userRes ? (
                         <div className="flex items-center gap-2">
                           <div className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-white font-extrabold text-xs text-center flex items-center justify-center gap-1.5 shadow-sm">
-                            <span>✅ Terdaftar</span>
+                            <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span>Terdaftar</span>
                           </div>
                           <button
                             onClick={() => {
@@ -647,7 +688,7 @@ export default function ClassReservationPage() {
                           disabled
                           className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs border-none cursor-not-allowed flex items-center justify-center gap-1.5"
                         >
-                          <span>🔒</span>
+                          <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                           <span>{reason}</span>
                         </button>
                       ) : (
@@ -658,7 +699,8 @@ export default function ClassReservationPage() {
                           }}
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-xs border-none cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
                         >
-                          <span>+ Reservasi Kelas</span>
+                          <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                          <span>Reservasi Kelas</span>
                         </button>
                       )}
                     </div>
@@ -681,7 +723,9 @@ export default function ClassReservationPage() {
 
           {myReservationsList.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
-              <span className="text-5xl">🔖</span>
+              <div className="size-16 rounded-3xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              </div>
               <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">Belum Ada Kelas yang Di-reservasi</h3>
               <p className="text-xs sm:text-sm text-slate-400 max-w-md">
                 Kamu belum mendaftar kelas apapun. Buka tab "Semua Kelas" di atas untuk memilih hari dan jam belajar!
@@ -711,12 +755,22 @@ export default function ClassReservationPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider inline-block mb-2 ${
+                        <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider inline-flex items-center gap-1.5 mb-2 ${
                           schedule.type === 'online'
                             ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
                             : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                         }`}>
-                          {schedule.type === 'online' ? '💻 Online Live Class' : '🏢 Sesi Offline Dojo'}
+                          {schedule.type === 'online' ? (
+                            <>
+                              <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                              <span>Online Live Class</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                              <span>Sesi Offline Dojo</span>
+                            </>
+                          )}
                         </span>
                         <h3 className="text-base font-extrabold text-slate-800 dark:text-white leading-snug">
                           {schedule.title}
@@ -762,11 +816,12 @@ export default function ClassReservationPage() {
                             rel="noopener noreferrer"
                             className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs text-center no-underline flex items-center justify-center gap-2 shadow-sm transition-all"
                           >
-                            <span>🎥 Buka Link Google Meet</span>
+                            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <span>Buka Link Google Meet</span>
                           </a>
                         ) : (
                           <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-start gap-2">
-                            <span>📍</span>
+                            <svg className="size-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <span>{schedule.location || 'Lokasi Dojo Utama'}</span>
                           </div>
                         )}
@@ -793,7 +848,11 @@ export default function ClassReservationPage() {
                     ? 'bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400'
                     : 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
                 }`}>
-                  {confirmModalType === 'book' ? '📝' : '⚠️'}
+                  {confirmModalType === 'book' ? (
+                    <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  ) : (
+                    <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  )}
                 </div>
                 <div>
                   <span className="text-[0.68rem] font-black uppercase tracking-wider text-slate-400">
@@ -811,19 +870,29 @@ export default function ClassReservationPage() {
                 }}
                 className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold border-none cursor-pointer flex items-center justify-center transition-colors"
               >
-                ×
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {/* Schedule Info Card */}
             <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-3 text-xs border border-slate-200/80 dark:border-slate-700/60">
               <div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[0.65rem] font-black uppercase inline-block mb-1.5 ${
+                <span className={`px-2.5 py-0.5 rounded-full text-[0.65rem] font-black uppercase inline-flex items-center gap-1.5 mb-1.5 ${
                   targetSchedule.type === 'online'
                     ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
                     : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                 }`}>
-                  {targetSchedule.type === 'online' ? '💻 ONLINE (Google Meet)' : '🏢 OFFLINE (Lokasi Dojo)'}
+                  {targetSchedule.type === 'online' ? (
+                    <>
+                      <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      <span>ONLINE (Google Meet)</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                      <span>OFFLINE (Lokasi Dojo)</span>
+                    </>
+                  )}
                 </span>
                 <h4 className="text-sm font-extrabold text-slate-800 dark:text-white leading-snug">
                   {targetSchedule.title}
@@ -835,15 +904,15 @@ export default function ClassReservationPage() {
 
               <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5 text-slate-600 dark:text-slate-300 font-medium">
                 <div className="flex items-center gap-2">
-                  <span>📅</span>
+                  <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   <span>Hari & Tanggal: <strong className="text-slate-800 dark:text-white font-extrabold">{formatDateIndonesian(targetSchedule.date, language)}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>⏰</span>
+                  <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   <span>Waktu Sesi: <strong className="text-slate-800 dark:text-white font-extrabold">{targetSchedule.start_time} - {targetSchedule.end_time} WIB</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>👨‍🏫</span>
+                  <svg className="size-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   <span>Instruktur: <strong className="text-slate-800 dark:text-white font-extrabold">{targetSchedule.instructor_name}</strong></span>
                 </div>
               </div>

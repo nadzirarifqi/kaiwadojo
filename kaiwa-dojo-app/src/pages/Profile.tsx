@@ -10,12 +10,12 @@ import { sanitizeInput } from '../lib/securityUtils'
 
 /* ── Avatar Presets (Dojo & Japanese Aesthetic) ────────── */
 const AVATAR_PRESETS = [
-  { id: 'ninja', label: '🥷 Ninja', url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80' },
-  { id: 'samurai', label: '⚔️ Samurai', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80' },
-  { id: 'sakura', label: '🌸 Sakura', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=150&auto=format&fit=crop&q=80' },
-  { id: 'kitsune', label: '🦊 Kitsune', url: 'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=150&auto=format&fit=crop&q=80' },
-  { id: 'torii', label: '⛩️ Torii', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=150&auto=format&fit=crop&q=80' },
-  { id: 'matcha', label: '🍵 Matcha', url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=150&auto=format&fit=crop&q=80' },
+  { id: 'ninja', label: 'Ninja', url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80' },
+  { id: 'samurai', label: 'Samurai', url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80' },
+  { id: 'sakura', label: 'Sakura', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=150&auto=format&fit=crop&q=80' },
+  { id: 'kitsune', label: 'Kitsune', url: 'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=150&auto=format&fit=crop&q=80' },
+  { id: 'torii', label: 'Torii', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=150&auto=format&fit=crop&q=80' },
+  { id: 'matcha', label: 'Matcha', url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=150&auto=format&fit=crop&q=80' },
 ]
 
 interface CourseEnrollmentItem {
@@ -381,58 +381,88 @@ export default function ProfilePage() {
   const badges = [
     {
       id: 'welcome',
-      title: 'Murid Baru 🌸',
+      title: 'Murid Baru',
       description: 'Bergabung dengan KaiwaDoJo',
       unlocked: true,
-      icon: '🏯',
+      icon: (
+        <svg className="size-7 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
     },
     {
       id: 'streak7',
-      title: 'Semangat Lautan Api 🔥',
-      description: 'Menjaga streak belajar 7 hari berturut-turut',
+      title: 'Bunga Sakura Mekar',
+      description: 'Menjaga streak sakura 7 hari berturut-turut',
       unlocked: (profile?.streak_days || 0) >= 7,
       progress: `${Math.min(profile?.streak_days || 0, 7)}/7 Hari`,
-      icon: '🔥',
+      icon: (
+        <svg className="size-7 text-pink-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
+        </svg>
+      ),
     },
     {
       id: 'streak30',
-      title: 'Legenda Dojo 👑',
-      description: 'Menjaga streak belajar 30 hari berturut-turut',
+      title: 'Taman Sakura Rimbun',
+      description: 'Menjaga streak sakura 30 hari berturut-turut',
       unlocked: (profile?.streak_days || 0) >= 30,
       progress: `${Math.min(profile?.streak_days || 0, 30)}/30 Hari`,
-      icon: '👑',
+      icon: (
+        <svg className="size-7 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ),
     },
     {
       id: 'course_complete',
-      title: 'Lulusan Pertama 🎓',
+      title: 'Lulusan Pertama',
       description: 'Menyelesaikan setidaknya 1 kursus penuh',
       unlocked: stats.completedCoursesCount > 0,
       progress: `${stats.completedCoursesCount}/1 Kursus`,
-      icon: '🎓',
+      icon: (
+        <svg className="size-7 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5" />
+        </svg>
+      ),
     },
     {
       id: 'quiz_master',
-      title: 'Kuis Specialist 🎯',
+      title: 'Spesialis Kuis',
       description: 'Lulus setidaknya 5 kuis bahasa Jepang',
       unlocked: stats.quizPassed >= 5,
       progress: `${stats.quizPassed}/5 Kuis`,
-      icon: '🎯',
+      icon: (
+        <svg className="size-7 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="5" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+        </svg>
+      ),
     },
     {
       id: 'watch_time',
-      title: 'Pembelajar Tekun ⏱️',
+      title: 'Pembelajar Tekun',
       description: 'Menonton materi lebih dari 120 menit',
       unlocked: stats.totalWatchDurationMinutes >= 120,
       progress: `${stats.totalWatchDurationMinutes}/120 Menit`,
-      icon: '⏱️',
+      icon: (
+        <svg className="size-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
     },
     {
       id: 'replay_king',
-      title: 'Raja Replay 🔁',
+      title: 'Master Replay',
       description: 'Melakukan pengulangan materi >10 kali',
       unlocked: stats.totalReplays >= 10,
       progress: `${stats.totalReplays}/10 Replay`,
-      icon: '🔁',
+      icon: (
+        <svg className="size-7 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      ),
     },
   ]
 
@@ -453,7 +483,15 @@ export default function ProfilePage() {
             ? 'bg-emerald-500 text-white border-emerald-600'
             : 'bg-red-500 text-white border-red-600'
         }`}>
-          <span>{toastMessage.type === 'success' ? '✅' : '❌'}</span>
+          {toastMessage.type === 'success' ? (
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
           <span>{toastMessage.text}</span>
         </div>
       )}
@@ -474,7 +512,11 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                  <span>📷</span> Ganti Foto Profil
+                  <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Ganti Foto Profil</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Unggah foto sendiri atau pilih rekomendasi avatar Dojo</p>
               </div>
@@ -483,7 +525,9 @@ export default function ProfilePage() {
                 onClick={() => setIsAvatarModalOpen(false)}
                 className="size-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-extrabold flex items-center justify-center border-none cursor-pointer text-base"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -497,7 +541,11 @@ export default function ProfilePage() {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full p-5 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group"
               >
-                <span className="text-3xl group-hover:scale-110 transition-transform">📁</span>
+                <div className="size-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                </div>
                 <span className="text-sm font-extrabold text-primary dark:text-red-400">Pilih File Foto Profil</span>
                 <span className="text-xs text-slate-400">Mendukung format JPG, PNG, atau WebP (Maks 5MB)</span>
               </button>
@@ -577,9 +625,13 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setIsAvatarModalOpen(true)}
-              className="absolute -bottom-2 -right-2 bg-white text-primary text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg hover:bg-slate-100 hover:scale-105 transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5"
+              className="absolute -bottom-2 -right-2 bg-white text-primary text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:bg-slate-100 hover:scale-105 transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5"
             >
-              📷 <span>Ganti Foto</span>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Ganti Foto</span>
             </button>
           </div>
 
@@ -589,8 +641,11 @@ export default function ProfilePage() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
                 {profile?.full_name || 'Pengguna KaiwaDoJo'}
               </h1>
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-sm">
-                🎓 Pelajar Kaiwa
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-sm flex items-center gap-1.5">
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5" />
+                </svg>
+                <span>Pelajar Kaiwa</span>
               </span>
             </div>
 
@@ -609,19 +664,27 @@ export default function ProfilePage() {
               <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
                 isFreezeToday
                   ? 'bg-sky-500/20 backdrop-blur-md border-sky-400/40 text-sky-200 shadow-xs'
-                  : 'bg-white/10 backdrop-blur-md border-white/15 text-white'
+                  : 'bg-rose-500/20 backdrop-blur-md border-rose-300/30 text-rose-100 shadow-xs'
               }`}>
-                <span className={`text-base ${isFreezeToday ? 'animate-pulse' : 'animate-flame'}`}>
-                  {isFreezeToday ? '🧊' : '🔥'}
-                </span>
-                <span>{profile?.streak_days || 0} Hari Streak {isFreezeToday ? '(Freeze)' : ''}</span>
+                <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
+                  {isFreezeToday ? (
+                    <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                  ) : (
+                    <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
+                  )}
+                </svg>
+                <span>{profile?.streak_days || 0} Hari Sakura {isFreezeToday ? '(Freeze)' : ''}</span>
               </div>
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
-                <span>📚</span>
+                <svg className="size-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
                 <span>{stats.enrolledCoursesCount} Kursus Terdaftar</span>
               </div>
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
-                <span>📅</span>
+                <svg className="size-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 <span>Bergabung {formattedJoinDate}</span>
               </div>
             </div>
@@ -630,16 +693,19 @@ export default function ProfilePage() {
       </section>
 
       {/* ── NAVIGATION TABS ─────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-8 overflow-x-auto pb-1 no-scrollbar">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 mb-8 overflow-x-auto pb-1 no-scrollbar">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === 'overview'
               ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
           }`}
         >
-          <span>{t('pf_tab_overview', '👤 Ringkasan & Edit Profil')}</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>{t('pf_tab_overview', 'Ringkasan & Edit Profil')}</span>
         </button>
 
         <button
@@ -647,10 +713,13 @@ export default function ProfilePage() {
           className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === 'courses'
               ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
           }`}
         >
-          <span>{t('pf_tab_courses', '📚 Kursus Saya')} ({stats.enrolledCoursesCount})</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span>{t('pf_tab_courses', 'Kursus Saya')} ({stats.enrolledCoursesCount})</span>
         </button>
 
         <button
@@ -658,10 +727,13 @@ export default function ProfilePage() {
           className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === 'achievements'
               ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
           }`}
         >
-          <span>{t('pf_tab_achievements', '🏆 Pencapaian & Lencana')}</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          <span>{t('pf_tab_achievements', 'Pencapaian & Lencana')}</span>
         </button>
 
         <button
@@ -669,10 +741,13 @@ export default function ProfilePage() {
           className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
             activeTab === 'stats'
               ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
           }`}
         >
-          <span>{t('pf_tab_stats', '📊 Statistik & Aktivitas')}</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span>{t('pf_tab_stats', 'Statistik & Aktivitas')}</span>
         </button>
       </div>
 
@@ -682,7 +757,11 @@ export default function ProfilePage() {
           {/* Main Edit Form */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
             <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-              <span>⚙️</span> Edit Data Profil
+              <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Edit Data Profil</span>
             </h2>
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
@@ -751,7 +830,11 @@ export default function ProfilePage() {
               {/* Alamat Domisili */}
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                  <span>📍</span> Alamat Domisili
+                  <svg className="size-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Alamat Domisili</span>
                 </label>
                 <input
                   type="text"
@@ -832,7 +915,9 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     <>
-                      <span>💾</span>
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                       <span>Simpan Perubahan</span>
                     </>
                   )}
@@ -846,7 +931,10 @@ export default function ProfilePage() {
             {/* Account Quick Status */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <h3 className="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <span>🛡️</span> Informasi Status Akun
+                <svg className="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Informasi Status Akun</span>
               </h3>
 
               <div className="space-y-3 text-sm">
@@ -881,9 +969,16 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktifkan Streak</span>
-                  <span className={`font-extrabold flex items-center gap-1 ${isFreezeToday ? 'text-sky-500' : 'text-orange-500'}`}>
-                    {isFreezeToday ? '🧊' : '🔥'} {profile?.streak_days || 0} Hari {isFreezeToday ? '(Freeze)' : ''}
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Streak Sakura</span>
+                  <span className={`font-extrabold flex items-center gap-1.5 ${isFreezeToday ? 'text-sky-500' : 'text-rose-500'}`}>
+                    <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
+                      {isFreezeToday ? (
+                        <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                      ) : (
+                        <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
+                      )}
+                    </svg>
+                    <span>{profile?.streak_days || 0} Hari {isFreezeToday ? '(Salju)' : 'Mekar'}</span>
                   </span>
                 </div>
               </div>
@@ -892,7 +987,10 @@ export default function ProfilePage() {
             {/* Quick Action Navigation */}
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-sm space-y-4">
               <h3 className="font-extrabold text-base flex items-center gap-2">
-                <span>⚡</span> Akses Cepat KaiwaDoJo
+                <svg className="size-4.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Akses Cepat KaiwaDoJo</span>
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Kelola jadwal belajar harian Anda atau lanjutkan kelas yang sedang Anda tempuh.
@@ -900,17 +998,31 @@ export default function ProfilePage() {
               <div className="space-y-2 pt-2">
                 <button
                   onClick={() => navigate('/my-courses')}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
+                  className="group w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
                 >
-                  <span>📚 Buka Kursus Saya</span>
-                  <span>→</span>
+                  <span className="flex items-center gap-2">
+                    <svg className="size-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Buka Kursus Saya</span>
+                  </span>
+                  <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                    &gt;
+                  </span>
                 </button>
                 <button
                   onClick={() => navigate('/learning-plan')}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
+                  className="group w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
                 >
-                  <span>📋 Rencana Belajar Harian</span>
-                  <span>→</span>
+                  <span className="flex items-center gap-2">
+                    <svg className="size-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    <span>Rencana Belajar Harian</span>
+                  </span>
+                  <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                    &gt;
+                  </span>
                 </button>
               </div>
             </div>
@@ -964,7 +1076,11 @@ export default function ProfilePage() {
             </div>
           ) : filteredCourses.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 space-y-3">
-              <span className="text-5xl">📚</span>
+              <div className="size-16 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+                <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
               <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Belum Ada Kursus Ditemukan</h3>
               <p className="text-sm max-w-md mx-auto">
                 Anda belum terdaftar pada kategori kursus ini. Cari kursus menarik di Katalog untuk memulai petualangan Anda!
@@ -990,8 +1106,10 @@ export default function ProfilePage() {
                       {course?.thumbnail_url ? (
                         <img src={course.thumbnail_url} alt={course.title} className="size-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="size-full bg-gradient-to-br from-slate-800 to-primary-dark flex items-center justify-center text-4xl font-bold text-white/30">
-                          ⛩️
+                        <div className="size-full bg-gradient-to-br from-slate-800 to-primary-dark flex items-center justify-center text-white/30">
+                          <svg className="size-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
                         </div>
                       )}
                       <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[0.68rem] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -999,7 +1117,10 @@ export default function ProfilePage() {
                       </span>
                       {isCompleted && (
                         <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[0.68rem] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                          ✓ Selesai
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Selesai</span>
                         </span>
                       )}
                     </div>
@@ -1054,7 +1175,9 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-950/40 px-4 py-2.5 rounded-2xl border border-orange-200 dark:border-orange-800">
-              <span className="text-2xl">🏆</span>
+              <svg className="size-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
               <div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Terbuka</div>
                 <div className="text-sm font-extrabold text-orange-600 dark:text-orange-400">
@@ -1076,18 +1199,24 @@ export default function ProfilePage() {
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-4xl p-3 rounded-2xl ${
-                      badge.unlocked ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 grayscale'
+                    <span className={`size-12 rounded-2xl flex items-center justify-center ${
+                      badge.unlocked ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shadow-xs' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 grayscale'
                     }`}>
                       {badge.icon}
                     </span>
                     {badge.unlocked ? (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                        ✓ Terbuka
+                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Terbuka</span>
                       </span>
                     ) : (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                        🔒 Terkunci
+                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Terkunci</span>
                       </span>
                     )}
                   </div>
@@ -1118,8 +1247,10 @@ export default function ProfilePage() {
           {/* Key Stat Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-red-100 dark:bg-red-950/60 text-primary dark:text-red-400 flex items-center justify-center text-2xl shrink-0 font-bold">
-                ⏱️
+              <div className="size-14 rounded-2xl bg-red-100 dark:bg-red-950/60 text-primary dark:text-red-400 flex items-center justify-center shrink-0 font-bold">
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Durasi</div>
@@ -1129,8 +1260,10 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-2xl shrink-0 font-bold">
-                🔁
+              <div className="size-14 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 font-bold">
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Replays</div>
@@ -1140,8 +1273,12 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shrink-0 font-bold">
-                🎯
+              <div className="size-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold">
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="9" />
+                  <circle cx="12" cy="12" r="5" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" />
+                </svg>
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Kuis Lulus</div>
@@ -1151,8 +1288,10 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl shrink-0 font-bold">
-                📜
+              <div className="size-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold">
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Tamat Kursus</div>
@@ -1165,7 +1304,10 @@ export default function ProfilePage() {
           {/* Detailed Summary Box */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
             <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              <span>📈</span> Ringkasan Aktivitas Belajar
+              <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              <span>Ringkasan Aktivitas Belajar</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

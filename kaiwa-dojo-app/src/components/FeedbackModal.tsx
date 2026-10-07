@@ -11,12 +11,12 @@ interface FeedbackModalProps {
   onClose: () => void
 }
 
-const RATING_EMOJIS: Record<number, { emoji: string; text: string }> = {
-  1: { emoji: '😞', text: 'Sangat Kurang' },
-  2: { emoji: '😕', text: 'Perlu Ditingkatkan' },
-  3: { emoji: '😐', text: 'Cukup Baik' },
-  4: { emoji: '😊', text: 'Bagus & Bermanfaat' },
-  5: { emoji: '🤩', text: 'Luar Biasa / Sempurna!' },
+const RATING_TEXTS: Record<number, { text: string }> = {
+  1: { text: 'Sangat Kurang' },
+  2: { text: 'Perlu Ditingkatkan' },
+  3: { text: 'Cukup Baik' },
+  4: { text: 'Bagus & Bermanfaat' },
+  5: { text: 'Luar Biasa / Sempurna!' },
 }
 
 export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
@@ -42,6 +42,22 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const emailInputId = useId()
   const phoneInputId = useId()
   const anonymousCheckboxId = useId()
+
+  const getCategoryIcon = (cat: FeedbackCategory) => {
+    switch (cat) {
+      case 'saran_fitur':
+        return <svg className="size-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+      case 'laporan_bug':
+        return <svg className="size-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+      case 'materi':
+        return <svg className="size-4 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" /></svg>
+      case 'desain_ui':
+        return <svg className="size-4 shrink-0 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4 5 5 0 013-4.5V11a7 7 0 1114 0v1.5a5 5 0 013 4.5 4 4 0 01-4 4H7z" /></svg>
+      case 'lainnya':
+      default:
+        return <svg className="size-4 shrink-0 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+    }
+  }
 
   // Initialize user identity from auth profile
   useEffect(() => {
@@ -137,16 +153,16 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           onClick={onClose}
           aria-label="Tutup form masukan"
           disabled={submitting}
-          className="absolute top-4 right-4 size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-lg font-bold border-none cursor-pointer transition-all disabled:opacity-50"
+          className="absolute top-4 right-4 size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:white hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center border-none cursor-pointer transition-all disabled:opacity-50"
         >
-          ✕
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
         {isSuccess ? (
           /* ── SUCCESS STATE ──────────────────────────────────────────────── */
           <div className="py-8 px-2 text-center flex flex-col items-center justify-center animate-fade-in">
-            <div className="size-20 rounded-full bg-emerald-100 dark:bg-emerald-950/70 border-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-4xl mb-4 shadow-lg shadow-emerald-500/10 animate-bounce">
-              ✨
+            <div className="size-16 rounded-full bg-emerald-100 dark:bg-emerald-950/70 border-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/10">
+              <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
               Arigatou Gozaimasu! (ありがとうございます)
@@ -170,7 +186,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             {/* Header */}
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/20 text-[0.7rem] font-black uppercase tracking-wider mb-2">
-                <span>💡</span>
+                <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                 <span>Kolom Masukan & Saran Website</span>
               </div>
               <h2 id="feedback-modal-title" className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -184,7 +200,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             {/* Error Message */}
             {errorMsg && (
               <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
-                <span>⚠️</span>
+                <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 <span>{errorMsg}</span>
               </div>
             )}
@@ -209,7 +225,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                           : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                       }`}
                     >
-                      <span className="text-lg shrink-0">{meta.icon}</span>
+                      {getCategoryIcon(catKey)}
                       <span className="text-xs leading-tight">{meta.label}</span>
                     </button>
                   )
@@ -224,8 +240,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   2. Tingkat Kepuasan Pengalaman Anda
                 </label>
                 <span className="text-xs font-bold text-amber-500 dark:text-amber-400 flex items-center gap-1">
-                  <span>{RATING_EMOJIS[activeRating]?.emoji}</span>
-                  <span>{RATING_EMOJIS[activeRating]?.text}</span>
+                  <span>{RATING_TEXTS[activeRating]?.text}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 justify-center">
@@ -239,11 +254,16 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(null)}
                       aria-label={`Beri nilai ${star} bintang`}
-                      className="p-1 text-2xl sm:text-3xl transition-transform hover:scale-125 active:scale-95 border-none bg-transparent cursor-pointer"
+                      className="p-1 transition-transform hover:scale-125 active:scale-95 border-none bg-transparent cursor-pointer"
                     >
-                      <span className={filled ? 'text-amber-400 drop-shadow-xs' : 'text-slate-300 dark:text-slate-600 opacity-60'}>
-                        ★
-                      </span>
+                      <svg
+                        className={`size-7 sm:size-8 ${filled ? 'text-amber-400 fill-amber-400 drop-shadow-xs' : 'text-slate-300 dark:text-slate-600 fill-transparent'}`}
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
                     </button>
                   )
                 })}
@@ -302,7 +322,10 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     onChange={(e) => setIsAnonymous(e.target.checked)}
                     className="size-4 rounded accent-primary text-primary"
                   />
-                  <span>Kirim sebagai Anonim 👤</span>
+                  <span className="flex items-center gap-1">
+                    <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <span>Kirim sebagai Anonim</span>
+                  </span>
                 </label>
               </div>
 
@@ -368,12 +391,12 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               >
                 {submitting ? (
                   <>
-                    <span className="animate-spin text-sm">🔄</span>
+                    <svg className="size-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
                     <span>Mengirimkan...</span>
                   </>
                 ) : (
                   <>
-                    <span>🚀</span>
+                    <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                     <span>Kirim Masukan & Saran</span>
                   </>
                 )}

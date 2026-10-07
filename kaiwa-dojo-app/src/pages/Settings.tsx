@@ -114,7 +114,15 @@ export default function SettingsPage() {
             ? 'bg-emerald-500 text-white border-emerald-600'
             : 'bg-red-500 text-white border-red-600'
         }`}>
-          <span>{toastMessage.type === 'success' ? '✅' : '❌'}</span>
+          {toastMessage.type === 'success' ? (
+            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
           <span>{toastMessage.text}</span>
         </div>
       )}
@@ -122,8 +130,11 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-          <span className="p-2.5 rounded-2xl bg-primary/10 text-primary dark:bg-primary/20 text-xl shrink-0">
-            ⚙️
+          <span className="p-2.5 rounded-2xl bg-primary/10 text-primary dark:bg-primary/20 shrink-0">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           </span>
           <span>{t('settings_title', 'Pengaturan Akun & Tampilan')}</span>
         </h1>
@@ -135,7 +146,9 @@ export default function SettingsPage() {
       {/* ── BAGIAN 1: PREFERENSI TAMPILAN & BAHASA ────────────── */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
         <h2 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <span>🎨</span>
+          <svg className="size-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4 4 4 0 014-4h1a2 2 0 002-2V9a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 002 2h1a4 4 0 014 4 4 4 0 01-4 4H7z" />
+          </svg>
           <span>Preferensi Tampilan</span>
         </h2>
 
@@ -146,9 +159,33 @@ export default function SettingsPage() {
           </label>
           <div className="grid grid-cols-3 gap-3 max-w-md">
             {[
-              { id: 'light', label: t('theme_light', 'Terang (Light)'), icon: '☀️' },
-              { id: 'dark', label: t('theme_dark', 'Gelap (Dark)'), icon: '🌙' },
-              { id: 'system', label: t('theme_system', 'Ikuti Sistem'), icon: '💻' },
+              {
+                id: 'light',
+                label: t('theme_light', 'Terang (Light)'),
+                icon: (
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'dark',
+                label: t('theme_dark', 'Gelap (Dark)'),
+                icon: (
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                ),
+              },
+              {
+                id: 'system',
+                label: t('theme_system', 'Ikuti Sistem'),
+                icon: (
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                ),
+              },
             ].map((item) => (
               <button
                 key={item.id}
@@ -160,7 +197,7 @@ export default function SettingsPage() {
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
+                <span>{item.icon}</span>
                 <span className="text-[0.72rem] text-center leading-tight">{item.label}</span>
               </button>
             ))}
@@ -228,7 +265,9 @@ export default function SettingsPage() {
       {/* ── BAGIAN 2: KEAMANAN & UBAH KATA SANDI ──────────────── */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
         <h2 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <span>🔒</span>
+          <svg className="size-5 text-primary dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
           <span>{t('security_title', 'Keamanan & Ubah Kata Sandi')}</span>
         </h2>
 
@@ -265,9 +304,14 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={isChangingPassword}
-              className="px-6 py-3 rounded-xl bg-primary hover:bg-primary-dark dark:bg-red-500 dark:hover:bg-red-600 text-white font-extrabold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2"
+              className="px-6 py-3 rounded-xl bg-primary hover:bg-primary-dark dark:bg-red-500 dark:hover:bg-red-600 text-white font-extrabold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2 group"
             >
               <span>{isChangingPassword ? 'Memperbarui...' : t('update_password', 'Perbarui Kata Sandi')}</span>
+              {!isChangingPassword && (
+                <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                  &gt;
+                </span>
+              )}
             </button>
           </div>
         </form>
@@ -276,8 +320,10 @@ export default function SettingsPage() {
       {/* ── BAGIAN 3: ZONA BAHAYA / HAPUS AKUN (DANGER ZONE) ──── */}
       <section className="bg-red-500/5 dark:bg-red-950/20 rounded-3xl p-6 sm:p-8 border border-red-200 dark:border-red-900 shadow-sm space-y-4">
         <h2 className="text-lg font-extrabold text-red-600 dark:text-red-400 flex items-center gap-3">
-          <span className="size-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base shrink-0 shadow-xs">
-            ⚠️
+          <span className="size-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </span>
           <span>{t('danger_zone', 'Zona Bahaya & Hapus Akun')}</span>
         </h2>
@@ -289,9 +335,11 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setIsDeleteModalOpen(true)}
-            className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2.5"
+            className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2"
           >
-            <span className="text-base">🗑️</span>
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
             <span>{t('delete_account', 'Ajukan Hapus Akun')}</span>
           </button>
         </div>
@@ -303,7 +351,9 @@ export default function SettingsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-up">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-lg font-extrabold text-red-600 dark:text-red-400 flex items-center gap-2.5">
-                <span className="text-2xl">💬</span>
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
                 <span>{t('delete_modal_title', 'Konfirmasi Hapus Akun via WhatsApp')}</span>
               </h3>
               <button
@@ -311,7 +361,9 @@ export default function SettingsPage() {
                 onClick={() => setIsDeleteModalOpen(false)}
                 className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 font-extrabold flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -347,7 +399,9 @@ export default function SettingsPage() {
                 onClick={() => setIsDeleteModalOpen(false)}
                 className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2.5 transition-all text-center no-underline cursor-pointer"
               >
-                <span className="text-base">💬</span>
+                <svg className="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
                 <span>{t('delete_modal_wa_btn', 'Hubungi Admin via WhatsApp')}</span>
               </a>
 

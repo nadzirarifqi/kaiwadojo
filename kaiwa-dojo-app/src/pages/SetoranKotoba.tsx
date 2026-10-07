@@ -256,7 +256,7 @@ export default function SetoranKotobaPage() {
               .update({ image_url: item.image_url })
               .eq('id', item.id)
               .then(({ error: e }) => {
-                if (!e) console.log(`✅ Gambar dipulihkan ke DB: ${item.id}`)
+                if (!e) console.log(`[Kotoba] Gambar dipulihkan ke DB: ${item.id}`)
               })
           }
         })()
@@ -350,7 +350,7 @@ export default function SetoranKotobaPage() {
     if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim()) {
       setAlertConfig({
         isOpen: true,
-        title: 'Formulir Belum Lengkap ⚠️',
+        title: 'Formulir Belum Lengkap',
         message: 'Mohon lengkapi Huruf Jepang, Romaji, dan Makna/Arti dari kosakata yang disetorkan.',
         type: 'warning',
         buttonText: 'Lengkapi Data',
@@ -368,7 +368,7 @@ export default function SetoranKotobaPage() {
       if (duplicate) {
         setAlertConfig({
           isOpen: true,
-          title: 'Kosakata Sudah Ada ⚠️',
+          title: 'Kosakata Sudah Ada',
           message: `Kosakata "${duplicate.japanese}" (${duplicate.romaji}) sudah pernah kamu catat sebelumnya. Silakan cek daftarmu atau gunakan tombol Edit jika ingin mengubah datanya.`,
           type: 'warning',
           buttonText: 'Mengerti',
@@ -491,7 +491,7 @@ export default function SetoranKotobaPage() {
               // Show error alert to user so they know the save failed
               setAlertConfig({
                 isOpen: true,
-                title: 'Gagal Menyimpan ke Server ⚠️',
+                title: 'Gagal Menyimpan ke Server',
                 message: `Kosakata berhasil dicatat secara lokal, namun gagal tersimpan ke server database. Kemungkinan penyebab: sesi login berakhir atau koneksi terputus. Silakan coba logout dan login kembali, lalu tambahkan kosakata ulang.\n\nDetail: ${error.message || 'Unknown error'}`,
                 type: 'warning',
                 buttonText: 'Mengerti',
@@ -506,7 +506,7 @@ export default function SetoranKotobaPage() {
         // User session not found — warn clearly
         setAlertConfig({
           isOpen: true,
-          title: 'Sesi Login Tidak Ditemukan ⚠️',
+          title: 'Sesi Login Tidak Ditemukan',
           message: 'Kosakata berhasil dicatat secara lokal, namun tidak dapat disimpan ke server karena sesi login kamu tidak ditemukan. Silakan logout dan login kembali untuk sinkronisasi data.',
           type: 'warning',
           buttonText: 'Mengerti',
@@ -565,7 +565,7 @@ export default function SetoranKotobaPage() {
     if (kotobaList.length === 0) {
       setAlertConfig({
         isOpen: true,
-        title: 'Jurnal Masih Kosong 💡',
+        title: 'Jurnal Masih Kosong',
         message: 'Kamu belum memiliki catatan di "Jurnal Kosakata". Tambah beberapa kosakata terlebih dahulu untuk memulai fitur "Uji Hafalan Kosakata"!',
         type: 'info',
         buttonText: 'Tambah Kosakata',
@@ -656,7 +656,7 @@ export default function SetoranKotobaPage() {
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-1 sm:mb-2">
               <span className="text-[0.65rem] sm:text-xs font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full backdrop-blur-xs">
-                🔤 Catatan Kosakata Mandiri
+                Catatan Kosakata Mandiri
               </span>
             </div>
             <h1 className="text-xl sm:text-3xl font-black tracking-tight mb-1 sm:mb-2">
@@ -670,17 +670,25 @@ export default function SetoranKotobaPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={handleStartTest}
-              className="px-4 py-2.5 sm:px-5 sm:py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+              className="group px-4 py-2.5 sm:px-5 sm:py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
             >
-              <span>{t('sk_test_btn', '🧠 Uji Hafalan Kosakata')}</span>
+              <svg className="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span>{t('sk_test_btn', 'Uji Hafalan Kosakata')}</span>
+              <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                &gt;
+              </span>
             </button>
 
             <button
               onClick={handleOpenCreateModal}
-              className="px-4 py-2.5 sm:px-6 sm:py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="group px-4 py-2.5 sm:px-6 sm:py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
             >
-              <span className="text-base">＋</span>
-              <span>{t('sk_add_btn', 'Tambah Kosakata Baru')}</span>
+              <svg className="size-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>{t('sk_add_btn', 'Tambah Kosakata')}</span>
             </button>
           </div>
         </div>
@@ -691,11 +699,14 @@ export default function SetoranKotobaPage() {
         <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row gap-3 sm:gap-5 justify-between items-start">
           <div className="space-y-1.5 sm:space-y-2 flex-1">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold text-xs sm:text-sm">
-              <span>{t('sk_guide_title', '💡 Panduan Menambah & Menguji Kosakata')}</span>
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{t('sk_guide_title', 'Panduan Menambah & Menguji Kosakata')}</span>
             </div>
             <p className="text-[0.72rem] sm:text-xs text-slate-600 dark:text-slate-300">
-              1. Catat kata baru dengan tombol <strong>"Tambah Kosakata Baru"</strong>.<br />
-              2. Tekan <strong>"🧠 Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri.
+              1. Catat kata baru dengan tombol <strong>"Tambah Kosakata"</strong>.<br />
+              2. Tekan <strong>"Uji Hafalan Kosakata"</strong> untuk melakukan tes evaluasi mandiri.
             </p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-1">
               <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-amber-950 text-[0.68rem] sm:text-xs">
@@ -718,9 +729,12 @@ export default function SetoranKotobaPage() {
           </div>
           <button
             onClick={() => setShowGuide(false)}
-            className="text-[0.68rem] sm:text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0"
+            className="text-[0.68rem] sm:text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 font-bold border-none bg-transparent cursor-pointer shrink-0 flex items-center gap-1"
           >
-            {t('sk_guide_hide', 'Sembunyikan ✕')}
+            <span>{t('sk_guide_hide', 'Sembunyikan')}</span>
+            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       )}
@@ -728,8 +742,8 @@ export default function SetoranKotobaPage() {
       {/* Stats Summary Grid */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
-          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
-            🔤
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-serif text-sm sm:text-xl font-black shrink-0 mb-1 sm:mb-0">
+            語
           </div>
           <div>
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{totalCount}</div>
@@ -738,8 +752,10 @@ export default function SetoranKotobaPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
-          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
-            ✅
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-emerald-600 shrink-0 mb-1 sm:mb-0">
+            <svg className="size-4 sm:size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
           </div>
           <div>
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{masteredCount}</div>
@@ -748,8 +764,10 @@ export default function SetoranKotobaPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
-          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm sm:text-xl font-bold shrink-0 mb-1 sm:mb-0">
-            🔥
+          <div className="size-8 sm:size-12 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mb-1 sm:mb-0">
+            <svg className="size-4 sm:size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <div>
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
@@ -782,7 +800,7 @@ export default function SetoranKotobaPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
             }`}
           >
-            {t('sk_filter_unmastered', '📖 Masih Dipelajari')} ({totalCount - masteredCount})
+            {t('sk_filter_unmastered', 'Masih Dipelajari')} ({totalCount - masteredCount})
           </button>
           <button
             onClick={() => setFilterMode('mastered')}
@@ -792,7 +810,7 @@ export default function SetoranKotobaPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500'
             }`}
           >
-            {t('sk_filter_mastered', '✅ Sudah Dikuasai')} ({masteredCount})
+            {t('sk_filter_mastered', 'Sudah Dikuasai')} ({masteredCount})
           </button>
         </div>
 
@@ -805,7 +823,9 @@ export default function SetoranKotobaPage() {
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
           />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+          <svg className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
       </div>
 
@@ -819,7 +839,9 @@ export default function SetoranKotobaPage() {
         <div className="flex flex-col gap-6">
           {/* Empty State Card */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center gap-3">
-            <span className="text-4xl">🔤</span>
+            <div className="size-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center font-serif font-black text-2xl">
+              語
+            </div>
             <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Catatan Kosakata</h3>
             <p className="text-xs text-slate-400 max-w-sm">
               {searchTerm
@@ -828,9 +850,12 @@ export default function SetoranKotobaPage() {
             </p>
             <button
               onClick={handleOpenCreateModal}
-              className="mt-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md active:scale-95"
+              className="group mt-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-2"
             >
-              ＋ Tambah Kosakata Pertama →
+              <span>Tambah Kosakata Pertama</span>
+              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                &gt;
+              </span>
             </button>
           </div>
         </div>
@@ -859,13 +884,25 @@ export default function SetoranKotobaPage() {
                   <div className="absolute top-2 right-2 flex items-center gap-1.5">
                     <button
                       onClick={() => handleToggleMastered(item)}
-                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-black backdrop-blur-md cursor-pointer border-none transition-all ${
+                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-bold backdrop-blur-md cursor-pointer border-none transition-all flex items-center gap-1 ${
                         item.is_mastered
                           ? 'bg-emerald-500/90 text-white shadow-xs'
                           : 'bg-slate-900/60 text-white hover:bg-emerald-500'
                       }`}
                     >
-                      {item.is_mastered ? t('sk_badge_mastered', '✅ Dikuasai') : t('sk_badge_mark_mastered', '⭕ Tandai Dikuasai')}
+                      {item.is_mastered ? (
+                        <>
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Dikuasai</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="size-1.5 rounded-full bg-white/70" />
+                          <span>Tandai Dikuasai</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -886,22 +923,34 @@ export default function SetoranKotobaPage() {
                   {!item.image_url && (
                     <button
                       onClick={() => handleToggleMastered(item)}
-                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-black cursor-pointer border-none transition-all shrink-0 ${
+                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-bold cursor-pointer border-none transition-all shrink-0 flex items-center gap-1 ${
                         item.is_mastered
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                           : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700'
                       }`}
                     >
-                      {item.is_mastered ? t('sk_badge_mastered', '✅ Dikuasai') : t('sk_badge_mark_mastered', '⭕ Tandai Dikuasai')}
+                      {item.is_mastered ? (
+                        <>
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Dikuasai</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
+                          <span>Tandai Dikuasai</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
 
-                {/* Indonesian Meaning */}
+                {/* Meaning */}
                 <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="text-xs text-slate-400 font-semibold mb-0.5">{t('sk_meaning_label', 'Makna / Arti:')}</div>
                   <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
-                    🇮🇩 {item.meaning}
+                    {item.meaning}
                   </div>
                 </div>
               </div>
@@ -910,15 +959,21 @@ export default function SetoranKotobaPage() {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => handleOpenEditModal(item)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all flex items-center gap-1.5"
                 >
-                  ✏️ Edit
+                  <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <span>Edit</span>
                 </button>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all flex items-center gap-1.5"
                 >
-                  🗑️ Hapus
+                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Hapus</span>
                 </button>
               </div>
             </div>
@@ -934,12 +989,15 @@ export default function SetoranKotobaPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                  🧠 Tes Evaluasi Hafalan
+                <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <span>Tes Evaluasi Hafalan</span>
                 </span>
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mt-0.5">
                   {isTestFinished
-                    ? 'Hasil Tes Evaluasi Hafalan'
+                    ? 'Hasil Evaluasi Hafalan'
                     : `Soal ${currentTestIndex + 1} dari ${testItems.length}`}
                 </h3>
               </div>
@@ -947,20 +1005,24 @@ export default function SetoranKotobaPage() {
                 onClick={() => setIsTestActive(false)}
                 className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
             {/* Test Content */}
             {isTestFinished ? (
               <div className="space-y-6 text-center">
-                <div className="size-20 bg-amber-100 dark:bg-amber-950/60 rounded-full flex items-center justify-center text-4xl mx-auto">
-                  🏆
+                <div className="size-16 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
                 </div>
                 <div>
                   <h4 className="text-xl font-black text-slate-800 dark:text-white">Latihan Selesai!</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
-                    Status hafalan kosakata milikmu telah diperbarui di catatan akunmu.
+                    Status hafalan kosakata telah diperbarui di catatan belajarmu.
                   </p>
                 </div>
 
@@ -981,9 +1043,12 @@ export default function SetoranKotobaPage() {
 
                 <button
                   onClick={() => setIsTestActive(false)}
-                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs sm:text-sm rounded-2xl border-none cursor-pointer shadow-md transition-all"
+                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs sm:text-sm rounded-2xl border-none cursor-pointer shadow-md transition-all flex items-center justify-center gap-2 group"
                 >
-                  Tutup Tes & Kembali ke Jurnal →
+                  <span>Tutup & Kembali ke Jurnal</span>
+                  <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
+                    &gt;
+                  </span>
                 </button>
               </div>
             ) : activeTestItem ? (
@@ -1007,7 +1072,7 @@ export default function SetoranKotobaPage() {
                         <img src={activeTestItem.image_url} alt="Prompt" className="size-full object-cover" />
                       </div>
                       <div className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                        Makna: 🇮🇩 {activeTestItem.meaning}
+                        Makna: {activeTestItem.meaning}
                       </div>
                     </div>
                   ) : questionMode === 'prompt_japanese_romaji' ? (
@@ -1055,9 +1120,12 @@ export default function SetoranKotobaPage() {
                     <button
                       type="button"
                       onClick={() => setShowAnswerKey(true)}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all touch-manipulation min-h-[42px]"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all touch-manipulation min-h-[42px] flex items-center justify-center gap-2 mx-auto"
                     >
-                      🔍 Periksa Kunci Jawaban
+                      <svg className="size-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span>Periksa Kunci Jawaban</span>
                     </button>
                   )}
                 </div>
@@ -1066,7 +1134,12 @@ export default function SetoranKotobaPage() {
                 {showAnswerKey && (
                   <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 space-y-3 animate-fade-in">
                     <div className="text-xs font-extrabold text-amber-800 dark:text-amber-300 flex items-center justify-between">
-                      <span>🔑 Kunci Jawaban Lengkap:</span>
+                      <span className="flex items-center gap-1.5">
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span>Kunci Jawaban:</span>
+                      </span>
                       {userAnswerInput && (
                         <span className="text-[0.68rem] font-normal text-slate-500">
                           Jawabanmu: "{userAnswerInput}"
@@ -1090,21 +1163,25 @@ export default function SetoranKotobaPage() {
                     </div>
 
                     <div className="text-xs text-center font-bold text-slate-700 dark:text-slate-200 pt-1">
-                      Bagaimana tingkat kesulitan soal ini untukmu?
+                      Bagaimana tingkat kemudahan soal ini untukmu?
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-1">
                       <button
                         onClick={() => handleSelfAssessment(false)}
-                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 min-h-[46px] touch-manipulation active:scale-95"
+                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 min-h-[46px] touch-manipulation active:scale-95"
                       >
-                        <span>{t('sk_test_difficult_btn', '🔴 Masih Sulit')}</span>
+                        <span className="size-2 rounded-full bg-white animate-pulse" />
+                        <span>Masih Sulit</span>
                       </button>
                       <button
                         onClick={() => handleSelfAssessment(true)}
-                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 min-h-[46px] touch-manipulation active:scale-95"
+                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 min-h-[46px] touch-manipulation active:scale-95"
                       >
-                        <span>{t('sk_test_mastered_btn', '🟢 Sudah Mudah / Dikuasai')}</span>
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Sudah Dikuasai</span>
                       </button>
                     </div>
                   </div>
@@ -1124,14 +1201,27 @@ export default function SetoranKotobaPage() {
             
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-              <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
-                {editingItem ? '✏️ Edit Kosakata' : '🔤 Tambah Kosakata Baru'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs">
+                  {editingItem ? (
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  ) : (
+                    <span className="font-japanese font-bold text-sm">語</span>
+                  )}
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white">
+                  {editingItem ? 'Edit Kosakata' : 'Tambah Kosakata Baru'}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="size-8 sm:size-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-sm touch-manipulation"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -1144,14 +1234,21 @@ export default function SetoranKotobaPage() {
                       1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
                     </label>
                     {formData.japanese.trim() && (
-                      <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all ${
+                      <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all flex items-center gap-1 ${
                         detectJapaneseScript(formData.japanese).isValid
                           ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
                           : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
                       }`}>
-                        {detectJapaneseScript(formData.japanese).isValid
-                          ? `✅ ${detectJapaneseScript(formData.japanese).detectedSummary}`
-                          : '⚠️ Wajib huruf Jepang'}
+                        {detectJapaneseScript(formData.japanese).isValid ? (
+                          <>
+                            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{detectJapaneseScript(formData.japanese).detectedSummary}</span>
+                          </>
+                        ) : (
+                          <span>Wajib huruf Jepang</span>
+                        )}
                       </span>
                     )}
                   </div>
@@ -1231,9 +1328,12 @@ export default function SetoranKotobaPage() {
                       <button
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
-                        className="absolute top-1.5 right-1.5 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-xs font-extrabold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs touch-manipulation"
+                        className="absolute top-1.5 right-1.5 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-xs font-bold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs touch-manipulation flex items-center gap-1"
                       >
-                        ✕ Hapus Gambar
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Hapus</span>
                       </button>
                     </div>
                   )}
@@ -1252,9 +1352,14 @@ export default function SetoranKotobaPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-3.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md min-h-[44px] touch-manipulation active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3.5 sm:py-3 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-500 hover:bg-amber-600 text-white border-none cursor-pointer transition-all shadow-md min-h-[44px] touch-manipulation active:scale-[0.99] flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
-                  {saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : '＋ Simpan Kosakata'}
+                  <span>{saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Simpan Kosakata'}</span>
+                  {!saving && (
+                    <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      &gt;
+                    </span>
+                  )}
                 </button>
               </div>
             </form>
