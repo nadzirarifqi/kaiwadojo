@@ -8,6 +8,10 @@ import { sanitizeInput, sanitizeUsername, sanitizePhoneNumber, isValidEmail, Sec
 export default function RegisterPage() {
   const navigate = useNavigate()
 
+  // Multi-step Wizard State
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+
+  // Form Fields
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -20,14 +24,16 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
 
+  // Validation & Error States
   const [error, setError] = useState<string | null>(null)
+  const [stepError, setStepError] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
 
-  // OTP Verification Modal State (WhatsApp Exclusively)
+  // OTP Verification Modal State
   const [showOtpModal, setShowOtpModal] = useState(false)
   const [generatedOtp, setGeneratedOtp] = useState('')
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', ''])
@@ -57,6 +63,23 @@ export default function RegisterPage() {
     }
   }, [showOtpModal, otpTimer])
 
+  // Password Strength Calculation
+  const getPasswordStrength = () => {
+    if (!password) return { score: 0, label: 'Belum diisi', color: 'bg-slate-200 dark:bg-slate-700' }
+    let score = 0
+    if (password.length >= 8) score += 1
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1
+    if (/[0-9]/.test(password)) score += 1
+    if (/[^A-Za-z0-9]/.test(password)) score += 1
+
+    if (score <= 1) return { score: 1, label: 'Lemah', color: 'bg-red-500' }
+    if (score === 2) return { score: 2, label: 'Cukup', color: 'bg-amber-500' }
+    if (score === 3) return { score: 3, label: 'Kuat', color: 'bg-emerald-500' }
+    return { score: 4, label: 'Sangat Kuat', color: 'bg-emerald-600' }
+  }
+
+  const passStrength = getPasswordStrength()
+
   async function generateNewOtp() {
     const code = Math.floor(100000 + Math.random() * 900000).toString()
     setGeneratedOtp(code)
@@ -64,14 +87,13 @@ export default function RegisterPage() {
     setOtpError(null)
     setOtpTimer(60)
 
-    // Kirim Kode OTP 6-Digit via WhatsApp (Token Terpusat)
     const res = await sendWhatsAppOtp({
       phoneNumber: phoneNumber || '081234567890',
       otpCode: code,
     })
 
     if (!res.success) {
-      setOtpError(`⚠️ Kendala WA Gateway: ${res.reason || 'Gagal mengirim OTP'}. Silakan periksa status perangkat Fonnte.`)
+      setOtpError(`Kendala WA Gateway: ${res.reason || 'Gagal mengirim OTP'}. Silakan periksa status perangkat WhatsApp.`)
     }
 
     setTimeout(() => {
@@ -93,7 +115,6 @@ export default function RegisterPage() {
     let isEmailDupe = false
     let isPhoneDupe = false
 
-    // 1. Try RPC check_user_duplicates (checks both auth.users and public.profiles)
     try {
       const { data: rpcData, error: rpcErr } = await supabase.rpc('check_user_duplicates', {
         p_username: cleanUser,
@@ -111,7 +132,6 @@ export default function RegisterPage() {
       console.warn('RPC check_user_duplicates fallback:', rpcEx)
     }
 
-    // 2. Direct Query Fallback to profiles table
     try {
       const { data: matchedProfiles } = await supabase
         .from('profiles')
@@ -144,7 +164,7 @@ export default function RegisterPage() {
     if (!username.trim()) return
     const res = await performDuplicateCheck(username, '', '')
     if (res.isUserDupe) {
-      setUsernameError(`Username "@${username.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan username lain.`)
+      setUsernameError(`Username @${username.trim().toLowerCase()} sudah terdaftar. Silakan gunakan username lain.`)
     }
   }
 
@@ -152,7 +172,7 @@ export default function RegisterPage() {
     if (!phoneNumber.trim()) return
     const res = await performDuplicateCheck('', '', phoneNumber)
     if (res.isPhoneDupe) {
-      setPhoneError(`Nomor WhatsApp "${phoneNumber.trim()}" sudah terdaftar. Silakan gunakan nomor lain.`)
+      setPhoneError(`Nomor WhatsApp ${phoneNumber.trim()} sudah terdaftar. Silakan gunakan nomor lain.`)
     }
   }
 
@@ -160,13 +180,69 @@ export default function RegisterPage() {
     if (!email.trim()) return
     const res = await performDuplicateCheck('', email, '')
     if (res.isEmailDupe) {
-      setEmailError(`Email "${email.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+      setEmailError(`Email ${email.trim().toLowerCase()} sudah terdaftar. Silakan gunakan email lain.`)
+    }
+  }
+
+  // Step Validation Handlers
+  function handleNextStep() {
+    setStepError(null)
+
+    if (currentStep === 1) {
+      if (!fullName.trim()) {
+        setStepError('Mohon isi Nama Lengkap terlebih dahulu.')
+        return
+      }
+      if (!username.trim()) {
+        setStepError('Mohon isi Username akun Anda.')
+        return
+      }
+      if (username.length < 3) {
+        setStepError('Username minimal 3 karakter.')
+        return
+      }
+      if (!phoneNumber.trim()) {
+        setStepError('Mohon isi Nomor WhatsApp aktif.')
+        return
+      }
+      if (phoneNumber.replace(/[^0-9]/g, '').length < 9) {
+        setStepError('Format nomor WhatsApp terlalu pendek.')
+        return
+      }
+      if (!institution.trim()) {
+        setStepError('Mohon isi Asal Lembaga / Kampus Anda.')
+        return
+      }
+      setCurrentStep(2)
+      return
+    }
+
+    if (currentStep === 2) {
+      if (!domisili.trim()) {
+        setStepError('Mohon isi Alamat Domisili lengkap.')
+        return
+      }
+      if (!kelurahan.trim()) {
+        setStepError('Mohon isi Kelurahan / Desa.')
+        return
+      }
+      if (!kecamatan.trim()) {
+        setStepError('Mohon isi Kecamatan.')
+        return
+      }
+      if (!kabupaten.trim()) {
+        setStepError('Mohon isi Kabupaten / Kota.')
+        return
+      }
+      setCurrentStep(3)
+      return
     }
   }
 
   async function handleStartRegistration(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setStepError(null)
     setUsernameError(null)
     setPhoneError(null)
     setEmailError(null)
@@ -174,14 +250,14 @@ export default function RegisterPage() {
 
     const cleanEmail = email.trim().toLowerCase()
     if (!isValidEmail(cleanEmail)) {
-      setEmailError('Format email tidak valid! Mohon periksa kembali.')
+      setEmailError('Format email tidak valid.')
       setError('Format email tidak valid.')
       setLoading(false)
       return
     }
 
     if (password.length < 8) {
-      setError('Password minimal 8 karakter!')
+      setError('Password minimal 8 karakter.')
       setLoading(false)
       return
     }
@@ -195,41 +271,36 @@ export default function RegisterPage() {
       return
     }
 
-    // 1. Cek Duplikasi (Username, Email, No. WhatsApp) SEBELUM Validasi WA & Kirim OTP
     const dupeRes = await performDuplicateCheck(username, cleanEmail, cleanPhone)
-
     let hasDuplicate = false
     if (dupeRes.isUserDupe) {
-      setUsernameError(`Username "@${username.trim().toLowerCase()}" sudah terdaftar. Silakan gunakan username lain.`)
+      setUsernameError(`Username @${username.trim().toLowerCase()} sudah terdaftar.`)
       hasDuplicate = true
     }
     if (dupeRes.isEmailDupe) {
-      setEmailError(`Email "${cleanEmail}" sudah terdaftar. Silakan gunakan email lain atau login.`)
+      setEmailError(`Email ${cleanEmail} sudah terdaftar.`)
       hasDuplicate = true
     }
     if (dupeRes.isPhoneDupe) {
-      setPhoneError(`Nomor WhatsApp "${cleanPhone}" sudah terdaftar. Silakan gunakan nomor lain.`)
+      setPhoneError(`Nomor WhatsApp ${cleanPhone} sudah terdaftar.`)
       hasDuplicate = true
     }
 
     if (hasDuplicate) {
       setLoading(false)
-      setError('Terdapat data yang sudah terdaftar (Username, Email, atau No. WhatsApp). Silakan periksa input yang ditandai merah di bawah.')
+      setError('Terdapat data yang sudah terdaftar (Username, Email, atau No. WhatsApp). Silakan periksa kembali.')
       return
     }
 
-    // 2. Validasi Keaktifan & Format Nomor WhatsApp
     const waCheck = await validateWhatsAppNumber(cleanPhone)
     if (!waCheck.isValid) {
-      setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif!')
+      setPhoneError(waCheck.message || 'Nomor WhatsApp tidak terdaftar / tidak aktif.')
       setLoading(false)
       return
     }
 
-    // Record OTP request attempt
     SecurityRateLimiter.recordFailure(otpRateKey, 4, 300)
 
-    // 3. Hanya jika Username, Email, dan No. WA 100% belum pernah terdaftar -> Kirim OTP via WA & Buka Modal
     await generateNewOtp()
     setLoading(false)
     setShowOtpModal(true)
@@ -258,7 +329,6 @@ export default function RegisterPage() {
     setOtpDigits(newDigits)
     setOtpError(null)
 
-    // Auto advance to next input box
     if (val && index < 5) {
       otpRefs[index + 1].current?.focus()
     }
@@ -276,7 +346,7 @@ export default function RegisterPage() {
     const entered = otpDigits.join('')
 
     if (entered.length < 6) {
-      setOtpError('Mohon isi 6 digit kode OTP secara lengkap!')
+      setOtpError('Mohon isi 6 digit kode OTP secara lengkap.')
       return
     }
 
@@ -319,7 +389,6 @@ export default function RegisterPage() {
         },
       })
 
-      // Fallback: If full metadata caused DB trigger failure in Supabase, retry with minimal metadata
       if (signUpErr && signUpErr.message.toLowerCase().includes('database error saving new user')) {
         console.warn('Full metadata signUp failed DB trigger. Retrying minimal metadata signUp...')
         const fallbackSignUp = await supabase.auth.signUp({
@@ -354,13 +423,10 @@ export default function RegisterPage() {
           }
 
           setVerifyingOtp(false)
-          setOtpError('Email ini sudah terdaftar di sistem! Silakan menuju halaman Login.')
-        } else if (signUpErr.message.toLowerCase().includes('database error saving new user')) {
-          setVerifyingOtp(false)
-          setOtpError('Kendala Trigger Database Supabase. Silakan jalankan file Migration 020 di Supabase SQL Editor untuk memperbarui fungsi handle_new_user.')
+          setOtpError('Email ini sudah terdaftar di sistem. Silakan menuju halaman Login.')
         } else {
           setVerifyingOtp(false)
-          setOtpError(`Gagal daftar: ${signUpErr.message}`)
+          setOtpError(`Gagal mendaftar: ${signUpErr.message}`)
         }
         return
       }
@@ -378,7 +444,6 @@ export default function RegisterPage() {
       return
     }
 
-    // Simpan/Upsert Akun Pelajar Baru dengan status 'pending' (Menunggu Admin)
     const newStudent = await createStudentAccount({
       id: authUserId,
       full_name: cleanFullName,
@@ -395,7 +460,6 @@ export default function RegisterPage() {
     })
 
     if (!newStudent) {
-      // Check if DB trigger handle_new_user already created the profile in public.profiles
       const { data: checkProf } = await supabase
         .from('profiles')
         .select('id')
@@ -404,7 +468,7 @@ export default function RegisterPage() {
 
       if (!checkProf) {
         setVerifyingOtp(false)
-        setOtpError('Gagal menyimpan data akun ke database Supabase. Silakan coba lagi.')
+        setOtpError('Gagal menyimpan data akun ke database. Silakan coba lagi.')
         return
       }
     }
@@ -417,23 +481,33 @@ export default function RegisterPage() {
   // ── Success & Pending Admin Verification Screen ─────────────────────
   if (done) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 md:p-10 max-w-md w-full text-center animate-scale-up">
-          <div className="size-20 bg-amber-500/10 dark:bg-amber-500/20 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 text-amber-500">
-            ⏳
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-10 max-w-md w-full text-center animate-scale-up">
+          <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-5">
+            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-          <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-black mb-2">
-            ✅ Verifikasi OTP Berhasil!
+          
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Verifikasi OTP Berhasil</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white mb-2">
+
+          <h2 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
             Menunggu Verifikasi Admin
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Selamat <span className="font-bold text-slate-800 dark:text-white">{fullName}</span>! Pendaftaran dan verifikasi OTP Anda telah berhasil. Akun Anda saat ini sedang dalam <span className="font-bold text-amber-600 dark:text-amber-400">proses peninjauan & verifikasi oleh Admin</span>.
+          <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+            Pendaftaran akun <span className="font-bold text-white">{fullName}</span> telah selesai. Akun Anda saat ini sedang dalam proses aktivasi oleh Admin KaiwaDojo.
           </p>
 
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs font-semibold text-amber-800 dark:text-amber-300 mb-6 text-left leading-relaxed">
-            ℹ️ <span className="font-bold">Informasi:</span> Silakan hubungi Admin via WhatsApp untuk mempercepat proses konfirmasi verifikasi akun Anda.
+          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-300 mb-6 text-left leading-relaxed flex items-start gap-2.5">
+            <svg className="size-5 shrink-0 text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Konfirmasikan pendaftaran Anda ke Admin via WhatsApp untuk mempercepat proses persetujuan akun.</span>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -441,17 +515,21 @@ export default function RegisterPage() {
               href={getAdminWhatsAppUrl(username)}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 no-underline shadow-md cursor-pointer"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 no-underline shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
             >
-              <span>💬 Konfirmasi ke WhatsApp Admin</span>
+              <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
+              </svg>
+              <span>Konfirmasi ke WhatsApp Admin</span>
             </a>
 
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-2 border-none cursor-pointer"
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
             >
-              Ke Halaman Login →
+              <span>Ke Halaman Login</span>
+              <span>&rarr;</span>
             </button>
           </div>
         </div>
@@ -464,436 +542,560 @@ export default function RegisterPage() {
       className="min-h-dvh bg-cover bg-center bg-no-repeat flex items-center justify-center p-3 sm:p-6 md:p-8 py-8 sm:py-12 transition-colors relative"
       style={{
         backgroundImage:
-          "linear-gradient(to bottom, rgba(15,23,42,0.8), rgba(15,23,42,0.92)), url('/japan-background(5).jpg')",
+          "linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.95)), url('/japan-background(5).jpg')",
       }}
     >
-      {/* Floating Back to Landing Page Button */}
+      {/* Floating Back Navigation */}
       <button
         type="button"
         onClick={() => navigate('/')}
-        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-red-400 font-extrabold text-xs sm:text-xs rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer touch-manipulation min-h-[38px]"
+        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white font-bold text-xs rounded-xl shadow-lg hover:border-slate-700 transition-all cursor-pointer touch-manipulation"
       >
-        <span>←</span>
-        <span className="hidden xs:inline sm:inline">Landing Page</span>
+        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Landing Page</span>
       </button>
 
-      {/* Background decoration */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-primary/10 dark:bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-primary/10 dark:bg-primary/20 rounded-full blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-3xl animate-scale-up relative z-10 my-auto">
-        {/* Header Logo & Title */}
-        <div className="flex flex-col items-center mb-5 sm:mb-7 text-center">
-          <div className="size-14 sm:size-16 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 overflow-hidden">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-10 sm:size-11 object-contain" />
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 text-primary dark:text-red-400 text-[0.7rem] font-black uppercase tracking-wider mb-1.5">
-            <span>🌸</span>
-            <span>Registrasi Siswa</span>
+      <div className="w-full max-w-2xl animate-scale-up relative z-10 my-auto">
+        {/* Header Branding */}
+        <div className="flex flex-col items-center mb-6 text-center">
+          <div className="size-14 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 flex items-center justify-center mb-3">
+            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-10 object-contain" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Buat Akun KaiwaDoJo
+            Pendaftaran Akun
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 dark:text-slate-400 mt-1 max-w-md font-medium">
-            Lengkapi data di bawah ini untuk memulai belajar bahasa Jepang bersama komunitas kami.
+          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-sm">
+            Bergabung bersama KaiwaDoJo untuk belajar bahasa Jepang interaktif.
           </p>
         </div>
 
-        {/* Main Form Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-8 md:p-9 backdrop-blur-xl">
-          <form onSubmit={handleStartRegistration} className="flex flex-col gap-6">
-            
-            {/* ── SECTION 1: DATA PRIBADI & KONTAK ── */}
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="size-6 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 flex items-center justify-center text-xs font-black">
-                  1
-                </span>
-                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
-                  Informasi Pribadi & Kontak
-                </h2>
-              </div>
+        {/* Multi-Step Card */}
+        <div className="bg-slate-900/95 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-8 backdrop-blur-xl">
+          
+          {/* ── STEPPER BAR ── */}
+          <div className="mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
+              {[
+                { step: 1, title: 'Profil', desc: 'Data Diri' },
+                { step: 2, title: 'Domisili', desc: 'Wilayah' },
+                { step: 3, title: 'Keamanan', desc: 'Akun & Sandi' },
+              ].map(item => {
+                const isActive = currentStep === item.step
+                const isCompleted = currentStep > item.step
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Nama Lengkap */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-fullname" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Nama Lengkap</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-fullname"
-                    type="text"
-                    autoComplete="name"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    enterKeyHint="next"
-                    placeholder="Contoh: Budi Santoso"
-                    required
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                  />
-                </div>
-
-                {/* Username */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-username" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Username</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold select-none">@</span>
-                    <input
-                      id="reg-username"
-                      type="text"
-                      autoComplete="username"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      enterKeyHint="next"
-                      placeholder="budisantoso"
-                      required
-                      value={username}
-                      onChange={e => {
-                        setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
-                        if (usernameError) setUsernameError(null)
-                      }}
-                      onBlur={handleCheckUsernameOnBlur}
-                      className={`w-full pl-8 pr-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
-                        usernameError
-                          ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
-                          : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
+                return (
+                  <button
+                    key={item.step}
+                    type="button"
+                    onClick={() => {
+                      if (item.step < currentStep) setCurrentStep(item.step as 1 | 2 | 3)
+                    }}
+                    className={`flex items-center gap-2 p-2 sm:p-2.5 rounded-xl border text-left transition-all ${
+                      isActive
+                        ? 'bg-primary/10 border-primary/40 text-white shadow-sm'
+                        : isCompleted
+                        ? 'bg-emerald-950/20 border-emerald-500/30 text-slate-300 hover:bg-slate-800 cursor-pointer'
+                        : 'bg-slate-800/40 border-slate-800 text-slate-500 opacity-60 cursor-not-allowed'
+                    }`}
+                  >
+                    <div
+                      className={`size-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
+                        isActive
+                          ? 'bg-primary text-white'
+                          : isCompleted
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-800 text-slate-400'
                       }`}
-                    />
-                  </div>
-                  {usernameError && (
-                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                      ⚠️ {usernameError}
-                    </span>
-                  )}
-                </div>
-
-                {/* No Telepon WhatsApp */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-phone" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Nomor WhatsApp (Aktif)</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    enterKeyHint="next"
-                    placeholder="Contoh: 081234567890"
-                    required
-                    value={phoneNumber}
-                    onChange={e => {
-                      setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
-                      if (phoneError) setPhoneError(null)
-                    }}
-                    onBlur={handleCheckPhoneOnBlur}
-                    className={`w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
-                      phoneError
-                        ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
-                        : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
-                    }`}
-                  />
-                  {phoneError ? (
-                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                      ⚠️ {phoneError}
-                    </span>
-                  ) : (
-                    <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
-                      Kode OTP akan dikirim via WhatsApp ke nomor ini.
-                    </span>
-                  )}
-                </div>
-
-                {/* Asal Lembaga / Instansi */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-institution" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Asal Lembaga / Kampus</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-institution"
-                    type="text"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    enterKeyHint="next"
-                    placeholder="Contoh: LPK Kaiwa / Universitas X"
-                    required
-                    value={institution}
-                    onChange={e => setInstitution(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                  />
-                  <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
-                    Format opsional: <code className="text-primary dark:text-red-400 font-bold">Nama Group | Institusi</code>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* ── SECTION 2: DOMISILI & WILAYAH ── */}
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="size-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black">
-                  2
-                </span>
-                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
-                  Alamat Domisili & Wilayah
-                </h2>
-              </div>
-
-              {/* Alamat Domisili Lengkap */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <span>Alamat Domisili (Jalan / RT / RW / No. Rumah)</span>
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="reg-domisili"
-                  type="text"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  enterKeyHint="next"
-                  placeholder="Contoh: Jl. Melati No. 12 RT 03 / RW 05"
-                  required
-                  value={domisili}
-                  onChange={e => setDomisili(e.target.value)}
-                  className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                />
-              </div>
-
-              {/* Grid 3 Kolom: Kelurahan, Kecamatan, Kabupaten */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* Kelurahan / Desa */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Kelurahan / Desa</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-kelurahan"
-                    type="text"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    enterKeyHint="next"
-                    placeholder="Contoh: Sukamaju"
-                    required
-                    value={kelurahan}
-                    onChange={e => setKelurahan(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                  />
-                </div>
-
-                {/* Kecamatan */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Kecamatan</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-kecamatan"
-                    type="text"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    enterKeyHint="next"
-                    placeholder="Contoh: Cilodong"
-                    required
-                    value={kecamatan}
-                    onChange={e => setKecamatan(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                  />
-                </div>
-
-                {/* Kabupaten / Kota */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Kabupaten / Kota</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-kabupaten"
-                    type="text"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    enterKeyHint="next"
-                    placeholder="Contoh: Kota Depok"
-                    required
-                    value={kabupaten}
-                    onChange={e => setKabupaten(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ── SECTION 3: KEAMANAN AKUN (EMAIL & PASSWORD) ── */}
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col gap-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="size-6 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-black">
-                  3
-                </span>
-                <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
-                  Kredensial & Keamanan Akun
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Email */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-email" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Email Aktif</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="reg-email"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    enterKeyHint="next"
-                    placeholder="nama@email.com"
-                    required
-                    value={email}
-                    onChange={e => {
-                      setEmail(e.target.value)
-                      if (emailError) setEmailError(null)
-                    }}
-                    onBlur={handleCheckEmailOnBlur}
-                    className={`w-full px-3.5 py-2.5 sm:py-2.5 rounded-xl border text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation ${
-                      emailError
-                        ? 'border-red-500 dark:border-red-500 focus:ring-4 focus:ring-red-500/20'
-                        : 'border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10'
-                    }`}
-                  />
-                  {emailError && (
-                    <span className="text-[0.72rem] font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
-                      ⚠️ {emailError}
-                    </span>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="reg-password" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>Password</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="reg-password"
-                      type={showPass ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      enterKeyHint="done"
-                      placeholder="Min. 8 karakter"
-                      required
-                      minLength={8}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="w-full pl-3.5 pr-11 py-2.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary dark:focus:border-red-400 focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-slate-900 font-medium min-h-[42px] touch-manipulation"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(p => !p)}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm border-none bg-transparent cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center touch-manipulation rounded-lg"
-                      aria-label="Toggle password visibility"
                     >
-                      {showPass ? '🙈' : '👁️'}
-                    </button>
-                  </div>
-                  <span className="text-[0.68rem] text-slate-400 dark:text-slate-500">
-                    Gunakan minimal 8 karakter dengan kombinasi huruf & angka.
-                  </span>
-                </div>
-              </div>
+                      {isCompleted ? (
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        item.step
+                      )}
+                    </div>
+                    <div className="hidden xs:block sm:block min-w-0">
+                      <p className={`text-xs font-bold leading-tight truncate ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-[0.65rem] text-slate-400 truncate">{item.desc}</p>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Error Message Alert */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-xl p-3.5 text-xs sm:text-sm text-red-600 dark:text-red-400 font-bold flex items-start gap-2 animate-fade-in">
-                <span className="text-base shrink-0">⚠️</span>
-                <span className="leading-relaxed">{error}</span>
+            {/* Visual Progress Line */}
+            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+              <div
+                className="bg-primary h-full transition-all duration-300 ease-out"
+                style={{
+                  width: currentStep === 1 ? '33.33%' : currentStep === 2 ? '66.66%' : '100%',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <form onSubmit={handleStartRegistration} className="flex flex-col gap-4">
+            
+            {/* ── STEP 1: PROFIL & KONTAK ── */}
+            {currentStep === 1 && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Nama Lengkap */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-fullname" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Nama Lengkap</span>
+                      <span className="text-[0.68rem] text-slate-400">Wajib</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-fullname"
+                        type="text"
+                        autoComplete="name"
+                        autoCapitalize="words"
+                        placeholder="Contoh: Budi Santoso"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Username */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-username" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Username</span>
+                      <span className="text-[0.68rem] text-slate-400">Tanpa spasi</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono font-bold">
+                        @
+                      </div>
+                      <input
+                        id="reg-username"
+                        type="text"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        placeholder="budisantoso"
+                        value={username}
+                        onChange={e => {
+                          setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))
+                          if (usernameError) setUsernameError(null)
+                        }}
+                        onBlur={handleCheckUsernameOnBlur}
+                        className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                          usernameError
+                            ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                        }`}
+                      />
+                    </div>
+                    {usernameError && (
+                      <span className="text-[0.7rem] font-semibold text-red-400 flex items-center gap-1">
+                        {usernameError}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Nomor WhatsApp */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-phone" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Nomor WhatsApp Aktif</span>
+                      <span className="text-[0.68rem] text-emerald-400">Untuk OTP</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-phone"
+                        type="tel"
+                        inputMode="tel"
+                        placeholder="Contoh: 081234567890"
+                        value={phoneNumber}
+                        onChange={e => {
+                          setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))
+                          if (phoneError) setPhoneError(null)
+                        }}
+                        onBlur={handleCheckPhoneOnBlur}
+                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                          phoneError
+                            ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                        }`}
+                      />
+                    </div>
+                    {phoneError && (
+                      <span className="text-[0.7rem] font-semibold text-red-400">
+                        {phoneError}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Asal Lembaga */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-institution" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Asal Lembaga / Kampus</span>
+                      <span className="text-[0.68rem] text-slate-400">Wajib</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-institution"
+                        type="text"
+                        autoCapitalize="words"
+                        placeholder="Contoh: LPK Kaiwa / Universitas X"
+                        value={institution}
+                        onChange={e => setInstitution(e.target.value)}
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step Action Button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
+                  >
+                    <span>Lanjut ke Domisili</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Submit Button */}
-            <div className="flex flex-col gap-3 pt-2">
-              <button
-                id="btn-register"
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-700 hover:via-emerald-600 hover:to-teal-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 active:scale-[0.99] flex items-center justify-center gap-2.5 min-h-[48px] touch-manipulation"
-              >
-                <span className="text-base">💬</span>
-                <span>{loading ? 'Memproses Pendaftaran...' : 'Kirim Kode OTP via WhatsApp →'}</span>
-              </button>
-            </div>
+            {/* ── STEP 2: DOMISILI & WILAYAH ── */}
+            {currentStep === 2 && (
+              <div className="space-y-4 animate-fade-in">
+                {/* Alamat Domisili */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                    <span>Alamat Domisili Lengkap</span>
+                    <span className="text-[0.68rem] text-slate-400">Jalan / RT / RW / No. Rumah</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-3 text-slate-500">
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <textarea
+                      id="reg-domisili"
+                      rows={2}
+                      placeholder="Contoh: Jl. Melati No. 12 RT 03 / RW 05"
+                      value={domisili}
+                      onChange={e => setDomisili(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Grid Wilayah */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  {/* Kelurahan */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-300">
+                      Kelurahan / Desa
+                    </label>
+                    <input
+                      id="reg-kelurahan"
+                      type="text"
+                      placeholder="Contoh: Sukamaju"
+                      value={kelurahan}
+                      onChange={e => setKelurahan(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                    />
+                  </div>
+
+                  {/* Kecamatan */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-300">
+                      Kecamatan
+                    </label>
+                    <input
+                      id="reg-kecamatan"
+                      type="text"
+                      placeholder="Contoh: Cilodong"
+                      value={kecamatan}
+                      onChange={e => setKecamatan(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                    />
+                  </div>
+
+                  {/* Kabupaten / Kota */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-300">
+                      Kabupaten / Kota
+                    </label>
+                    <input
+                      id="reg-kabupaten"
+                      type="text"
+                      placeholder="Contoh: Depok"
+                      value={kabupaten}
+                      onChange={e => setKabupaten(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Step Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStepError(null)
+                      setCurrentStep(1)
+                    }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                  >
+                    <span>&larr;</span>
+                    <span>Kembali</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-primary/20 active:scale-[0.99]"
+                  >
+                    <span>Lanjut ke Keamanan</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: KEAMANAN & KONFIRMASI ── */}
+            {currentStep === 3 && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Email */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-email" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Email Aktif</span>
+                      <span className="text-[0.68rem] text-slate-400">Untuk Login</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-email"
+                        type="email"
+                        inputMode="email"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder="nama@email.com"
+                        value={email}
+                        onChange={e => {
+                          setEmail(e.target.value)
+                          if (emailError) setEmailError(null)
+                        }}
+                        onBlur={handleCheckEmailOnBlur}
+                        className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm text-white placeholder:text-slate-500 outline-none transition-all bg-slate-950/60 ${
+                          emailError
+                            ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                            : 'border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                        }`}
+                      />
+                    </div>
+                    {emailError && (
+                      <span className="text-[0.7rem] font-semibold text-red-400">
+                        {emailError}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-password" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                      <span>Password Akun</span>
+                      <span className="text-[0.68rem] text-slate-400">Min. 8 Karakter</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-password"
+                        type={showPass ? 'text' : 'password'}
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder="Minimal 8 karakter"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-700 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-950/60 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(p => !p)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white border-none bg-transparent cursor-pointer p-1"
+                        aria-label="Toggle password"
+                      >
+                        {showPass ? (
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Kekuatan Sandi:</span>
+                      <span className="font-bold text-white">{passStrength.label}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                      {[1, 2, 3, 4].map(idx => (
+                        <div
+                          key={idx}
+                          className={`rounded-full transition-all duration-300 ${
+                            idx <= passStrength.score ? passStrength.color : 'bg-slate-800'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ringkasan Singkat Data */}
+                <div className="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Nama & Username:</span>
+                    <span className="font-bold text-white">{fullName} (@{username})</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">WhatsApp:</span>
+                    <span className="font-mono text-emerald-400 font-bold">{phoneNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Domisili:</span>
+                    <span className="truncate max-w-[200px] sm:max-w-xs">{kelurahan}, {kecamatan}, {kabupaten}</span>
+                  </div>
+                </div>
+
+                {/* Step Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStepError(null)
+                      setCurrentStep(2)
+                    }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                  >
+                    <span>&larr;</span>
+                    <span>Kembali</span>
+                  </button>
+                  <button
+                    id="btn-register"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-[0.99] disabled:opacity-60"
+                  >
+                    <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
+                    </svg>
+                    <span>{loading ? 'Memproses...' : 'Kirim OTP WA'}</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Error Notification Alert */}
+            {(stepError || error) && (
+              <div className="bg-red-950/60 border border-red-800 text-red-300 rounded-xl p-3 text-xs flex items-center gap-2 animate-fade-in">
+                <svg className="size-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>{stepError || error}</span>
+              </div>
+            )}
           </form>
 
-          {/* Login Link */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center flex flex-col items-center gap-2">
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+          {/* Login Redirection */}
+          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+            <p className="text-xs text-slate-400">
               Sudah memiliki akun?{' '}
-              <Link to="/login" className="text-primary dark:text-red-400 font-extrabold hover:underline ml-1">
-                Masuk ke Akun di sini →
+              <Link to="/login" className="text-primary hover:underline font-bold ml-1">
+                Masuk ke Akun &rarr;
               </Link>
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6 font-medium">
-          © {new Date().getFullYear()} KaiwaDoJo. All rights reserved.
+        <p className="text-center text-xs text-slate-500 mt-6">
+          &copy; {new Date().getFullYear()} KaiwaDoJo. All rights reserved.
         </p>
       </div>
 
-      {/* ── OTP VERIFICATION MODAL (WHATSAPP) ───────────────────────────────────── */}
+      {/* ── OTP MODAL (WHATSAPP) ── */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in overscroll-contain">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh]">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-800 flex flex-col">
             
             {/* Modal Header */}
-            <div className="px-5 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white flex items-center justify-between shrink-0">
+            <div className="px-5 py-4 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border-b border-slate-800 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
-                  💬
+                <div className="size-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
+                  </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-white">Verifikasi Kode OTP WhatsApp</h3>
-                  <p className="text-[0.7rem] text-emerald-200">Dikirim ke {phoneNumber || 'Nomor WhatsApp'}</p>
+                  <h3 className="text-sm font-extrabold text-white">Verifikasi Kode OTP</h3>
+                  <p className="text-[0.68rem] text-slate-400">Dikirim via WhatsApp ke {phoneNumber}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowOtpModal(false)}
-                className="size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-lg flex items-center justify-center touch-manipulation min-h-[36px] min-w-[36px]"
+                className="size-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white border-none cursor-pointer flex items-center justify-center transition-colors"
               >
-                ×
+                &times;
               </button>
             </div>
 
-            <form onSubmit={handleVerifyOtpSubmit} className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 overflow-y-auto">
-              <div className="text-center">
-                <div className="inline-block px-3.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[0.68rem] font-black text-emerald-700 dark:text-emerald-300 mb-2 border border-emerald-300 dark:border-emerald-800">
-                  💬 Kode OTP WhatsApp
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  Kode OTP 6-digit telah dikirimkan via WhatsApp ke nomor <span className="font-bold text-slate-900 dark:text-white">{phoneNumber}</span>. Silakan masukkan kode untuk memverifikasi pendaftaran.
-                </p>
-              </div>
+            <form onSubmit={handleVerifyOtpSubmit} className="p-5 sm:p-6 flex flex-col gap-4">
+              <p className="text-xs text-slate-300 text-center leading-relaxed">
+                Silakan masukkan 6-digit kode OTP yang telah dikirimkan ke nomor WhatsApp Anda.
+              </p>
 
-              {/* 6 DIGIT OTP INPUT BOXES */}
-              <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-1">
+              {/* 6 Digit Input Boxes */}
+              <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-2">
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -902,33 +1104,31 @@ export default function RegisterPage() {
                     inputMode="numeric"
                     pattern="[0-9]*"
                     autoComplete="one-time-code"
-                    autoCapitalize="none"
-                    autoCorrect="off"
                     maxLength={1}
                     value={digit}
                     onChange={e => handleOtpDigitChange(idx, e.target.value)}
                     onKeyDown={e => handleOtpKeyDown(idx, e)}
-                    className="size-11 sm:size-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-center text-xl sm:text-2xl font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 focus:border-primary dark:focus:border-red-400 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all shadow-xs touch-manipulation"
+                    className="size-11 sm:size-12 rounded-xl border-2 border-slate-700 text-center text-xl sm:text-2xl font-black text-white bg-slate-950 focus:border-primary focus:bg-slate-900 outline-none transition-all shadow-inner"
                   />
                 ))}
               </div>
 
               {otpError && (
-                <div className="text-center text-xs font-extrabold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 p-2.5 rounded-xl border border-red-200 dark:border-red-900">
-                  ⚠️ {otpError}
+                <div className="text-center text-xs font-bold text-red-400 bg-red-950/50 p-2.5 rounded-xl border border-red-850">
+                  {otpError}
                 </div>
               )}
 
-              {/* Resend Code & Timer */}
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 px-1">
+              {/* Resend Cooldown */}
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                 <span>
-                  {otpTimer > 0 ? `Waktu tersisa: ${otpTimer} detik` : 'Waktu OTP habis'}
+                  {otpTimer > 0 ? `Waktu tersisa: ${otpTimer}d` : 'Waktu habis'}
                 </span>
                 <button
                   type="button"
                   onClick={generateNewOtp}
                   disabled={otpTimer > 0}
-                  className="text-xs text-primary dark:text-red-400 font-extrabold underline border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed touch-manipulation py-1"
+                  className="text-xs text-primary hover:underline font-bold border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                 >
                   Kirim Ulang OTP
                 </button>
@@ -937,9 +1137,9 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={verifyingOtp}
-                className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold py-3.5 rounded-xl text-xs sm:text-sm border-none cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-2 min-h-[48px] touch-manipulation flex items-center justify-center"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl text-sm border-none cursor-pointer transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-60"
               >
-                {verifyingOtp ? 'Memverifikasi Kode OTP...' : 'Verifikasi OTP & Daftar Akun ✓'}
+                {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi & Selesaikan Pendaftaran'}
               </button>
             </form>
           </div>
