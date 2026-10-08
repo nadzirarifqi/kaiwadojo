@@ -540,28 +540,6 @@ function SakuraRingProgressBar({
             className="text-slate-100 dark:text-slate-800"
           />
 
-          {/* Subtle segmented ticks around the ring for barchart gauge feel */}
-          {Array.from({ length: 12 }).map((_, idx) => {
-            const angle = (idx * 30 * Math.PI) / 180
-            const x1 = 80 + 74 * Math.cos(angle)
-            const y1 = 80 + 74 * Math.sin(angle)
-            const x2 = 80 + 77 * Math.cos(angle)
-            const y2 = 80 + 77 * Math.sin(angle)
-            return (
-              <line
-                key={idx}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                className="text-slate-200 dark:text-slate-700/80"
-              />
-            )
-          })}
-
           {/* Active Circular Progress Arc */}
           <circle
             cx="80"
@@ -622,36 +600,23 @@ function SakuraRingProgressBar({
         )}
 
         {/* Circular Progress Percentage Pill at Bottom of Ring */}
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 shrink-0 z-20">
+        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 shrink-0 z-20">
           {isCompleted ? (
-            <div className="bg-emerald-500 text-white font-black text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 border border-emerald-300 animate-pulse whitespace-nowrap">
+            <div className="bg-emerald-500 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-md flex items-center gap-1 border border-emerald-300 animate-pulse whitespace-nowrap">
               <span>✦</span>
               <span>100% Selesai</span>
             </div>
           ) : pct > 0 ? (
-            <div className="bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-rose-200 dark:border-rose-900/60 whitespace-nowrap">
+            <div className="bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow-xs border border-rose-200 dark:border-rose-900/60 whitespace-nowrap">
               {pct}% Misi
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-800 text-slate-400 font-bold text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            <div className="bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs px-2.5 py-0.5 rounded-full shadow-xs border border-slate-200 dark:border-slate-700 whitespace-nowrap">
               0% Misi
             </div>
           )}
         </div>
       </div>
-
-      {/* Growth notification subtitle if 100% */}
-      {isCompleted ? (
-        <div className="mt-2.5 flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 animate-fade-in">
-          <span>✦</span>
-          <span>Pohon makin tumbuh hari ini!</span>
-          <span>✦</span>
-        </div>
-      ) : (
-        <div className="mt-2 text-[10px] text-slate-400 font-medium text-center">
-          {dailyMission ? 'Progres Misi Harian' : 'Misi Belum Disusun'}
-        </div>
-      )}
     </div>
   )
 }
@@ -773,14 +738,14 @@ function StreakCard({
                     <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                   )}
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold">{dayLabels[i]}</span>
+                <span className="text-xs text-slate-400 font-bold mt-1">{dayLabels[i]}</span>
               </div>
             ))}
           </div>
 
           {/* Progress Bar to Next Sakura Milestone */}
           <div>
-            <div className="flex justify-between text-[10px] sm:text-[11px] font-semibold mb-1">
+            <div className="flex justify-between text-xs font-semibold mb-1">
               <span className="text-slate-500 dark:text-slate-400 truncate">
                 Target {nextMilestone} Hari
               </span>
@@ -801,11 +766,11 @@ function StreakCard({
           </div>
 
           {/* Milestone Badges without Emojis */}
-          <div className="flex gap-1 sm:gap-1.5 mt-2">
+          <div className="flex gap-1.5 mt-2">
             {milestones.map(m => (
               <div
                 key={m.days}
-                className={`flex-1 py-0.5 px-1 rounded-md text-center text-[9px] sm:text-[10px] font-bold border transition-all ${
+                className={`flex-1 py-1 px-1.5 rounded-lg text-center text-xs font-bold border transition-all ${
                   streakDays >= m.days
                     ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400'
                     : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400'
@@ -821,7 +786,7 @@ function StreakCard({
 
       {/* Today Status Banner with Clean Separated Button */}
       <div
-        className={`p-2.5 sm:p-3 rounded-xl text-[10px] sm:text-xs font-semibold border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 ${
+        className={`p-3 rounded-xl text-xs sm:text-sm font-medium border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
           isTodayFreeze
             ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800'
             : todayDone
@@ -829,8 +794,8 @@ function StreakCard({
             : 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900'
         }`}
       >
-        <div className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-current animate-pulse shrink-0" />
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-current animate-pulse shrink-0" />
           <span className="leading-snug">
             {isTodayFreeze
               ? 'Hari istirahat terencana (Cap Biru). Streak aman bertambah.'
@@ -843,7 +808,7 @@ function StreakCard({
         {!todayDone && !isTodayFreeze && (
           <button
             onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-            className="group px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-[10px] sm:text-[11px] rounded-lg border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[26px] sm:min-h-[28px]"
+            className="group px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[30px]"
           >
             <span>Susun Misi Hari Ini</span>
             <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -977,17 +942,23 @@ function UnifiedMobileSakuraMissionCard({
 
   const sakuraInfo = getSakuraStage(streakDays, isTodayFreeze)
   const [showSakuraModal, setShowSakuraModal] = useState(false)
+  const isMissionDone = missionProgress?.isFullyCompleted ?? false
+
+  const hasVideos = (dailyMission?.selectedVideos?.length ?? 0) > 0
+  const hasQuizzes = (dailyMission?.targetQuizCount ?? 0) > 0
+  const hasKotoba = (dailyMission?.targetKotobaCount ?? 0) > 0
+  const hasAnyMission = Boolean(dailyMission && (hasVideos || hasQuizzes || hasKotoba))
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col gap-3.5 sm:gap-4 relative overflow-hidden">
       {/* Ambient pink aura glow */}
-      <div className="absolute top-0 right-1/2 translate-x-1/2 w-56 h-56 bg-rose-500/10 dark:bg-rose-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-64 bg-rose-500/8 dark:bg-rose-500/12 rounded-full blur-3xl pointer-events-none" />
 
       {/* ── TOP HEADER: Stage Title ── */}
-      <div className="flex items-center justify-between relative z-10 pb-1 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="size-7 rounded-lg bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
-            <svg className="size-3.5" viewBox="0 0 24 24" fill="currentColor">
+      <div className="flex items-center justify-between relative z-10 pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="size-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
+            <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
               {[0, 72, 144, 216, 288].map(deg => (
                 <path
                   key={deg}
@@ -1000,20 +971,18 @@ function UnifiedMobileSakuraMissionCard({
             </svg>
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
               {sakuraInfo.stageName}
             </h2>
-            <span className="text-[10px] text-slate-400 font-semibold block truncate">
+            <span className="text-xs text-slate-400 font-medium block truncate">
               {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
             </span>
           </div>
         </div>
-
-        {/* Level pill badge removed per user request */}
       </div>
 
       {/* ── CENTER: Sakura Flower Illustration + Circular Mission Progress Ring ── */}
-      <div className="flex flex-col items-center justify-center py-1 relative z-10">
+      <div className="flex flex-col items-center justify-center py-2 relative z-10">
         <SakuraRingProgressBar
           streakDays={streakDays}
           isFreeze={isTodayFreeze}
@@ -1021,158 +990,163 @@ function UnifiedMobileSakuraMissionCard({
           missionProgress={missionProgress}
           onClick={() => setShowSakuraModal(true)}
         />
-        <div className={`text-xl font-black leading-none mt-2 tracking-tight ${sakuraInfo.colorClass}`}>
-          {streakDays} <span className="text-[11px] font-bold text-slate-400">Hari Konsisten</span>
+        
+        {/* Streak & Status Message */}
+        <div className="mt-2.5 flex flex-col items-center text-center">
+          <div className={`text-2xl font-black leading-none tracking-tight ${sakuraInfo.colorClass}`}>
+            {streakDays} <span className="text-xs font-bold text-slate-400">Hari Berturut-turut</span>
+          </div>
+
+          {isMissionDone ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+              <span>✦</span>
+              <span>Pohon makin tumbuh hari ini!</span>
+              <span>✦</span>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 max-w-xs leading-relaxed">
+              {isTodayFreeze
+                ? 'Hari istirahat terencana (Freeze). Streak kamu tetap aman.'
+                : todayDone
+                ? 'Misi hari ini telah selesai! Sakura mekar indah.'
+                : 'Selesaikan misi harian agar sakura tetap mekar.'}
+            </p>
+          )}
         </div>
-        <span className="text-[10px] text-slate-400 font-medium mt-0.5 text-center">
-          {isTodayFreeze
-            ? 'Hari Istirahat Terencana (Freeze)'
-            : todayDone
-            ? 'Misi hari ini telah selesai! Sakura mekar indah.'
-            : 'Selesaikan misi harian agar sakura tetap mekar.'}
-        </span>
       </div>
 
-      {/* ── MIDDLE: 7-Day History Dots in Rounded Bar (matching mockup middle) ── */}
-      <div className="bg-slate-100 dark:bg-slate-800/90 rounded-2xl p-2 px-2.5 flex items-center justify-between gap-1 shadow-inner relative z-10">
+      {/* ── MIDDLE: 7-Day History Dots in Rounded Bar ── */}
+      <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 px-3 flex items-center justify-between gap-1 border border-slate-100 dark:border-slate-800 relative z-10">
         {history.map((item, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+          <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
             <div
-              className={`size-6 rounded-full flex items-center justify-center transition-all ${
+              className={`size-7 rounded-full flex items-center justify-center transition-all ${
                 item.done
                   ? item.isFreeze
                     ? 'bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-xs'
                     : 'bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-xs'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                  : 'bg-slate-200/80 dark:bg-slate-700/80 text-slate-400'
               }`}
               title={`${dayLabels[i]}: ${item.done ? (item.isFreeze ? 'Istirahat (Freeze)' : 'Misi Selesai') : 'Belum selesai'}`}
             >
               {item.done ? (
                 item.isFreeze ? (
-                  <svg className="size-2.5 fill-current" viewBox="0 0 24 24">
+                  <svg className="size-3 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
                   </svg>
                 ) : (
-                  <svg className="size-2.5 fill-current" viewBox="0 0 24 24">
+                  <svg className="size-3 fill-current" viewBox="0 0 24 24">
                     <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
                   </svg>
                 )
               ) : (
-                <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
               )}
             </div>
-            <span className="text-[9px] text-slate-400 font-bold">{dayLabels[i]}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{dayLabels[i]}</span>
           </div>
         ))}
       </div>
 
-      {/* ── BOTTOM: The 3 Daily Mission Task Bars (matching mockup bottom) ── */}
-      <div className="flex flex-col gap-2 relative z-10 pt-0.5">
+      {/* ── BOTTOM: Daily Mission Task Bars ── */}
+      <div className="flex flex-col gap-2.5 relative z-10 pt-1">
         <div className="flex items-center justify-between pb-0.5">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-bold text-slate-800 dark:text-white">Misi Harian Hari Ini</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-800 dark:text-white">Misi Harian Hari Ini</span>
             {missionProgress?.isFullyCompleted ? (
-              <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded-full border border-emerald-200">
+              <span className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                 100% Selesai
               </span>
-            ) : (
-              <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full">
-                {missionProgress ? `${missionProgress.overallPct}% Selesai` : 'Belum Dibuat'}
+            ) : missionProgress && hasAnyMission ? (
+              <span className="text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full">
+                {missionProgress.overallPct}% Selesai
               </span>
-            )}
+            ) : null}
           </div>
-          {/* Tombol susun dihapus per user request */}
         </div>
 
-        {dailyMission && missionProgress ? (
-          <>
+        {hasAnyMission && missionProgress ? (
+          <div className="flex flex-col gap-2.5">
             {/* Task Bar 1: Video Tata Bahasa / Materi */}
-            {dailyMission.selectedVideos.length > 0 ? (
-              dailyMission.selectedVideos.map((v, idx) => {
-                const count = videoProgressMap.get(v.id) || 0
-                const isVidDone = count >= 3
-                return (
-                  <div
-                    key={v.id || idx}
-                    onClick={() => navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)}
-                    className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-1.5 ${
-                      isVidDone
-                        ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                        : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className={`size-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          isVidDone ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'
-                        }`}>
-                          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-[11px] font-bold text-slate-800 dark:text-white truncate">
-                            Bab {v.bab} (Part {v.videoNum})
-                          </h4>
-                          <span className="text-[9px] text-slate-400 font-medium block truncate">
-                            Materi Video Minna no Nihongo
-                          </span>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-extrabold shrink-0 px-2 py-0.5 rounded-md ${
-                        isVidDone
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                          : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+            {dailyMission!.selectedVideos.map((v, idx) => {
+              const count = videoProgressMap.get(v.id) || 0
+              const isVidDone = count >= 3
+              return (
+                <div
+                  key={v.id || idx}
+                  onClick={() => navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
+                    isVidDone
+                      ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        isVidDone ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'
                       }`}>
-                        {count}/3 Replays
-                      </span>
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
+                          Bab {v.bab} (Part {v.videoNum})
+                        </h4>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
+                          {v.title || 'Materi Video Minna no Nihongo'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
-                      />
-                    </div>
+                    <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
+                      isVidDone
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
+                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      {count}/3 Replays
+                    </span>
                   </div>
-                )
-              })
-            ) : (
-              <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-[10px] text-slate-400 flex items-center justify-between">
-                <span>Video Tata Bahasa</span>
-                <span className="font-semibold text-slate-400">Tidak ada target</span>
-              </div>
-            )}
+                  <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
 
             {/* Task Bar 2: Kuis Evaluasi Bab */}
-            {dailyMission.targetQuizCount > 0 ? (
+            {dailyMission!.targetQuizCount > 0 && (
               <div
                 onClick={() => navigate('/my-courses')}
-                className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-1.5 ${
+                className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
                   missionProgress.quizCompleted
                     ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
+                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`size-7 rounded-lg flex items-center justify-center shrink-0 ${
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
                       missionProgress.quizCompleted ? 'bg-emerald-500 text-white' : 'bg-indigo-500/10 text-indigo-500'
                     }`}>
-                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-[11px] font-bold text-slate-800 dark:text-white truncate">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                         Kuis Evaluasi Bab
                       </h4>
-                      <span className="text-[9px] text-slate-400 font-medium block truncate">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
                         Target: {missionProgress.targetQuizzes} Kuis Selesai
                       </span>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-extrabold shrink-0 px-2 py-0.5 rounded-md ${
+                  <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
                     missionProgress.quizCompleted
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                       : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -1180,47 +1154,42 @@ function UnifiedMobileSakuraMissionCard({
                     {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
                   </span>
                 </div>
-                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-indigo-600 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100)}%` }}
                   />
                 </div>
               </div>
-            ) : (
-              <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-[10px] text-slate-400 flex items-center justify-between">
-                <span>Kuis Evaluasi Bab</span>
-                <span className="font-semibold text-slate-400">Tidak ada target</span>
-              </div>
             )}
 
             {/* Task Bar 3: Setoran Kotoba */}
-            {dailyMission.targetKotobaCount > 0 ? (
+            {dailyMission!.targetKotobaCount > 0 && (
               <div
                 onClick={() => navigate('/kotoba')}
-                className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-1.5 ${
+                className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
                   missionProgress.kotobaCompleted
                     ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
+                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-amber-400'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`size-7 rounded-lg flex items-center justify-center font-serif font-bold text-xs shrink-0 ${
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`size-8 rounded-lg flex items-center justify-center font-serif font-bold text-sm shrink-0 ${
                       missionProgress.kotobaCompleted ? 'bg-emerald-500 text-white' : 'bg-amber-500/10 text-amber-600'
                     }`}>
                       語
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-[11px] font-bold text-slate-800 dark:text-white truncate">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                         Setoran Kosakata (Kotoba)
                       </h4>
-                      <span className="text-[9px] text-slate-400 font-medium block truncate">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
                         Target: {missionProgress.targetKotoba} Kosakata Disetor
                       </span>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-extrabold shrink-0 px-2 py-0.5 rounded-md ${
+                  <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
                     missionProgress.kotobaCompleted
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                       : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -1228,31 +1197,26 @@ function UnifiedMobileSakuraMissionCard({
                     {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
                   </span>
                 </div>
-                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-amber-500 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100)}%` }}
                   />
                 </div>
               </div>
-            ) : (
-              <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-[10px] text-slate-400 flex items-center justify-between">
-                <span>Setoran Kosakata</span>
-                <span className="font-semibold text-slate-400">Tidak ada target</span>
-              </div>
             )}
-          </>
+          </div>
         ) : (
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Belum menyusun Misi Harian untuk hari ini.
-            </span>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Kamu belum menyusun Misi Harian untuk hari ini.
+            </p>
             <button
               type="button"
               onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-              className="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white text-[10px] sm:text-[11px] font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-2 active:scale-95 touch-manipulation"
             >
-              <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               <span>Susun Misi Hari Ini</span>
@@ -1391,19 +1355,19 @@ function EmbeddedUserScheduleCard({
               </svg>
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
+              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
                 Jadwal & Agenda Saya
               </h2>
-              <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium block truncate">Rencana Belajar Mulai Hari Ini</span>
+              <span className="text-xs text-slate-400 font-medium block truncate">Rencana Belajar Mulai Hari Ini</span>
             </div>
           </div>
 
           <button
             onClick={() => navigate('/learning-plan')}
-            className="group px-2 py-0.5 sm:px-2.5 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] sm:text-[11px] rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0 min-h-[26px] sm:min-h-[28px]"
+            className="group px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0 min-h-[28px]"
           >
             <span>Kalender</span>
-            <span className="size-3 sm:size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+            <span className="size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
               <svg className="size-1.5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -1412,31 +1376,31 @@ function EmbeddedUserScheduleCard({
         </div>
 
         {/* Subheader info: Today & Count */}
-        <div className="flex items-center justify-between mb-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg sm:rounded-xl border border-slate-100 dark:border-slate-800/80 text-[10px] sm:text-[11px] shrink-0">
+        <div className="flex items-center justify-between mb-2.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80 text-xs shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Hari ini:</span>
             <span className="font-bold text-slate-800 dark:text-white truncate">
               {formatIndonesianFullDate(todayStr).split(',')[0]}
             </span>
           </div>
-          <span className="px-2 py-0.2 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-[9px] sm:text-[10px] shrink-0">
-            {displayedTimeline.length} Rencana Terjadwal
+          <span className="px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-xs shrink-0">
+            {displayedTimeline.length} Agenda
           </span>
         </div>
 
         {/* Scrollable Timeline List */}
         {loading ? (
-          <div className="py-6 text-center text-[11px] text-slate-400">Memuat linimasa jadwalku...</div>
+          <div className="py-6 text-center text-xs text-slate-400">Memuat linimasa jadwalku...</div>
         ) : displayedTimeline.length === 0 ? (
-          <div className="p-3 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-2 sm:gap-2.5 flex-1 justify-center">
-            <span className="text-[10px] sm:text-[11px]">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
+          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-2.5 flex-1 justify-center">
+            <span className="text-xs text-slate-500 dark:text-slate-400">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
             <button
               onClick={onOpenMissionModal || (() => navigate('/learning-plan'))}
-              className="group px-2.5 sm:px-3 py-1 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-[10px] sm:text-[11px] shadow-xs flex items-center gap-1.5 min-h-[26px] sm:min-h-[28px]"
+              className="group px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-xs shadow-xs flex items-center gap-1.5 min-h-[30px]"
             >
               <span>Susun Misi Hari Ini</span>
-              <span className="size-3 sm:size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+              <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                 <svg className="size-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -1444,7 +1408,7 @@ function EmbeddedUserScheduleCard({
             </button>
           </div>
         ) : (
-          <div className="space-y-1.5 sm:space-y-2 overflow-y-auto pr-1 max-h-[260px] sm:max-h-[300px]">
+          <div className="space-y-2 overflow-y-auto pr-1 max-h-[260px] sm:max-h-[300px]">
             {displayedTimeline.map(item => {
               const isToday = item.date === todayStr
               const relLabel = getRelativeDayLabel(item.date, todayStr)
@@ -1455,7 +1419,7 @@ function EmbeddedUserScheduleCard({
                   <div
                     key={item.id}
                     onClick={() => setSelectedScheduleItem(item)}
-                    className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl border cursor-pointer transition-all hover:border-amber-500 flex flex-col gap-0.5 sm:gap-1 group ${
+                    className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all hover:border-amber-500 flex flex-col gap-1 group ${
                       isToday
                         ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-400 dark:border-amber-800 ring-1 ring-amber-300/30 shadow-xs'
                         : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
@@ -1464,29 +1428,29 @@ function EmbeddedUserScheduleCard({
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <span className="size-1.5 rounded-full bg-amber-500" />
-                        <span className="text-[10px] sm:text-[11px]">Misi Harian</span>
+                        <span className="text-xs">Misi Harian</span>
                         {isToday ? (
-                          <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Hari Ini
                           </span>
                         ) : relLabel === 'Besok' ? (
-                          <span className="text-[9px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-[10px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Besok
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
                         {formatIndonesianFullDate(item.date)}
                       </span>
                     </div>
 
-                    <div className="font-bold text-slate-800 dark:text-white truncate text-[11px] sm:text-xs">
+                    <div className="font-bold text-slate-800 dark:text-white truncate text-xs sm:text-sm">
                       {m.selectedVideos.length > 0
                         ? m.selectedVideos.map(v => `Bab ${v.bab} (Part ${v.videoNum})`).join(', ')
                         : 'Misi Mandiri Non-Video'}
                     </div>
 
-                    <div className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
                       <span>Target: {m.targetReplayCount}x Replays</span>
                       <span>• {m.targetQuizCount} Kuis • {m.targetKotobaCount} Kotoba</span>
                     </div>
@@ -1498,7 +1462,7 @@ function EmbeddedUserScheduleCard({
                   <div
                     key={item.id}
                     onClick={() => setSelectedScheduleItem(item)}
-                    className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl border cursor-pointer transition-all flex flex-col gap-0.5 sm:gap-1 group ${
+                    className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-1 group ${
                       isToday
                         ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-700 ring-1 ring-sky-300/30 shadow-xs'
                         : sch.type === 'online'
@@ -1509,29 +1473,29 @@ function EmbeddedUserScheduleCard({
                     <div className="flex items-center justify-between font-bold">
                       <span className="flex items-center gap-1.5">
                         <span className="size-1.5 rounded-full bg-sky-500" />
-                        <span className="text-[10px] sm:text-[11px]">{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
+                        <span className="text-xs">{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
                         {isToday ? (
-                          <span className="text-[9px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Hari Ini
                           </span>
                         ) : relLabel === 'Besok' ? (
-                          <span className="text-[9px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-[10px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Besok
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-[9px] sm:text-[10px] font-semibold">
+                      <span className="text-xs font-semibold">
                         {formatIndonesianFullDate(sch.date)} ({sch.start_time} WIB)
                       </span>
                     </div>
 
-                    <div className="font-bold truncate text-slate-800 dark:text-white text-[11px] sm:text-xs">
+                    <div className="font-bold truncate text-slate-800 dark:text-white text-xs sm:text-sm">
                       {sch.title}
                     </div>
 
-                    <div className="text-[9px] sm:text-[10px] opacity-80 flex items-center justify-between">
+                    <div className="text-xs opacity-80 flex items-center justify-between">
                       <span>Sensei: {sch.instructor_name || sch.instructor || 'Sensei Dojo'}</span>
-                      <span className="font-bold px-1.5 py-0.2 rounded bg-white/80 dark:bg-slate-900/60">
+                      <span className="font-bold px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-900/60">
                         Terdaftar
                       </span>
                     </div>
@@ -1993,24 +1957,24 @@ export default function Dashboard() {
                   Papan Pengumuman Dojo
                 </span>
                 {unreadAnnouncements.length > 0 ? (
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
                     {unreadAnnouncements.length} Baru
                   </span>
                 ) : (
-                  <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                     Terkini
                   </span>
                 )}
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                 {unreadAnnouncements.length > 0 ? unreadAnnouncements[0]?.title : announcements[0]?.title}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-0.5 transition-transform">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-0.5 transition-transform">
             <span className="hidden sm:inline">Buka</span>
-            <span className="size-3.5 sm:size-4 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center">
               <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -2270,8 +2234,8 @@ export default function Dashboard() {
                 語
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs font-bold leading-snug truncate">Jurnal Kosakata</div>
-                <div className="text-white/80 text-[9px] sm:text-[10px] mt-0.5 truncate block">Catatan Kotoba</div>
+                <div className="text-xs sm:text-sm font-bold leading-snug truncate">Jurnal Kosakata</div>
+                <div className="text-white/80 text-[11px] sm:text-xs mt-0.5 truncate block">Catatan Kotoba</div>
               </div>
               <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-white/20 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
                 <svg className="size-2 sm:size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2291,8 +2255,8 @@ export default function Dashboard() {
                 </svg>
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white leading-snug truncate">Reservasi Kelas</div>
-                <div className="text-slate-400 text-[9px] sm:text-[10px] mt-0.5 truncate block">Live & Offline</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-snug truncate">Reservasi Kelas</div>
+                <div className="text-slate-400 text-[11px] sm:text-xs mt-0.5 truncate block">Live & Offline</div>
               </div>
               <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
                 <svg className="size-2 sm:size-2.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2351,21 +2315,21 @@ export default function Dashboard() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}</span>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-1.5 sm:px-2 py-0.5 rounded-md shrink-0">
+              <span className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-md shrink-0">
                 {bookProgress.jilid1Pct}%
               </span>
             </div>
 
             <div>
-              <div className="flex justify-between text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-300 font-semibold mb-1">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-300 font-semibold mb-1">
                 <span>Pencapaian: {bookProgress.jilid1DoneItems}/125 Selesai</span>
                 <span>{bookProgress.jilid1Pct}%</span>
               </div>
-              <div className="h-1 sm:h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-700"
                   style={{ width: `${bookProgress.jilid1Pct}%` }}
@@ -2377,31 +2341,31 @@ export default function Dashboard() {
           {/* Card 2: Jilid 2 */}
           <div
             onClick={() => navigate('/my-courses')}
-            className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md flex flex-col gap-2 sm:gap-2.5 group"
+            className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md flex flex-col gap-2.5 group"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                  <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-8 sm:size-9 rounded-lg sm:rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}</span>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-1.5 sm:px-2 py-0.5 rounded-md shrink-0">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md shrink-0">
                 {bookProgress.jilid2Pct}%
               </span>
             </div>
 
             <div>
-              <div className="flex justify-between text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-300 font-semibold mb-1">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-300 font-semibold mb-1">
                 <span>Pencapaian: {bookProgress.jilid2DoneItems}/125 Selesai</span>
                 <span>{bookProgress.jilid2Pct}%</span>
               </div>
-              <div className="h-1 sm:h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-emerald-600 rounded-full transition-all duration-700"
                   style={{ width: `${bookProgress.jilid2Pct}%` }}
