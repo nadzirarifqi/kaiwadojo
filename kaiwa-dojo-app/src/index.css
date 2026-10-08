@@ -493,12 +493,113 @@ html.dark .hinomaru-glow {
   border-left: 4px solid var(--color-primary);
 }
 
-/* Sakura Soft Pulse */
+/* Sakura Stage Idle Animations */
 @keyframes sakuraFloat {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-8px) rotate(4deg); }
 }
 
+@keyframes sakuraBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes sakuraSway {
+  0%, 100% { transform: rotate(-3.5deg) translateY(0); }
+  50% { transform: rotate(3.5deg) translateY(-2px); }
+}
+
+@keyframes sakuraPulseSoft {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.05) translateY(-3px); }
+}
+
+@keyframes sakuraBloomFloat {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.04) rotate(2deg) translateY(-2px); }
+}
+
+@keyframes sakuraPetalDrift {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50% { transform: translateY(-4px) rotate(8deg) scale(1.05); }
+}
+
+@keyframes sakuraGoldRadiance {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4)); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.8)); }
+}
+
+@keyframes sakuraFrostPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.8)); }
+}
+
+/* 100% Daily Mission Growth Celebration Animations */
+@keyframes treeGrowthPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes sparkleTwinkle {
+  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1.25) rotate(90deg); opacity: 1; }
+}
+
+@keyframes ringAuraGlow {
+  0%, 100% { opacity: 0.45; transform: scale(0.97); }
+  50% { opacity: 0.95; transform: scale(1.03); }
+}
+
 .animate-sakura {
   animation: sakuraFloat 5s ease-in-out infinite;
 }
+
+.animate-sakura-breathe {
+  animation: sakuraBreathe 3s ease-in-out infinite;
+}
+
+.animate-sakura-sway {
+  animation: sakuraSway 3.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-sakura-pulse-soft {
+  animation: sakuraPulseSoft 3.5s ease-in-out infinite;
+}
+
+.animate-sakura-bloom-float {
+  animation: sakuraBloomFloat 4s ease-in-out infinite;
+}
+
+.animate-sakura-petal-drift {
+  animation: sakuraPetalDrift 4.5s ease-in-out infinite;
+}
+
+.animate-sakura-gold {
+  animation: sakuraGoldRadiance 3s ease-in-out infinite;
+}
+
+.animate-sakura-frost {
+  animation: sakuraFrostPulse 3.5s ease-in-out infinite;
+}
+
+.animate-growth-pulse {
+  animation: treeGrowthPulse 2.5s ease-in-out infinite;
+}
+
+.animate-sparkle-1 {
+  animation: sparkleTwinkle 2s ease-in-out infinite;
+}
+
+.animate-sparkle-2 {
+  animation: sparkleTwinkle 2.6s ease-in-out 0.6s infinite;
+}
+
+.animate-sparkle-3 {
+  animation: sparkleTwinkle 2.2s ease-in-out 1.2s infinite;
+}
+
+.animate-ring-aura {
+  animation: ringAuraGlow 2.5s ease-in-out infinite;
+}
+

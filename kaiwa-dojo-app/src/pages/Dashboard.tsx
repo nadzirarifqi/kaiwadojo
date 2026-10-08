@@ -15,6 +15,7 @@ import {
   DAILY_MISSION_UPDATE_EVENT,
   subscribeToDailyMissionRealtime,
   backfillHistoricalStreakCaps,
+  saveDailyMission,
 } from '../lib/dailyMission'
 import {
   SCHEDULE_UPDATE_EVENT,
@@ -33,6 +34,7 @@ import {
   subscribeToAnnouncementRealtime,
 } from '../lib/announcementService'
 import AnnouncementModal from '../components/AnnouncementModal'
+import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -159,167 +161,497 @@ function getSakuraStage(streakDays: number, isFreeze: boolean): SakuraStage {
   }
 }
 
-/* ── Sakura Blossom Visual Component ──────────────────── */
-function SakuraBlossomVisual({ streakDays, isFreeze }: { streakDays: number; isFreeze: boolean }) {
+/* ── Sakura Blossom Visual Component (Enlarged, Highlighted & Animated) ── */
+function SakuraBlossomVisual({
+  streakDays,
+  isFreeze,
+  isMissionCompleted,
+  sizeClass = 'size-24 sm:size-28',
+}: {
+  streakDays: number
+  isFreeze: boolean
+  isMissionCompleted?: boolean
+  sizeClass?: string
+}) {
+  const celebrationClass = isMissionCompleted ? ' animate-growth-pulse' : ''
+
   if (isFreeze) {
-    // Frost Sakura Flower
+    // Frost Sakura Flower with crystalline icy shimmer
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <div className="absolute inset-0 bg-sky-400/15 rounded-full blur-xl animate-pulse" />
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md text-sky-400">
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-sky-400/25 rounded-full blur-2xl animate-pulse" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-lg text-sky-400 animate-sakura-frost">
+          <defs>
+            <linearGradient id="icePetalGradLg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#F0F9FF" />
+              <stop offset="40%" stopColor="#BAE6FD" />
+              <stop offset="100%" stopColor="#0284C7" />
+            </linearGradient>
+          </defs>
           {/* Frost Petals */}
           {[0, 72, 144, 216, 288].map((angle, i) => (
             <path
               key={i}
               transform={`rotate(${angle} 50 50)`}
-              d="M50 18 C43 28, 41 38, 50 50 C59 38, 57 28, 50 18 Z"
-              fill="url(#icePetalGrad)"
-              stroke="#7DD3FC"
-              strokeWidth="1.2"
+              d="M50 14 C42 26, 40 38, 50 50 C60 38, 58 26, 50 14 Z"
+              fill="url(#icePetalGradLg)"
+              stroke="#38BDF8"
+              strokeWidth="1.3"
             />
           ))}
           {/* Snowflake center */}
-          <circle cx="50" cy="50" r="7" fill="#E0F2FE" />
-          <path d="M50 43 L50 57 M43 50 L57 50 M45 45 L55 55 M45 55 L55 45" stroke="#0284C7" strokeWidth="1.5" />
-          <defs>
-            <linearGradient id="icePetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#BAE6FD" />
-              <stop offset="100%" stopColor="#38BDF8" />
-            </linearGradient>
-          </defs>
+          <circle cx="50" cy="50" r="8" fill="#F0F9FF" />
+          <path d="M50 42 L50 58 M42 50 L58 50 M44 44 L56 56 M44 56 L56 44" stroke="#0284C7" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
     )
   }
 
   if (streakDays >= 100) {
-    // Golden Legendary Sakura
+    // Golden Legendary Sakura (Stage 5)
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <div className="absolute inset-0 bg-amber-400/25 rounded-full blur-xl animate-pulse" />
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-lg text-amber-400">
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-amber-400/35 rounded-full blur-2xl animate-pulse" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-xl text-amber-400 animate-sakura-gold">
+          <defs>
+            <linearGradient id="goldPetalGradLg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FEF3C7" />
+              <stop offset="45%" stopColor="#FBBF24" />
+              <stop offset="100%" stopColor="#D97706" />
+            </linearGradient>
+          </defs>
+          {/* Back layer petals */}
+          {[36, 108, 180, 252, 324].map((angle, i) => (
+            <path
+              key={`bg-${i}`}
+              transform={`rotate(${angle} 50 50)`}
+              d="M50 16 C42 27, 40 38, 50 50 C60 38, 58 27, 50 16 Z"
+              fill="#FDE68A"
+              opacity="0.85"
+            />
+          ))}
+          {/* Main 5 Golden Petals */}
           {[0, 72, 144, 216, 288].map((angle, i) => (
             <path
               key={i}
               transform={`rotate(${angle} 50 50)`}
-              d="M50 12 C40 25, 38 38, 50 50 C62 38, 60 25, 50 12 Z"
-              fill="url(#goldPetalGrad)"
-              stroke="#F59E0B"
+              d="M50 8 C38 23, 36 38, 50 50 C64 38, 62 23, 50 8 Z"
+              fill="url(#goldPetalGradLg)"
+              stroke="#B45309"
               strokeWidth="1.5"
             />
           ))}
-          <circle cx="50" cy="50" r="8" fill="#FEF3C7" />
-          <circle cx="50" cy="50" r="4" fill="#D97706" />
-          <defs>
-            <linearGradient id="goldPetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#FDE68A" />
-              <stop offset="100%" stopColor="#F59E0B" />
-            </linearGradient>
-          </defs>
+          <circle cx="50" cy="50" r="9.5" fill="#FFFBEB" />
+          <circle cx="50" cy="50" r="5" fill="#B45309" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+            <circle
+              key={i}
+              cx={50 + 7.5 * Math.cos((angle * Math.PI) / 180)}
+              cy={50 + 7.5 * Math.sin((angle * Math.PI) / 180)}
+              r="1.5"
+              fill="#FEF08A"
+            />
+          ))}
         </svg>
       </div>
     )
   }
 
   if (streakDays >= 30) {
-    // Blooming Sakura Cluster with Floating Petals
+    // Blooming Lush Mankai Sakura Cluster (Stage 4)
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-xl animate-pulse" />
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md">
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-rose-500/25 rounded-full blur-2xl animate-pulse" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-lg animate-sakura-petal-drift">
+          <defs>
+            <linearGradient id="rosePetalGradLg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FFF1F2" />
+              <stop offset="45%" stopColor="#FB7185" />
+              <stop offset="100%" stopColor="#E11D48" />
+            </linearGradient>
+          </defs>
+          {/* Secondary Layer Petals (Behind) */}
+          {[36, 108, 180, 252, 324].map((angle, i) => (
+            <path
+              key={`bg-${i}`}
+              transform={`rotate(${angle} 50 50)`}
+              d="M50 16 C42 27, 40 38, 50 50 C60 38, 58 27, 50 16 Z"
+              fill="#FDA4AF"
+              opacity="0.8"
+            />
+          ))}
           {/* Main 5 Petals */}
           {[0, 72, 144, 216, 288].map((angle, i) => (
             <path
               key={i}
               transform={`rotate(${angle} 50 50)`}
-              d="M50 14 C41 24, 38 36, 50 50 C62 36, 59 24, 50 14 Z"
-              fill="url(#rosePetalGrad)"
-              stroke="#F43F5E"
+              d="M50 10 C38 24, 36 38, 50 50 C64 38, 62 24, 50 10 Z"
+              fill="url(#rosePetalGradLg)"
+              stroke="#BE123C"
               strokeWidth="1.2"
             />
           ))}
-          {/* Inner heart and stamen */}
-          <circle cx="50" cy="50" r="7" fill="#FFF1F2" />
-          <circle cx="50" cy="50" r="3.5" fill="#E11D48" />
-          {/* Floating mini petal */}
-          <path d="M82 32 C78 30, 76 34, 79 38 C83 37, 85 34, 82 32 Z" fill="#FB7185" className="animate-pulse" />
-          <defs>
-            <linearGradient id="rosePetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#FDA4AF" />
-              <stop offset="100%" stopColor="#E11D48" />
-            </linearGradient>
-          </defs>
+          <circle cx="50" cy="50" r="9" fill="#FFF1F2" />
+          <circle cx="50" cy="50" r="4.5" fill="#9F1239" />
+          {/* Golden Stamens */}
+          {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((angle, i) => (
+            <circle
+              key={i}
+              cx={50 + 7.5 * Math.cos((angle * Math.PI) / 180)}
+              cy={50 + 7.5 * Math.sin((angle * Math.PI) / 180)}
+              r="1.4"
+              fill="#FDE047"
+            />
+          ))}
+          {/* Floating Loose Petal */}
+          <path
+            d="M84 28 C80 26, 77 31, 80 36 C85 35, 87 31, 84 28 Z"
+            fill="#FB7185"
+            className="animate-sakura"
+          />
         </svg>
       </div>
     )
   }
 
   if (streakDays >= 7) {
-    // Full 5-Petal Mankai Sakura
+    // Full 5-Petal Kaika Sakura (Stage 3)
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <div className="absolute inset-0 bg-pink-500/15 rounded-full blur-lg animate-pulse" />
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md">
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-pink-500/20 rounded-full blur-xl animate-pulse" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md animate-sakura-bloom-float">
+          <defs>
+            <linearGradient id="pinkPetalGradLg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FDF2F8" />
+              <stop offset="40%" stopColor="#F472B6" />
+              <stop offset="100%" stopColor="#DB2777" />
+            </linearGradient>
+          </defs>
+          {/* 5 Petals */}
           {[0, 72, 144, 216, 288].map((angle, i) => (
             <path
               key={i}
               transform={`rotate(${angle} 50 50)`}
-              d="M50 15 C42 26, 40 37, 50 50 C60 37, 58 26, 50 15 Z"
-              fill="url(#pinkPetalGrad)"
-              stroke="#EC4899"
-              strokeWidth="1"
+              d="M50 12 C40 25, 38 38, 50 50 C62 38, 60 25, 50 12 Z"
+              fill="url(#pinkPetalGradLg)"
+              stroke="#DB2777"
+              strokeWidth="1.2"
             />
           ))}
-          <circle cx="50" cy="50" r="6" fill="#FDF2F8" />
-          <circle cx="50" cy="50" r="3" fill="#DB2777" />
-          <defs>
-            <linearGradient id="pinkPetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#FBCFE8" />
-              <stop offset="100%" stopColor="#DB2777" />
-            </linearGradient>
-          </defs>
+          <circle cx="50" cy="50" r="8" fill="#FFF1F2" />
+          <circle cx="50" cy="50" r="4.5" fill="#BE185D" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+            <circle
+              key={i}
+              cx={50 + 6.5 * Math.cos((angle * Math.PI) / 180)}
+              cy={50 + 6.5 * Math.sin((angle * Math.PI) / 180)}
+              r="1.2"
+              fill="#FDE047"
+            />
+          ))}
         </svg>
       </div>
     )
   }
 
   if (streakDays >= 3) {
-    // Sakura Bud (Half-Bloomed)
+    // Sakura Bud on Young Branch (Stage 2)
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 100 100" className="size-full drop-shadow-sm">
-          {/* Branch and stem */}
-          <path d="M50 78 C50 64, 48 54, 50 45" stroke="#78350F" strokeWidth="4" strokeLinecap="round" />
-          {/* Calyx (leaves) */}
-          <path d="M43 55 C48 52, 52 52, 57 55 C54 62, 46 62, 43 55 Z" fill="#15803D" />
-          {/* Budding Pink Petals */}
-          <path d="M50 25 C40 35, 42 48, 50 52 C58 48, 60 35, 50 25 Z" fill="#F472B6" stroke="#DB2777" strokeWidth="1" />
-          <path d="M45 28 C42 37, 46 45, 50 50 C46 44, 45 35, 45 28 Z" fill="#FB7185" />
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-pink-400/20 rounded-full blur-xl" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md animate-sakura-pulse-soft">
+          <defs>
+            <linearGradient id="branchGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#5B290B" />
+              <stop offset="100%" stopColor="#854D0E" />
+            </linearGradient>
+            <linearGradient id="budGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#DB2777" />
+              <stop offset="60%" stopColor="#F472B6" />
+              <stop offset="100%" stopColor="#FCE7F3" />
+            </linearGradient>
+          </defs>
+          {/* Strong Branch */}
+          <path d="M50 85 C50 68, 47 55, 50 46" stroke="url(#branchGrad)" strokeWidth="5" strokeLinecap="round" />
+          <path d="M50 64 C56 58, 64 54, 68 50" stroke="url(#branchGrad)" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="68" cy="50" r="3" fill="#22C55E" />
+          {/* Calyx Leaves */}
+          <path d="M42 52 C46 47, 54 47, 58 52 C55 60, 45 60, 42 52 Z" fill="#15803D" stroke="#14532D" strokeWidth="1" />
+          <path d="M36 50 C42 46, 48 50, 45 56 Z" fill="#16A34A" />
+          <path d="M64 50 C58 46, 52 50, 55 56 Z" fill="#16A34A" />
+          {/* Swelling Pink Petal Bud */}
+          <path d="M50 20 C38 32, 38 46, 50 50 C62 46, 62 32, 50 20 Z" fill="url(#budGrad)" stroke="#DB2777" strokeWidth="1.2" />
+          <path d="M45 24 C40 34, 44 44, 50 48 C45 42, 44 32, 45 24 Z" fill="#FB7185" opacity="0.8" />
+          <path d="M55 24 C60 34, 56 44, 50 48 C55 42, 56 32, 55 24 Z" fill="#F472B6" opacity="0.6" />
         </svg>
       </div>
     )
   }
 
   if (streakDays >= 1) {
-    // Tender Green Sprout with Pink Tip
+    // Tender Green Sprout with Pink Tip (Stage 1)
     return (
-      <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 100 100" className="size-full">
-          <path d="M50 80 C50 66, 49 55, 50 48" stroke="#78350F" strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M50 48 C42 42, 44 32, 50 28 C56 32, 58 42, 50 48 Z" fill="#22C55E" />
-          <circle cx="50" cy="28" r="3.5" fill="#F472B6" />
+      <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+        <div className="absolute inset-0 bg-emerald-500/15 rounded-full blur-xl" />
+        <svg viewBox="0 0 100 100" className="size-full drop-shadow-md animate-sakura-sway">
+          <defs>
+            <linearGradient id="stemGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#78350F" />
+              <stop offset="70%" stopColor="#15803D" />
+              <stop offset="100%" stopColor="#22C55E" />
+            </linearGradient>
+            <linearGradient id="leafGradLeft" x1="100%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#16A34A" />
+              <stop offset="100%" stopColor="#86EFAC" />
+            </linearGradient>
+            <linearGradient id="leafGradRight" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#16A34A" />
+              <stop offset="100%" stopColor="#4ADE80" />
+            </linearGradient>
+          </defs>
+          {/* Soil Base */}
+          <ellipse cx="50" cy="84" rx="26" ry="8" fill="#78350F" opacity="0.25" />
+          {/* Young Stem */}
+          <path d="M50 82 C50 68, 49 52, 50 40" stroke="url(#stemGrad)" strokeWidth="4.5" strokeLinecap="round" />
+          {/* Left Leaf */}
+          <path d="M50 56 C38 52, 30 42, 34 32 C42 34, 48 46, 50 56 Z" fill="url(#leafGradLeft)" stroke="#15803D" strokeWidth="1" />
+          {/* Right Leaf */}
+          <path d="M50 50 C62 46, 70 36, 66 26 C58 28, 52 40, 50 50 Z" fill="url(#leafGradRight)" stroke="#15803D" strokeWidth="1" />
+          {/* Tender Sakura Bud Tip */}
+          <path d="M50 40 C46 32, 46 22, 50 18 C54 22, 54 32, 50 40 Z" fill="#F472B6" stroke="#DB2777" strokeWidth="1" />
+          <circle cx="50" cy="18" r="2.5" fill="#FDA4AF" />
         </svg>
       </div>
     )
   }
 
-  // Seed / Starting
+  // Seed / Starting (Stage 0)
   return (
-    <div className="relative size-13 sm:size-18 lg:size-20 flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 100 100" className="size-full opacity-60">
-        <circle cx="50" cy="55" r="14" fill="#78350F" />
-        <path d="M50 41 C47 47, 47 52, 50 55 C53 52, 53 47, 50 41 Z" fill="#22C55E" />
+    <div className={`relative ${sizeClass} flex items-center justify-center shrink-0${celebrationClass}`}>
+      <div className="absolute inset-0 bg-amber-600/10 dark:bg-amber-500/15 rounded-full blur-xl" />
+      <svg viewBox="0 0 100 100" className="size-full drop-shadow-md animate-sakura-breathe">
+        <defs>
+          <radialGradient id="seedGrad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#A16207" />
+            <stop offset="60%" stopColor="#78350F" />
+            <stop offset="100%" stopColor="#451A03" />
+          </radialGradient>
+          <linearGradient id="seedSproutGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#86EFAC" />
+            <stop offset="100%" stopColor="#16A34A" />
+          </linearGradient>
+        </defs>
+        {/* Rich Soil mound */}
+        <ellipse cx="50" cy="74" rx="32" ry="12" fill="#713F12" opacity="0.3" />
+        <path d="M24 74 Q50 66 76 74 Q50 80 24 74 Z" fill="#92400E" opacity="0.45" />
+        {/* Seed Body */}
+        <path
+          d="M50 32 C34 44, 32 64, 50 72 C68 64, 66 44, 50 32 Z"
+          fill="url(#seedGrad)"
+          stroke="#451A03"
+          strokeWidth="1.5"
+        />
+        <path d="M48 40 Q44 54 48 66" stroke="#B45309" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+        {/* Emerging Tiny Tender Sprout from Seed Tip */}
+        <path
+          d="M50 34 C47 24, 42 20, 48 14 C52 20, 52 26, 50 34 Z"
+          fill="url(#seedSproutGrad)"
+          stroke="#15803D"
+          strokeWidth="1"
+        />
+        <circle cx="48" cy="14" r="2" fill="#F472B6" />
       </svg>
+    </div>
+  )
+}
+
+/* ── Sakura Ring Progress Bar (Circular Bar Chart around Flower) ── */
+function SakuraRingProgressBar({
+  streakDays,
+  isFreeze,
+  dailyMission,
+  missionProgress,
+  onClick,
+}: {
+  streakDays: number
+  isFreeze: boolean
+  dailyMission?: DailyMissionData | null
+  missionProgress?: MissionProgress | null
+  onClick?: () => void
+}) {
+  const pct = dailyMission && missionProgress
+    ? Math.min(100, Math.max(0, missionProgress.overallPct))
+    : 0
+  const isCompleted = pct >= 100 || (missionProgress?.isFullyCompleted ?? false)
+
+  // Circular progress calculations (Radius = 68, circumference = 2 * PI * 68 ≈ 427.26)
+  const radius = 68
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (pct / 100) * circumference
+
+  return (
+    <div
+      onClick={onClick}
+      className="relative flex flex-col items-center justify-center cursor-pointer select-none group"
+      title="Klik untuk melihat tahapan mekar Sakura"
+    >
+      {/* Outer wrapper sizing */}
+      <div className="relative size-36 sm:size-42 flex items-center justify-center">
+        {/* If completed: Expanding Aura Halo Ring */}
+        {isCompleted && (
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-400/25 to-emerald-500/10 blur-xl animate-ring-aura pointer-events-none" />
+        )}
+
+        {/* Circular Progress SVG */}
+        <svg
+          viewBox="0 0 160 160"
+          className="size-full -rotate-90 drop-shadow-sm"
+        >
+          <defs>
+            {/* Sakura Pink Gradient */}
+            <linearGradient id="ringSakuraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FB7185" />
+              <stop offset="50%" stopColor="#F43F5E" />
+              <stop offset="100%" stopColor="#E11D48" />
+            </linearGradient>
+
+            {/* 100% Growth Emerald Gradient */}
+            <linearGradient id="ringGrowthGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34D399" />
+              <stop offset="50%" stopColor="#10B981" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+
+            {/* Ice Frost Gradient */}
+            <linearGradient id="ringIceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#38BDF8" />
+              <stop offset="100%" stopColor="#0284C7" />
+            </linearGradient>
+          </defs>
+
+          {/* Background Track Circle */}
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="transparent"
+            stroke="currentColor"
+            strokeWidth="7"
+            className="text-slate-100 dark:text-slate-800"
+          />
+
+          {/* Subtle segmented ticks around the ring for barchart gauge feel */}
+          {Array.from({ length: 12 }).map((_, idx) => {
+            const angle = (idx * 30 * Math.PI) / 180
+            const x1 = 80 + 74 * Math.cos(angle)
+            const y1 = 80 + 74 * Math.sin(angle)
+            const x2 = 80 + 77 * Math.cos(angle)
+            const y2 = 80 + 77 * Math.sin(angle)
+            return (
+              <line
+                key={idx}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="text-slate-200 dark:text-slate-700/80"
+              />
+            )
+          })}
+
+          {/* Active Circular Progress Arc */}
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="transparent"
+            stroke={
+              isFreeze
+                ? 'url(#ringIceGrad)'
+                : isCompleted
+                ? 'url(#ringGrowthGrad)'
+                : 'url(#ringSakuraGrad)'
+            }
+            strokeWidth="7.5"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+
+        {/* Centered Sakura Flower Visual */}
+        <div className={`absolute inset-0 flex items-center justify-center transition-transform group-hover:scale-105 active:scale-95 ${
+          isCompleted ? 'animate-growth-pulse' : ''
+        }`}>
+          <SakuraBlossomVisual
+            streakDays={streakDays}
+            isFreeze={isFreeze}
+            isMissionCompleted={isCompleted}
+            sizeClass="size-24 sm:size-28"
+          />
+        </div>
+
+        {/* 100% Mission Sparkles celebration around the ring */}
+        {isCompleted && (
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Sparkle 1 Top-Left */}
+            <span className="absolute top-2 left-4 text-emerald-500 font-bold text-sm sm:text-base animate-sparkle-1 select-none">
+              ✦
+            </span>
+            {/* Sparkle 2 Top-Right */}
+            <span className="absolute top-1.5 right-4 text-amber-400 font-bold text-base sm:text-lg animate-sparkle-2 select-none">
+              ✧
+            </span>
+            {/* Sparkle 3 Bottom-Right */}
+            <span className="absolute bottom-5 right-2 text-teal-400 font-bold text-sm sm:text-base animate-sparkle-3 select-none">
+              ✦
+            </span>
+            {/* Sparkle 4 Bottom-Left */}
+            <span className="absolute bottom-5 left-2 text-emerald-400 font-bold text-xs sm:text-sm animate-sparkle-1 select-none">
+              ✧
+            </span>
+            {/* Sparkle 5 Center-Top */}
+            <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-yellow-400 font-bold text-xs sm:text-sm animate-sparkle-2 select-none">
+              ✦
+            </span>
+          </div>
+        )}
+
+        {/* Circular Progress Percentage Pill at Bottom of Ring */}
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 shrink-0 z-20">
+          {isCompleted ? (
+            <div className="bg-emerald-500 text-white font-black text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 border border-emerald-300 animate-pulse whitespace-nowrap">
+              <span>✦</span>
+              <span>100% Selesai</span>
+            </div>
+          ) : pct > 0 ? (
+            <div className="bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-rose-200 dark:border-rose-900/60 whitespace-nowrap">
+              {pct}% Misi
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 text-slate-400 font-bold text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+              0% Misi
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Growth notification subtitle if 100% */}
+      {isCompleted ? (
+        <div className="mt-2.5 flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 animate-fade-in">
+          <span>✦</span>
+          <span>Pohon makin tumbuh hari ini!</span>
+          <span>✦</span>
+        </div>
+      ) : (
+        <div className="mt-2 text-[10px] text-slate-400 font-medium text-center">
+          {dailyMission ? 'Progres Misi Harian' : 'Misi Belum Disusun'}
+        </div>
+      )}
     </div>
   )
 }
@@ -329,10 +661,16 @@ function StreakCard({
   streakDays,
   history,
   isFreezeToday,
+  dailyMission,
+  missionProgress,
+  onOpenMissionModal,
 }: {
   streakDays: number
   history: StreakDayHistory[]
   isFreezeToday?: boolean
+  dailyMission?: DailyMissionData | null
+  missionProgress?: MissionProgress | null
+  onOpenMissionModal?: () => void
 }) {
   const navigate = useNavigate()
   const dayLabels = getLast7DayLabels()
@@ -383,36 +721,30 @@ function StreakCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowSakuraModal(true)}
-          className={`text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full border cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0 ${sakuraInfo.bgClass}`}
-        >
-          {sakuraInfo.level}
-        </button>
+        {/* Level pill badge removed per user request */}
       </div>
 
-      {/* Sakura Blossom Visualizer + Counter */}
-      <div className="flex items-center gap-2.5 sm:gap-4 relative z-10">
-        {/* Animated Sakura Visual */}
-        <div
-          onClick={() => setShowSakuraModal(true)}
-          className="flex flex-col items-center shrink-0 cursor-pointer group"
-          title="Klik untuk melihat tahapan mekar Sakura"
-        >
-          <div className="group-hover:scale-105 transition-transform scale-90 sm:scale-100">
-            <SakuraBlossomVisual streakDays={streakDays} isFreeze={isTodayFreeze} />
-          </div>
-          <div className={`text-xl sm:text-2xl lg:text-3xl font-black leading-none mt-0.5 tracking-tight ${sakuraInfo.colorClass}`}>
+      {/* Sakura Blossom Visualizer + Circular Progress Ring + 7-Day History */}
+      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 relative z-10">
+        {/* Animated Sakura Visual + Ring Progress */}
+        <div className="flex flex-col items-center shrink-0">
+          <SakuraRingProgressBar
+            streakDays={streakDays}
+            isFreeze={isTodayFreeze}
+            dailyMission={dailyMission}
+            missionProgress={missionProgress}
+            onClick={() => setShowSakuraModal(true)}
+          />
+          <div className={`text-xl sm:text-2xl font-black leading-none mt-1 tracking-tight ${sakuraInfo.colorClass}`}>
             {streakDays}
           </div>
           <div className="text-[10px] sm:text-[11px] text-slate-400 font-bold mt-0.5 text-center whitespace-nowrap">
-            Hari Sakura
+            Hari Konsisten
           </div>
         </div>
 
         {/* 7-Day History & Progress */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full">
           {/* 7-Day Dots with mini Sakura blossoms */}
           <div className="flex gap-1 sm:gap-1.5 mb-2 sm:mb-2.5">
             {history.map((item, i) => (
@@ -510,10 +842,10 @@ function StreakCard({
 
         {!todayDone && !isTodayFreeze && (
           <button
-            onClick={() => navigate('/learning-plan')}
+            onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
             className="group px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-[10px] sm:text-[11px] rounded-lg border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[26px] sm:min-h-[28px]"
           >
-            <span>Buka Rencana</span>
+            <span>Susun Misi Hari Ini</span>
             <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
               <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -625,6 +957,7 @@ interface UnifiedMobileSakuraMissionCardProps {
   dailyMission: DailyMissionData | null
   missionProgress: MissionProgress | null
   videoProgressMap: Map<string, number>
+  onOpenMissionModal?: () => void
 }
 
 function UnifiedMobileSakuraMissionCard({
@@ -634,6 +967,7 @@ function UnifiedMobileSakuraMissionCard({
   dailyMission,
   missionProgress,
   videoProgressMap,
+  onOpenMissionModal,
 }: UnifiedMobileSakuraMissionCardProps) {
   const navigate = useNavigate()
   const dayLabels = getLast7DayLabels()
@@ -649,7 +983,7 @@ function UnifiedMobileSakuraMissionCard({
       {/* Ambient pink aura glow */}
       <div className="absolute top-0 right-1/2 translate-x-1/2 w-56 h-56 bg-rose-500/10 dark:bg-rose-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      {/* ── TOP HEADER: Stage Title & Level Pill ── */}
+      {/* ── TOP HEADER: Stage Title ── */}
       <div className="flex items-center justify-between relative z-10 pb-1 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2 min-w-0">
           <div className="size-7 rounded-lg bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
@@ -675,26 +1009,20 @@ function UnifiedMobileSakuraMissionCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowSakuraModal(true)}
-          className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border cursor-pointer transition-all active:scale-95 shrink-0 ${sakuraInfo.bgClass}`}
-        >
-          {sakuraInfo.level}
-        </button>
+        {/* Level pill badge removed per user request */}
       </div>
 
-      {/* ── CENTER: Sakura Flower Illustration (matching mockup top) ── */}
-      <div
-        onClick={() => setShowSakuraModal(true)}
-        className="flex flex-col items-center justify-center py-1 relative z-10 cursor-pointer group"
-        title="Klik untuk melihat tahapan mekar Sakura"
-      >
-        <div className="transform transition-transform group-hover:scale-105 active:scale-95">
-          <SakuraBlossomVisual streakDays={streakDays} isFreeze={isTodayFreeze} />
-        </div>
-        <div className={`text-xl sm:text-2xl font-black leading-none mt-1.5 tracking-tight ${sakuraInfo.colorClass}`}>
-          {streakDays} <span className="text-[11px] font-bold text-slate-400">Hari Sakura</span>
+      {/* ── CENTER: Sakura Flower Illustration + Circular Mission Progress Ring ── */}
+      <div className="flex flex-col items-center justify-center py-1 relative z-10">
+        <SakuraRingProgressBar
+          streakDays={streakDays}
+          isFreeze={isTodayFreeze}
+          dailyMission={dailyMission}
+          missionProgress={missionProgress}
+          onClick={() => setShowSakuraModal(true)}
+        />
+        <div className={`text-xl font-black leading-none mt-2 tracking-tight ${sakuraInfo.colorClass}`}>
+          {streakDays} <span className="text-[11px] font-bold text-slate-400">Hari Konsisten</span>
         </div>
         <span className="text-[10px] text-slate-400 font-medium mt-0.5 text-center">
           {isTodayFreeze
@@ -753,13 +1081,7 @@ function UnifiedMobileSakuraMissionCard({
               </span>
             )}
           </div>
-          <button
-            onClick={() => navigate('/learning-plan')}
-            className="text-[10px] text-primary dark:text-red-400 font-bold border-none bg-transparent cursor-pointer flex items-center gap-0.5"
-          >
-            <span>{dailyMission ? 'Ubah' : 'Susun'}</span>
-            <span className="text-[9px]">&gt;</span>
-          </button>
+          {/* Tombol susun dihapus per user request */}
         </div>
 
         {dailyMission && missionProgress ? (
@@ -921,15 +1243,19 @@ function UnifiedMobileSakuraMissionCard({
             )}
           </>
         ) : (
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-1.5">
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
               Belum menyusun Misi Harian untuk hari ini.
             </span>
             <button
-              onClick={() => navigate('/learning-plan')}
-              className="px-2.5 py-1 bg-primary text-white text-[10px] font-bold rounded-lg border-none cursor-pointer"
+              type="button"
+              onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
+              className="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white text-[10px] sm:text-[11px] font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95 touch-manipulation"
             >
-              Susun Misi di Kalender
+              <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Susun Misi Hari Ini</span>
             </button>
           </div>
         )}
@@ -956,7 +1282,13 @@ function getRelativeDayLabel(dateStr: string, todayStr: string): string {
   return `${Math.abs(diffDays)} hari lalu`
 }
 
-function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
+function EmbeddedUserScheduleCard({
+  userId,
+  onOpenMissionModal,
+}: {
+  userId: string
+  onOpenMissionModal?: () => void
+}) {
   const navigate = useNavigate()
   const [userReservations, setUserReservations] = useState<any[]>([])
   const [userMissions, setUserMissions]         = useState<{ date: string; mission: DailyMissionData }[]>([])
@@ -1100,10 +1432,10 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
           <div className="p-3 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-2 sm:gap-2.5 flex-1 justify-center">
             <span className="text-[10px] sm:text-[11px]">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
             <button
-              onClick={() => navigate('/learning-plan')}
+              onClick={onOpenMissionModal || (() => navigate('/learning-plan'))}
               className="group px-2.5 sm:px-3 py-1 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-[10px] sm:text-[11px] shadow-xs flex items-center gap-1.5 min-h-[26px] sm:min-h-[28px]"
             >
-              <span>Susun Rencana di Kalender</span>
+              <span>Susun Misi Hari Ini</span>
               <span className="size-3 sm:size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                 <svg className="size-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -1311,7 +1643,18 @@ function EmbeddedUserScheduleCard({ userId }: { userId: string }) {
               </div>
             )}
 
-            <div className="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+              {selectedScheduleItem.type === 'mission' && onOpenMissionModal && (
+                <button
+                  onClick={() => {
+                    setSelectedScheduleItem(null)
+                    onOpenMissionModal()
+                  }}
+                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl border-none cursor-pointer"
+                >
+                  Ubah Misi Hari Ini
+                </button>
+              )}
               <button
                 onClick={() => setSelectedScheduleItem(null)}
                 className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border-none cursor-pointer"
@@ -1352,7 +1695,26 @@ export default function Dashboard() {
   const [announcements, setAnnouncements]             = useState<Announcement[]>([])
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<Announcement[]>([])
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
+  const [showMissionModal, setShowMissionModal]           = useState(false)
   const [loading, setLoading] = useState(true)
+
+  async function handleSaveMissionFromDashboard(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
+    const effectiveUserId = user?.id || profile?.id || null
+    if (!effectiveUserId) return
+    await saveDailyMission(effectiveUserId, data, dateStr)
+    const updated = (await fetchDailyMission(effectiveUserId, dateStr)) || getDailyMission(effectiveUserId, dateStr)
+    setDailyMission(updated)
+    if (updated) {
+      const prog = await calculateMissionProgress(effectiveUserId, updated)
+      setMissionProgress(prog)
+      if (prog.videoProgressMap) {
+        const map = new Map<string, number>()
+        Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
+        setVideoProgressMap(map)
+      }
+    }
+    setShowMissionModal(false)
+  }
 
   // Personalized Greeting based on Local Hour
   const localHour = new Date().getHours()
@@ -1666,6 +2028,7 @@ export default function Dashboard() {
           dailyMission={dailyMission}
           missionProgress={missionProgress}
           videoProgressMap={videoProgressMap}
+          onOpenMissionModal={() => setShowMissionModal(true)}
         />
       </div>
 
@@ -1701,16 +2064,6 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
-          <button
-            onClick={() => navigate('/learning-plan')}
-            className="group px-2 py-0.5 sm:px-2.5 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] sm:text-[11px] font-bold rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 flex items-center gap-1 touch-manipulation min-h-[26px] sm:min-h-[28px]"
-          >
-            <svg className="size-2.5 sm:size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span>{dailyMission ? 'Ubah Misi' : 'Buat Misi'}</span>
-          </button>
         </div>
 
         {dailyMission && missionProgress ? (
@@ -1878,10 +2231,10 @@ export default function Dashboard() {
               Kamu belum menyusun Misi Harian untuk hari ini.
             </p>
             <button
-              onClick={() => navigate('/learning-plan')}
+              onClick={() => setShowMissionModal(true)}
               className="group px-3 sm:px-3.5 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white text-[0.68rem] sm:text-xs font-extrabold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[30px] sm:min-h-[34px]"
             >
-              <span>Susun Misi Harian</span>
+              <span>Susun Misi Hari Ini</span>
               <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                 <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -1901,6 +2254,9 @@ export default function Dashboard() {
               streakDays={stats.streakDays}
               history={streakHistory}
               isFreezeToday={isNoPlanMission(dailyMission)}
+              dailyMission={dailyMission}
+              missionProgress={missionProgress}
+              onOpenMissionModal={() => setShowMissionModal(true)}
             />
           </div>
 
@@ -1949,7 +2305,10 @@ export default function Dashboard() {
 
         {/* Embedded Schedule View Card */}
         <div className="h-full">
-          <EmbeddedUserScheduleCard userId={user?.id || ''} />
+          <EmbeddedUserScheduleCard
+            userId={user?.id || ''}
+            onOpenMissionModal={() => setShowMissionModal(true)}
+          />
         </div>
       </div>
 
@@ -2065,6 +2424,16 @@ export default function Dashboard() {
           setUnreadAnnouncements([])
         }}
       />
+
+      {/* Daily Mission Builder Modal (Direct on Dashboard) */}
+      {showMissionModal && (
+        <DailyMissionBuilderModal
+          targetDate={getTodayDateString()}
+          currentMission={dailyMission}
+          onSave={handleSaveMissionFromDashboard}
+          onClose={() => setShowMissionModal(false)}
+        />
+      )}
     </main>
   )
 }
