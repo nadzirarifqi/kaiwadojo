@@ -188,15 +188,27 @@ export default function GroupManagerPage() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3 text-sm font-bold animate-bounce ${
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-2.5 text-xs font-bold animate-bounce ${
             toast.type === 'success'
-              ? 'bg-emerald-500 text-white border-emerald-400'
+              ? 'bg-emerald-600 text-white border-emerald-500'
               : toast.type === 'error'
-              ? 'bg-red-500 text-white border-red-400'
+              ? 'bg-red-600 text-white border-red-500'
               : 'bg-slate-800 text-white border-slate-700'
           }`}
         >
-          <span>{toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}</span>
+          {toast.type === 'success' ? (
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : toast.type === 'error' ? (
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
           <span>{toast.msg}</span>
         </div>
       )}
@@ -211,8 +223,10 @@ export default function GroupManagerPage() {
       >
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 text-xs font-black uppercase tracking-wider flex items-center gap-1">
-              <span>👥</span>
+            <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="size-3.5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
               <span className="font-jp font-bold mr-1">グループ管理</span>
               <span>Kelola Label & Kata Kunci Grup</span>
             </span>
@@ -237,13 +251,16 @@ export default function GroupManagerPage() {
             disabled={syncing}
             className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-extrabold rounded-2xl border border-slate-600 cursor-pointer transition-all shadow-md flex items-center gap-2 active:scale-95 disabled:opacity-50"
           >
-            <span>{syncing ? '⏳ Menyinkronkan...' : '🔄 Sinkronisasi Semua Siswa'}</span>
+            <svg className={`size-4 ${syncing ? 'animate-spin text-purple-400' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>{syncing ? 'Menyinkronkan...' : 'Sinkronisasi Semua Siswa'}</span>
           </button>
           <button
             onClick={() => navigate('/kelola-pelajar')}
             className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-extrabold rounded-2xl border border-white/20 cursor-pointer transition-all flex items-center gap-2"
           >
-            <span>🧑‍🎓 Kelola Akun Pelajar &rarr;</span>
+            <span>Kelola Akun Pelajar &rarr;</span>
           </button>
         </div>
       </div>
@@ -251,8 +268,11 @@ export default function GroupManagerPage() {
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl font-black shrink-0">
-            🏷️
+          <div className="size-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+            </svg>
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{groups.length}</div>
@@ -261,8 +281,10 @@ export default function GroupManagerPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-black shrink-0">
-            👥
+          <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{groupedStudents.length}</div>
@@ -271,8 +293,10 @@ export default function GroupManagerPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-2xl font-black shrink-0">
-            🌐
+          <div className="size-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{regularStudents.length}</div>
@@ -281,8 +305,10 @@ export default function GroupManagerPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl font-black shrink-0">
-            🧑‍🎓
+          <div className="size-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
+            </svg>
           </div>
           <div>
             <div className="text-2xl font-black text-slate-800 dark:text-white">{totalStudents}</div>
@@ -294,7 +320,9 @@ export default function GroupManagerPage() {
       {/* Live Keyword Match Simulator */}
       <div className="mb-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800/60 rounded-3xl p-5 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">🔍</span>
+          <svg className="size-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
           <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">
             Live Keyword Tester (Uji Kecocokan Instansi)
           </h2>
@@ -316,9 +344,12 @@ export default function GroupManagerPage() {
               <button
                 type="button"
                 onClick={() => setTestInput('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-black p-1 bg-transparent border-none cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 size-5 flex items-center justify-center bg-transparent border-none cursor-pointer"
+                title="Hapus simulasi"
               >
-                ✕
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             )}
           </div>
@@ -328,12 +359,12 @@ export default function GroupManagerPage() {
             {testInput.trim() ? (
               simulatedMatch ? (
                 <span className="px-3 py-1 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 font-extrabold text-xs flex items-center gap-1.5">
-                  <span>🏷️ Grup</span>
+                  <span>Grup:</span>
                   <span className="font-black underline">{simulatedMatch}</span>
                 </span>
               ) : (
                 <span className="px-3 py-1 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 font-extrabold text-xs flex items-center gap-1.5">
-                  <span>🌐 Siswa Biasa</span>
+                  <span>Siswa Biasa</span>
                 </span>
               )
             ) : (
@@ -348,7 +379,7 @@ export default function GroupManagerPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-5">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              <span>🏷️ Daftar Grup & Kata Kunci Resmi</span>
+              <span>Daftar Grup & Kata Kunci Resmi</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Setiap user yang mendaftar atau mengedit profil akan dicek terhadap kata kunci di bawah.
@@ -364,7 +395,9 @@ export default function GroupManagerPage() {
 
         {groups.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
-            <div className="text-4xl mb-2">🏷️</div>
+            <svg className="size-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+            </svg>
             <p className="text-sm font-bold">Belum ada grup yang didefinisikan.</p>
             <p className="text-xs text-slate-500 mt-1">Klik tombol "+ Tambah Grup Baru" untuk membuat grup pertama.</p>
           </div>
@@ -404,25 +437,32 @@ export default function GroupManagerPage() {
                           type="button"
                           onClick={() => openEditModal(grp)}
                           title="Edit Grup & Kata Kunci"
-                          className="size-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-950 dark:hover:text-purple-300 transition-all text-xs font-bold flex items-center justify-center border-none cursor-pointer"
+                          className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-950 dark:hover:text-purple-300 transition-all flex items-center justify-center border-none cursor-pointer"
                         >
-                          ✏️
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(grp)}
                           title="Hapus Grup"
-                          className="size-8 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-all text-xs font-black flex items-center justify-center border border-red-200 dark:border-red-900/50 cursor-pointer"
+                          className="size-8 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-all flex items-center justify-center border border-red-200 dark:border-red-900/50 cursor-pointer"
                         >
-                          🗑️
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </div>
 
                     {/* Keywords tags */}
                     <div className="mb-4">
-                      <div className="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                        <span>🔑 Kata Kunci Matching ({kws.length}):</span>
+                      <div className="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span>Kata Kunci Matching ({kws.length}):</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {kws.length > 0 ? (
@@ -444,7 +484,9 @@ export default function GroupManagerPage() {
                   {/* Card Footer: Member count */}
                   <div className="pt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
                     <div className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                      <span>👥</span>
+                      <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                      </svg>
                       <span>
                         <strong className="text-slate-900 dark:text-white font-black">{grpMembers.length}</strong> siswa
                       </span>
@@ -472,20 +514,24 @@ export default function GroupManagerPage() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-5 sm:p-6 animate-scale-up max-h-[92vh] flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0">
                 <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                  <span>{editingGroup ? '✏️ Edit Grup & Kata Kunci' : '✨ Tambah Grup Baru'}</span>
+                  <span>{editingGroup ? 'Edit Grup & Kata Kunci' : 'Tambah Grup Baru'}</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
+                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer"
                 >
-                  ✕
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
               {formError && (
                 <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2 shrink-0">
-                  <span>⚠️</span>
+                  <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                   <span>{formError}</span>
                 </div>
               )}
@@ -568,7 +614,7 @@ export default function GroupManagerPage() {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 shrink-0">
                 <div>
                   <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                    <span>👥 Anggota Grup:</span>
+                    <span>Anggota Grup:</span>
                     <span className="font-mono text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800">
                       {selectedGroupMembers.name}
                     </span>
@@ -583,9 +629,11 @@ export default function GroupManagerPage() {
                     setSelectedGroupMembers(null)
                     setMemberSearch('')
                   }}
-                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer font-black"
+                  className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer"
                 >
-                  ✕
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
@@ -617,7 +665,11 @@ export default function GroupManagerPage() {
                   if (filtered.length === 0) {
                     return (
                       <div className="text-center py-10 text-slate-400">
-                        <div className="text-3xl mb-1">🔍</div>
+                        <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2 text-slate-400">
+                          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
                         <p className="text-xs font-bold">
                           {members.length === 0 ? 'Belum ada siswa di grup ini.' : 'Tidak ada siswa yang cocok dengan pencarian.'}
                         </p>
@@ -642,8 +694,11 @@ export default function GroupManagerPage() {
                             @{std.username} • {std.email}
                           </div>
                           {std.institution && (
-                            <div className="text-[0.65rem] text-purple-600 dark:text-purple-400 font-mono mt-0.5 truncate">
-                              🏛️ "{std.institution}"
+                            <div className="text-[0.65rem] text-purple-600 dark:text-purple-400 font-mono mt-0.5 truncate flex items-center gap-1">
+                              <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              <span>"{std.institution}"</span>
                             </div>
                           )}
                         </div>

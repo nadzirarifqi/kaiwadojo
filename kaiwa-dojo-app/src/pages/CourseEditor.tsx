@@ -32,7 +32,7 @@ export default function CourseEditor() {
   const [showBulkGroupModal, setShowBulkGroupModal] = useState(false)
   const [bulkSelectedGroups, setBulkSelectedGroups] = useState<string[]>([])
   const [_headerSettings, setHeaderSettings] = useState<CourseHeaderSettings>({
-    page_title: '📚 Buku Kursus Minna no Nihongo',
+    page_title: 'Buku Kursus Minna no Nihongo',
     page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
   })
 
@@ -93,9 +93,9 @@ export default function CourseEditor() {
 
     setDetectingBab(null)
     if (detectedCount > 0) {
-      showToast(`Berhasil mendeteksi ${detectedCount} durasi video & tersimpan ke database! ⏱️`)
+      showToast(`Berhasil mendeteksi ${detectedCount} durasi video & tersimpan ke database!`)
     } else {
-      showToast(`Hosting belum dapat merespon metadata. Anda bisa klik tombol '📂 Pilih File Video Komputer' di bawah untuk deteksi instan 100%!`, 'error')
+      showToast(`Hosting belum dapat merespon metadata. Anda bisa klik tombol 'Pilih File Video Komputer' di bawah untuk deteksi instan 100%!`, 'error')
     }
   }
 
@@ -192,7 +192,7 @@ export default function CourseEditor() {
     if (touchedBabs.size > 0) {
       const listToSave = Array.from(touchedBabs).map(b => updatedMap[b]).filter(Boolean)
       await saveBatchChapterSettings(listToSave)
-      showToast(`Sukses! ${successCount} durasi video (${touchedBabs.size} Bab) berhasil diperbarui dari file lokal & tersimpan ke database! 🚀`)
+      showToast(`Sukses! ${successCount} durasi video (${touchedBabs.size} Bab) berhasil diperbarui dari file lokal & tersimpan ke database!`)
     } else {
       showToast(`Nama file tidak terdeteksi pola "BAB {n} S{p}". Contoh nama: "Kaiwa Dojo - BAB 3 S1.mov"`, 'error')
     }
@@ -208,7 +208,7 @@ export default function CourseEditor() {
         is_hidden: false,
       }
       await saveChapterSetting(chap)
-      showToast(`Pengaturan & durasi Bab ${babNum} berhasil disimpan ke database! 💾`)
+      showToast(`Pengaturan & durasi Bab ${babNum} berhasil disimpan ke database!`)
     } catch (err: any) {
       showToast(`Gagal menyimpan Bab ${babNum}: ${err?.message || 'Error'}`, 'error')
     } finally {
@@ -273,8 +273,8 @@ export default function CourseEditor() {
     await saveChapterSetting(updated)
     showToast(
       updated.is_hidden
-        ? `Bab ${babNum} kini DISEMBUNYIKAN dari siswa 🔴`
-        : `Bab ${babNum} kini DITAMPILKAN ke siswa 🟢`
+        ? `Bab ${babNum} kini disembunyikan dari siswa.`
+        : `Bab ${babNum} kini ditampilkan ke siswa.`
     )
   }
 
@@ -307,8 +307,8 @@ export default function CourseEditor() {
 
     showToast(
       hide
-        ? `Semua Bab di Jilid ${selectedJilid} kini DISEMBUNYIKAN dari siswa 🔴`
-        : `Semua Bab di Jilid ${selectedJilid} kini DITAMPILKAN ke siswa 🟢`
+        ? `Semua Bab di Jilid ${selectedJilid} kini disembunyikan dari siswa.`
+        : `Semua Bab di Jilid ${selectedJilid} kini ditampilkan ke siswa.`
     )
   }
 
@@ -343,8 +343,8 @@ export default function CourseEditor() {
 
     showToast(
       finalVal
-        ? `Akses semua Bab Jilid ${selectedJilid} diatur KHUSUS ${groupNames?.length} GRUP: "${finalVal}" 👥`
-        : `Akses semua Bab Jilid ${selectedJilid} diatur PUBLIK (Semua Siswa) 🌐`
+        ? `Akses semua Bab Jilid ${selectedJilid} diatur khusus ${groupNames?.length} grup: "${finalVal}"`
+        : `Akses semua Bab Jilid ${selectedJilid} diatur publik (semua siswa)`
     )
   }
 
@@ -377,8 +377,8 @@ export default function CourseEditor() {
       await saveChapterSetting(updated)
       showToast(
         nextVal
-          ? `Akses Bab ${babNum} diatur ke: ${nextList.join(', ')} 👥`
-          : `Akses Bab ${babNum} diatur ke Semua Siswa (Publik) 🌐`
+          ? `Akses Bab ${babNum} diatur ke: ${nextList.join(', ')}`
+          : `Akses Bab ${babNum} diatur ke Semua Siswa (Publik)`
       )
     } catch (err: any) {
       showToast(`Gagal menyimpan restriksi grup Bab ${babNum}: ${err?.message || 'Error'}`, 'error')
@@ -404,7 +404,7 @@ export default function CourseEditor() {
 
     try {
       await saveChapterSetting(updated)
-      showToast(`Akses Bab ${babNum} diatur ke Semua Siswa (Publik) 🌐`)
+      showToast(`Akses Bab ${babNum} diatur ke Semua Siswa (Publik)`)
     } catch (err: any) {
       showToast(`Gagal menyimpan: ${err?.message || 'Error'}`, 'error')
     }
@@ -430,7 +430,7 @@ export default function CourseEditor() {
 
     try {
       await saveChapterSetting(updated)
-      showToast(`Akses Bab ${babNum} diatur ke seluruh ${groups.length} Grup 👥`)
+      showToast(`Akses Bab ${babNum} diatur ke seluruh ${groups.length} Grup`)
     } catch (err: any) {
       showToast(`Gagal menyimpan: ${err?.message || 'Error'}`, 'error')
     }
@@ -440,7 +440,7 @@ export default function CourseEditor() {
 
   async function handleBatchAutoDetectAll() {
     setIsDetectingAll(true)
-    showToast(`Mulai mendeteksi durasi semua bab Jilid ${selectedJilid} dari server Rumahweb... ⏱️`)
+    showToast(`Mulai mendeteksi durasi semua bab Jilid ${selectedJilid} dari server...`)
 
     const startBab = selectedJilid === 1 ? 1 : 26
     const babs = Array.from({ length: 25 }, (_, i) => startBab + i)
@@ -484,7 +484,7 @@ export default function CourseEditor() {
 
     const listToSave = babs.map(b => updatedMap[b]).filter(Boolean)
     await saveBatchChapterSettings(listToSave)
-    showToast(`Selesai! Terdeteksi ${successCount} durasi video & tersimpan ke database! 🚀`)
+    showToast(`Selesai! Terdeteksi ${successCount} durasi video & tersimpan ke database!`)
   }
 
   async function handleSaveHeader() {
@@ -495,7 +495,7 @@ export default function CourseEditor() {
     setHeaderSettings(newHeader)
     await saveCourseHeaderSettings(newHeader)
     setIsEditingHeader(false)
-    showToast('Header halaman Kursus Saya berhasil diperbarui! 💾')
+    showToast('Header halaman Kursus Saya berhasil diperbarui!')
   }
 
   // Filter bab items
@@ -547,8 +547,10 @@ export default function CourseEditor() {
       {/* Header Panel */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
         <div className="flex items-start gap-4 z-10">
-          <div className="size-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl shrink-0 shadow-md">
-            ??
+          <div className="size-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md">
+            <svg className="size-7 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -565,7 +567,7 @@ export default function CourseEditor() {
               Kelola Judul & Visibilitas Kursus
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
-              Atur judul bab, subtitle materi, dan tentukan bab mana yang ingin **ditampilkan ??** atau **disembunyikan ??** dari tampilan siswa di halaman <strong>Kursus Saya</strong>.
+              Atur judul bab, subtitle materi, dan tentukan bab mana yang ingin ditampilkan atau disembunyikan dari tampilan siswa di halaman <strong>Kursus Saya</strong>.
             </p>
           </div>
         </div>
@@ -574,7 +576,10 @@ export default function CourseEditor() {
           onClick={() => setIsEditingHeader(prev => !prev)}
           className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 cursor-pointer transition-all shrink-0 z-10 flex items-center justify-center gap-2"
         >
-          <span>?? {isEditingHeader ? 'Tutup Edit Header' : 'Edit Header Halaman'}</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <span>{isEditingHeader ? 'Tutup Edit Header' : 'Edit Header Halaman'}</span>
         </button>
       </div>
 
@@ -582,7 +587,9 @@ export default function CourseEditor() {
       {isEditingHeader && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-md flex flex-col gap-4 animate-slide-down">
           <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-            <span>??</span>
+            <svg className="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
             <span>Ubah Judul Utama & Subtitle Halaman Kursus Saya</span>
           </h3>
 
@@ -641,7 +648,11 @@ export default function CourseEditor() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">??</span>
+              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <svg className="size-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
               <div>
                 <div className="font-extrabold text-sm sm:text-base">Minna no Nihongo Jilid 1</div>
                 <div className="text-xs opacity-80">Bab 1 s/d Bab 25 (Tingkat Dasar I)</div>
@@ -659,7 +670,11 @@ export default function CourseEditor() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">??</span>
+              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <svg className="size-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
               <div>
                 <div className="font-extrabold text-sm sm:text-base">Minna no Nihongo Jilid 2</div>
                 <div className="text-xs opacity-80">Bab 26 s/d Bab 50 (Tingkat Dasar II)</div>
@@ -672,13 +687,17 @@ export default function CourseEditor() {
         {/* Bulk Toggle Action Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-            <span>⚡ Aksi Massal (Jilid {selectedJilid}):</span>
+            <svg className="size-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <span>Aksi Massal (Jilid {selectedJilid}):</span>
             <span className="text-slate-400 font-normal">Aktifkan atau sembunyikan 25 Bab sekaligus dalam 1 klik</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            <label className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5">
-              <span>📂 Ambil Durasi Massal dari Folder Komputer</span>
+            <label className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2">
+              <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <span>Ambil Durasi Massal dari Folder Komputer</span>
               <input
                 type="file"
                 multiple
@@ -691,23 +710,28 @@ export default function CourseEditor() {
             <button
               onClick={handleBatchAutoDetectAll}
               disabled={isDetectingAll}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              <span>⏱️ {isDetectingAll ? 'Mendeteksi Semua Video...' : `Scan Durasi Hosting Jilid ${selectedJilid}`}</span>
+              <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{isDetectingAll ? 'Mendeteksi Semua Video...' : `Scan Durasi Hosting Jilid ${selectedJilid}`}</span>
             </button>
 
             <button
               onClick={() => handleBulkToggleVisibility(false)}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              <span>🟢 Tampilkan Semua Jilid {selectedJilid}</span>
+              <span className="size-2 rounded-full bg-white" />
+              <span>Tampilkan Semua Jilid {selectedJilid}</span>
             </button>
 
             <button
               onClick={() => handleBulkToggleVisibility(true)}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              <span>🔴 Sembunyikan Semua Jilid {selectedJilid}</span>
+              <span className="size-2 rounded-full bg-white" />
+              <span>Sembunyikan Semua Jilid {selectedJilid}</span>
             </button>
 
             {/* Bulk Set Group Button */}
@@ -717,9 +741,12 @@ export default function CourseEditor() {
                 setBulkSelectedGroups([])
                 setShowBulkGroupModal(true)
               }}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              <span>👥 Set Akses Grup Massal (Jilid {selectedJilid})</span>
+              <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span>Set Akses Grup Massal (Jilid {selectedJilid})</span>
             </button>
           </div>
         </div>
@@ -734,7 +761,9 @@ export default function CourseEditor() {
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
             />
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -746,8 +775,8 @@ export default function CourseEditor() {
                 className="w-full sm:w-auto px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
               >
                 <option value="all">Semua Status</option>
-                <option value="visible">🟢 Tampil (Published)</option>
-                <option value="hidden">🔴 Sembunyi (Hidden)</option>
+                <option value="visible">Tampil (Published)</option>
+                <option value="hidden">Sembunyi (Hidden)</option>
               </select>
             </div>
 
@@ -759,9 +788,9 @@ export default function CourseEditor() {
                 className="w-full sm:w-auto px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none"
               >
                 <option value="all">Semua Akses (Publik & Khusus)</option>
-                <option value="__public__">🌐 Publik (Semua Siswa)</option>
+                <option value="__public__">Publik (Semua Siswa)</option>
                 {groups.map(g => (
-                  <option key={g.id} value={g.name}>👥 Khusus: {g.name}</option>
+                  <option key={g.id} value={g.name}>Khusus: {g.name}</option>
                 ))}
               </select>
             </div>
@@ -776,7 +805,9 @@ export default function CourseEditor() {
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                  <span>👥</span>
+                  <svg className="size-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
                   <span>Atur Akses Grup Massal (Jilid {selectedJilid})</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -786,9 +817,9 @@ export default function CourseEditor() {
               <button
                 type="button"
                 onClick={() => setShowBulkGroupModal(false)}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 text-sm font-bold flex items-center justify-center border-none cursor-pointer"
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
@@ -843,9 +874,9 @@ export default function CourseEditor() {
 
             <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-[0.72rem] text-slate-500 dark:text-slate-400">
               {bulkSelectedGroups.length === 0 ? (
-                <span>🌐 Semua 25 bab akan dibuka untuk <strong>Semua Siswa (Publik)</strong>.</span>
+                <span>Semua 25 bab akan dibuka untuk <strong>Semua Siswa (Publik)</strong>.</span>
               ) : (
-                <span>👥 Semua 25 bab akan dikhususkan untuk <strong>{bulkSelectedGroups.length} grup ({bulkSelectedGroups.join(', ')})</strong>.</span>
+                <span>Semua 25 bab akan dikhususkan untuk <strong>{bulkSelectedGroups.length} grup ({bulkSelectedGroups.join(', ')})</strong>.</span>
               )}
             </div>
 
@@ -863,9 +894,10 @@ export default function CourseEditor() {
                   await handleBulkSetGroups(bulkSelectedGroups.length > 0 ? bulkSelectedGroups : null)
                   setShowBulkGroupModal(false)
                 }}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer shadow-md"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold border-none cursor-pointer shadow-md flex items-center gap-1.5"
               >
-                🚀 Terapkan ke 25 Bab Jilid {selectedJilid}
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                <span>Terapkan ke 25 Bab Jilid {selectedJilid}</span>
               </button>
             </div>
           </div>
@@ -877,7 +909,11 @@ export default function CourseEditor() {
         <CourseCardSkeleton count={5} />
       ) : filteredBabNumbers.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
-          <span className="text-4xl">🔍</span>
+          <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
           <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tidak ada bab ditemukan</h3>
           <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau filter status/akses grup.</p>
         </div>
@@ -923,21 +959,24 @@ export default function CourseEditor() {
                         <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
                           第{babNum}課: {chap.title.replace(/^Bab\s+(\d+):\s*/i, '').replace(/^第\d+課:\s*/i, '')}
                         </h3>
-                        <span className={`text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border ${
+                        <span className={`text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
                           chap.is_hidden
                             ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-300'
                             : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-300'
                         }`}>
-                          {chap.is_hidden ? '🔴 Disembunyikan' : '🟢 Tampil ke Siswa'}
+                          <span className={`size-1.5 rounded-full ${chap.is_hidden ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                          <span>{chap.is_hidden ? 'Disembunyikan' : 'Tampil ke Siswa'}</span>
                         </span>
                         {isGroupRestricted ? (
-                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-300 flex items-center gap-1">
-                            <span>👥 Khusus ({activeChapterGroups.length} Grup):</span>
+                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-300 flex items-center gap-1.5">
+                            <svg className="size-3 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            <span>Khusus ({activeChapterGroups.length} Grup):</span>
                             <strong>{activeChapterGroups.join(', ')}</strong>
                           </span>
                         ) : (
-                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700">
-                            🌐 Terbuka Semua Siswa
+                          <span className="text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+                            <svg className="size-3 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>
+                            <span>Terbuka Semua Siswa</span>
                           </span>
                         )}
                       </div>
@@ -957,7 +996,12 @@ export default function CourseEditor() {
                           : 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                       }`}
                     >
-                      <span>{chap.is_hidden ? '👁️ Tampilkan' : '🙈 Sembunyikan'}</span>
+                      {chap.is_hidden ? (
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      ) : (
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+                      )}
+                      <span>{chap.is_hidden ? 'Tampilkan' : 'Sembunyikan'}</span>
                     </button>
                   </div>
                 </div>
@@ -1008,7 +1052,8 @@ export default function CourseEditor() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <span className="font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                        <span>👥 Restriksi Akses Grup (Bisa Pilih &gt;1 Grup):</span>
+                        <svg className="size-3.5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <span>Restriksi Akses Grup (Bisa Pilih &gt;1 Grup):</span>
                       </span>
                       <p className="text-[0.7rem] text-slate-500 dark:text-slate-400 mt-0.5">
                         Klik grup untuk menambah/menghapus akses, atau pilih <strong>Semua Siswa</strong> untuk terbuka umum.
@@ -1020,22 +1065,24 @@ export default function CourseEditor() {
                       <button
                         type="button"
                         onClick={() => handleSetChapterAllPublic(babNum)}
-                        className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border ${
+                        className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border flex items-center gap-1 ${
                           activeChapterGroups.length === 0
                             ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                             : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                         }`}
                       >
-                        🌐 Semua Siswa (Publik)
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>
+                        <span>Semua Siswa (Publik)</span>
                       </button>
 
                       {groups.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleSetChapterAllGroups(babNum)}
-                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 cursor-pointer"
+                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 cursor-pointer flex items-center gap-1"
                         >
-                          ✓ Pilih Semua Grup
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          <span>Pilih Semua Grup</span>
                         </button>
                       )}
 
@@ -1043,9 +1090,10 @@ export default function CourseEditor() {
                         <button
                           type="button"
                           onClick={() => handleSetChapterAllPublic(babNum)}
-                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 cursor-pointer"
+                          className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 cursor-pointer flex items-center gap-1"
                         >
-                          ✕ Reset
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                          <span>Reset</span>
                         </button>
                       )}
                     </div>
@@ -1069,10 +1117,14 @@ export default function CourseEditor() {
                                 : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50/50'
                             }`}
                           >
-                            <span className={`size-3.5 rounded-md flex items-center justify-center text-[0.6rem] font-black ${
+                            <span className={`size-3.5 rounded-md flex items-center justify-center ${
                               isSelected ? 'bg-white text-indigo-600' : 'border border-slate-300 dark:border-slate-600'
                             }`}>
-                              {isSelected ? '✓' : ''}
+                              {isSelected && (
+                                <svg className="size-2.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
                             </span>
                             <span>{g.name}</span>
                           </button>
@@ -1085,10 +1137,14 @@ export default function CourseEditor() {
                   <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
                     <span>Status Akses:</span>
                     {activeChapterGroups.length === 0 ? (
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">🌐 Terbuka Publik (Semua Siswa)</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                        <span>Terbuka Publik (Semua Siswa)</span>
+                      </span>
                     ) : (
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                        👥 {activeChapterGroups.length} Grup Terpilih: {activeChapterGroups.join(', ')}
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-indigo-500" />
+                        <span>{activeChapterGroups.length} Grup Terpilih: {activeChapterGroups.join(', ')}</span>
                       </span>
                     )}
                   </div>
@@ -1098,13 +1154,15 @@ export default function CourseEditor() {
                 <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                      <span>⏱️ Durasi Video Pembelajaran (S1, S2, S3):</span>
+                      <svg className="size-3.5 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" /></svg>
+                      <span>Durasi Video Pembelajaran (S1, S2, S3):</span>
                       <span className="text-[0.68rem] text-slate-400 font-normal">(Format standar hosting Rumahweb)</span>
                     </span>
 
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0">
-                        <span>📂 Pilih File Video (Baca Instan)</span>
+                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                        <span>Pilih File Video (Baca Instan)</span>
                         <input
                           type="file"
                           multiple
@@ -1120,15 +1178,23 @@ export default function CourseEditor() {
                         disabled={detectingBab === babNum}
                         className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold border-none cursor-pointer transition-all shadow-2xs flex items-center gap-1.5 shrink-0 disabled:opacity-50"
                       >
-                        <span>{detectingBab === babNum ? '⏳ Mendeteksi...' : '🔍 Scan dari Hosting'}</span>
+                        <svg className={`size-3.5 text-white ${detectingBab === babNum ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          {detectingBab === babNum ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          )}
+                        </svg>
+                        <span>{detectingBab === babNum ? 'Mendeteksi...' : 'Scan dari Hosting'}</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 Durasi Video 1 (S1)
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                        <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span>Durasi Video 1 (S1)</span>
                       </label>
                       <input
                         type="text"
@@ -1146,8 +1212,9 @@ export default function CourseEditor() {
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 Durasi Video 2 (S2)
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                        <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span>Durasi Video 2 (S2)</span>
                       </label>
                       <input
                         type="text"
@@ -1165,8 +1232,9 @@ export default function CourseEditor() {
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        🎥 Durasi Video 3 (S3)
+                      <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                        <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span>Durasi Video 3 (S3)</span>
                       </label>
                       <input
                         type="text"
@@ -1188,7 +1256,7 @@ export default function CourseEditor() {
                 {/* Video File Auto-Path Preview Info & Save Bab Button */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[0.72rem]">
                   <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                    <span className="text-sm">🎥</span>
+                    <svg className="size-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                     <span>File Video di Hosting:</span>
                     <code className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono text-primary dark:text-red-400">
                       {selectedJilid === 1 ? '/kaiwa-1-courses' : '/kaiwa-2-courses'}/BAB {babNum}/Kaiwa Dojo - BAB {babNum} S1.mov, S2.mov, S3.mov
@@ -1198,9 +1266,12 @@ export default function CourseEditor() {
                   <button
                     onClick={() => handleSaveBab(babNum)}
                     disabled={savingBab === babNum}
-                    className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all self-end sm:self-auto shrink-0 shadow-2xs disabled:opacity-50"
+                    className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-extrabold border-none cursor-pointer transition-all self-end sm:self-auto shrink-0 shadow-2xs disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    {savingBab === babNum ? 'Menyimpan...' : '💾 Simpan Bab Ini'}
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>{savingBab === babNum ? 'Menyimpan...' : 'Simpan Bab Ini'}</span>
                   </button>
                 </div>
               </div>

@@ -17,20 +17,20 @@ interface Props {
 
 const MESSAGE_TEMPLATES = [
   {
-    label: '📣 Pengumuman Umum',
-    text: '📢 *[PENGUMUMAN KAIWADOJO]*\n\nHalo Kaka! 👋\n\nAdmin KaiwaDojo ingin menyampaikan:\n\n{isi pengumuman di sini}\n\nTerima kasih! 🙏\n— Tim Admin KaiwaDojo',
+    label: 'Pengumuman Umum',
+    text: '*[PENGUMUMAN KAIWADOJO]*\n\nHalo Kaka!\n\nAdmin KaiwaDojo ingin menyampaikan:\n\n{isi pengumuman di sini}\n\nTerima kasih!\n— Tim Admin KaiwaDojo',
   },
   {
-    label: '📅 Jadwal Kelas Live',
-    text: '🎉 *JADWAL KELAS LIVE BARU!*\n\nHalo Kaka! Kelas Live berikutnya:\n\n📅 Tanggal: {tanggal}\n⏰ Jam: {jam} WIB\n👨‍🏫 Pemateri: {nama pemateri}\n📖 Materi: {bab}\n\nSegera reservasi di aplikasi KaiwaDojo sebelum kuota penuh! 🚀',
+    label: 'Jadwal Kelas Live',
+    text: '*[JADWAL KELAS LIVE BARU]*\n\nHalo Kaka! Kelas Live berikutnya:\n\nTanggal: {tanggal}\nJam: {jam} WIB\nPemateri: {nama pemateri}\nMateri: {bab}\n\nSegera reservasi di aplikasi KaiwaDojo sebelum kuota penuh!',
   },
   {
-    label: '⚠️ Reminder Misi',
-    text: '⚠️ *REMINDER MISI HARIAN*\n\nHalo Kaka! Jangan lupa susun Misi Belajar Harian kamu di KaiwaDojo ya! 🎯\n\nLogin → Rencana Belajar → Susun Misi Hari Ini\n\nKonsistensi adalah kunci sukses belajar Bahasa Jepang! 頑張ってね！💪',
+    label: 'Reminder Misi',
+    text: '*[REMINDER MISI HARIAN]*\n\nHalo Kaka! Jangan lupa susun Misi Belajar Harian kamu di KaiwaDojo ya!\n\nLogin -> Rencana Belajar -> Susun Misi Hari Ini\n\nKonsistensi adalah kunci sukses belajar Bahasa Jepang!\n— Tim Admin KaiwaDojo',
   },
   {
-    label: '🎊 Motivasi',
-    text: '🎊 *SEMANGAT BELAJAR BAHASA JEPANG!*\n\nHalo Kaka! 日本語の勉強、頑張って！ 💫\n\nIngat, setiap langkah kecil hari ini adalah kemajuan besar untuk masa depan!\n\nSampai jumpa di kelas ya! 👋\n— Tim Admin KaiwaDojo',
+    label: 'Pesan Motivasi',
+    text: '*[SEMANGAT BELAJAR BAHASA JEPANG]*\n\nHalo Kaka! Tetap semangat belajarnya!\n\nIngat, setiap langkah kecil hari ini adalah kemajuan besar untuk masa depan!\n\nSampai jumpa di kelas ya!\n— Tim Admin KaiwaDojo',
   },
 ]
 
@@ -110,8 +110,10 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
           {/* Header */}
           <div className="px-5 py-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-slate-900 text-white flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="size-11 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shrink-0">
-                📢
+              <div className="size-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-black text-white">Broadcast WhatsApp Admin</h3>
@@ -122,7 +124,7 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
               onClick={onClose}
               className="size-9 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-xl flex items-center justify-center"
             >
-              ×
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
@@ -132,13 +134,23 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-xs font-extrabold uppercase tracking-wider transition-all border-none cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-3 text-xs font-extrabold uppercase tracking-wider transition-all border-none cursor-pointer flex items-center justify-center gap-2 ${
                   activeTab === tab
                     ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500'
                     : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/40'
                 }`}
               >
-                {tab === 'compose' ? '✏️ Tulis Pesan' : `📋 Riwayat (${logs.length})`}
+                {tab === 'compose' ? (
+                  <>
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    <span>Tulis Pesan</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    <span>Riwayat ({logs.length})</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -151,24 +163,28 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
               <div className="flex flex-col gap-4">
                 {loadingData ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <span className="text-3xl animate-spin">⏳</span>
+                    <svg className="size-8 text-emerald-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
                     <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Memuat data pelajar...</span>
                   </div>
                 ) : (
                   <>
                     {/* Filter */}
                     <div className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                      <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">
-                        🎯 Filter Target Broadcast
+                      <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                        <span>Filter Target Broadcast</span>
                       </label>
                       <select
                         value={filterGroup}
                         onChange={e => { setFilterGroup(e.target.value); setResult(null) }}
                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-emerald-500"
                       >
-                        <option value="all">📣 Semua Pelajar (Approved)</option>
+                        <option value="all">Semua Pelajar (Approved)</option>
                         {groups.map(g => (
-                          <option key={g.id} value={g.name}>🏷️ Grup: {g.name}</option>
+                          <option key={g.id} value={g.name}>Grup: {g.name}</option>
                         ))}
                       </select>
                     </div>
@@ -181,25 +197,34 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                       </div>
                       <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-center">
                         <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400">{withPhone.length}</div>
-                        <div className="text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-500 mt-0.5">✅ Punya Nomor WA</div>
+                        <div className="text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-500 mt-0.5 flex items-center justify-center gap-1">
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          <span>Punya Nomor WA</span>
+                        </div>
                       </div>
                       <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
                         <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400">{withoutPhone}</div>
-                        <div className="text-[0.65rem] font-bold text-amber-600 dark:text-amber-500 mt-0.5">⚠️ Tanpa Nomor WA</div>
+                        <div className="text-[0.65rem] font-bold text-amber-600 dark:text-amber-500 mt-0.5 flex items-center justify-center gap-1">
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          <span>Tanpa Nomor WA</span>
+                        </div>
                       </div>
                     </div>
 
                     {withPhone.length === 0 && (
                       <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
-                        <span className="text-lg shrink-0">🚫</span>
+                        <svg className="size-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
                         <span>Tidak ada pelajar dengan nomor WhatsApp valid pada filter ini. Broadcast tidak bisa dikirim.</span>
                       </div>
                     )}
 
                     {/* Templates */}
                     <div>
-                      <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 block mb-2">
-                        📝 Template Pesan Cepat
+                      <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 flex items-center gap-1.5">
+                        <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span>Template Pesan Cepat</span>
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         {MESSAGE_TEMPLATES.map((tpl, i) => (
@@ -207,9 +232,10 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                             key={i}
                             type="button"
                             onClick={() => setMessage(tpl.text)}
-                            className="p-2.5 rounded-xl text-xs font-bold text-left bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer text-slate-700 dark:text-slate-300"
+                            className="p-2.5 rounded-xl text-xs font-bold text-left bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer text-slate-700 dark:text-slate-300 flex items-center gap-2"
                           >
-                            {tpl.label}
+                            <svg className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            <span className="truncate">{tpl.label}</span>
                           </button>
                         ))}
                       </div>
@@ -218,8 +244,9 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                     {/* Message Textarea */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400">
-                          💬 Isi Pesan Broadcast
+                        <label className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                          <span>Isi Pesan Broadcast</span>
                         </label>
                         <span className={`text-[0.65rem] font-bold ${message.length > 900 ? 'text-red-500' : 'text-slate-400'}`}>
                           {message.length} / 1000
@@ -243,15 +270,30 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                           : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
                       }`}>
                         <div className="text-sm font-extrabold flex items-center gap-2">
-                          <span className="text-xl">{result.failed > 0 ? '⚠️' : '🎉'}</span>
+                          {result.failed > 0 ? (
+                            <svg className="size-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          ) : (
+                            <svg className="size-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          )}
                           <span className={result.failed > 0 ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'}>
                             {result.failed > 0 ? 'Broadcast Sebagian Gagal' : 'Broadcast Berhasil Dikirim!'}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-3 text-xs font-bold">
-                          <span className="text-emerald-600 dark:text-emerald-400">✅ {result.sent} Terkirim</span>
-                          <span className="text-amber-600 dark:text-amber-400">⚠️ {result.skipped} Di-skip (no phone)</span>
-                          {result.failed > 0 && <span className="text-red-600 dark:text-red-400">❌ {result.failed} Gagal</span>}
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span>{result.sent} Terkirim</span>
+                          </span>
+                          <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <span>{result.skipped} Di-skip (no phone)</span>
+                          </span>
+                          {result.failed > 0 && (
+                            <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                              <span>{result.failed} Gagal</span>
+                            </span>
+                          )}
                         </div>
                         {result.failReason && (
                           <p className="text-xs text-red-600 dark:text-red-400 font-medium">{result.failReason}</p>
@@ -268,19 +310,25 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                     >
                       {sending ? (
                         <>
-                          <span className="animate-spin text-lg">⏳</span>
+                          <svg className="size-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
                           <span>Mengirim ke {withPhone.length} Nomor...</span>
                         </>
                       ) : (
                         <>
-                          <span>📢</span>
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
                           <span>Kirim Broadcast ke {withPhone.length} Pelajar ({filterLabel})</span>
                         </>
                       )}
                     </button>
 
-                    <p className="text-[0.68rem] text-slate-400 dark:text-slate-500 text-center font-medium">
-                      ⚠️ Pesan akan langsung terkirim ke WhatsApp semua pelajar terdaftar. Pastikan isi pesan sudah benar.
+                    <p className="text-[0.68rem] text-slate-400 dark:text-slate-500 text-center font-medium flex items-center justify-center gap-1.5">
+                      <svg className="size-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                      <span>Pesan akan langsung terkirim ke WhatsApp semua pelajar terdaftar. Pastikan isi pesan sudah benar.</span>
                     </p>
                   </>
                 )}
@@ -292,7 +340,9 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
               <div className="flex flex-col gap-3">
                 {logs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                    <span className="text-4xl">📋</span>
+                    <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                      <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    </div>
                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Belum ada riwayat broadcast.</p>
                     <p className="text-xs text-slate-400">Riwayat akan muncul di sini setelah Anda mengirim pesan.</p>
                   </div>
@@ -304,12 +354,14 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
                     >
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800">
-                            📣 {log.filter_label}
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            <span>{log.filter_label}</span>
                           </span>
                           {log.failed_count > 0 && (
-                            <span className="px-2 py-0.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 text-[0.68rem] font-bold">
-                              ⚠️ Ada Gagal
+                            <span className="px-2 py-0.5 rounded-lg bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 text-[0.68rem] font-bold flex items-center gap-1">
+                              <span className="size-1.5 rounded-full bg-red-500" />
+                              <span>Ada Gagal</span>
                             </span>
                           )}
                         </div>
@@ -327,9 +379,20 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
 
                       <div className="flex flex-wrap gap-2 text-[0.68rem] font-bold items-center">
                         <span className="text-slate-500">Total: {log.target_count}</span>
-                        <span className="text-emerald-600 dark:text-emerald-400">✅ {log.sent_count} Terkirim</span>
-                        <span className="text-amber-600 dark:text-amber-400">⚠️ {log.skipped_count} Di-skip</span>
-                        {log.failed_count > 0 && <span className="text-red-600 dark:text-red-400">❌ {log.failed_count} Gagal</span>}
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          <span>{log.sent_count} Terkirim</span>
+                        </span>
+                        <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          <span>{log.skipped_count} Di-skip</span>
+                        </span>
+                        {log.failed_count > 0 && (
+                          <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span>{log.failed_count} Gagal</span>
+                          </span>
+                        )}
                         <span className="text-slate-400 ml-auto italic">oleh {log.sent_by_name}</span>
                       </div>
                     </div>

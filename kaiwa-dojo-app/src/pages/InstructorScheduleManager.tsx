@@ -270,7 +270,7 @@ export default function InstructorScheduleManagerPage() {
         })
 
         await saveMultipleSchedules(listToSave)
-        showToast(`🎉 Berhasil membuat ${listToSave.length} sesi jadwal kelas terpisah sekaligus di database!`)
+        showToast(`Berhasil membuat ${listToSave.length} sesi jadwal kelas terpisah sekaligus di database!`)
       }
 
       setShowCreateModal(false)
@@ -311,9 +311,17 @@ export default function InstructorScheduleManagerPage() {
       {/* Toast */}
       {toastMessage && (
         <div className={`fixed top-5 right-5 z-[600] px-5 py-3.5 rounded-2xl shadow-xl border flex items-center gap-3 animate-slide-down ${
-          toastMessage.type === 'success' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-red-500 text-white border-red-600'
+          toastMessage.type === 'success' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-red-600 text-white border-red-700'
         }`}>
-          <span className="text-xl">{toastMessage.type === 'success' ? '✅' : '⚠️'}</span>
+          {toastMessage.type === 'success' ? (
+            <svg className="size-5 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="size-5 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          )}
           <span className="text-xs sm:text-sm font-bold">{toastMessage.text}</span>
         </div>
       )}
@@ -337,7 +345,10 @@ export default function InstructorScheduleManagerPage() {
           onClick={openCreateModal}
           className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 hover:-translate-y-0.5 flex items-center justify-center gap-2"
         >
-          <span>+ Buat Jadwal Baru</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Buat Jadwal Baru</span>
         </button>
       </div>
 
@@ -393,12 +404,26 @@ export default function InstructorScheduleManagerPage() {
                 >
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black uppercase ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black uppercase flex items-center gap-1.5 ${
                         sch.type === 'online'
                           ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
                           : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                       }`}>
-                        {sch.type === 'online' ? '💻 Online (Meet)' : '🏢 Offline (Dojo)'}
+                        {sch.type === 'online' ? (
+                          <>
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span>Online (Meet)</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <span>Offline (Dojo)</span>
+                          </>
+                        )}
                       </span>
 
                       <span className="text-xs text-slate-400 font-bold">
@@ -410,14 +435,19 @@ export default function InstructorScheduleManagerPage() {
                         const grpList = parseTargetGroups(sch.target_group)
                         if (grpList.length === 0) {
                           return (
-                            <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                              🌐 Semua Siswa
+                            <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                              </svg>
+                              <span>Semua Siswa</span>
                             </span>
                           )
                         }
                         return (
                           <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 flex items-center gap-1">
-                            <span>👥</span>
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
                             <span>{grpList.join(', ')}</span>
                           </span>
                         )
@@ -432,9 +462,24 @@ export default function InstructorScheduleManagerPage() {
                     </p>
 
                     <div className="flex items-center gap-4 text-xs text-slate-500 font-medium flex-wrap pt-1">
-                      <span>📅 <strong>{sch.date}</strong></span>
-                      <span>⏰ {sch.start_time} - {sch.end_time} WIB</span>
-                      <span>👨‍🏫 Instruktur: <strong>{sch.instructor_name}</strong></span>
+                      <span className="flex items-center gap-1.5">
+                        <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <strong>{sch.date}</strong>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{sch.start_time} - {sch.end_time} WIB</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>Instruktur: <strong>{sch.instructor_name}</strong></span>
+                      </span>
                     </div>
                   </div>
 
@@ -448,22 +493,31 @@ export default function InstructorScheduleManagerPage() {
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
                       }`}
                     >
-                      <span>👥 {enrolledList.length} / {sch.max_quota} Peserta</span>
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <span>{enrolledList.length} / {sch.max_quota} Peserta</span>
                       {isFull && <span className="text-[0.65rem] bg-white/20 px-1.5 py-0.2 rounded-md">Penuh</span>}
                     </button>
 
                     <button
                       onClick={() => openEditModal(sch)}
-                      className="px-3 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-extrabold text-xs border border-amber-500/20 cursor-pointer transition-all"
+                      className="px-3 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-extrabold text-xs border border-amber-500/20 cursor-pointer transition-all flex items-center gap-1"
                     >
-                      ✏️ Edit
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit</span>
                     </button>
 
                     <button
                       onClick={() => handleDelete(sch.id, sch.title)}
-                      className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-extrabold text-xs border border-red-200 dark:border-red-900/40 cursor-pointer transition-all"
+                      className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-extrabold text-xs border border-red-200 dark:border-red-900/40 cursor-pointer transition-all flex items-center gap-1"
                     >
-                      🗑️ Hapus
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Hapus</span>
                     </button>
                   </div>
                 </div>
@@ -482,7 +536,7 @@ export default function InstructorScheduleManagerPage() {
               <div>
                 <span className="text-[0.65rem] sm:text-xs font-bold uppercase tracking-wider text-white/80">Panel Admin Pengajar</span>
                 <h3 className="text-base sm:text-lg font-extrabold">
-                  {editingSchedule ? '⚙️ Edit Jadwal Kelas' : 'Buat Jadwal Kelas Baru (Multi-Schedule)'}
+                  {editingSchedule ? 'Edit Jadwal Kelas' : 'Buat Jadwal Kelas Baru (Multi-Schedule)'}
                 </h3>
               </div>
               <button
@@ -514,7 +568,10 @@ export default function InstructorScheduleManagerPage() {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <span>💻 Online (Google Meet)</span>
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Online (Google Meet)</span>
                   </button>
 
                   <button
@@ -536,7 +593,10 @@ export default function InstructorScheduleManagerPage() {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <span>⛺ Offline (3 Hari 2 Malam)</span>
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>Offline (3 Hari 2 Malam)</span>
                   </button>
                 </div>
               </div>
@@ -588,8 +648,11 @@ export default function InstructorScheduleManagerPage() {
               {/* ── Multi-Schedule Date & Time Slots Section ── */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs">
-                    🗓️ Tanggal & Sesi Jadwal Kelas ({scheduleSlots.length} Sesi Terpisah) *
+                  <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+                    <svg className="size-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Tanggal & Sesi Jadwal Kelas ({scheduleSlots.length} Sesi Terpisah) *</span>
                   </label>
                   {!editingSchedule && (
                     <button
@@ -597,7 +660,9 @@ export default function InstructorScheduleManagerPage() {
                       onClick={handleAddSlot}
                       className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary dark:text-red-400 font-extrabold text-[0.7rem] border-none cursor-pointer flex items-center gap-1 transition-all"
                     >
-                      <span>＋</span>
+                      <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      </svg>
                       <span>Tambah Sesi Tanggal Lain</span>
                     </button>
                   )}
@@ -630,7 +695,7 @@ export default function InstructorScheduleManagerPage() {
                               onClick={() => handleRemoveSlot(slot.id)}
                               className="px-2 py-0.5 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-200 text-[0.65rem] font-bold border-none cursor-pointer transition-all"
                             >
-                              ✕ Hapus Sesi Ini
+                              Hapus Sesi
                             </button>
                           )}
                         </div>
@@ -693,8 +758,11 @@ export default function InstructorScheduleManagerPage() {
                               </div>
                             </div>
 
-                            <div className="text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-emerald-200/50">
-                              ℹ️ Durasi: {formatDateRangeIndonesian(slot.date, slot.endDate || calculateDefaultEndDate(slot.date), slot.startTime, slot.endTime).badgeLabel}
+                            <div className="text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-emerald-200/50 flex items-center gap-1.5">
+                              <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Durasi: {formatDateRangeIndonesian(slot.date, slot.endDate || calculateDefaultEndDate(slot.date), slot.startTime, slot.endTime).badgeLabel}</span>
                             </div>
                           </div>
                         ) : (
@@ -750,14 +818,18 @@ export default function InstructorScheduleManagerPage() {
                     onClick={handleAddSlot}
                     className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary dark:text-red-400 font-extrabold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <span>＋</span>
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
                     <span>Tambah Slot Tanggal Lain untuk Kelas Ini</span>
                   </button>
                 )}
 
                 {!editingSchedule && scheduleSlots.length > 1 && (
                   <div className="p-2.5 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800 text-[0.68rem] text-sky-800 dark:text-sky-300 font-semibold flex items-center gap-2">
-                    <span>💡</span>
+                    <svg className="size-4 text-sky-600 dark:text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     <span>1 Kali Pengaturan ini akan otomatis menerbitkan <strong>{scheduleSlots.length} jadwal terpisah</strong> di sistem dan kalender siswa.</span>
                   </div>
                 )}
@@ -812,8 +884,11 @@ export default function InstructorScheduleManagerPage() {
                   <div className="p-3.5 bg-violet-50/60 dark:bg-violet-950/20 rounded-2xl border border-violet-200/80 dark:border-violet-800/50 flex flex-col gap-2.5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs">
-                          👥 Target Grup Siswa (Bisa Pilih &gt;1 Grup)
+                        <label className="block font-extrabold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+                          <svg className="size-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span>Target Grup Siswa (Bisa Pilih &gt;1 Grup)</span>
                         </label>
                         <p className="text-[0.68rem] text-slate-400 mt-0.5">
                           Pilih grup yang berhak melihat & mendaftar sesi ini. Kosongkan untuk terbuka bagi semua siswa.
@@ -824,13 +899,16 @@ export default function InstructorScheduleManagerPage() {
                         <button
                           type="button"
                           onClick={() => setFormTargetGroup('')}
-                          className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border ${
+                          className={`px-2.5 py-1 rounded-lg font-extrabold text-[0.68rem] transition-all cursor-pointer border flex items-center gap-1 ${
                             selectedFormGroups.length === 0
                               ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                               : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                           }`}
                         >
-                          🌐 Semua Siswa (Publik)
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                          </svg>
+                          <span>Semua Siswa (Publik)</span>
                         </button>
 
                         {availableGroups.length > 1 && (
@@ -839,7 +917,7 @@ export default function InstructorScheduleManagerPage() {
                             onClick={() => setFormTargetGroup(availableGroups.map(g => g.name).join(', '))}
                             className="px-2 py-1 rounded-lg font-bold text-[0.68rem] bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 hover:bg-violet-200 cursor-pointer"
                           >
-                            ✓ Pilih Semua
+                            Pilih Semua
                           </button>
                         )}
                       </div>
@@ -868,10 +946,14 @@ export default function InstructorScheduleManagerPage() {
                                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-violet-400'
                             }`}
                           >
-                            <span className={`size-3.5 rounded-md flex items-center justify-center text-[0.6rem] font-black ${
+                            <span className={`size-3.5 rounded-md flex items-center justify-center ${
                               isChecked ? 'bg-white text-violet-600' : 'border border-slate-300 dark:border-slate-600'
                             }`}>
-                              {isChecked ? '✓' : ''}
+                              {isChecked && (
+                                <svg className="size-2.5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
                             </span>
                             <span>{g.name}</span>
                           </button>
@@ -883,10 +965,10 @@ export default function InstructorScheduleManagerPage() {
                     <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
                       <span>Status:</span>
                       {selectedFormGroups.length === 0 ? (
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">🌐 Terbuka untuk Semua Siswa (Tanpa Batasan)</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">Terbuka untuk Semua Siswa (Tanpa Batasan)</span>
                       ) : (
                         <span className="font-bold text-violet-600 dark:text-violet-400">
-                          👥 Dibatasi khusus {selectedFormGroups.length} grup: {selectedFormGroups.join(', ')}
+                          Dibatasi khusus {selectedFormGroups.length} grup: {selectedFormGroups.join(', ')}
                         </span>
                       )}
                     </div>
@@ -913,7 +995,7 @@ export default function InstructorScheduleManagerPage() {
                 >
                   {submitting
                     ? 'Menyimpan ke Database...'
-                    : (editingSchedule ? '💾 Simpan Perubahan Jadwal' : `🚀 Simpan & Terbitkan ${scheduleSlots.length > 1 ? `${scheduleSlots.length} Jadwal` : 'Jadwal'}`)}
+                    : (editingSchedule ? 'Simpan Perubahan Jadwal' : `Simpan & Terbitkan ${scheduleSlots.length > 1 ? `${scheduleSlots.length} Jadwal` : 'Jadwal'}`)}
                 </button>
               </div>
 

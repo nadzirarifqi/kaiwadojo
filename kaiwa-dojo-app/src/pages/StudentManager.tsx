@@ -155,9 +155,9 @@ export default function StudentManager() {
 
     setSaving(false)
     if (waSent) {
-      showToastMsg(`Akun "${std.full_name}" Disetujui & Pesan WA Berhasil Terkirim ke WA ${waTarget}! ✅`)
+      showToastMsg(`Akun "${std.full_name}" Disetujui & Pesan WA Berhasil Terkirim ke WA ${waTarget}!`)
     } else {
-      showToastMsg(`Akun "${std.full_name}" Disetujui! ✅`)
+      showToastMsg(`Akun "${std.full_name}" Disetujui!`)
     }
 
     await loadData()
@@ -180,7 +180,7 @@ export default function StudentManager() {
     await rejectStudentAccount(std.id)
 
     setSaving(false)
-    showToastMsg(`Akun pelajar "${std.full_name}" telah dinonaktifkan ❌`)
+    showToastMsg(`Akun pelajar "${std.full_name}" telah dinonaktifkan`)
     await loadData()
   }
 
@@ -212,7 +212,7 @@ export default function StudentManager() {
     if (created) {
       showToastMsg(`Berhasil menambahkan akun Pelajar baru: ${created.full_name}!`)
     } else {
-      showToastMsg(`Gagal menambahkan akun Pelajar. Periksa koneksi/DB! ❌`)
+      showToastMsg(`Gagal menambahkan akun Pelajar. Periksa koneksi atau database!`)
     }
     await loadData()
   }
@@ -290,9 +290,9 @@ export default function StudentManager() {
 
     setSaving(false)
     if (success) {
-      showToastMsg(`Akun pelajar "${std.full_name}" (@${std.username}) berhasil dihapus. ✅`)
+      showToastMsg(`Akun pelajar "${std.full_name}" (@${std.username}) berhasil dihapus.`)
     } else {
-      showToastMsg(`Gagal menghapus akun pelajar "${std.full_name}". ❌`)
+      showToastMsg(`Gagal menghapus akun pelajar "${std.full_name}".`)
     }
     await loadData()
   }
@@ -301,7 +301,11 @@ export default function StudentManager() {
   if (profile?.role !== 'admin') {
     return (
       <main className="flex-1 p-6 flex flex-col items-center justify-center min-h-[70vh] text-center">
-        <div className="text-4xl mb-2">🔒</div>
+        <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
+          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
         <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
         <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
           Halaman ini khusus diperuntukkan untuk Admin untuk mengelola akun Pelajar/Siswa.
@@ -389,7 +393,9 @@ export default function StudentManager() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-20 right-6 z-[600] bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-extrabold animate-bounce flex items-center gap-2">
-          <span>✅</span>
+          <svg className="size-4 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
           <span>{toast}</span>
         </div>
       )}
@@ -398,8 +404,11 @@ export default function StudentManager() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
-              👑 Menu Admin
+            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Menu Admin</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -409,13 +418,14 @@ export default function StudentManager() {
               {approvedCount} Pelajar Terverifikasi
             </span>
             {pendingCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black animate-pulse">
-                ⏳ {pendingCount} Menunggu Persetujuan
+              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black animate-pulse flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-amber-400" />
+                <span>{pendingCount} Menunggu Persetujuan</span>
               </span>
             )}
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>🎓 Kelola & Verifikasi Akun Pelajar</span>
+            <span>Kelola & Verifikasi Akun Pelajar</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
             Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar Kaiwa Dojo.
@@ -427,7 +437,7 @@ export default function StudentManager() {
             onClick={() => navigate('/kelola-grup')}
             className="px-4 py-3 bg-purple-600/90 hover:bg-purple-600 text-white text-xs sm:text-sm font-extrabold rounded-2xl border border-purple-400/40 cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
           >
-            <span>👥 Kelola Grup & Kata Kunci</span>
+            <span>Kelola Grup & Kata Kunci</span>
           </button>
           <button
             onClick={openAddModal}
@@ -444,7 +454,7 @@ export default function StudentManager() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <span>📋 Daftar Akun Siswa / Pelajar</span>
+                <span>Daftar Akun Siswa / Pelajar</span>
               </h3>
               {searchQuery.trim() || groupFilter !== 'all' || statusFilter !== 'all' ? (
                 <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
@@ -473,24 +483,26 @@ export default function StudentManager() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('pending')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5 ${
                   statusFilter === 'pending'
                     ? 'bg-amber-500 text-white shadow-xs'
                     : 'text-slate-500 hover:text-amber-500'
                 }`}
               >
-                ⏳ Menunggu ({pendingCount})
+                <span className="size-1.5 rounded-full bg-amber-400" />
+                <span>Menunggu ({pendingCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFilter('approved')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5 ${
                   statusFilter === 'approved'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-500 hover:text-emerald-600'
                 }`}
               >
-                ✅ Terverifikasi ({approvedCount})
+                <span className="size-1.5 rounded-full bg-emerald-400" />
+                <span>Terverifikasi ({approvedCount})</span>
               </button>
             </div>
           </div>
@@ -499,8 +511,10 @@ export default function StudentManager() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             {/* Search Input */}
             <div className="relative flex-1">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
-                🔍
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </span>
               <input
                 type="text"
@@ -516,7 +530,9 @@ export default function StudentManager() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 size-5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center border-none cursor-pointer transition-colors"
                   title="Hapus pencarian"
                 >
-                  ✕
+                  <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               )}
             </div>
@@ -529,11 +545,11 @@ export default function StudentManager() {
                   onChange={(e) => setGroupFilter(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
                 >
-                  <option value="all">🏷️ Semua Grup</option>
-                  <option value="no_group">🌐 Tanpa Grup (Siswa Biasa)</option>
+                  <option value="all">Semua Grup</option>
+                  <option value="no_group">Tanpa Grup (Siswa Biasa)</option>
                   {availableGroups.map((g) => (
                     <option key={g.id} value={g.name}>
-                      🏷️ {g.name}
+                      {g.name}
                     </option>
                   ))}
                 </select>
@@ -550,7 +566,9 @@ export default function StudentManager() {
                 className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold border-none cursor-pointer transition-colors shrink-0 flex items-center justify-center gap-1.5"
                 title="Reset filter & pencarian"
               >
-                <span>🔄</span>
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 <span>Reset</span>
               </button>
             )}
@@ -565,7 +583,11 @@ export default function StudentManager() {
           <div className="py-12 text-center text-slate-400 text-sm">
             {searchQuery.trim() || groupFilter !== 'all' ? (
               <div className="flex flex-col items-center gap-2">
-                <span className="text-3xl">🔍</span>
+                <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-1">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
                 <p className="font-bold text-slate-700 dark:text-slate-200">
                   Tidak ada akun pelajar yang cocok
                 </p>
@@ -611,7 +633,7 @@ export default function StudentManager() {
                   <th className="pb-3 px-2">No. WhatsApp</th>
                   <th className="pb-3 px-2">Asal Lembaga / PT</th>
                   <th className="pb-3 px-2">Grup</th>
-                  <th className="pb-3 px-2">📚 Setoran Kotoba</th>
+                  <th className="pb-3 px-2">Setoran Kotoba</th>
                   <th className="pb-3 px-2">Status Verifikasi</th>
                   <th className="pb-3 px-2 text-right">Aksi Verifikasi Admin</th>
                 </tr>
@@ -630,7 +652,7 @@ export default function StudentManager() {
                               className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
                             />
                             <span
-                              title={presence.isOnline ? '🟢 Online (Sedang Aktif)' : `⚪ ${presence.relativeTime}`}
+                              title={presence.isOnline ? 'Online (Sedang Aktif)' : presence.relativeTime}
                               className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white dark:border-slate-900 ${
                                 presence.isOnline ? 'bg-emerald-500 shadow-sm animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
                               }`}
@@ -639,7 +661,7 @@ export default function StudentManager() {
                           <div>
                             <div className="font-extrabold text-slate-800 dark:text-white">{std.full_name}</div>
                             <span className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[0.65rem] font-black uppercase">
-                              🎓 Pelajar
+                              Pelajar
                             </span>
                           </div>
                         </div>
@@ -651,7 +673,7 @@ export default function StudentManager() {
                           <div className="flex flex-col gap-0.5">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800 w-fit shadow-2xs">
                               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>🟢 Online</span>
+                              <span>Online</span>
                             </span>
                             <span className="text-[0.62rem] text-emerald-600 dark:text-emerald-400 font-bold">Sedang aktif</span>
                           </div>
@@ -678,9 +700,11 @@ export default function StudentManager() {
                             href={`https://wa.me/${std.phone_number.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
                           >
-                            <span>📱</span>
+                            <svg className="size-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
                             <span>{std.phone_number}</span>
                           </a>
                         ) : (
@@ -691,7 +715,10 @@ export default function StudentManager() {
                         <div className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{std.institution || '-'}</div>
                         {(std.kabupaten || std.kecamatan || std.domisili) && (
                           <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1 truncate max-w-[170px]" title={[std.domisili, std.kelurahan, std.kecamatan, std.kabupaten].filter(Boolean).join(', ')}>
-                            <span>📍</span>
+                            <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                             <span>{[std.kelurahan, std.kecamatan, std.kabupaten || std.domisili].filter(Boolean).join(', ') || std.domisili}</span>
                           </div>
                         )}
@@ -700,11 +727,11 @@ export default function StudentManager() {
                       <td className="py-3 px-2">
                         {std.group_name ? (
                           <span className="px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 text-[0.65rem] font-black border border-purple-200 dark:border-purple-800 whitespace-nowrap font-mono">
-                            🏷️ {std.group_name}
+                            {std.group_name}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-semibold">
-                            🌐 Siswa Biasa
+                            Siswa Biasa
                           </span>
                         )}
                       </td>
@@ -715,7 +742,10 @@ export default function StudentManager() {
                           const count = kotobaCounts.get(std.id) || 0
                           return count > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/70 text-violet-700 dark:text-violet-300 text-[0.68rem] font-black border border-violet-200 dark:border-violet-800 whitespace-nowrap">
-                              📚 {count} kata
+                              <svg className="size-3 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                              <span>{count} kata</span>
                             </span>
                           ) : (
                             <span className="text-[0.65rem] text-slate-400 dark:text-slate-600 italic">— Belum ada</span>
@@ -726,16 +756,19 @@ export default function StudentManager() {
                       {/* Status Verifikasi Column */}
                       <td className="py-3 px-2">
                         {std.status === 'approved' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
-                            ✅ Terverifikasi
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            <span>Terverifikasi</span>
                           </span>
                         ) : std.status === 'pending' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[0.65rem] font-black uppercase animate-pulse">
-                            ⏳ Menunggu
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[0.65rem] font-black uppercase animate-pulse">
+                            <span className="size-1.5 rounded-full bg-amber-500" />
+                            <span>Menunggu</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[0.65rem] font-black uppercase">
-                            ✕ Ditolak
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[0.65rem] font-black uppercase">
+                            <span className="size-1.5 rounded-full bg-red-500" />
+                            <span>Ditolak</span>
                           </span>
                         )}
                       </td>
@@ -746,16 +779,22 @@ export default function StudentManager() {
                             <button
                               onClick={() => handleApprove(std)}
                               disabled={saving}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black border-none cursor-pointer transition-all shadow-xs"
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black border-none cursor-pointer transition-all shadow-xs flex items-center gap-1"
                             >
-                              ✓ Setujui (Approve)
+                              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span>Setujui</span>
                             </button>
                             <button
                               onClick={() => handleReject(std)}
                               disabled={saving}
-                              className="px-2.5 py-1.5 rounded-xl bg-red-100 dark:bg-red-950 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-xl bg-red-100 dark:bg-red-950 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
                             >
-                              ✕ Tolak
+                              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              <span>Tolak</span>
                             </button>
                           </>
                         ) : (
@@ -763,16 +802,22 @@ export default function StudentManager() {
                             <button
                               onClick={() => openEditModal(std)}
                               disabled={saving}
-                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
                             >
-                              ✏️ Edit
+                              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                              <span>Edit</span>
                             </button>
                             <button
                               onClick={() => handleDelete(std)}
                               disabled={saving}
-                              className="px-2.5 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-600 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-900/40 cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-600 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-900/40 cursor-pointer transition-colors flex items-center gap-1"
                             >
-                              🗑️ Hapus
+                              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Hapus</span>
                             </button>
                           </>
                         )}
@@ -795,7 +840,9 @@ export default function StudentManager() {
               <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <span className="size-8 rounded-xl bg-primary/20 text-red-400 flex items-center justify-center text-sm font-black border border-primary/30">
-                    🎓
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
                   </span>
                   <div>
                     <h3 className="text-base font-extrabold text-white">Tambah Akun Pelajar Baru</h3>
@@ -807,7 +854,9 @@ export default function StudentManager() {
                   onClick={() => setShowAddModal(false)}
                   className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
                 >
-                  ✕
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
@@ -867,9 +916,9 @@ export default function StudentManager() {
                         onChange={e => setStatus(e.target.value as StudentStatus)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
                       >
-                        <option value="approved">✅ Aktif (Terverifikasi)</option>
-                        <option value="pending">⏳ Menunggu Persetujuan</option>
-                        <option value="rejected">✕ Nonaktif / Ditolak</option>
+                        <option value="approved">Aktif (Terverifikasi)</option>
+                        <option value="pending">Menunggu Persetujuan</option>
+                        <option value="rejected">Nonaktif / Ditolak</option>
                       </select>
                     </div>
                   </div>
@@ -888,9 +937,12 @@ export default function StudentManager() {
                               const detected = matchGroupFromInstitution(institution, availableGroups)
                               setGroupName(detected)
                             }}
-                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer flex items-center gap-1"
                           >
-                            ⚡ Cocokkan Grup
+                            <svg className="size-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Cocokkan Grup</span>
                           </button>
                         )}
                       </div>
@@ -912,16 +964,16 @@ export default function StudentManager() {
 
                     <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
                       <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
-                        🏷️ Label Grup Siswa
+                        Label Grup Siswa
                       </label>
                       <select
                         value={groupName}
                         onChange={e => setGroupName(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                       >
-                        <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
+                        <option value="">— Siswa Biasa (Tanpa Grup Khusus)</option>
                         {availableGroups.map(g => (
-                          <option key={g.id} value={g.name}>🏷️ {g.name}</option>
+                          <option key={g.id} value={g.name}>{g.name}</option>
                         ))}
                       </select>
                       <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
@@ -945,7 +997,7 @@ export default function StudentManager() {
                     {/* Alamat Domisili */}
                     <div>
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        📍 Alamat Domisili
+                        Alamat Domisili
                       </label>
                       <input
                         type="text"
@@ -1029,7 +1081,9 @@ export default function StudentManager() {
               <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <span className="size-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm font-black border border-purple-400/30">
-                    ✏️
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
                   </span>
                   <div>
                     <h3 className="text-base font-extrabold text-white">Edit Data Akun Pelajar</h3>
@@ -1041,7 +1095,9 @@ export default function StudentManager() {
                   onClick={() => setEditingStudent(null)}
                   className="size-8 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer text-base flex items-center justify-center transition-all"
                 >
-                  ✕
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
@@ -1098,16 +1154,16 @@ export default function StudentManager() {
                         onChange={e => setStatus(e.target.value as StudentStatus)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                       >
-                        <option value="approved">✅ Aktif (Terverifikasi)</option>
-                        <option value="pending">⏳ Menunggu Persetujuan</option>
-                        <option value="rejected">✕ Nonaktif / Ditolak</option>
+                        <option value="approved">Aktif (Terverifikasi)</option>
+                        <option value="pending">Menunggu Persetujuan</option>
+                        <option value="rejected">Nonaktif / Ditolak</option>
                       </select>
                     </div>
 
                     {/* Alamat Domisili */}
                     <div>
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                        📍 Alamat Domisili
+                        Alamat Domisili
                       </label>
                       <input
                         type="text"
@@ -1173,9 +1229,12 @@ export default function StudentManager() {
                               const detected = matchGroupFromInstitution(institution, availableGroups)
                               setGroupName(detected)
                             }}
-                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                            className="text-[0.65rem] text-purple-600 dark:text-purple-400 hover:underline font-bold bg-transparent border-none cursor-pointer flex items-center gap-1"
                           >
-                            ⚡ Cocokkan Grup
+                            <svg className="size-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Cocokkan Grup</span>
                           </button>
                         )}
                       </div>
@@ -1191,16 +1250,16 @@ export default function StudentManager() {
                     {/* Group Dropdown - Admin Override */}
                     <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
                       <label className="text-xs font-black text-purple-700 dark:text-purple-300 block mb-1">
-                        🏷️ Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Pilih/Ubah)</span>
+                        Label Grup Siswa <span className="font-bold text-slate-400 normal-case">(Pilih/Ubah)</span>
                       </label>
                       <select
                         value={groupName}
                         onChange={e => setGroupName(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-extrabold bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-purple-500"
                       >
-                        <option value="">🌐 — Siswa Biasa (Tanpa Grup Khusus)</option>
+                        <option value="">— Siswa Biasa (Tanpa Grup Khusus)</option>
                         {availableGroups.map(g => (
-                          <option key={g.id} value={g.name}>🏷️ {g.name}</option>
+                          <option key={g.id} value={g.name}>{g.name}</option>
                         ))}
                       </select>
                       <p className="text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">

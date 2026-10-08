@@ -99,8 +99,10 @@ export default function AnnouncementManager() {
     return (
       <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-md p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl">
-          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 text-3xl flex items-center justify-center mx-auto mb-4">
-            🔒
+          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
+            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
           </div>
           <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">
             Akses Khusus Administrator
@@ -162,11 +164,11 @@ export default function AnnouncementManager() {
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault()
     if (!formData.title.trim()) {
-      showToast('⚠️ Judul pengumuman tidak boleh kosong!')
+      showToast('Judul pengumuman tidak boleh kosong!')
       return
     }
     if (!formData.content.trim()) {
-      showToast('⚠️ Isi pengumuman tidak boleh kosong!')
+      showToast('Isi pengumuman tidak boleh kosong!')
       return
     }
 
@@ -174,12 +176,12 @@ export default function AnnouncementManager() {
     if (editingItem) {
       const res = await updateAnnouncement(editingItem.id, formData)
       if (res.success) {
-        showToast('✓ Pengumuman berhasil diperbarui!')
+        showToast('Pengumuman berhasil diperbarui!')
         setIsCreateModalOpen(false)
         setEditingItem(null)
         await loadData()
       } else {
-        showToast(`❌ Gagal memperbarui: ${res.error}`)
+        showToast(`Gagal memperbarui: ${res.error}`)
       }
     } else {
       const res = await createAnnouncement({
@@ -188,11 +190,11 @@ export default function AnnouncementManager() {
         author_name: formData.author_name || profile?.full_name || 'Admin Dojo',
       })
       if (res.success) {
-        showToast('✓ Pengumuman baru berhasil diterbitkan!')
+        showToast('Pengumuman baru berhasil diterbitkan!')
         setIsCreateModalOpen(false)
         await loadData()
       } else {
-        showToast(`❌ Gagal menerbitkan: ${res.error}`)
+        showToast(`Gagal menerbitkan: ${res.error}`)
       }
     }
     setSubmitting(false)
@@ -203,7 +205,7 @@ export default function AnnouncementManager() {
     const newStatus = !ann.is_active
     const res = await updateAnnouncement(ann.id, { is_active: newStatus })
     if (res.success) {
-      showToast(newStatus ? '✓ Pengumuman diaktifkan' : '✓ Pengumuman dinonaktifkan')
+      showToast(newStatus ? 'Pengumuman diaktifkan' : 'Pengumuman dinonaktifkan')
       await loadData()
     }
   }
@@ -213,7 +215,7 @@ export default function AnnouncementManager() {
     const newPin = !ann.is_pinned
     const res = await updateAnnouncement(ann.id, { is_pinned: newPin })
     if (res.success) {
-      showToast(newPin ? '📌 Pengumuman di-pin ke paling atas' : '✓ Pin dilepas')
+      showToast(newPin ? 'Pengumuman di-pin ke paling atas' : 'Pin dilepas')
       await loadData()
     }
   }
@@ -223,11 +225,11 @@ export default function AnnouncementManager() {
     setSubmitting(true)
     const res = await deleteAnnouncement(id)
     if (res.success) {
-      showToast('✓ Pengumuman telah dihapus.')
+      showToast('Pengumuman telah dihapus.')
       setDeleteConfirmId(null)
       await loadData()
     } else {
-      showToast(`❌ Gagal menghapus: ${res.error}`)
+      showToast(`Gagal menghapus: ${res.error}`)
     }
     setSubmitting(false)
   }
@@ -271,7 +273,9 @@ export default function AnnouncementManager() {
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-2xl shadow-xl text-xs sm:text-sm font-bold flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-4">
-          <span>🔔</span>
+          <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
           <span>{toastMsg}</span>
         </div>
       )}
@@ -279,8 +283,10 @@ export default function AnnouncementManager() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-red-500/15 via-primary/20 to-amber-500/20 text-primary dark:text-red-400 flex items-center justify-center text-3xl shadow-xs border border-primary/20 shrink-0">
-            📢
+          <div className="size-14 rounded-2xl bg-gradient-to-br from-red-500/15 via-primary/20 to-amber-500/20 text-primary dark:text-red-400 flex items-center justify-center shadow-xs border border-primary/20 shrink-0">
+            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -301,7 +307,9 @@ export default function AnnouncementManager() {
           onClick={handleOpenCreate}
           className="px-5 py-3 rounded-2xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
         >
-          <span className="text-base">➕</span>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
           <span>Buat Pengumuman Baru</span>
         </button>
       </div>
@@ -309,8 +317,10 @@ export default function AnnouncementManager() {
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold border border-blue-500/20 shrink-0">
-            📑
+          <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
           <div>
             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -323,8 +333,10 @@ export default function AnnouncementManager() {
         </div>
 
         <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/20 shrink-0">
-            🟢
+          <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <div>
             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -337,8 +349,10 @@ export default function AnnouncementManager() {
         </div>
 
         <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold border border-amber-500/20 shrink-0">
-            📌
+          <div className="size-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
           </div>
           <div>
             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -351,8 +365,11 @@ export default function AnnouncementManager() {
         </div>
 
         <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold border border-purple-500/20 shrink-0">
-            👁️
+          <div className="size-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
           </div>
           <div>
             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -370,7 +387,11 @@ export default function AnnouncementManager() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Box */}
           <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </span>
             <input
               type="text"
               placeholder="Cari judul atau isi..."
@@ -415,8 +436,8 @@ export default function AnnouncementManager() {
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50 transition-all"
           >
             <option value="all">Semua Status (Aktif & Nonaktif)</option>
-            <option value="active">🟢 Hanya Aktif / Tayang</option>
-            <option value="inactive">⚪ Hanya Nonaktif / Arsip</option>
+            <option value="active">Hanya Aktif / Tayang</option>
+            <option value="inactive">Hanya Nonaktif / Arsip</option>
           </select>
         </div>
       </div>
@@ -425,7 +446,11 @@ export default function AnnouncementManager() {
       <div className="space-y-4">
         {filteredAnnouncements.length === 0 ? (
           <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 space-y-3">
-            <div className="text-4xl">📭</div>
+            <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+              <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
             <h3 className="text-base font-bold text-slate-800 dark:text-white">
               Belum ada pengumuman yang sesuai filter
             </h3>
@@ -473,13 +498,13 @@ export default function AnnouncementManager() {
 
                         {ann.target_group && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                            🏷️ Grup: {ann.target_group}
+                            Grup: {ann.target_group}
                           </span>
                         )}
 
                         {ann.is_pinned && (
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                            📌 Di-Pin
+                            Di-Pin
                           </span>
                         )}
 
@@ -490,7 +515,7 @@ export default function AnnouncementManager() {
                               : 'bg-slate-500/10 text-slate-500 border-slate-400/30'
                           }`}
                         >
-                          {ann.is_active ? '🟢 Tayang Aktif' : '⚪ Nonaktif / Draf'}
+                          {ann.is_active ? 'Tayang Aktif' : 'Nonaktif / Draf'}
                         </span>
                       </div>
 
@@ -517,7 +542,10 @@ export default function AnnouncementManager() {
                       title="Pratinjau Tampilan Pengguna"
                       className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border-none cursor-pointer flex items-center gap-1.5"
                     >
-                      <span>👁️</span>
+                      <svg className="size-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
                       <span>Pratinjau Pop-up</span>
                     </button>
 
@@ -530,7 +558,9 @@ export default function AnnouncementManager() {
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-amber-500'
                       }`}
                     >
-                      📌
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
                     </button>
 
                     <button
@@ -538,7 +568,9 @@ export default function AnnouncementManager() {
                       title="Edit Pengumuman"
                       className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
                     >
-                      ✏️
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
                     </button>
 
                     <button
@@ -546,7 +578,9 @@ export default function AnnouncementManager() {
                       title="Hapus Pengumuman"
                       className="size-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold transition-all border border-rose-200 dark:border-rose-900 cursor-pointer"
                     >
-                      🗑️
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -560,7 +594,10 @@ export default function AnnouncementManager() {
                 {ann.action_url && ann.action_text && (
                   <div className="pt-1 pb-2">
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary dark:text-red-400 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20">
-                      <span>🔗 Tombol Aksi:</span>
+                      <svg className="size-3 text-primary dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      <span>Tombol Aksi:</span>
                       <span>"{ann.action_text}"</span>
                       <span className="text-[10px] text-slate-400">({ann.action_url})</span>
                     </span>
@@ -570,8 +607,10 @@ export default function AnnouncementManager() {
                 {/* Footer status row */}
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1 font-semibold text-purple-600 dark:text-purple-400">
-                      <span>👥</span>
+                    <span className="flex items-center gap-1.5 font-semibold text-purple-600 dark:text-purple-400">
+                      <svg className="size-3.5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
                       <span>{reads} Pengguna telah membaca</span>
                     </span>
                   </div>
@@ -586,7 +625,7 @@ export default function AnnouncementManager() {
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-600'
                       }`}
                     >
-                      {ann.is_active ? '✓ Aktif (Klik utk Matikan)' : '✕ Nonaktif (Klik utk Aktifkan)'}
+                      {ann.is_active ? 'Aktif (Klik utk Matikan)' : 'Nonaktif (Klik utk Aktifkan)'}
                     </button>
                   </div>
                 </div>
@@ -603,7 +642,9 @@ export default function AnnouncementManager() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-xl bg-primary/10 text-primary dark:text-red-400 flex items-center justify-center text-lg font-bold">
-                  {editingItem ? '✏️' : '📢'}
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-slate-900 dark:text-white">
@@ -619,9 +660,11 @@ export default function AnnouncementManager() {
                   setIsCreateModalOpen(false)
                   setEditingItem(null)
                 }}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-bold flex items-center justify-center border-none cursor-pointer"
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -634,7 +677,7 @@ export default function AnnouncementManager() {
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Jadwal Libur Obon & Pembaruan Materi Bab 15 🌸"
+                  placeholder="Contoh: Jadwal Libur Obon & Pembaruan Materi Bab 15"
                   value={formData.title}
                   onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50"
@@ -656,7 +699,7 @@ export default function AnnouncementManager() {
                   >
                     {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
                       <option key={key} value={key}>
-                        {cfg.icon} {cfg.label}
+                        {cfg.label}
                       </option>
                     ))}
                   </select>
@@ -675,7 +718,7 @@ export default function AnnouncementManager() {
                   >
                     {Object.entries(AUDIENCE_CONFIG).map(([key, cfg]) => (
                       <option key={key} value={key}>
-                        {cfg.icon} {cfg.label}
+                        {cfg.label}
                       </option>
                     ))}
                   </select>
@@ -719,7 +762,9 @@ export default function AnnouncementManager() {
               {/* Action Button Links (Opsional) */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-3">
                 <div className="text-xs font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
-                  <span>🔗</span>
+                  <svg className="size-3.5 text-primary dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                   <span>Tombol Aksi Tambahan (Opsional)</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -777,8 +822,11 @@ export default function AnnouncementManager() {
                     className="size-4 accent-primary rounded-sm"
                   />
                   <div>
-                    <div className="text-xs font-bold text-slate-800 dark:text-white">
-                      📌 Pin ke Paling Atas
+                    <div className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                      <svg className="size-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                      <span>Pin ke Paling Atas</span>
                     </div>
                     <div className="text-[10px] text-slate-400">
                       Prioritas utama di urutan teratas
@@ -804,7 +852,7 @@ export default function AnnouncementManager() {
                   disabled={submitting}
                   className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs font-black shadow-md transition-all border-none cursor-pointer flex items-center gap-1.5"
                 >
-                  <span>{submitting ? '⏳ Menyimpan...' : editingItem ? 'Simpan Perubahan' : '📢 Terbitkan Sekarang'}</span>
+                  <span>{submitting ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Terbitkan Sekarang'}</span>
                 </button>
               </div>
             </form>
@@ -816,8 +864,10 @@ export default function AnnouncementManager() {
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 text-center space-y-4">
-            <div className="size-14 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl mx-auto">
-              🗑️
+            <div className="size-14 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+              <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">

@@ -75,8 +75,10 @@ export default function FeedbackManager() {
     return (
       <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-md p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl">
-          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 text-3xl flex items-center justify-center mx-auto mb-4">
-            🔒
+          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
+            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
           <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">
             Akses Khusus Admin
@@ -192,7 +194,9 @@ export default function FeedbackManager() {
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-6 right-6 z-50 px-4 py-3 bg-slate-900/90 text-white rounded-2xl shadow-xl backdrop-blur-md border border-slate-700/60 text-xs sm:text-sm font-bold animate-fade-in flex items-center gap-2">
-          <span>✨</span>
+          <svg className="size-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
           <span>{toastMsg}</span>
         </div>
       )}
@@ -207,13 +211,15 @@ export default function FeedbackManager() {
       >
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider flex items-center gap-1">
-              <span>💡</span>
+            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="size-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
               <span className="font-jp font-bold mr-1">ご意見・ご提案</span>
               <span>Panel Masukan & Saran</span>
             </span>
             {unreadCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black animate-pulse">
+              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black">
                 ● {unreadCount} Masukan Baru
               </span>
             )}
@@ -230,7 +236,9 @@ export default function FeedbackManager() {
           onClick={loadData}
           className="self-start md:self-auto px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 cursor-pointer backdrop-blur-sm transition-all flex items-center gap-2"
         >
-          <span>🔄</span>
+          <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
           <span>Segarkan Data</span>
         </button>
       </div>
@@ -241,8 +249,10 @@ export default function FeedbackManager() {
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-slate-400">Total Masukan</span>
-            <span className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm">
-              📊
+            <span className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </span>
           </div>
           <div className="mt-2">
@@ -255,8 +265,10 @@ export default function FeedbackManager() {
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-blue-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-blue-500">Belum Dibaca</span>
-            <span className="size-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm">
-              📬
+            <span className="size-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -273,13 +285,15 @@ export default function FeedbackManager() {
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-amber-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-500">Sedang Diproses</span>
-            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm">
-              ⏳
+            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </span>
           </div>
           <div className="mt-2">
             <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{inProgressCount}</span>
-            <span className="text-[0.68rem] text-slate-400 ml-1">dalam tahap kerja</span>
+            <span className="text-[0.68rem] text-slate-400 ml-1">tahap proses</span>
           </div>
         </div>
 
@@ -287,8 +301,10 @@ export default function FeedbackManager() {
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-emerald-500">Selesai / Diterapkan</span>
-            <span className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
-              ✅
+            <span className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </span>
           </div>
           <div className="mt-2">
@@ -301,13 +317,15 @@ export default function FeedbackManager() {
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-slate-400">Kepuasan Rata-rata</span>
-            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">
-              ⭐
+            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <svg className="size-4 fill-current" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-900 dark:text-white">{avgRating}</span>
-            <span className="text-xs text-amber-400 font-bold">★ / 5.0</span>
+            <span className="text-xs text-amber-500 font-bold">/ 5.0 Rata-rata</span>
           </div>
         </div>
       </div>
@@ -317,15 +335,15 @@ export default function FeedbackManager() {
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           {/* Search Box */}
           <div className="relative flex-1">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              🔍
-            </span>
+            <svg className="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari masukan berdasarkan kata kunci, judul, nama, atau email..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+              className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
             />
             {searchQuery && (
               <button
@@ -348,7 +366,7 @@ export default function FeedbackManager() {
               <option value="all">Semua Kategori</option>
               {(Object.keys(CATEGORY_META) as FeedbackCategory[]).map((cat) => (
                 <option key={cat} value={cat}>
-                  {CATEGORY_META[cat].icon} {CATEGORY_META[cat].label}
+                  {CATEGORY_META[cat].label}
                 </option>
               ))}
             </select>
@@ -359,11 +377,11 @@ export default function FeedbackManager() {
               onChange={(e) => setSelectedRating(e.target.value)}
               className="px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
-              <option value="all">Semua Bintang</option>
-              <option value="5">⭐⭐⭐⭐⭐ (5 Bintang)</option>
-              <option value="4">⭐⭐⭐⭐ (4 Bintang)</option>
-              <option value="3">⭐⭐⭐ (3 Bintang)</option>
-              <option value="low">⭐ - ⭐⭐ (1-2 Bintang)</option>
+              <option value="all">Semua Rating</option>
+              <option value="5">Bintang 5 (Sempurna)</option>
+              <option value="4">Bintang 4 (Sangat Baik)</option>
+              <option value="3">Bintang 3 (Cukup)</option>
+              <option value="low">Bintang 1 - 2 (Perlu Evaluasi)</option>
             </select>
           </div>
         </div>
@@ -398,7 +416,7 @@ export default function FeedbackManager() {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-200'
                 }`}
               >
-                <span>{STATUS_META[st].icon}</span>
+                <span className="size-2 rounded-full bg-current opacity-80" />
                 <span>{STATUS_META[st].label}</span>
                 <span className="text-[0.65rem] px-1.5 py-0.2 rounded-full bg-black/10 dark:bg-white/20">
                   {count}
@@ -412,7 +430,11 @@ export default function FeedbackManager() {
       {/* Feedback List Table / Cards */}
       {filteredFeedbacks.length === 0 ? (
         <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800">
-          <div className="text-4xl mb-3">📭</div>
+          <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
           <h3 className="text-base font-bold text-slate-700 dark:text-slate-200">
             Tidak ada masukan yang cocok dengan filter
           </h3>
@@ -447,26 +469,34 @@ export default function FeedbackManager() {
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Category Pill */}
                     <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${catMeta.badgeClass}`}>
-                      <span>{catMeta.icon}</span>
                       <span>{catMeta.label}</span>
                     </span>
 
                     {/* Rating Stars */}
-                    <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-900/40 text-amber-500 text-xs font-black">
-                      <span>★ {item.rating || 5}</span>
+                    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-900/40 text-amber-500 text-xs font-black">
+                      <svg className="size-3 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span>{item.rating || 5}.0</span>
                     </div>
 
                     {/* Sender Identity */}
                     <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span>👤 {item.name}</span>
+                      <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>{item.name}</span>
                       <span className="text-[0.65rem] px-2 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase font-semibold">
                         {item.role}
                       </span>
                     </span>
 
                     {/* Date */}
-                    <span className="text-[0.7rem] text-slate-400 font-medium">
-                      🕒 {formattedDate}
+                    <span className="text-[0.7rem] text-slate-400 font-medium flex items-center gap-1">
+                      <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{formattedDate}</span>
                     </span>
                   </div>
 
@@ -479,7 +509,7 @@ export default function FeedbackManager() {
                     >
                       {(Object.keys(STATUS_META) as FeedbackStatus[]).map((st) => (
                         <option key={st} value={st}>
-                          {STATUS_META[st].icon} {STATUS_META[st].label}
+                          {STATUS_META[st].label}
                         </option>
                       ))}
                     </select>
@@ -487,9 +517,12 @@ export default function FeedbackManager() {
                     <button
                       type="button"
                       onClick={() => openDetailModal(item)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-all"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1.5"
                     >
-                      Buka Detail 🔍
+                      <span>Buka Detail</span>
+                      <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -514,7 +547,10 @@ export default function FeedbackManager() {
                         href={`mailto:${item.email}`}
                         className="hover:text-primary transition-colors flex items-center gap-1 font-semibold"
                       >
-                        ✉️ {item.email}
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>{item.email}</span>
                       </a>
                     )}
                     {item.phone_number && (
@@ -524,20 +560,29 @@ export default function FeedbackManager() {
                         rel="noreferrer"
                         className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
                       >
-                        💬 WA: {item.phone_number}
+                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>WA: {item.phone_number}</span>
                       </a>
                     )}
                     {item.page_url && (
-                      <span className="truncate max-w-[200px] sm:max-w-xs text-[0.7rem] text-slate-400" title={item.page_url}>
-                        🌐 {new URL(item.page_url, window.location.origin).pathname}
+                      <span className="truncate max-w-[200px] sm:max-w-xs text-[0.7rem] text-slate-400 flex items-center gap-1" title={item.page_url}>
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        <span>{new URL(item.page_url, window.location.origin).pathname}</span>
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2 ml-auto">
                     {item.admin_notes && (
-                      <span className="text-[0.7rem] px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-900/40">
-                        📝 Ada Catatan Admin
+                      <span className="text-[0.7rem] px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-900/40 flex items-center gap-1">
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Catatan Admin</span>
                       </span>
                     )}
                     <button
@@ -546,7 +591,9 @@ export default function FeedbackManager() {
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-none bg-transparent cursor-pointer transition-all"
                       title="Hapus masukan ini"
                     >
-                      🗑️
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -570,11 +617,14 @@ export default function FeedbackManager() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`px-2.5 py-0.5 rounded-xl text-xs font-bold border ${CATEGORY_META[activeFeedback.category]?.badgeClass}`}>
-                    {CATEGORY_META[activeFeedback.category]?.icon} {CATEGORY_META[activeFeedback.category]?.label}
+                    {CATEGORY_META[activeFeedback.category]?.label}
                   </span>
-                  <span className="text-amber-500 font-bold text-xs">
-                    {'★'.repeat(activeFeedback.rating || 5)} ({activeFeedback.rating || 5}/5)
-                  </span>
+                  <div className="flex items-center gap-1 text-amber-500 font-bold text-xs bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-900/40">
+                    <svg className="size-3.5 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span>Rating: {activeFeedback.rating || 5} / 5</span>
+                  </div>
                 </div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
                   {activeFeedback.title || 'Detail Masukan Pengguna'}
@@ -627,9 +677,12 @@ export default function FeedbackManager() {
                       href={`https://wa.me/${activeFeedback.phone_number.replace(/\D/g, '')}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                     >
-                      {activeFeedback.phone_number} →
+                      <span>{activeFeedback.phone_number}</span>
+                      <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
                     </a>
                   </div>
                 )}
@@ -667,7 +720,7 @@ export default function FeedbackManager() {
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                         }`}
                       >
-                        <span>{STATUS_META[st].icon}</span>
+                        <span className="size-2 rounded-full bg-current opacity-80" />
                         <span>{STATUS_META[st].label}</span>
                       </button>
                     )
@@ -677,8 +730,11 @@ export default function FeedbackManager() {
 
               {/* Admin Internal Notes Editor */}
               <div>
-                <label className="block text-[0.72rem] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                  📝 Catatan Internal Admin
+                <label className="block text-[0.72rem] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <svg className="size-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span>Catatan Internal Admin</span>
                 </label>
                 <textarea
                   value={editingNotes}
@@ -694,7 +750,10 @@ export default function FeedbackManager() {
                     disabled={isSavingNotes}
                     className="px-4 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold border-none cursor-pointer shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
                   >
-                    {isSavingNotes ? 'Menyimpan...' : 'Simpan Catatan Admin 💾'}
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>{isSavingNotes ? 'Menyimpan...' : 'Simpan Catatan Admin'}</span>
                   </button>
                 </div>
               </div>
@@ -705,9 +764,12 @@ export default function FeedbackManager() {
               <button
                 type="button"
                 onClick={() => handleDelete(activeFeedback.id, activeFeedback.name)}
-                className="px-3.5 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold border-none cursor-pointer transition-all"
+                className="px-3.5 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1.5"
               >
-                🗑️ Hapus Masukan
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Hapus Masukan</span>
               </button>
 
               <button

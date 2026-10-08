@@ -145,7 +145,11 @@ export default function InstructorManager() {
   if (profile?.role !== 'admin') {
     return (
       <main className="flex-1 p-6 flex flex-col items-center justify-center min-h-[70vh] text-center">
-        <div className="text-4xl mb-2">🔒</div>
+        <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
+          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
         <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
         <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
           Halaman ini khusus diperuntukkan untuk Admin untuk mengelola akun Pemateri/Pengajar.
@@ -162,7 +166,9 @@ export default function InstructorManager() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-20 right-6 z-[600] bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-extrabold animate-bounce flex items-center gap-2">
-          <span>✅</span>
+          <svg className="size-4 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
           <span>{toast}</span>
         </div>
       )}
@@ -171,8 +177,11 @@ export default function InstructorManager() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider">
-              👑 Menu Admin
+            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Menu Admin</span>
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -183,7 +192,7 @@ export default function InstructorManager() {
             </span>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>👨‍🏫 Manajemen Full Kontrol Akun Pemateri</span>
+            <span>Manajemen Full Kontrol Akun Pemateri</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
             Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menambah, mengedit, dan menghapus** akun Pemateri/Pengajar.
@@ -202,7 +211,7 @@ export default function InstructorManager() {
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-            <span>📋 Daftar Pemateri / Pengajar Aktif</span>
+            <span>Daftar Pemateri / Pengajar Aktif</span>
           </h3>
           <span className="text-xs text-slate-400 font-bold">Total: {instructors.length} Sensei</span>
         </div>
@@ -243,7 +252,7 @@ export default function InstructorManager() {
                               className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
                             />
                             <span
-                              title={presence.isOnline ? '🟢 Online (Sedang Aktif)' : `⚪ ${presence.relativeTime}`}
+                              title={presence.isOnline ? 'Online (Sedang Aktif)' : presence.relativeTime}
                               className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white dark:border-slate-900 ${
                                 presence.isOnline ? 'bg-emerald-500 shadow-sm animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
                               }`}
@@ -262,7 +271,7 @@ export default function InstructorManager() {
                           <div className="flex flex-col gap-0.5">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800 w-fit shadow-2xs">
                               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>🟢 Online</span>
+                              <span>Online</span>
                             </span>
                             <span className="text-[0.62rem] text-emerald-600 dark:text-emerald-400 font-bold">Sedang aktif</span>
                           </div>
@@ -289,9 +298,11 @@ export default function InstructorManager() {
                             href={`https://wa.me/${inst.phone_number.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
                           >
-                            <span>📱</span>
+                            <svg className="size-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
                             <span>{inst.phone_number}</span>
                           </a>
                         ) : (
@@ -309,22 +320,28 @@ export default function InstructorManager() {
                       </td>
                       <td className="py-3 px-2">
                         <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
-                          👨‍🏫 Pemateri
+                          Pemateri
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openEditModal(inst)}
-                            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
+                            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
                           >
-                            ✏️ Edit
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(inst)}
-                            className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
+                            className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
                           >
-                            🗑️ Hapus
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
@@ -344,7 +361,7 @@ export default function InstructorManager() {
             <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
-                <h3 className="text-lg font-extrabold">👨‍🏫 Tambah Akun Pemateri</h3>
+                <h3 className="text-lg font-extrabold">Tambah Akun Pemateri</h3>
               </div>
               <button onClick={() => setShowAddModal(false)} className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
             </div>
@@ -450,7 +467,7 @@ export default function InstructorManager() {
             <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
-                <h3 className="text-lg font-extrabold">✏️ Edit Akun Pemateri</h3>
+                <h3 className="text-lg font-extrabold">Edit Akun Pemateri</h3>
               </div>
               <button onClick={() => setEditingInst(null)} className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
             </div>

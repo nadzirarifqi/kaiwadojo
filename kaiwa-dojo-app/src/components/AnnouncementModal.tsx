@@ -184,7 +184,8 @@ export default function AnnouncementModal({
                 </span>
                 {current.is_pinned && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                    <span>📌 Disematkan</span>
+                    <svg className="size-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    <span>Disematkan</span>
                   </span>
                 )}
                 <span

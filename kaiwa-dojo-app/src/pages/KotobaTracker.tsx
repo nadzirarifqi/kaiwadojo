@@ -214,7 +214,11 @@ export default function KotobaTrackerPage() {
     return (
       <main className="flex-1 p-6 lg:p-8 flex items-center justify-center min-h-[70vh]">
         <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md text-center border border-slate-200 dark:border-slate-700 shadow-xl">
-          <span className="text-5xl mb-4 block">🚫</span>
+          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
+            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
           <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Akses Terbatas</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
             Halaman ini khusus diperuntukkan untuk Admin dan Pemateri Kaiwa Dojo.
@@ -236,7 +240,7 @@ export default function KotobaTrackerPage() {
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in bg-slate-50 dark:bg-slate-950">
-      {/* ⛩️ Header Banner */}
+      {/* Header Banner */}
       <div className="bg-gradient-to-r from-amber-900 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] p-5 sm:p-7 mb-7 shadow-xl relative overflow-hidden border border-amber-900/30">
         <div className="absolute right-4 -bottom-6 text-[8rem] sm:text-[10rem] font-black text-amber-500/5 select-none pointer-events-none leading-none font-serif">
           語
@@ -255,7 +259,7 @@ export default function KotobaTrackerPage() {
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl">語</span>
+              <span className="text-2xl sm:text-3xl font-serif">語</span>
               <span>Tracker Setoran Kotoba Pelajar</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1 max-w-2xl">
@@ -271,7 +275,9 @@ export default function KotobaTrackerPage() {
               className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
               title="Refresh data"
             >
-              <span className={`text-sm ${refreshing ? 'animate-spin' : ''}`}>🔄</span>
+              <svg className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
               <span>{refreshing ? 'Memperbarui...' : 'Segarkan'}</span>
             </button>
             <button
@@ -279,14 +285,16 @@ export default function KotobaTrackerPage() {
               disabled={filteredStudents.length === 0}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
-              <span>📊</span>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
               <span>Ekspor CSV</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 📊 Global Metrics Grid */}
+      {/* Global Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-7">
         {/* Metric 1: Total Kotoba Global */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between">
@@ -311,7 +319,9 @@ export default function KotobaTrackerPage() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Sudah Dikuasai</span>
             <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-black">
-              ✅
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
           </div>
           <div>
@@ -331,7 +341,9 @@ export default function KotobaTrackerPage() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Belum Dikuasai</span>
             <div className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-black">
-              ⏳
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
           </div>
           <div>
@@ -349,7 +361,9 @@ export default function KotobaTrackerPage() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Partisipasi Siswa</span>
             <div className="size-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-black">
-              👥
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
             </div>
           </div>
           <div>
@@ -363,7 +377,7 @@ export default function KotobaTrackerPage() {
         </div>
       </div>
 
-      {/* 🔍 Filter & Search Bar */}
+      {/* Filter & Search Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
           {/* Search Box */}
@@ -375,7 +389,9 @@ export default function KotobaTrackerPage() {
               placeholder="Cari siswa, username, email, kata..."
               className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            <svg className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -392,13 +408,13 @@ export default function KotobaTrackerPage() {
             onChange={e => setSelectedGroup(e.target.value)}
             className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
           >
-            <option value="all">👥 Semua Grup ({groups.length})</option>
+            <option value="all">Semua Grup ({groups.length})</option>
             {groups.map(g => (
               <option key={g.id} value={g.name}>
-                🏷️ {g.name}
+                {g.name}
               </option>
             ))}
-            <option value="__no_group__">🌐 Tanpa Grup (Siswa Biasa)</option>
+            <option value="__no_group__">Tanpa Grup (Siswa Biasa)</option>
           </select>
 
           {/* Mastery Level Filter */}
@@ -407,10 +423,10 @@ export default function KotobaTrackerPage() {
             onChange={e => setMasteryFilter(e.target.value as any)}
             className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
           >
-            <option value="all">🎯 Semua Status</option>
-            <option value="high">🏆 Tuntas ≥ 80%</option>
-            <option value="progress">⚡ Sedang Belajar (1-79%)</option>
-            <option value="empty">⭕ Belum Ada Setoran (0)</option>
+            <option value="all">Semua Status</option>
+            <option value="high">Tuntas (≥ 80%)</option>
+            <option value="progress">Sedang Belajar (1-79%)</option>
+            <option value="empty">Belum Ada Setoran (0)</option>
           </select>
 
           {/* Sort Filter */}
@@ -419,10 +435,10 @@ export default function KotobaTrackerPage() {
             onChange={e => setSortBy(e.target.value as any)}
             className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
           >
-            <option value="total">📊 Urutkan: Terbanyak Kotoba</option>
-            <option value="recent">⏱️ Urutkan: Terakhir Setor</option>
-            <option value="percentage">🏆 Urutkan: % Tertinggi</option>
-            <option value="name">🔤 Urutkan: Nama (A-Z)</option>
+            <option value="total">Urutkan: Terbanyak Kotoba</option>
+            <option value="recent">Urutkan: Terakhir Setor</option>
+            <option value="percentage">Urutkan: % Tertinggi</option>
+            <option value="name">Urutkan: Nama (A-Z)</option>
           </select>
         </div>
 
@@ -430,47 +446,55 @@ export default function KotobaTrackerPage() {
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-end sm:self-auto shrink-0">
           <button
             onClick={() => setViewMode('grid')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === 'grid'
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span>🔲</span>
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
             <span>Kartu</span>
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === 'table'
                 ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span>📑</span>
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
             <span>Tabel</span>
           </button>
         </div>
       </div>
 
-      {/* 📋 Result Count Header */}
+      {/* Result Count Header */}
       <div className="flex items-center justify-between mb-4 px-1">
         <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
           Menampilkan <strong className="text-slate-800 dark:text-white">{filteredStudents.length}</strong> pelajar
         </span>
       </div>
 
-      {/* 📭 Empty State */}
+      {/* Empty State */}
       {filteredStudents.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col items-center gap-3">
-          <span className="text-5xl">🔎</span>
+          <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
           <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tidak ada pelajar yang cocok</h3>
           <p className="text-xs text-slate-400 max-w-sm">
             Coba ubah kata kunci pencarian atau sesuaikan filter grup / status penguasaan.
           </p>
         </div>
       ) : viewMode === 'grid' ? (
-        /* 🔲 GRID VIEW CARDS */
+        /* GRID VIEW CARDS */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredStudents.map(student => {
             const hasKotoba = student.total_kotoba > 0
@@ -512,12 +536,18 @@ export default function KotobaTrackerPage() {
                     </div>
 
                     {student.group_name ? (
-                      <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
-                        👥 {student.group_name}
+                      <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0 flex items-center gap-1">
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>{student.group_name}</span>
                       </span>
                     ) : (
-                      <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
-                        🌐 Siswa Biasa
+                      <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        <span>Siswa Biasa</span>
                       </span>
                     )}
                   </div>
@@ -526,7 +556,7 @@ export default function KotobaTrackerPage() {
                   <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 mb-4 border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                        <span>🎯 Penguasaan:</span>
+                        <span>Penguasaan:</span>
                         <strong className="text-slate-800 dark:text-white">{student.mastery_percentage}%</strong>
                       </span>
                       <span className="font-semibold text-slate-400 text-[0.7rem]">
@@ -557,12 +587,16 @@ export default function KotobaTrackerPage() {
                     {/* Breakdown Pills */}
                     <div className="flex items-center justify-between text-[0.68rem] mt-2.5 font-medium">
                       <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold">
-                        <span>✅ Dikuasai:</span>
-                        <span>{student.mastered_count}</span>
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Dikuasai: {student.mastered_count}</span>
                       </span>
                       <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-bold">
-                        <span>⏳ Belum:</span>
-                        <span>{student.unmastered_count}</span>
+                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Belum: {student.unmastered_count}</span>
                       </span>
                       <span className="text-slate-400">
                         Total: <strong>{student.total_kotoba}</strong>
@@ -590,14 +624,16 @@ export default function KotobaTrackerPage() {
                 >
                   <span className="font-serif">語</span>
                   <span>Lihat List Kotoba ({student.total_kotoba})</span>
-                  <span>➔</span>
+                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             )
           })}
         </div>
       ) : (
-        /* 📑 TABLE VIEW */
+        /* TABLE VIEW */
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
@@ -652,11 +688,19 @@ export default function KotobaTrackerPage() {
                       </td>
                       <td className="py-3.5 px-3">
                         {student.group_name ? (
-                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
-                            👥 {student.group_name}
+                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap flex items-center gap-1 w-fit">
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>{student.group_name}</span>
                           </span>
                         ) : (
-                          <span className="text-[0.65rem] text-slate-400">🌐 Siswa Biasa</span>
+                          <span className="text-[0.65rem] text-slate-400 flex items-center gap-1">
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                            <span>Siswa Biasa</span>
+                          </span>
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-center font-black text-slate-800 dark:text-white">
@@ -705,7 +749,7 @@ export default function KotobaTrackerPage() {
         </div>
       )}
 
-      {/* 🔍 DETAIL MODAL PER SISWA */}
+      {/* DETAIL MODAL PER SISWA */}
       {selectedStudent && (
         <StudentKotobaDetailModal
           student={selectedStudent}
@@ -795,12 +839,18 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
                   {student.full_name}
                 </h2>
                 {student.group_name ? (
-                  <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                    👥 {student.group_name}
+                  <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center gap-1">
+                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>{student.group_name}</span>
                   </span>
                 ) : (
-                  <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-                    🌐 Siswa Biasa
+                  <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-white/10 text-slate-300 flex items-center gap-1">
+                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    <span>Siswa Biasa</span>
                   </span>
                 )}
               </div>
@@ -850,24 +900,30 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
             </button>
             <button
               onClick={() => setFilterTab('mastered')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 filterTab === 'mastered'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50'
               }`}
             >
-              <span>✅ Dikuasai</span>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Dikuasai</span>
               <span>({student.mastered_count})</span>
             </button>
             <button
               onClick={() => setFilterTab('unmastered')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 filterTab === 'unmastered'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50'
               }`}
             >
-              <span>⏳ Belum Dikuasai</span>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Belum Dikuasai</span>
               <span>({student.unmastered_count})</span>
             </button>
           </div>
@@ -881,7 +937,9 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
               placeholder="Cari kanji, romaji, arti..."
               className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
             />
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            <svg className="size-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             {searchKotoba && (
               <button
                 onClick={() => setSearchKotoba('')}
@@ -897,7 +955,11 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-[300px]">
           {filteredKotobaList.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center gap-2">
-              <span className="text-4xl">📭</span>
+              <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+              </div>
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">
                 Tidak ada kosakata pada kategori ini
               </h4>
@@ -927,10 +989,12 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
                         </span>
                         <button
                           onClick={() => handlePlayAudio(item.japanese)}
-                          className="size-7 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs transition-all cursor-pointer"
+                          className="size-7 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-all cursor-pointer"
                           title="Dengarkan Pelafalan Jepang"
                         >
-                          🔊
+                          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                          </svg>
                         </button>
                       </div>
 
@@ -941,7 +1005,21 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
                             : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300'
                         }`}
                       >
-                        <span>{item.is_mastered ? '✅ Dikuasai' : '⏳ Belum'}</span>
+                        {item.is_mastered ? (
+                          <>
+                            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Dikuasai</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Belum</span>
+                          </>
+                        )}
                       </span>
                     </div>
 
@@ -968,7 +1046,9 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
                           onClick={() => setActiveImagePreview(item.image_url!)}
                           className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1 cursor-pointer"
                         >
-                          <span>🔍</span>
+                          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                          </svg>
                           <span>Perbesar</span>
                         </button>
                       </div>
