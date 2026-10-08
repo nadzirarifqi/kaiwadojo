@@ -290,8 +290,34 @@ export async function saveDailyMission(
 ): Promise<DailyMissionData> {
   const dateStr = targetDate || getTodayDateString()
 
-  // Capture baseline snapshot if not already provided
-  const baselineSnapshot = data.baseline || (await captureCurrentProgressSnapshot(userId, data.selectedVideos))
+  // Capture or preserve baseline snapshot:
+  // If editing an existing mission, preserve existing baseline for videos, quizzes & kotoba
+  // so progress completed earlier today is NOT reset!
+  let baselineSnapshot: DailyMissionBaseline
+  const previousBaseline = data.baseline
+    || (getDailyMission(userId, dateStr)?.baseline)
+    || ((await fetchDailyMission(userId, dateStr))?.baseline)
+
+  if (previousBaseline) {
+    const freshSnapshot = await captureCurrentProgressSnapshot(userId, data.selectedVideos)
+    const mergedVideoReplays: Record<string, number> = {}
+
+    for (const v of data.selectedVideos) {
+      if (typeof previousBaseline.videoReplays?.[v.id] === 'number') {
+        mergedVideoReplays[v.id] = previousBaseline.videoReplays[v.id]
+      } else {
+        mergedVideoReplays[v.id] = freshSnapshot.videoReplays?.[v.id] ?? 0
+      }
+    }
+
+    baselineSnapshot = {
+      videoReplays: mergedVideoReplays,
+      quizCount: typeof previousBaseline.quizCount === 'number' ? previousBaseline.quizCount : freshSnapshot.quizCount,
+      kotobaCount: typeof previousBaseline.kotobaCount === 'number' ? previousBaseline.kotobaCount : freshSnapshot.kotobaCount,
+    }
+  } else {
+    baselineSnapshot = await captureCurrentProgressSnapshot(userId, data.selectedVideos)
+  }
 
   const mission: DailyMissionData = {
     ...data,

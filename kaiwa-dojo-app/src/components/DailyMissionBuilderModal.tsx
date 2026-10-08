@@ -154,6 +154,7 @@ export default function DailyMissionBuilderModal({
         targetReplayCount: totalReplayTarget,
         targetQuizCount: targetQuiz,
         targetKotobaCount: targetKotoba,
+        baseline: currentMission?.baseline,
       }, missionDate)
     } catch (err: any) {
       console.error('Failed to save mission:', err)
@@ -186,7 +187,7 @@ export default function DailyMissionBuilderModal({
               </svg>
             </div>
             <div>
-              <h3 className="text-sm sm:text-lg font-black text-white">{t('lp_modal_title', 'Susun Misi Belajar Mandiri')}</h3>
+              <h3 className="text-sm sm:text-lg font-black text-white">{currentMission ? 'Edit Target Misi Belajar' : t('lp_modal_title', 'Susun Misi Belajar Mandiri')}</h3>
               <p className="text-[0.65rem] sm:text-xs text-white/80 font-medium">KaiwaDoJo Personal Target Builder</p>
             </div>
           </div>
@@ -559,7 +560,7 @@ export default function DailyMissionBuilderModal({
                   <svg className="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>{t('lp_save_mission', 'Simpan Misi Belajar')}</span>
+                  <span>{currentMission ? 'Simpan Perubahan Misi' : t('lp_save_mission', 'Simpan Misi Belajar')}</span>
                 </>
               )}
             </button>

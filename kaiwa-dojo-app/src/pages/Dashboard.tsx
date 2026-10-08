@@ -1063,6 +1063,20 @@ function UnifiedMobileSakuraMissionCard({
               </span>
             ) : null}
           </div>
+
+          {hasAnyMission && onOpenMissionModal && (
+            <button
+              type="button"
+              onClick={onOpenMissionModal}
+              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+              title="Edit Misi Harian"
+            >
+              <svg className="size-3 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span>Edit Misi</span>
+            </button>
+          )}
         </div>
 
         {hasAnyMission && missionProgress ? (
@@ -1364,14 +1378,13 @@ function EmbeddedUserScheduleCard({
 
           <button
             onClick={() => navigate('/learning-plan')}
-            className="group px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0 min-h-[28px]"
+            title="Lihat Kalender"
+            aria-label="Lihat Kalender"
+            className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 hover:text-primary dark:hover:text-primary-light"
           >
-            <span>Kalender</span>
-            <span className="size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-              <svg className="size-1.5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
 
@@ -2028,6 +2041,20 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+
+          {dailyMission && (
+            <button
+              type="button"
+              onClick={() => setShowMissionModal(true)}
+              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+              title="Edit Misi Harian"
+            >
+              <svg className="size-3 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span>Edit Misi</span>
+            </button>
+          )}
         </div>
 
         {dailyMission && missionProgress ? (
@@ -2290,14 +2317,13 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => navigate('/my-courses')}
-            className="group px-2 py-0.5 sm:px-2.5 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] sm:text-[11px] rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1 shrink-0 min-h-[26px] sm:min-h-[28px]"
+            title={t('dash_open_course_btn', 'Buka Kursus')}
+            aria-label={t('dash_open_course_btn', 'Buka Kursus')}
+            className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 hover:text-primary dark:hover:text-primary-light"
           >
-            <span>{t('dash_open_course_btn', 'Buka Kursus')}</span>
-            <span className="size-3 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-              <svg className="size-1.5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
 
@@ -2316,7 +2342,6 @@ export default function Dashboard() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
               <span className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-md shrink-0">
@@ -2352,7 +2377,6 @@ export default function Dashboard() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-300 block truncate">{t('dash_jilid_2_desc', 'Bab 26 s/d Bab 50 • 75 Video & 50 Kuis')}</span>
                 </div>
               </div>
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md shrink-0">
