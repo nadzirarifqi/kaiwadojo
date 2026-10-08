@@ -448,6 +448,7 @@ export default function LearningPlanPage() {
   const [missionProgress, setMissionProgress] = useState<MissionProgress | null>(null)
   const [showMissionModal, setShowMissionModal] = useState(false)
   const [showClassModal, setShowClassModal]     = useState(false)
+  const [hoveredDateStr, setHoveredDateStr]     = useState<string | null>(null)
 
   // Streak & Past Completion sets
   const [streakSet, setStreakSet] = useState<Set<string>>(new Set())
@@ -657,7 +658,26 @@ export default function LearningPlanPage() {
       })
     : allMonthDays
 
-  const isSelectedDatePast = selectedDateStr < todayStr
+  const displayDateStr = hoveredDateStr || selectedDateStr
+  const isDisplayDatePast = displayDateStr < todayStr
+  const displayMission = (displayDateStr === selectedDateStr && selectedMission)
+    ? selectedMission
+    : (userMissions.get(displayDateStr) || (activeUserId ? getDailyMission(activeUserId, displayDateStr) : null))
+
+  const isDisplayCompleted = pastCompletedSet.has(displayDateStr) || (displayDateStr === selectedDateStr && missionProgress?.isFullyCompleted)
+
+  const displayProgress = (displayDateStr === selectedDateStr && missionProgress)
+    ? missionProgress
+    : (displayMission ? {
+        targetReplays: displayMission.targetReplayCount || 0,
+        actualReplays: isDisplayCompleted ? (displayMission.targetReplayCount || 0) : 0,
+        targetQuizzes: displayMission.targetQuizCount || 0,
+        actualQuizzes: isDisplayCompleted ? (displayMission.targetQuizCount || 0) : 0,
+        targetKotoba: displayMission.targetKotobaCount || 0,
+        actualKotoba: isDisplayCompleted ? (displayMission.targetKotobaCount || 0) : 0,
+        isFullyCompleted: Boolean(isDisplayCompleted),
+        overallPct: isDisplayCompleted ? 100 : 0
+      } : null)
 
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
@@ -701,39 +721,57 @@ export default function LearningPlanPage() {
               <circle cx="12" cy="12" r="8" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span>{t('lp_tag_daily_mission', 'Rencana Harian (Wajib Setiap Hari)')}</span>
+            <span>{t('lp_tag_daily_mission', 'Rencana Harian')}</span>
           </span>
           <span className="text-xs sm:text-sm font-bold bg-sky-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
             <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <span>{t('lp_tag_online_class', 'Kelas Online (Batas 1 Sesi/Minggu)')}</span>
+            <span>{t('lp_tag_online_class', 'Kelas Online Mingguan')}</span>
           </span>
           <span className="text-xs sm:text-sm font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
             <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <span>{t('lp_tag_offline_class', 'Kelas Offline (Batas 1 Sesi/Bulan)')}</span>
+            <span>{t('lp_tag_offline_class', 'Kelas Offline Bulanan')}</span>
           </span>
         </div>
       </div>
 
-      {/* Main Grid: Left Big Calendar | Right Date Mission Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_340px] 2xl:grid-cols-[1fr_360px] gap-4 sm:gap-6 items-start">
+      {/* Main Container: 1. Kalender -> 2. Detail Rencana -> 3. Penjelasan Logo */}
+      <div className="flex flex-col gap-4 sm:gap-6">
 
-        {/* Left Column: Big Interactive Calendar */}
+        {/* Section 1: Big Interactive Calendar */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 sm:gap-5 min-w-0">
           {/* Calendar Header / Month Nav & View Mode Switcher */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="size-8 sm:size-9 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-400/20 dark:text-sky-300 border border-sky-500/20 flex items-center justify-center shrink-0 shadow-xs">
                 <svg className="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </span>
-              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">
+              <button
+                onClick={() => changeMonth(-1)}
+                className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer flex items-center justify-center transition-colors text-xs sm:text-sm"
+                aria-label="Bulan sebelumnya"
+              >
+                <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white px-1 whitespace-nowrap">
                 {getLocalizedMonthName(month, language)} {year}
               </h2>
+              <button
+                onClick={() => changeMonth(1)}
+                className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer flex items-center justify-center transition-colors text-xs sm:text-sm"
+                aria-label="Bulan berikutnya"
+              >
+                <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto">
@@ -741,7 +779,7 @@ export default function LearningPlanPage() {
               <div className="flex items-center p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setViewMode('calendar')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
                     viewMode === 'calendar'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -754,7 +792,7 @@ export default function LearningPlanPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('schedule')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
                     viewMode === 'schedule'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -773,24 +811,6 @@ export default function LearningPlanPage() {
                   className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all"
                 >
                   {t('lp_today_btn', 'Hari Ini')}
-                </button>
-                <button
-                  onClick={() => changeMonth(-1)}
-                  className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer flex items-center justify-center transition-colors"
-                  aria-label="Bulan sebelumnya"
-                >
-                  <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => changeMonth(1)}
-                  className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border-none cursor-pointer flex items-center justify-center transition-colors"
-                  aria-label="Bulan berikutnya"
-                >
-                  <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
                 </button>
               </div>
             </div>
@@ -1257,10 +1277,10 @@ export default function LearningPlanPage() {
               </div>
 
               {/* Calendar Grid Cells */}
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2" onMouseLeave={() => setHoveredDateStr(null)}>
                 {/* Empty slots for days before 1st of month */}
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[4.2rem] xs:min-h-[5rem] sm:min-h-[6.5rem] bg-slate-50/50 dark:bg-slate-900/40 rounded-xl sm:rounded-2xl border border-slate-100/50 dark:border-slate-800/40 opacity-40 pointer-events-none" />
+                  <div key={`empty-${i}`} className="min-h-0 aspect-square sm:aspect-auto sm:min-h-[6.5rem] bg-slate-50/50 dark:bg-slate-900/40 rounded-full sm:rounded-2xl border border-slate-100/50 dark:border-slate-800/40 opacity-40 pointer-events-none" />
                 ))}
 
                 {/* Days list */}
@@ -1270,6 +1290,7 @@ export default function LearningPlanPage() {
 
                   const isPast = dateStr < todayStr
                   const isSelected = dateStr === selectedDateStr
+                  const isHovered = hoveredDateStr === dateStr
 
                   const activeUserId = profile?.id || user?.id || ''
                   const dateMission = userMissions.get(dateStr) || getDailyMission(activeUserId, dateStr)
@@ -1320,25 +1341,62 @@ export default function LearningPlanPage() {
                     <div
                       key={dateStr}
                       onClick={() => {
-                        setSelectedDateStr(dateStr)
-                        if (dateStatus.hasSchedule) {
-                          setShowClassModal(true)
-                        } else if (dateStr >= todayStr) {
-                          setShowMissionModal(true)
+                        if (typeof window !== 'undefined' && window.innerWidth < 640) {
+                          if (hoveredDateStr === dateStr) {
+                            if (dateStatus.hasSchedule) {
+                              setShowClassModal(true)
+                            } else if (dateStr >= todayStr) {
+                              setShowMissionModal(true)
+                            }
+                          } else {
+                            setSelectedDateStr(dateStr)
+                            setHoveredDateStr(dateStr)
+                          }
+                        } else {
+                          setSelectedDateStr(dateStr)
+                          if (dateStatus.hasSchedule) {
+                            setShowClassModal(true)
+                          } else if (dateStr >= todayStr) {
+                            setShowMissionModal(true)
+                          }
                         }
                       }}
-                      className={`min-h-[5.5rem] xs:min-h-[6.5rem] sm:min-h-[8.5rem] p-1.5 xs:p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none relative group overflow-hidden ${cellBgStyle}`}
+                      onMouseEnter={() => setHoveredDateStr(dateStr)}
+                      className={`aspect-square rounded-full flex flex-col items-center justify-center p-1 sm:aspect-auto sm:min-h-[8.5rem] sm:p-2.5 sm:rounded-2xl sm:justify-between border transition-all cursor-pointer select-none relative group overflow-hidden ${cellBgStyle} ${
+                        isHovered ? 'ring-2 ring-primary dark:ring-red-400 border-primary shadow-xs scale-105 z-20' : ''
+                      }`}
                     >
-                      {/* Past Hanko Stamp Overlay for Daily Mission (HANYA tanggal setelah user buat akun) */}
+                      {/* Mobile Only: Bulat, hanya menampilkan angka & stempel */}
+                      <div className="flex sm:hidden flex-col items-center justify-center gap-0.5 relative z-20">
+                        <span className={`text-xs font-bold leading-none ${
+                          isHovered || isSelected ? 'text-primary dark:text-red-400 font-extrabold' : isToday ? 'text-amber-700 dark:text-amber-400 font-extrabold' : 'text-slate-700 dark:text-slate-200'
+                        }`}>
+                          {dayNum}
+                        </span>
+                        {isPastEligibleForStamp ? (
+                          <img
+                            src={stampSrc}
+                            alt={stampAlt}
+                            className="size-3.5 xs:size-4 object-contain rotate-[-12deg] pointer-events-none drop-shadow-2xs"
+                          />
+                        ) : dateStatus.hasSchedule ? (
+                          <span className={`size-1.5 rounded-full ${dateStatus.isOnlineBooked ? 'bg-sky-500' : dateStatus.isOfflineBooked ? 'bg-emerald-500' : 'bg-sky-400/80'}`} />
+                        ) : isToday ? (
+                          <span className="size-1 rounded-full bg-amber-500" />
+                        ) : null}
+                      </div>
+
+                      {/* Desktop Only: Past Hanko Stamp Overlay */}
                       {isPastEligibleForStamp && (
                         <img
                           src={stampSrc}
                           alt={stampAlt}
-                          className="absolute top-1 right-1 size-5 xs:size-6 sm:size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
+                          className="hidden sm:block absolute top-1 right-1 size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
                         />
                       )}
 
-                      <div className="flex items-center justify-between relative z-20">
+                      {/* Desktop Only: Header */}
+                      <div className="hidden sm:flex items-center justify-between relative z-20">
                         <span className={`text-sm sm:text-base font-bold ${
                           isSelected ? 'text-primary dark:text-red-400' : isToday ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'
                         }`}>
@@ -1352,8 +1410,8 @@ export default function LearningPlanPage() {
                         )}
                       </div>
 
-                      {/* Live Class Schedule Items (Google Calendar Style: Transparent with thin border for available, solid for booked) */}
-                      <div className="flex flex-col gap-1 relative z-20">
+                      {/* Desktop Only: Live Class Schedule Items & Badges */}
+                      <div className="hidden sm:flex flex-col gap-1 relative z-20">
                         {dateStatus.schedules.map(sch => {
                           const isEnrolled = reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
                           const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
@@ -1376,16 +1434,16 @@ export default function LearningPlanPage() {
                             >
                               <div className="flex items-center gap-1 min-w-0 truncate">
                                 {sch.type === 'online' ? (
-                                  <svg className="size-2.5 sm:size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                  <svg className="size-2.5 sm:size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 ) : (
-                                  <svg className="size-2.5 sm:size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                  <svg className="size-2.5 sm:size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                                 )}
                                 <span className="font-black">{sch.start_time}</span>
                                 <span className="hidden sm:inline font-bold truncate">{sch.title}</span>
                               </div>
                               {isEnrolled ? (
                                 <span className="text-xs sm:text-sm bg-white/30 text-white px-1 py-0.2 rounded font-black shrink-0 flex items-center justify-center">
-                                  <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                  <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                                 </span>
                               ) : isFull ? (
                                 <span className="text-xs sm:text-sm text-slate-400 font-normal shrink-0">Penuh</span>
@@ -1409,7 +1467,7 @@ export default function LearningPlanPage() {
                                 : 'bg-primary/15 dark:bg-primary/30 text-primary dark:text-red-300'
                           }`}>
                             {isPast && (
-                              <svg className="size-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                              <svg className="size-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             )}
                             <span className="truncate">
                               {isNoPlan
@@ -1432,125 +1490,57 @@ export default function LearningPlanPage() {
             </>
           )}
 
-          {/* Hanko Stamp & Class Schedule Legend */}
-          <div className="pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 sm:gap-3 text-xs sm:text-sm">
-            {/* Category 1: Reservasi Kelas Live (Warna Biru = Online, Hijau = Offline) */}
-            <div className="flex flex-col gap-2 bg-slate-50/70 dark:bg-slate-950/40 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <span className="font-black text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
-                <svg className="size-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                <span>Jadwal Reservasi Kelas Live (Online vs Offline):</span>
-              </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {/* Online Row */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-bold text-sky-600 dark:text-sky-400 text-xs sm:text-sm shrink-0">Online:</span>
-                  <div className="flex items-center gap-1 bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
-                    <span>Tersedia (Bening)</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
-                    <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    <span>Diikuti (Solid)</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm">
-                    <span>Penuh</span>
-                  </div>
-                </div>
-
-                {/* Offline Row */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm shrink-0">Offline:</span>
-                  <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
-                    <span>Tersedia (Bening)</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
-                    <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    <span>Diikuti (Solid)</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm">
-                    <span>Penuh</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Category 2: Cap Status Misi Belajar Mandiri */}
-            <div className="flex flex-col gap-2.5 bg-slate-50/70 dark:bg-slate-950/40 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
-                <svg className="size-3.5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                <span>Cap Status Misi Mandiri (Tanggal Berlalu):</span>
-              </span>
-
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <img src="/lulus.png" alt="Lulus 100%" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">{t('lp_stamp_passed', '100% Selesai')}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-red-200 dark:border-red-800">
-                  <img src="/gagal.png" alt="Belum Tuntas" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-red-700 dark:text-red-300 font-extrabold">{t('lp_stamp_incomplete', 'Belum Tuntas (<100%)')}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-sky-200 dark:border-sky-800">
-                  <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-sky-700 dark:text-sky-300 font-extrabold">{t('lp_stamp_noplan', 'Tidak Ada Rencana')}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
-                  <img src="/kosong.png" alt="Belum Buat Rencana" className="size-4 sm:size-5 object-contain" />
-                  <span className="text-slate-600 dark:text-slate-300 font-extrabold">{t('lp_stamp_uncreated', 'Belum Buat Rencana')}</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
         </div>
 
 
 
 
-        {/* Right Column: Selected Date Mission Panel (Sticky on scroll to follow user down page) */}
-        <div className="flex flex-col gap-5 sticky top-20 self-start z-20 transition-all">
-
-
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col gap-4 relative overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  {isSelectedDatePast ? t('lp_archive_mode', 'Arsip Rencana Belajar') : t('lp_target_missions', 'Target & Misi')}
-                </span>
-                <h3 className="text-sm sm:text-base font-bold mt-1 text-white leading-snug">
-                  {formatDateIndonesian(selectedDateStr, language)}
-                </h3>
-              </div>
-              {selectedDateStr === todayStr && (
-                <span className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0">
-                  {t('lp_today_btn', 'Hari Ini')}
-                </span>
-              )}
+        {/* Section 2: Detail Rencana (Sesuai Tema Light / Dark) */}
+        <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-500/30">
+                {isDisplayDatePast ? t('lp_archive_mode', 'Arsip Rencana Belajar') : t('lp_target_missions', 'Target & Misi')}
+              </span>
+              <h3 className="text-sm sm:text-base font-bold mt-1 text-slate-900 dark:text-white leading-snug">
+                {formatDateIndonesian(displayDateStr, language)}
+              </h3>
             </div>
+            {displayDateStr === todayStr && (
+              <span className="text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-500/30 shrink-0">
+                {t('lp_today_btn', 'Hari Ini')}
+              </span>
+            )}
+          </div>
 
-            {/* Quick Button to open Class Enroll Modal */}
-            <button
-              onClick={() => setShowClassModal(true)}
-              className="w-full py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-extrabold rounded-2xl border border-white/10 cursor-pointer text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
-            >
-              <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-              <span>Sesi Kelas Live Tanggal Ini</span>
-            </button>
+          {/* Quick Button to open Class Enroll Modal */}
+          <button
+            onClick={() => {
+              setSelectedDateStr(displayDateStr)
+              setShowClassModal(true)
+            }}
+            className="w-full py-2.5 sm:py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2"
+          >
+            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <span>Sesi Kelas Live Tanggal Ini</span>
+          </button>
 
-            {/* Live Class Sessions Card in Right Panel */}
-            {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length > 0 && (
-              <div className="p-4 rounded-2xl bg-sky-950/70 border border-sky-400/30 flex flex-col gap-3">
+            {/* Live Class Sessions Card in Detail Panel */}
+            {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, displayDateStr)).length > 0 && (
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/80 flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="font-extrabold text-sky-300 flex items-center gap-1.5">
+                  <span className="font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
                     <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    <span>Sesi Kelas Live ({accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length} Sesi)</span>
+                    <span>Sesi Kelas Live ({accessibleSchedules.filter(s => isScheduleActiveOnDate(s, displayDateStr)).length} Sesi)</span>
                   </span>
                   <button
-                    onClick={() => setShowClassModal(true)}
-                    className="text-xs sm:text-sm font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    onClick={() => {
+                      setSelectedDateStr(displayDateStr)
+                      setShowClassModal(true)
+                    }}
+                    className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <span>Buka Modal</span>
                     <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
@@ -1558,9 +1548,9 @@ export default function LearningPlanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).map(sch => {
-                    const activeUserId = profile?.id || user?.id || ''
-                    const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
+                  {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, displayDateStr)).map(sch => {
+                    const activeId = profile?.id || user?.id || ''
+                    const userRes = reservations.find(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeId)
                     const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
                     const isFull = enrolledCount >= sch.max_quota
 
@@ -1571,7 +1561,7 @@ export default function LearningPlanPage() {
                       if (sch.type === 'online') {
                         const schWeekId = sch.week_range_id || getWeekRangeId(sch.date)
                         const hasWeeklyOnline = reservations.some(r => {
-                          if (r.user_id !== activeUserId) return false
+                          if (r.user_id !== activeId) return false
                           const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                           if (!targetSch || targetSch.type !== 'online') return false
                           const targetWeekId = targetSch.week_range_id || getWeekRangeId(targetSch.date)
@@ -1584,7 +1574,7 @@ export default function LearningPlanPage() {
                       } else {
                         const schMonthId = sch.month_range_id || getMonthRangeId(sch.date)
                         const hasMonthlyOffline = reservations.some(r => {
-                          if (r.user_id !== activeUserId) return false
+                          if (r.user_id !== activeId) return false
                           const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
                           if (!targetSch || targetSch.type !== 'offline') return false
                           const targetMonthId = targetSch.month_range_id || getMonthRangeId(targetSch.date)
@@ -1598,9 +1588,9 @@ export default function LearningPlanPage() {
                     }
 
                     return (
-                      <div key={sch.id} className="p-3 rounded-xl bg-white/10 border border-white/10 text-xs sm:text-sm flex flex-col gap-1.5">
+                      <div key={sch.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm flex flex-col gap-1.5 shadow-2xs">
                         <div className="flex items-center justify-between text-xs sm:text-sm">
-                          <span className="font-extrabold text-sky-300 flex items-center gap-1">
+                          <span className="font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1">
                             {sch.type === 'offline' ? (
                               <>
                                 <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -1613,22 +1603,22 @@ export default function LearningPlanPage() {
                               </>
                             )}
                           </span>
-                          <span className="text-white/70 font-semibold">{enrolledCount}/{sch.max_quota} Siswa</span>
+                          <span className="text-slate-500 dark:text-slate-400 font-medium">{enrolledCount}/{sch.max_quota} Siswa</span>
                         </div>
-                        <div className="font-bold text-white text-sm sm:text-base leading-snug">{sch.title}</div>
+                        <div className="font-bold text-slate-800 dark:text-white text-sm sm:text-base leading-snug">{sch.title}</div>
                         {sch.type === 'offline' && (
-                          <div className="text-xs sm:text-sm text-emerald-300 font-medium flex items-center gap-1">
+                          <div className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
                             <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                             <span>{formatDateRangeIndonesian(sch.start_date || sch.date, sch.end_date, sch.start_time, sch.end_time, language).formattedRange}</span>
                           </div>
                         )}
-                        <div className="text-xs sm:text-sm text-white/80 flex items-center gap-1">
+                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 flex items-center gap-1">
                           <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           <span>Instruktur: {sch.instructor_name}</span>
                         </div>
                         
-                        <div className="mt-1 pt-1.5 border-t border-white/10 flex items-center justify-between">
-                          <span className="text-xs sm:text-sm font-bold text-sky-200 flex items-center gap-1">
+                        <div className="mt-1 pt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1">
                             {sch.type === 'online' ? (
                               <>
                                 <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -1642,23 +1632,26 @@ export default function LearningPlanPage() {
                             )}
                           </span>
                           {userRes ? (
-                            <span className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md flex items-center gap-1">
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                               <span>Terdaftar</span>
                             </span>
                           ) : isFull ? (
-                            <span className="text-xs sm:text-sm font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-md">
+                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                               Kuota Penuh
                             </span>
                           ) : isLocked ? (
-                            <span className="text-xs sm:text-sm font-bold text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-md border border-sky-400/30 flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/80 px-2 py-0.5 rounded-md border border-sky-300 dark:border-sky-800/80 flex items-center gap-1">
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                               <span>{lockReason}</span>
                             </span>
                           ) : (
                             <button
-                              onClick={() => setShowClassModal(true)}
-                              className="text-xs sm:text-sm font-extrabold text-white bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded-lg border-none cursor-pointer shadow-xs flex items-center gap-1"
+                              onClick={() => {
+                                setSelectedDateStr(displayDateStr)
+                                setShowClassModal(true)
+                              }}
+                              className="text-xs sm:text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 px-2.5 py-1 rounded-lg border-none cursor-pointer shadow-xs flex items-center gap-1"
                             >
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                               <span>Reservasi Sesi Ini</span>
@@ -1668,117 +1661,121 @@ export default function LearningPlanPage() {
                       </div>
                     )
                   })}
-
                 </div>
               </div>
             )}
 
 
 
-            {selectedMission && missionProgress ? (
-              <div className="flex flex-col gap-4">
-                {isNoPlanMission(selectedMission) ? (
-                  <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-between">
+            {displayMission && displayProgress ? (
+              <div className="flex flex-col gap-3.5">
+                {isNoPlanMission(displayMission) ? (
+                  <div className="p-3.5 rounded-xl sm:rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-8 object-contain shrink-0 rotate-[-6deg]" />
                       <div>
-                        <div className="text-xs sm:text-sm font-black text-sky-300">Cap Biru (Tidak Ada Rencana)</div>
-                        <div className="text-xs sm:text-sm text-slate-300">Hari istirahat terencana (Video, Kuis, & Kotoba 0)</div>
+                        <div className="text-xs sm:text-sm font-bold text-sky-800 dark:text-sky-300">Cap Biru (Tidak Ada Rencana)</div>
+                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">Hari istirahat terencana (Video, Kuis, & Kotoba 0)</div>
                       </div>
                     </div>
-                    <span className="text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
+                    <span className="text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
                       Cap Biru
                     </span>
                   </div>
                 ) : (
-                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                    missionProgress.isFullyCompleted
-                      ? 'bg-emerald-500/10 border-emerald-500/30'
-                      : 'bg-rose-500/10 border-rose-500/30'
+                  <div className={`p-3.5 rounded-xl sm:rounded-2xl border flex items-center justify-between ${
+                    displayProgress.isFullyCompleted
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800'
                   }`}>
                     <div className="flex items-center gap-2.5">
                       <img
-                        src={missionProgress.isFullyCompleted ? '/lulus.png' : '/gagal.png'}
-                        alt={missionProgress.isFullyCompleted ? 'Lulus 100%' : 'Belum Tuntas'}
+                        src={displayProgress.isFullyCompleted ? '/lulus.png' : '/gagal.png'}
+                        alt={displayProgress.isFullyCompleted ? 'Lulus 100%' : 'Belum Tuntas'}
                         className="size-8 object-contain shrink-0 rotate-[-6deg]"
                       />
                       <div>
-                        <div className="text-xs sm:text-sm font-black text-white">
-                          {missionProgress.isFullyCompleted ? 'Cap Hijau: 100% Selesai' : `Cap Merah: Belum Tuntas (${missionProgress.overallPct}%)`}
+                        <div className={`text-xs sm:text-sm font-bold ${displayProgress.isFullyCompleted ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-800 dark:text-rose-300'}`}>
+                          {displayProgress.isFullyCompleted ? 'Cap Hijau: 100% Selesai' : `Cap Merah: Belum Tuntas (${displayProgress.overallPct}%)`}
                         </div>
-                        <div className="text-xs sm:text-sm text-slate-300">
-                          {missionProgress.isFullyCompleted ? 'Semua target misi telah tercapai 100%' : 'Target misi belum tuntas tercapai (<100%)'}
+                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                          {displayProgress.isFullyCompleted ? 'Semua target misi telah tercapai 100%' : 'Target misi belum tuntas tercapai (<100%)'}
                         </div>
                       </div>
                     </div>
-                    <span className={`font-black px-2.5 py-0.5 rounded-full text-xs sm:text-sm ${
-                      missionProgress.isFullyCompleted
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-rose-500 text-white'
+                    <span className={`font-bold px-2.5 py-0.5 rounded-full text-xs sm:text-sm ${
+                      displayProgress.isFullyCompleted
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-rose-600 text-white'
                     }`}>
-                      {missionProgress.isFullyCompleted ? '100% Lulus' : `${missionProgress.overallPct}%`}
+                      {displayProgress.isFullyCompleted ? '100% Lulus' : `${displayProgress.overallPct}%`}
                     </span>
                   </div>
                 )}
 
                 {/* Video Target Details */}
-                <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex flex-col gap-2">
+                <div className="p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col gap-2">
                   <div className="flex justify-between text-xs sm:text-sm font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <svg className="size-3.5 text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                      <span>Target Video ({selectedMission.selectedVideos.length} Video)</span>
+                    <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                      <svg className="size-3.5 text-sky-500 dark:text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      <span>Target Video ({displayMission.selectedVideos?.length || 0} Video)</span>
                     </span>
-                    <span className="text-emerald-300">{missionProgress.actualReplays}/{missionProgress.targetReplays}x</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{displayProgress.actualReplays}/{displayProgress.targetReplays}x</span>
                   </div>
-                  <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${selectedMission.targetReplayCount > 0 ? Math.min(100, (missionProgress.actualReplays / selectedMission.targetReplayCount) * 100) : 100}%` }} />
+                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${displayMission.targetReplayCount > 0 ? Math.min(100, (displayProgress.actualReplays / displayMission.targetReplayCount) * 100) : 100}%` }} />
                   </div>
-                  <div className="flex flex-col gap-1 mt-1">
-                    {selectedMission.selectedVideos.map((v, i) => (
-                      <div key={i} className="text-xs sm:text-sm text-slate-300 flex items-center gap-1.5">
-                        <span className="size-1 rounded-full bg-slate-400 shrink-0" />
-                        <span className="truncate">{v.title}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {displayMission.selectedVideos && displayMission.selectedVideos.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1">
+                      {displayMission.selectedVideos.map((v, i) => (
+                        <div key={i} className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                          <span className="size-1 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                          <span className="truncate">{v.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Quiz & Kotoba Target Details */}
                 <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
-                  <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-                    <span className="text-slate-300 text-xs sm:text-sm flex items-center gap-1 mb-1">
-                      <svg className="size-3 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+                  <div className="p-3 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                    <span className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm flex items-center gap-1 mb-1 font-medium">
+                      <svg className="size-3 text-indigo-500 dark:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
                       <span>Target Kuis</span>
                     </span>
-                    {missionProgress.targetQuizzes > 0 ? (
-                      <span className="font-bold text-indigo-300 text-sm sm:text-base">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
+                    {displayProgress.targetQuizzes > 0 ? (
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm sm:text-base">{displayProgress.actualQuizzes}/{displayProgress.targetQuizzes}</span>
                     ) : (
-                      <span className="font-medium text-slate-400 text-xs sm:text-sm block">Tidak ada kuis</span>
+                      <span className="font-medium text-slate-400 dark:text-slate-500 text-xs sm:text-sm block">Tidak ada kuis</span>
                     )}
                   </div>
-                  <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-                    <span className="text-slate-300 text-xs sm:text-sm flex items-center gap-1 mb-1">
-                      <svg className="size-3 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" /></svg>
+                  <div className="p-3 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                    <span className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm flex items-center gap-1 mb-1 font-medium">
+                      <svg className="size-3 text-amber-500 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" /></svg>
                       <span>Target Kotoba</span>
                     </span>
-                    {missionProgress.targetKotoba > 0 ? (
-                      <span className="font-bold text-amber-300 text-sm sm:text-base">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
+                    {displayProgress.targetKotoba > 0 ? (
+                      <span className="font-bold text-amber-600 dark:text-amber-400 text-sm sm:text-base">{displayProgress.actualKotoba}/{displayProgress.targetKotoba}</span>
                     ) : (
-                      <span className="font-medium text-slate-400 text-xs sm:text-sm block">Tidak ada kotoba</span>
+                      <span className="font-medium text-slate-400 dark:text-slate-500 text-xs sm:text-sm block">Tidak ada kotoba</span>
                     )}
                   </div>
                 </div>
 
                 {/* If past date, show read-only note instead of edit button */}
-                {isSelectedDatePast ? (
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center text-xs sm:text-sm text-slate-400 font-medium flex items-center justify-center gap-1.5">
+                {isDisplayDatePast ? (
+                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-1.5">
                     <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     <span>{t('lp_past_date_locked', 'Tanggal telah berlalu (Mode Lihat Arsip)')}</span>
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowMissionModal(true)}
-                    className="w-full py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-bold rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-md transition-all mt-1 flex items-center justify-center gap-2"
+                    onClick={() => {
+                      setSelectedDateStr(displayDateStr)
+                      setShowMissionModal(true)
+                    }}
+                    className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-xs transition-all mt-1 flex items-center justify-center gap-2"
                   >
                     <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     <span>{t('lp_edit_mission_btn', 'Edit Misi Tanggal Ini')}</span>
@@ -1786,28 +1783,31 @@ export default function LearningPlanPage() {
                 )}
               </div>
             ) : (
-              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 text-center flex flex-col items-center gap-3">
-                {isSelectedDatePast ? (
+              <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/80 text-center flex flex-col items-center gap-3">
+                {isDisplayDatePast ? (
                   <div className="flex flex-col items-center gap-2.5">
                     <img src="/kosong.png" alt="Belum Buat Rencana (Cap Abu-abu)" className="size-12 object-contain opacity-90 rotate-[-6deg]" />
-                    <span className="text-xs sm:text-sm font-black text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+                    <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                       Cap Abu-abu: Belum Buat Rencana
                     </span>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-1">
-                      Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
+                      Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(displayDateStr, language)}</strong>.
                     </p>
                   </div>
                 ) : (
                   <>
-                    <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center text-slate-300">
+                    <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
                       <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(displayDateStr, language)}</strong>.
                     </p>
                     <button
-                      onClick={() => setShowMissionModal(true)}
-                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
+                      onClick={() => {
+                        setSelectedDateStr(displayDateStr)
+                        setShowMissionModal(true)
+                      }}
+                      className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
                     >
                       <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                       <span>{t('lp_btn_create', 'Susun Misi Tanggal Ini')}</span>
@@ -1816,6 +1816,89 @@ export default function LearningPlanPage() {
                 )}
               </div>
             )}
+          </div>
+
+        {/* Section 3: Penjelasan Logo & Status */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3 sm:gap-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-2 pb-2 sm:pb-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light flex items-center justify-center shrink-0">
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">
+              {t('lp_legend_title', 'Penjelasan Logo & Status Kalender')}
+            </h3>
+          </div>
+
+          {/* Category 1: Reservasi Kelas Live (Warna Biru = Online, Hijau = Offline) */}
+          <div className="flex flex-col gap-2 bg-slate-50/70 dark:bg-slate-950/40 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
+            <span className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+              <svg className="size-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              <span>Jadwal Reservasi Kelas Live (Online vs Offline):</span>
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Online Row */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-sky-600 dark:text-sky-400 text-xs sm:text-sm shrink-0">Online:</span>
+                <div className="flex items-center gap-1 bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
+                  <span>Tersedia</span>
+                </div>
+                <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
+                  <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span>Diikuti</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium">
+                  <span>Penuh</span>
+                </div>
+              </div>
+
+              {/* Offline Row */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm shrink-0">Offline:</span>
+                <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
+                  <span>Tersedia</span>
+                </div>
+                <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
+                  <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span>Diikuti</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium">
+                  <span>Penuh</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Category 2: Cap Status Misi Belajar Mandiri */}
+          <div className="flex flex-col gap-2.5 bg-slate-50/70 dark:bg-slate-950/40 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
+            <span className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+              <svg className="size-3.5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              <span>Cap Status Misi Mandiri (Tanggal Berlalu):</span>
+            </span>
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
+                <img src="/lulus.png" alt="Lulus 100%" className="size-4 sm:size-5 object-contain" />
+                <span className="text-emerald-700 dark:text-emerald-300 font-bold">{t('lp_stamp_passed', '100% Selesai')}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-red-200 dark:border-red-800">
+                <img src="/gagal.png" alt="Belum Tuntas" className="size-4 sm:size-5 object-contain" />
+                <span className="text-red-700 dark:text-red-300 font-bold">{t('lp_stamp_incomplete', 'Belum Tuntas (<100%)')}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-sky-200 dark:border-sky-800">
+                <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-4 sm:size-5 object-contain" />
+                <span className="text-sky-700 dark:text-sky-300 font-bold">{t('lp_stamp_noplan', 'Tidak Ada Rencana')}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
+                <img src="/kosong.png" alt="Belum Buat Rencana" className="size-4 sm:size-5 object-contain" />
+                <span className="text-slate-600 dark:text-slate-300 font-bold">{t('lp_stamp_uncreated', 'Belum Buat Rencana')}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
