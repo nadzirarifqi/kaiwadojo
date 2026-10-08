@@ -7,7 +7,7 @@ import { prefetchRoute } from '../utils/routePrefetch'
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
-  onToggle: () => void
+  onToggle?: () => void
 }
 
 const navBase =
@@ -16,7 +16,7 @@ const navBase =
 const navActive   = 'bg-primary/[0.08] text-primary dark:bg-primary/20 dark:text-red-400 font-bold'
 const navInactive = 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
 
-export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { profile, signOut } = useAuth()
   const { t } = useLanguage()
@@ -267,52 +267,48 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     )
   }
 
+  const handleNavClick = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onClose()
+    }
+  }
+
   return (
     <>
       {/* Mobile overlay */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`lg:hidden fixed inset-0 top-14 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sidebar panel */}
+      {/* Sidebar panel (YouTube layout: starts under topbar) */}
       <aside
-        className={`w-[260px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col fixed top-0 left-0 h-[100dvh] max-h-[100dvh] h-screen z-50 shadow-sm transition-transform duration-300 ease-in-out overflow-hidden ${
+        className={`w-[260px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col fixed top-14 left-0 h-[calc(100dvh-3.5rem)] max-h-[calc(100dvh-3.5rem)] z-40 shadow-xs transition-transform duration-300 ease-in-out overflow-hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo + Theme Switch + Toggle */}
-        <div className="px-4 py-3.5 sm:px-5 sm:pt-6 sm:pb-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="size-9 sm:size-10 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-              <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-7 sm:size-8 object-contain" />
+        {/* Mobile-only drawer header (Desktop starts directly with nav list under topbar) */}
+        <div className="lg:hidden px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="size-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md flex items-center justify-center overflow-hidden">
+              <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-4.5 object-contain" />
             </div>
-            <div className="min-h-0">
-              <div className="text-[0.95rem] sm:text-[1.05rem] font-extrabold text-primary dark:text-red-400 tracking-tight leading-tight truncate flex items-center gap-1">
-                <span>KaiwaDoJo</span>
-                <span className="text-[0.55rem] sm:text-[0.6rem] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">会話</span>
-              </div>
-              <div className="text-[0.58rem] sm:text-[0.62rem] text-slate-400 font-semibold tracking-wider mt-0.5 font-jp">会話道場 ・ Bahasa Jepang</div>
-            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Navigasi Dojo
+            </span>
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onToggle}
-              aria-label="Toggle sidebar"
-              className="size-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary dark:hover:text-red-400 border-none cursor-pointer transition-all text-base shrink-0"
-            >
-              <svg className="lg:hidden size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <svg className="hidden lg:block size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            aria-label="Tutup navigasi"
+            className="size-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 border-none cursor-pointer transition-all"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Nav */}
@@ -322,7 +318,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              onClick={onClose}
+              onClick={handleNavClick}
               onMouseEnter={() => prefetchRoute(item.to)}
               onTouchStart={() => prefetchRoute(item.to)}
               className={({ isActive }) => `${navBase} ${isActive ? navActive : navInactive}`}
@@ -375,7 +371,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   onClick={() => {
                     setUserMenuOpen(false)
                     navigate('/profile')
-                    onClose()
+                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                      onClose()
+                    }
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-left border-none bg-transparent cursor-pointer"
                 >
@@ -395,7 +393,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   onClick={() => {
                     setUserMenuOpen(false)
                     navigate('/settings')
-                    onClose()
+                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                      onClose()
+                    }
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-left border-none bg-transparent cursor-pointer"
                 >
@@ -468,19 +468,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           </div>
         </div>
       </aside>
-
-      {/* Floating reopen (desktop) */}
-      <button
-        onClick={onToggle}
-        aria-label="Buka sidebar"
-        className={`hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-[60] w-7 h-16 bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-xl items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 border-none cursor-pointer transition-all shadow-md text-xs font-bold ${
-          isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-        }`}
-      >
-        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
     </>
   )
 }
