@@ -134,7 +134,7 @@ function DateClassEnrollModal({
         
         {/* Toast inside modal */}
         {toast && (
-          <div className={`p-3 text-xs font-bold text-center text-white ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+          <div className={`p-3 text-xs sm:text-sm font-bold text-center text-white ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
             {toast.text}
           </div>
         )}
@@ -142,8 +142,8 @@ function DateClassEnrollModal({
         {/* Modal Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-sky-600 to-primary text-white flex items-center justify-between shrink-0">
           <div>
-            <span className="text-xs font-extrabold uppercase tracking-wider text-white/80">Jadwal Kelas & Reservasi</span>
-            <h3 className="text-lg font-black text-white flex items-center gap-2 mt-0.5">
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-white/80">Jadwal Kelas & Reservasi</span>
+            <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 mt-0.5">
               <svg className="size-4.5 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -163,7 +163,7 @@ function DateClassEnrollModal({
         {/* Modal Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">
               Sesi Kelas Live Tersedia ({daySchedules.length})
             </span>
             <button
@@ -171,7 +171,7 @@ function DateClassEnrollModal({
                 onClose()
                 onOpenMissionBuilder()
               }}
-              className="text-xs font-extrabold text-primary dark:text-red-400 hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+              className="text-xs sm:text-sm font-extrabold text-primary dark:text-red-400 hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
             >
               <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -187,14 +187,14 @@ function DateClassEnrollModal({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Tidak ada sesi kelas live untuk tanggal ini.</p>
-              <p className="text-[0.75rem] text-slate-400">Anda dapat menyusun target belajar mandiri atau memilih tanggal lain yang memiliki strip di kalender.</p>
+              <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">Tidak ada sesi kelas live untuk tanggal ini.</p>
+              <p className="text-xs sm:text-sm text-slate-400">Anda dapat menyusun target belajar mandiri atau memilih tanggal lain yang memiliki strip di kalender.</p>
               <button
                 onClick={() => {
                   onClose()
                   onOpenMissionBuilder()
                 }}
-                className="mt-2 px-4 py-2 bg-primary text-white text-xs font-extrabold rounded-xl border-none cursor-pointer flex items-center gap-1.5 shadow-sm"
+                className="mt-2 px-4 py-2 bg-primary text-white text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer flex items-center gap-1.5 shadow-sm"
               >
                 <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -249,7 +249,7 @@ function DateClassEnrollModal({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[0.68rem] font-black uppercase flex items-center gap-1 ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-black uppercase flex items-center gap-1 ${
                         userRes
                           ? sch.type === 'online'
                             ? 'bg-sky-600 text-white shadow-xs'
@@ -275,7 +275,7 @@ function DateClassEnrollModal({
                         )}
                       </span>
 
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
@@ -283,10 +283,10 @@ function DateClassEnrollModal({
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-extrabold text-slate-800 dark:text-white leading-snug">
+                    <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug">
                       {sch.title}
                     </h4>
-                    <p className="text-xs font-bold text-primary dark:text-red-400">
+                    <p className="text-xs sm:text-sm font-bold text-primary dark:text-red-400">
                       {sch.subtitle_chapter}
                     </p>
 
@@ -297,7 +297,7 @@ function DateClassEnrollModal({
                       const { formattedRange, badgeLabel } = formatDateRangeIndonesian(sDateStr, eDateStr, sch.start_time, sch.end_time, language)
 
                       return (
-                        <div className="text-[0.75rem] text-slate-600 dark:text-slate-300 space-y-1.5 font-medium pt-1">
+                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 space-y-1.5 font-medium pt-1">
                           {isOfflineMultiDay ? (
                             <div className="bg-emerald-50/80 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
                               <span className="size-5 rounded-lg bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
@@ -305,8 +305,8 @@ function DateClassEnrollModal({
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 21l9-18 9 18H3z" />
                                 </svg>
                               </span>
-                              <div className="text-[0.72rem] leading-snug">
-                                <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-[0.65rem] tracking-wider mb-0.5">
+                              <div className="text-xs sm:text-sm leading-snug">
+                                <div className="font-black text-emerald-700 dark:text-emerald-400 uppercase text-xs sm:text-sm tracking-wider mb-0.5">
                                   Jadwal 3 Hari 2 Malam ({badgeLabel}):
                                 </div>
                                 <span className="font-extrabold">{formattedRange}</span>
@@ -358,7 +358,7 @@ function DateClassEnrollModal({
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       {userRes ? (
                         <div className="flex items-center gap-2">
-                          <span className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 text-white font-extrabold text-xs text-center flex items-center justify-center gap-1.5 shadow-sm">
+                          <span className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 text-white font-extrabold text-xs sm:text-sm text-center flex items-center justify-center gap-1.5 shadow-sm">
                             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
@@ -367,17 +367,17 @@ function DateClassEnrollModal({
                           <button
                             disabled={loadingId === userRes.id}
                             onClick={() => handleCancel(userRes.id)}
-                            className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-bold text-xs border-none cursor-pointer"
+                            className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-bold text-xs sm:text-sm border-none cursor-pointer"
                           >
                             {loadingId === userRes.id ? '...' : 'Batalkan'}
                           </button>
                         </div>
                       ) : isFull ? (
-                        <button disabled className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-xs border-none cursor-not-allowed">
+                        <button disabled className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-xs sm:text-sm border-none cursor-not-allowed">
                           Kuota Penuh (10/10)
                         </button>
                       ) : isLocked ? (
-                        <button disabled className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-xs border-none cursor-not-allowed flex items-center justify-center gap-1.5">
+                        <button disabled className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-xs sm:text-sm border-none cursor-not-allowed flex items-center justify-center gap-1.5">
                           <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
@@ -387,7 +387,7 @@ function DateClassEnrollModal({
                         <button
                           disabled={loadingId === sch.id}
                           onClick={() => handleBook(sch)}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-primary hover:from-sky-700 hover:to-primary-dark text-white font-extrabold text-xs border-none cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-primary hover:from-sky-700 hover:to-primary-dark text-white font-extrabold text-xs sm:text-sm border-none cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
                         >
                           <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -685,7 +685,7 @@ export default function LearningPlanPage() {
               setSelectedDateStr(todayStr)
               setShowMissionModal(true)
             }}
-            className="w-full sm:w-auto px-3.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-[11px] sm:text-xs font-bold rounded-xl border-none cursor-pointer transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5 group min-h-[30px] sm:min-h-[34px]"
+            className="w-full sm:w-auto px-3.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-bold rounded-xl border-none cursor-pointer transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5 group min-h-[30px] sm:min-h-[34px]"
           >
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -696,20 +696,20 @@ export default function LearningPlanPage() {
 
         {/* 3 Badges placed underneath the description */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-sky-200/50 dark:border-sky-800/50">
-          <span className="text-[10px] sm:text-[11px] font-bold bg-rose-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-xs sm:text-sm font-bold bg-rose-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
             <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <circle cx="12" cy="12" r="8" />
               <circle cx="12" cy="12" r="3" />
             </svg>
             <span>{t('lp_tag_daily_mission', 'Rencana Harian (Wajib Setiap Hari)')}</span>
           </span>
-          <span className="text-[10px] sm:text-[11px] font-bold bg-sky-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-xs sm:text-sm font-bold bg-sky-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
             <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
             <span>{t('lp_tag_online_class', 'Kelas Online (Batas 1 Sesi/Minggu)')}</span>
           </span>
-          <span className="text-[10px] sm:text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-xs sm:text-sm font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
             <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -731,7 +731,7 @@ export default function LearningPlanPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </span>
-              <h2 className="text-base sm:text-xl font-extrabold text-slate-800 dark:text-white">
+              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">
                 {getLocalizedMonthName(month, language)} {year}
               </h2>
             </div>
@@ -741,7 +741,7 @@ export default function LearningPlanPage() {
               <div className="flex items-center p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setViewMode('calendar')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
                     viewMode === 'calendar'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -754,7 +754,7 @@ export default function LearningPlanPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('schedule')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
                     viewMode === 'schedule'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -770,7 +770,7 @@ export default function LearningPlanPage() {
               <div className="flex items-center gap-1 sm:gap-1.5">
                 <button
                   onClick={handleTodayClick}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all"
                 >
                   {t('lp_today_btn', 'Hari Ini')}
                 </button>
@@ -810,7 +810,7 @@ export default function LearningPlanPage() {
                 </span>
                 <button
                   onClick={() => setShowOnlyActivities(prev => !prev)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border-none flex items-center gap-1.5 shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer border-none flex items-center gap-1.5 shrink-0 ${
                     showOnlyActivities
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
@@ -903,24 +903,24 @@ export default function LearningPlanPage() {
                           <div className={`size-10 sm:size-11 rounded-xl flex flex-col items-center justify-center font-bold shrink-0 ${
                             isToday ? 'bg-amber-500 text-white shadow-2xs' : isSelected ? 'bg-primary text-white shadow-2xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
                           }`}>
-                            <span className="text-[0.6rem] leading-none uppercase tracking-wider">{formatDayNameShort(dateStr)}</span>
-                            <span className="text-base font-extrabold leading-tight mt-0.5">{dayNum}</span>
+                            <span className="text-xs sm:text-sm leading-none uppercase tracking-wider">{formatDayNameShort(dateStr)}</span>
+                            <span className="text-sm sm:text-base font-bold leading-tight mt-0.5">{dayNum}</span>
                           </div>
 
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2">
-                              <h4 className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white">
+                              <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">
                                 {formatDateIndonesian(dateStr)}
                               </h4>
                               {isToday && (
-                                <span className="text-[0.68rem] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-2 py-0.2 rounded-full border border-amber-300/60">
+                                <span className="text-xs sm:text-sm font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-2 py-0.2 rounded-full border border-amber-300/60">
                                   Hari Ini
                                 </span>
                               )}
                             </div>
 
                             {/* Minimalist Summary Badges */}
-                            <div className="text-[0.72rem] text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex flex-wrap items-center gap-1.5">
+                            <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex flex-wrap items-center gap-1.5">
                               {daySchedules.length > 0 && (
                                 <span className="px-2 py-0.2 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold border border-sky-200 dark:border-sky-800 flex items-center gap-1">
                                   <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -978,7 +978,7 @@ export default function LearningPlanPage() {
                                 title={stampAlt}
                                 className="size-6 object-contain shrink-0 rotate-[-6deg]"
                               />
-                              <span className="text-[0.68rem] font-semibold text-slate-600 dark:text-slate-300 hidden xs:inline">
+                              <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hidden xs:inline">
                                 {stampLabel}
                               </span>
                             </div>
@@ -986,7 +986,7 @@ export default function LearningPlanPage() {
 
                           <button
                             type="button"
-                            className={`size-8 rounded-xl flex items-center justify-center text-xs font-bold transition-colors cursor-pointer border-none ${
+                            className={`size-8 rounded-xl flex items-center justify-center text-xs sm:text-sm font-bold transition-colors cursor-pointer border-none ${
                               isExpanded
                                 ? 'bg-primary text-white'
                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1003,7 +1003,7 @@ export default function LearningPlanPage() {
                       {isExpanded && (
                         <div className="p-3.5 sm:p-4 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-col gap-3 bg-slate-50/40 dark:bg-slate-950/30 rounded-b-2xl animate-fade-in">
                           {/* Sleek Quick Action Bar — hide edit misi for past dates */}
-                          <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs">
+                          <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm">
                             <span className="font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                               {isPast ? (
                                 <>
@@ -1023,7 +1023,7 @@ export default function LearningPlanPage() {
                             </span>
                             <div className="flex items-center gap-2">
                               {isPast ? (
-                                <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+                                <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
                                   <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                   </svg>
@@ -1036,7 +1036,7 @@ export default function LearningPlanPage() {
                                     setSelectedDateStr(dateStr)
                                     setShowMissionModal(true)
                                   }}
-                                  className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                                  className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
                                 >
                                   <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <circle cx="12" cy="12" r="8" />
@@ -1051,7 +1051,7 @@ export default function LearningPlanPage() {
                                   setSelectedDateStr(dateStr)
                                   setShowClassModal(true)
                                 }}
-                                className="px-3 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                                className="px-3 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
                               >
                                 <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1064,7 +1064,7 @@ export default function LearningPlanPage() {
                           {/* Live Class Sessions */}
                           {daySchedules.length > 0 && (
                             <div className="flex flex-col gap-2">
-                              <span className="text-[0.72rem] font-bold text-slate-500 uppercase tracking-wider">Kelas Live ({daySchedules.length}):</span>
+                              <span className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">Kelas Live ({daySchedules.length}):</span>
                               {daySchedules.map(sch => {
                                 const isUserEnrolled = reservations.some(r => matchScheduleId(sch.id, r.schedule_id) && r.user_id === activeUserId)
                                 const enrolledCount = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
@@ -1074,7 +1074,7 @@ export default function LearningPlanPage() {
                                 return (
                                   <div
                                     key={sch.id}
-                                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
+                                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs sm:text-sm"
                                   >
                                     <div className="flex items-start gap-2.5 min-w-0">
                                       <span className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 mt-0.5">
@@ -1091,7 +1091,7 @@ export default function LearningPlanPage() {
                                       <div className="flex flex-col min-w-0 gap-0.5">
                                         <div className="font-extrabold text-slate-800 dark:text-slate-100 flex flex-wrap items-center gap-1.5">
                                           <span>{sch.title}</span>
-                                          <span className="text-[0.68rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.2 rounded flex items-center gap-1">
+                                          <span className="text-xs sm:text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.2 rounded flex items-center gap-1">
                                             <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
@@ -1099,11 +1099,11 @@ export default function LearningPlanPage() {
                                           </span>
                                         </div>
                                         {sch.subtitle_chapter && (
-                                          <p className="text-[0.7rem] font-semibold text-primary dark:text-red-400">
+                                          <p className="text-xs sm:text-sm font-semibold text-primary dark:text-red-400">
                                             {sch.subtitle_chapter}
                                           </p>
                                         )}
-                                        <div className="text-[0.68rem] text-slate-500 flex flex-wrap items-center gap-2">
+                                        <div className="text-xs sm:text-sm text-slate-500 flex flex-wrap items-center gap-2">
                                           <span>Instruktur: {sch.instructor_name}</span>
                                           <span>•</span>
                                           <span>{enrolledCount}/{sch.max_quota} Siswa</span>
@@ -1113,21 +1113,21 @@ export default function LearningPlanPage() {
 
                                     <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
                                       {isUserEnrolled ? (
-                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-600 text-white flex items-center gap-1">
+                                        <span className="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-bold bg-sky-600 text-white flex items-center gap-1">
                                           <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                           </svg>
                                           <span>Terdaftar</span>
                                         </span>
                                       ) : isLockedByWeekRule ? (
-                                        <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 flex items-center gap-1">
+                                        <span className="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-medium bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 flex items-center gap-1">
                                           <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                           </svg>
                                           <span>Terkunci</span>
                                         </span>
                                       ) : isFull ? (
-                                        <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500 text-white">
+                                        <span className="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-medium bg-rose-500 text-white">
                                           Penuh
                                         </span>
                                       ) : (
@@ -1137,7 +1137,7 @@ export default function LearningPlanPage() {
                                             setSelectedDateStr(dateStr)
                                             setShowClassModal(true)
                                           }}
-                                          className="px-3 py-1 rounded-lg text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white border-none cursor-pointer flex items-center gap-1"
+                                          className="px-3 py-1 rounded-lg text-xs sm:text-sm font-bold bg-sky-500 hover:bg-sky-600 text-white border-none cursor-pointer flex items-center gap-1"
                                         >
                                           <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -1154,7 +1154,7 @@ export default function LearningPlanPage() {
 
                           {/* Target Misi Belajar Mandiri List */}
                           {dateMission && (
-                            <div className={`p-3 rounded-xl border flex flex-col gap-2 text-xs ${
+                            <div className={`p-3 rounded-xl border flex flex-col gap-2 text-xs sm:text-sm ${
                               isPast
                                 ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
                                 : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
@@ -1175,7 +1175,7 @@ export default function LearningPlanPage() {
                                     {isPast ? 'Arsip Misi Mandiri' : 'Target Misi Mandiri'} ({dateMission.selectedVideos.length} Video)
                                   </span>
                                 </span>
-                                <span className="text-[0.68rem] font-bold text-slate-500">
+                                <span className="text-xs sm:text-sm font-bold text-slate-500">
                                   {dateMission.targetReplayCount} Replays
                                 </span>
                               </div>
@@ -1184,13 +1184,13 @@ export default function LearningPlanPage() {
                                   <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                   </svg>
-                                  <span className="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400">Mode Lihat Arsip — Tidak dapat diedit</span>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">Mode Lihat Arsip — Tidak dapat diedit</span>
                                 </div>
                               )}
                               {dateMission.selectedVideos.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
                                   {dateMission.selectedVideos.map(vid => (
-                                    <span key={vid.id} className={`text-[0.7rem] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                    <span key={vid.id} className={`text-xs sm:text-sm font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
                                       isPast
                                         ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -1204,7 +1204,7 @@ export default function LearningPlanPage() {
                                 </div>
                               )}
                               {(dateMission.targetQuizCount || 0) > 0 || (dateMission.targetKotobaCount || 0) > 0 ? (
-                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[0.68rem] font-semibold text-slate-500 dark:text-slate-400">
+                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
                                   {(dateMission.targetQuizCount || 0) > 0 && (
                                     <span className="flex items-center gap-1">
                                       <svg className="size-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1223,7 +1223,7 @@ export default function LearningPlanPage() {
                           )}
 
                           {!hasActivity && (
-                            <div className="py-2.5 px-3.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
+                            <div className="py-2.5 px-3.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center justify-between">
                               <span>Belum ada agenda pada tanggal ini.</span>
                               <button
                                 onClick={(e) => {
@@ -1231,7 +1231,7 @@ export default function LearningPlanPage() {
                                   setSelectedDateStr(dateStr)
                                   setShowMissionModal(true)
                                 }}
-                                className="text-primary font-bold hover:underline cursor-pointer bg-transparent border-none"
+                                className="text-primary font-bold hover:underline cursor-pointer bg-transparent border-none text-xs sm:text-sm"
                               >
                                 + Susun Now ↗
                               </button>
@@ -1248,7 +1248,7 @@ export default function LearningPlanPage() {
             /* Traditional 7-Column Calendar Grid */
             <>
               {/* Days of Week Header */}
-              <div className="grid grid-cols-7 text-center font-extrabold text-[0.62rem] sm:text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div className="grid grid-cols-7 text-center font-extrabold text-xs sm:text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                 {getLocalizedDayNames(language).map(d => (
                   <div key={d}>
                     <span>{d}</span>
@@ -1339,13 +1339,13 @@ export default function LearningPlanPage() {
                       )}
 
                       <div className="flex items-center justify-between relative z-20">
-                        <span className={`text-[0.75rem] xs:text-xs sm:text-base font-black ${
+                        <span className={`text-sm sm:text-base font-bold ${
                           isSelected ? 'text-primary dark:text-red-400' : isToday ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'
                         }`}>
                           {dayNum}
                         </span>
                         {isToday && (
-                          <span className="text-[0.5rem] sm:text-[0.6rem] font-bold uppercase bg-amber-500 text-white px-1 sm:px-1.5 py-0.2 rounded shadow-xs">
+                          <span className="text-xs sm:text-sm font-bold uppercase bg-amber-500 text-white px-1 sm:px-1.5 py-0.2 rounded shadow-xs">
                             <span className="hidden sm:inline">Hari Ini</span>
                             <span className="sm:hidden">•</span>
                           </span>
@@ -1362,7 +1362,7 @@ export default function LearningPlanPage() {
                           return (
                             <div
                               key={sch.id}
-                              className={`text-[0.62rem] sm:text-[0.68rem] px-1.5 py-0.5 rounded-md flex items-center justify-between gap-1 whitespace-nowrap truncate transition-all ${
+                              className={`text-xs sm:text-sm px-1.5 py-0.5 rounded-md flex items-center justify-between gap-1 whitespace-nowrap truncate transition-all ${
                                 isEnrolled
                                   ? sch.type === 'online'
                                     ? 'bg-sky-600 text-white font-black shadow-xs'
@@ -1384,24 +1384,24 @@ export default function LearningPlanPage() {
                                 <span className="hidden sm:inline font-bold truncate">{sch.title}</span>
                               </div>
                               {isEnrolled ? (
-                                <span className="text-[0.55rem] bg-white/30 text-white px-1 py-0.2 rounded font-black shrink-0 flex items-center justify-center">
+                                <span className="text-xs sm:text-sm bg-white/30 text-white px-1 py-0.2 rounded font-black shrink-0 flex items-center justify-center">
                                   <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                                 </span>
                               ) : isFull ? (
-                                <span className="text-[0.55rem] text-slate-400 font-normal shrink-0">Penuh</span>
+                                <span className="text-xs sm:text-sm text-slate-400 font-normal shrink-0">Penuh</span>
                               ) : null}
                             </div>
                           )
                         })}
 
                         {hasStreak && (
-                          <span className="text-[0.58rem] sm:text-[0.68rem] font-extrabold bg-rose-100/90 dark:bg-rose-950/90 text-rose-800 dark:text-rose-300 px-1 sm:px-1.5 py-0.5 rounded flex items-center justify-center sm:justify-start gap-1 backdrop-blur-xs whitespace-nowrap truncate">
+                          <span className="text-xs sm:text-sm font-extrabold bg-rose-100/90 dark:bg-rose-950/90 text-rose-800 dark:text-rose-300 px-1 sm:px-1.5 py-0.5 rounded flex items-center justify-center sm:justify-start gap-1 backdrop-blur-xs whitespace-nowrap truncate">
                             <svg className="size-2.5 sm:size-3 text-rose-500 fill-rose-500 shrink-0" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                             <span className="hidden sm:inline">Streak</span>
                           </span>
                         )}
                         {dateMission && (
-                          <span className={`text-[0.58rem] sm:text-[0.68rem] font-extrabold px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate flex items-center gap-1 ${
+                          <span className={`text-xs sm:text-sm font-extrabold px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-xs whitespace-nowrap truncate flex items-center gap-1 ${
                             isPast
                               ? 'bg-slate-200/80 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 border border-slate-300/60 dark:border-slate-600/60'
                               : isNoPlan
@@ -1433,10 +1433,10 @@ export default function LearningPlanPage() {
           )}
 
           {/* Hanko Stamp & Class Schedule Legend */}
-          <div className="pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 sm:gap-3 text-xs">
+          <div className="pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 sm:gap-3 text-xs sm:text-sm">
             {/* Category 1: Reservasi Kelas Live (Warna Biru = Online, Hijau = Offline) */}
             <div className="flex flex-col gap-2 bg-slate-50/70 dark:bg-slate-950/40 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <span className="font-black text-slate-700 dark:text-slate-200 text-[0.72rem] sm:text-xs flex items-center gap-1.5">
+              <span className="font-black text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
                 <svg className="size-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 <span>Jadwal Reservasi Kelas Live (Online vs Offline):</span>
               </span>
@@ -1444,30 +1444,30 @@ export default function LearningPlanPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {/* Online Row */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-bold text-sky-600 dark:text-sky-400 text-[0.68rem] sm:text-[0.72rem] shrink-0">Online:</span>
-                  <div className="flex items-center gap-1 bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold">
+                  <span className="font-bold text-sky-600 dark:text-sky-400 text-xs sm:text-sm shrink-0">Online:</span>
+                  <div className="flex items-center gap-1 bg-sky-50/80 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-300/80 dark:border-sky-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
                     <span>Tersedia (Bening)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold shadow-2xs">
+                  <div className="flex items-center gap-1 bg-sky-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
                     <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                     <span>Diikuti (Solid)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-[0.65rem] sm:text-[0.68rem]">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm">
                     <span>Penuh</span>
                   </div>
                 </div>
 
                 {/* Offline Row */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[0.68rem] sm:text-[0.72rem] shrink-0">Offline:</span>
-                  <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold">
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm shrink-0">Offline:</span>
+                  <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold">
                     <span>Tersedia (Bening)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-[0.65rem] sm:text-[0.68rem] font-bold shadow-2xs">
+                  <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-xs sm:text-sm font-bold shadow-2xs">
                     <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                     <span>Diikuti (Solid)</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-[0.65rem] sm:text-[0.68rem]">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200 text-xs sm:text-sm">
                     <span>Penuh</span>
                   </div>
                 </div>
@@ -1476,12 +1476,12 @@ export default function LearningPlanPage() {
 
             {/* Category 2: Cap Status Misi Belajar Mandiri */}
             <div className="flex flex-col gap-2.5 bg-slate-50/70 dark:bg-slate-950/40 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <span className="font-black text-slate-700 dark:text-slate-200 text-[0.72rem] sm:text-xs flex items-center gap-1.5">
+              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
                 <svg className="size-3.5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                 <span>Cap Status Misi Mandiri (Tanggal Berlalu):</span>
               </span>
 
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[0.65rem] sm:text-xs">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                 <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800">
                   <img src="/lulus.png" alt="Lulus 100%" className="size-4 sm:size-5 object-contain" />
                   <span className="text-emerald-700 dark:text-emerald-300 font-extrabold">{t('lp_stamp_passed', '100% Selesai')}</span>
@@ -1517,15 +1517,15 @@ export default function LearningPlanPage() {
           <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col gap-4 relative overflow-hidden">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
-                <span className="text-[0.65rem] font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   {isSelectedDatePast ? t('lp_archive_mode', 'Arsip Rencana Belajar') : t('lp_target_missions', 'Target & Misi')}
                 </span>
-                <h3 className="text-base sm:text-lg font-extrabold mt-1 text-white leading-snug">
+                <h3 className="text-sm sm:text-base font-bold mt-1 text-white leading-snug">
                   {formatDateIndonesian(selectedDateStr, language)}
                 </h3>
               </div>
               {selectedDateStr === todayStr && (
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0">
+                <span className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0">
                   {t('lp_today_btn', 'Hari Ini')}
                 </span>
               )}
@@ -1534,7 +1534,7 @@ export default function LearningPlanPage() {
             {/* Quick Button to open Class Enroll Modal */}
             <button
               onClick={() => setShowClassModal(true)}
-              className="w-full py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-extrabold rounded-2xl border border-white/10 cursor-pointer text-xs shadow-md transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-extrabold rounded-2xl border border-white/10 cursor-pointer text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
             >
               <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               <span>Sesi Kelas Live Tanggal Ini</span>
@@ -1543,14 +1543,14 @@ export default function LearningPlanPage() {
             {/* Live Class Sessions Card in Right Panel */}
             {accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length > 0 && (
               <div className="p-4 rounded-2xl bg-sky-950/70 border border-sky-400/30 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="font-extrabold text-sky-300 flex items-center gap-1.5">
                     <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                     <span>Sesi Kelas Live ({accessibleSchedules.filter(s => isScheduleActiveOnDate(s, selectedDateStr)).length} Sesi)</span>
                   </span>
                   <button
                     onClick={() => setShowClassModal(true)}
-                    className="text-[0.7rem] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    className="text-xs sm:text-sm font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <span>Buka Modal</span>
                     <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
@@ -1598,8 +1598,8 @@ export default function LearningPlanPage() {
                     }
 
                     return (
-                      <div key={sch.id} className="p-3 rounded-xl bg-white/10 border border-white/10 text-xs flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between text-[0.72rem]">
+                      <div key={sch.id} className="p-3 rounded-xl bg-white/10 border border-white/10 text-xs sm:text-sm flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
                           <span className="font-extrabold text-sky-300 flex items-center gap-1">
                             {sch.type === 'offline' ? (
                               <>
@@ -1615,20 +1615,20 @@ export default function LearningPlanPage() {
                           </span>
                           <span className="text-white/70 font-semibold">{enrolledCount}/{sch.max_quota} Siswa</span>
                         </div>
-                        <div className="font-extrabold text-white text-[0.82rem] leading-snug">{sch.title}</div>
+                        <div className="font-bold text-white text-sm sm:text-base leading-snug">{sch.title}</div>
                         {sch.type === 'offline' && (
-                          <div className="text-[0.68rem] text-emerald-300 font-medium flex items-center gap-1">
+                          <div className="text-xs sm:text-sm text-emerald-300 font-medium flex items-center gap-1">
                             <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                             <span>{formatDateRangeIndonesian(sch.start_date || sch.date, sch.end_date, sch.start_time, sch.end_time, language).formattedRange}</span>
                           </div>
                         )}
-                        <div className="text-[0.72rem] text-white/80 flex items-center gap-1">
+                        <div className="text-xs sm:text-sm text-white/80 flex items-center gap-1">
                           <svg className="size-3 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           <span>Instruktur: {sch.instructor_name}</span>
                         </div>
                         
                         <div className="mt-1 pt-1.5 border-t border-white/10 flex items-center justify-between">
-                          <span className="text-[0.68rem] font-bold text-sky-200 flex items-center gap-1">
+                          <span className="text-xs sm:text-sm font-bold text-sky-200 flex items-center gap-1">
                             {sch.type === 'online' ? (
                               <>
                                 <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -1642,23 +1642,23 @@ export default function LearningPlanPage() {
                             )}
                           </span>
                           {userRes ? (
-                            <span className="text-[0.68rem] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                               <span>Terdaftar</span>
                             </span>
                           ) : isFull ? (
-                            <span className="text-[0.68rem] font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-md">
+                            <span className="text-xs sm:text-sm font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-md">
                               Kuota Penuh
                             </span>
                           ) : isLocked ? (
-                            <span className="text-[0.68rem] font-bold text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-md border border-sky-400/30 flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-bold text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded-md border border-sky-400/30 flex items-center gap-1">
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                               <span>{lockReason}</span>
                             </span>
                           ) : (
                             <button
                               onClick={() => setShowClassModal(true)}
-                              className="text-[0.68rem] font-extrabold text-white bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded-lg border-none cursor-pointer shadow-xs flex items-center gap-1"
+                              className="text-xs sm:text-sm font-extrabold text-white bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded-lg border-none cursor-pointer shadow-xs flex items-center gap-1"
                             >
                               <svg className="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                               <span>Reservasi Sesi Ini</span>
@@ -1682,11 +1682,11 @@ export default function LearningPlanPage() {
                     <div className="flex items-center gap-2.5">
                       <img src="/tidakada.png" alt="Tidak Ada Rencana" className="size-8 object-contain shrink-0 rotate-[-6deg]" />
                       <div>
-                        <div className="text-xs font-black text-sky-300">Cap Biru (Tidak Ada Rencana)</div>
-                        <div className="text-[0.68rem] text-slate-300">Hari istirahat terencana (Video, Kuis, & Kotoba 0)</div>
+                        <div className="text-xs sm:text-sm font-black text-sky-300">Cap Biru (Tidak Ada Rencana)</div>
+                        <div className="text-xs sm:text-sm text-slate-300">Hari istirahat terencana (Video, Kuis, & Kotoba 0)</div>
                       </div>
                     </div>
-                    <span className="text-[0.65rem] font-extrabold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
+                    <span className="text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
                       Cap Biru
                     </span>
                   </div>
@@ -1703,15 +1703,15 @@ export default function LearningPlanPage() {
                         className="size-8 object-contain shrink-0 rotate-[-6deg]"
                       />
                       <div>
-                        <div className="text-xs font-black text-white">
+                        <div className="text-xs sm:text-sm font-black text-white">
                           {missionProgress.isFullyCompleted ? 'Cap Hijau: 100% Selesai' : `Cap Merah: Belum Tuntas (${missionProgress.overallPct}%)`}
                         </div>
-                        <div className="text-[0.68rem] text-slate-300">
+                        <div className="text-xs sm:text-sm text-slate-300">
                           {missionProgress.isFullyCompleted ? 'Semua target misi telah tercapai 100%' : 'Target misi belum tuntas tercapai (<100%)'}
                         </div>
                       </div>
                     </div>
-                    <span className={`font-black px-2.5 py-0.5 rounded-full text-[0.7rem] ${
+                    <span className={`font-black px-2.5 py-0.5 rounded-full text-xs sm:text-sm ${
                       missionProgress.isFullyCompleted
                         ? 'bg-emerald-500 text-white'
                         : 'bg-rose-500 text-white'
@@ -1723,7 +1723,7 @@ export default function LearningPlanPage() {
 
                 {/* Video Target Details */}
                 <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex flex-col gap-2">
-                  <div className="flex justify-between text-xs font-bold">
+                  <div className="flex justify-between text-xs sm:text-sm font-bold">
                     <span className="flex items-center gap-1.5">
                       <svg className="size-3.5 text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                       <span>Target Video ({selectedMission.selectedVideos.length} Video)</span>
@@ -1735,7 +1735,7 @@ export default function LearningPlanPage() {
                   </div>
                   <div className="flex flex-col gap-1 mt-1">
                     {selectedMission.selectedVideos.map((v, i) => (
-                      <div key={i} className="text-[0.7rem] text-slate-300 flex items-center gap-1.5">
+                      <div key={i} className="text-xs sm:text-sm text-slate-300 flex items-center gap-1.5">
                         <span className="size-1 rounded-full bg-slate-400 shrink-0" />
                         <span className="truncate">{v.title}</span>
                       </div>
@@ -1744,41 +1744,41 @@ export default function LearningPlanPage() {
                 </div>
 
                 {/* Quiz & Kotoba Target Details */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                   <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-                    <span className="text-slate-300 text-[0.68rem] flex items-center gap-1 mb-1">
+                    <span className="text-slate-300 text-xs sm:text-sm flex items-center gap-1 mb-1">
                       <svg className="size-3 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
                       <span>Target Kuis</span>
                     </span>
                     {missionProgress.targetQuizzes > 0 ? (
-                      <span className="font-extrabold text-indigo-300 text-sm">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
+                      <span className="font-bold text-indigo-300 text-sm sm:text-base">{missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}</span>
                     ) : (
-                      <span className="font-bold text-slate-400 text-[0.7rem] block">Tidak ada kuis</span>
+                      <span className="font-medium text-slate-400 text-xs sm:text-sm block">Tidak ada kuis</span>
                     )}
                   </div>
                   <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-                    <span className="text-slate-300 text-[0.68rem] flex items-center gap-1 mb-1">
+                    <span className="text-slate-300 text-xs sm:text-sm flex items-center gap-1 mb-1">
                       <svg className="size-3 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" /></svg>
                       <span>Target Kotoba</span>
                     </span>
                     {missionProgress.targetKotoba > 0 ? (
-                      <span className="font-extrabold text-amber-300 text-sm">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
+                      <span className="font-bold text-amber-300 text-sm sm:text-base">{missionProgress.actualKotoba}/{missionProgress.targetKotoba}</span>
                     ) : (
-                      <span className="font-bold text-slate-400 text-[0.7rem] block">Tidak ada kotoba</span>
+                      <span className="font-medium text-slate-400 text-xs sm:text-sm block">Tidak ada kotoba</span>
                     )}
                   </div>
                 </div>
 
                 {/* If past date, show read-only note instead of edit button */}
                 {isSelectedDatePast ? (
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-1.5">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center text-xs sm:text-sm text-slate-400 font-medium flex items-center justify-center gap-1.5">
                     <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     <span>{t('lp_past_date_locked', 'Tanggal telah berlalu (Mode Lihat Arsip)')}</span>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowMissionModal(true)}
-                    className="w-full py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold rounded-2xl border-none cursor-pointer text-xs shadow-md transition-all mt-1 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-bold rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-md transition-all mt-1 flex items-center justify-center gap-2"
                   >
                     <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     <span>{t('lp_edit_mission_btn', 'Edit Misi Tanggal Ini')}</span>
@@ -1790,10 +1790,10 @@ export default function LearningPlanPage() {
                 {isSelectedDatePast ? (
                   <div className="flex flex-col items-center gap-2.5">
                     <img src="/kosong.png" alt="Belum Buat Rencana (Cap Abu-abu)" className="size-12 object-contain opacity-90 rotate-[-6deg]" />
-                    <span className="text-xs font-black text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+                    <span className="text-xs sm:text-sm font-black text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
                       Cap Abu-abu: Belum Buat Rencana
                     </span>
-                    <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-1">
                       Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
                     </p>
                   </div>
@@ -1802,12 +1802,12 @@ export default function LearningPlanPage() {
                     <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center text-slate-300">
                       <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                       Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(selectedDateStr, language)}</strong>.
                     </p>
                     <button
                       onClick={() => setShowMissionModal(true)}
-                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
+                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
                     >
                       <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                       <span>{t('lp_btn_create', 'Susun Misi Tanggal Ini')}</span>

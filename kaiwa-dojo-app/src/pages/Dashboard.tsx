@@ -577,15 +577,15 @@ function SakuraRingProgressBar({
         {isCompleted && (
           <div className="absolute inset-0 pointer-events-none">
             {/* Sparkle 1 Top-Left */}
-            <span className="absolute top-2 left-4 text-emerald-500 font-bold text-sm sm:text-base animate-sparkle-1 select-none">
+            <span className="absolute top-2 left-4 text-emerald-500 font-bold text-xs sm:text-sm animate-sparkle-1 select-none">
               ✦
             </span>
             {/* Sparkle 2 Top-Right */}
-            <span className="absolute top-1.5 right-4 text-amber-400 font-bold text-base sm:text-lg animate-sparkle-2 select-none">
+            <span className="absolute top-1.5 right-4 text-amber-400 font-bold text-xs sm:text-sm animate-sparkle-2 select-none">
               ✧
             </span>
             {/* Sparkle 3 Bottom-Right */}
-            <span className="absolute bottom-5 right-2 text-teal-400 font-bold text-sm sm:text-base animate-sparkle-3 select-none">
+            <span className="absolute bottom-5 right-2 text-teal-400 font-bold text-xs sm:text-sm animate-sparkle-3 select-none">
               ✦
             </span>
             {/* Sparkle 4 Bottom-Left */}
@@ -602,16 +602,16 @@ function SakuraRingProgressBar({
         {/* Circular Progress Percentage Pill at Bottom of Ring */}
         <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 shrink-0 z-20">
           {isCompleted ? (
-            <div className="bg-emerald-500 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-md flex items-center gap-1 border border-emerald-300 animate-pulse whitespace-nowrap">
+            <div className="bg-emerald-500 text-white font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-md flex items-center gap-1 border border-emerald-300 animate-pulse whitespace-nowrap">
               <span>✦</span>
               <span>100% Selesai</span>
             </div>
           ) : pct > 0 ? (
-            <div className="bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow-xs border border-rose-200 dark:border-rose-900/60 whitespace-nowrap">
+            <div className="bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-extrabold text-xs sm:text-sm px-2.5 py-0.5 rounded-full shadow-xs border border-rose-200 dark:border-rose-900/60 whitespace-nowrap">
               {pct}% Misi
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs px-2.5 py-0.5 rounded-full shadow-xs border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            <div className="bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs sm:text-sm px-2.5 py-0.5 rounded-full shadow-xs border border-slate-200 dark:border-slate-700 whitespace-nowrap">
               0% Misi
             </div>
           )}
@@ -677,10 +677,10 @@ function StreakCard({
             </svg>
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
               {sakuraInfo.stageName}
             </h2>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-semibold block truncate">
+            <span className="text-xs sm:text-sm text-slate-400 font-medium block truncate">
               {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
             </span>
           </div>
@@ -700,10 +700,10 @@ function StreakCard({
             missionProgress={missionProgress}
             onClick={() => setShowSakuraModal(true)}
           />
-          <div className={`text-xl sm:text-2xl font-black leading-none mt-1 tracking-tight ${sakuraInfo.colorClass}`}>
+          <div className={`text-sm sm:text-base font-black leading-none mt-1 tracking-tight ${sakuraInfo.colorClass}`}>
             {streakDays}
           </div>
-          <div className="text-[10px] sm:text-[11px] text-slate-400 font-bold mt-0.5 text-center whitespace-nowrap">
+          <div className="text-xs sm:text-sm text-slate-400 font-bold mt-0.5 text-center whitespace-nowrap">
             Hari Konsisten
           </div>
         </div>
@@ -738,14 +738,14 @@ function StreakCard({
                     <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                   )}
                 </div>
-                <span className="text-xs text-slate-400 font-bold mt-1">{dayLabels[i]}</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-bold mt-1">{dayLabels[i]}</span>
               </div>
             ))}
           </div>
 
           {/* Progress Bar to Next Sakura Milestone */}
           <div>
-            <div className="flex justify-between text-xs font-semibold mb-1">
+            <div className="flex justify-between text-xs sm:text-sm font-semibold mb-1">
               <span className="text-slate-500 dark:text-slate-400 truncate">
                 Target {nextMilestone} Hari
               </span>
@@ -770,7 +770,7 @@ function StreakCard({
             {milestones.map(m => (
               <div
                 key={m.days}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-center text-xs font-bold border transition-all ${
+                className={`flex-1 py-1 px-1.5 rounded-lg text-center text-xs sm:text-sm font-bold border transition-all ${
                   streakDays >= m.days
                     ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400'
                     : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400'
@@ -808,7 +808,7 @@ function StreakCard({
         {!todayDone && !isTodayFreeze && (
           <button
             onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-            className="group px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[30px]"
+            className="group px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[30px]"
           >
             <span>Susun Misi Hari Ini</span>
             <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -841,7 +841,7 @@ function SakuraEvolutionModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           </div>
           <button
             onClick={onClose}
-            className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-xs"
+            className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-xs sm:text-sm"
           >
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -849,63 +849,63 @@ function SakuraEvolutionModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           </button>
         </div>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
           Di KaiwaDojo, konsistensi belajar diibaratkan pohon sakura yang bertumbuh semakin megah seiring bertambahnya streak Anda:
         </p>
 
-        <div className="space-y-2 text-xs">
+        <div className="space-y-2 text-xs sm:text-sm">
           <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-slate-800 dark:text-white">0 Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Benih Bunga Sakura</div>
+              <div className="text-xs sm:text-sm text-slate-400">Benih Bunga Sakura</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 font-bold text-[0.62rem] sm:text-[0.65rem]">Tahap 0</span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 font-bold text-xs sm:text-sm">Tahap 0</span>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-slate-800 dark:text-white">1 - 2 Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Tunas Bunga Sakura</div>
+              <div className="text-xs sm:text-sm text-slate-400">Tunas Bunga Sakura</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold text-[0.62rem] sm:text-[0.65rem]">Tahap 1</span>
+            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold text-xs sm:text-sm">Tahap 1</span>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-slate-800 dark:text-white">3 - 6 Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Pohon Muda Sakura</div>
+              <div className="text-xs sm:text-sm text-slate-400">Pohon Muda Sakura</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 font-bold text-[0.62rem] sm:text-[0.65rem]">Tahap 2</span>
+            <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 font-bold text-xs sm:text-sm">Tahap 2</span>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-slate-800 dark:text-white">7 - 29 Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Pohon Sakura Mekar (Kaika)</div>
+              <div className="text-xs sm:text-sm text-slate-400">Pohon Sakura Mekar (Kaika)</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-[0.62rem] sm:text-[0.65rem]">Tahap 3</span>
+            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-xs sm:text-sm">Tahap 3</span>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-slate-800 dark:text-white">30 - 99 Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Pohon Sakura Rimbun (Mankai)</div>
+              <div className="text-xs sm:text-sm text-slate-400">Pohon Sakura Rimbun (Mankai)</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-[0.62rem] sm:text-[0.65rem]">Tahap 4</span>
+            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-xs sm:text-sm">Tahap 4</span>
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
             <div>
               <div className="font-extrabold text-amber-900 dark:text-amber-200">100+ Hari</div>
-              <div className="text-[0.65rem] sm:text-[0.68rem] text-amber-700 dark:text-amber-300">Pohon Sakura Abadi</div>
+              <div className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">Pohon Sakura Abadi</div>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-[0.62rem] sm:text-[0.65rem]">Master</span>
+            <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs sm:text-sm">Master</span>
           </div>
         </div>
 
         <button
           onClick={onClose}
-          className="w-full py-2 sm:py-2.5 bg-primary text-white font-bold rounded-xl text-xs border-none cursor-pointer mt-1"
+          className="w-full py-2 sm:py-2.5 bg-primary text-white font-bold rounded-xl text-xs sm:text-sm border-none cursor-pointer mt-1"
         >
           Mengerti
         </button>
@@ -974,7 +974,7 @@ function UnifiedMobileSakuraMissionCard({
             <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
               {sakuraInfo.stageName}
             </h2>
-            <span className="text-xs text-slate-400 font-medium block truncate">
+            <span className="text-xs sm:text-sm text-slate-400 font-medium block truncate">
               {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
             </span>
           </div>
@@ -993,18 +993,18 @@ function UnifiedMobileSakuraMissionCard({
         
         {/* Streak & Status Message */}
         <div className="mt-2.5 flex flex-col items-center text-center">
-          <div className={`text-2xl font-black leading-none tracking-tight ${sakuraInfo.colorClass}`}>
-            {streakDays} <span className="text-xs font-bold text-slate-400">Hari Berturut-turut</span>
+          <div className={`text-sm sm:text-base font-black leading-none tracking-tight ${sakuraInfo.colorClass}`}>
+            {streakDays} <span className="text-xs sm:text-sm font-bold text-slate-400">Hari Berturut-turut</span>
           </div>
 
           {isMissionDone ? (
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <div className="mt-2 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
               <span>✦</span>
               <span>Pohon makin tumbuh hari ini!</span>
               <span>✦</span>
             </div>
           ) : (
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 max-w-xs leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5 max-w-xs leading-relaxed">
               {isTodayFreeze
                 ? 'Hari istirahat terencana (Freeze). Streak kamu tetap aman.'
                 : todayDone
@@ -1043,7 +1043,7 @@ function UnifiedMobileSakuraMissionCard({
                 <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
               )}
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{dayLabels[i]}</span>
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold">{dayLabels[i]}</span>
           </div>
         ))}
       </div>
@@ -1051,14 +1051,9 @@ function UnifiedMobileSakuraMissionCard({
       {/* ── BOTTOM: Daily Mission Task Bars ── */}
       <div className="flex flex-col gap-2.5 relative z-10 pt-1">
         <div className="flex items-center justify-between pb-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-slate-800 dark:text-white">Misi Harian Hari Ini</span>
-            {!missionProgress?.isFullyCompleted && missionProgress && hasAnyMission ? (
-              <span className="text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full">
-                {missionProgress.overallPct}% Selesai
-              </span>
-            ) : null}
-          </div>
+          <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
+            Misi Harian Hari Ini
+          </h2>
 
           {hasAnyMission && onOpenMissionModal && (
             <button
@@ -1105,12 +1100,12 @@ function UnifiedMobileSakuraMissionCard({
                         <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                           Bab {v.bab} (Part {v.videoNum})
                         </h4>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
+                        <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
                           {v.title || 'Materi Video Minna no Nihongo'}
                         </span>
                       </div>
                     </div>
-                    <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
+                    <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
                       isVidDone
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                         : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -1151,12 +1146,12 @@ function UnifiedMobileSakuraMissionCard({
                       <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                         Kuis Evaluasi Bab
                       </h4>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
                         Target: {missionProgress.targetQuizzes} Kuis Selesai
                       </span>
                     </div>
                   </div>
-                  <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
+                  <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
                     missionProgress.quizCompleted
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                       : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -1185,7 +1180,7 @@ function UnifiedMobileSakuraMissionCard({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`size-8 rounded-lg flex items-center justify-center font-serif font-bold text-sm shrink-0 ${
+                    <div className={`size-8 rounded-lg flex items-center justify-center font-serif font-bold text-xs sm:text-sm shrink-0 ${
                       missionProgress.kotobaCompleted ? 'bg-emerald-500 text-white' : 'bg-amber-500/10 text-amber-600'
                     }`}>
                       語
@@ -1194,12 +1189,12 @@ function UnifiedMobileSakuraMissionCard({
                       <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                         Setoran Kosakata (Kotoba)
                       </h4>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
                         Target: {missionProgress.targetKotoba} Kosakata Disetor
                       </span>
                     </div>
                   </div>
-                  <span className={`text-xs font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
+                  <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
                     missionProgress.kotobaCompleted
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                       : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -1218,13 +1213,13 @@ function UnifiedMobileSakuraMissionCard({
           </div>
         ) : (
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2.5">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
               Kamu belum menyusun Misi Harian untuk hari ini.
             </p>
             <button
               type="button"
               onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-2 active:scale-95 touch-manipulation"
+              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-2 active:scale-95 touch-manipulation"
             >
               <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -1385,13 +1380,13 @@ function EmbeddedUserScheduleCard({
 
         {/* Scrollable Timeline List */}
         {loading ? (
-          <div className="py-6 text-center text-xs text-slate-400">Memuat linimasa jadwalku...</div>
+          <div className="py-6 text-center text-xs sm:text-sm text-slate-400">Memuat linimasa jadwalku...</div>
         ) : displayedTimeline.length === 0 ? (
-          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center flex flex-col items-center gap-2.5 flex-1 justify-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
+          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-400 text-center flex flex-col items-center gap-2.5 flex-1 justify-center">
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
             <button
               onClick={onOpenMissionModal || (() => navigate('/learning-plan'))}
-              className="group px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-xs shadow-xs flex items-center gap-1.5 min-h-[30px]"
+              className="group px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-xs sm:text-sm shadow-xs flex items-center gap-1.5 min-h-[30px]"
             >
               <span>Susun Misi Hari Ini</span>
               <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -1422,18 +1417,18 @@ function EmbeddedUserScheduleCard({
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <span className="size-1.5 rounded-full bg-amber-500" />
-                        <span className="text-xs">Misi Harian</span>
+                        <span className="text-xs sm:text-sm">Misi Harian</span>
                         {isToday ? (
-                          <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-xs sm:text-sm bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Hari Ini
                           </span>
                         ) : relLabel === 'Besok' ? (
-                          <span className="text-[10px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-xs sm:text-sm bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Besok
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
+                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
                         {formatIndonesianFullDate(item.date)}
                       </span>
                     </div>
@@ -1444,7 +1439,7 @@ function EmbeddedUserScheduleCard({
                         : 'Misi Mandiri Non-Video'}
                     </div>
 
-                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
+                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
                       <span>Target: {m.targetReplayCount}x Replays</span>
                       <span>• {m.targetQuizCount} Kuis • {m.targetKotobaCount} Kotoba</span>
                     </div>
@@ -1467,18 +1462,18 @@ function EmbeddedUserScheduleCard({
                     <div className="flex items-center justify-between font-bold">
                       <span className="flex items-center gap-1.5">
                         <span className="size-1.5 rounded-full bg-sky-500" />
-                        <span className="text-xs">{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
+                        <span className="text-xs sm:text-sm">{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
                         {isToday ? (
-                          <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-xs sm:text-sm bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Hari Ini
                           </span>
                         ) : relLabel === 'Besok' ? (
-                          <span className="text-[10px] bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                          <span className="text-xs sm:text-sm bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
                             Besok
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-xs font-semibold">
+                      <span className="text-xs sm:text-sm font-semibold">
                         {formatIndonesianFullDate(sch.date)} ({sch.start_time} WIB)
                       </span>
                     </div>
@@ -1487,7 +1482,7 @@ function EmbeddedUserScheduleCard({
                       {sch.title}
                     </div>
 
-                    <div className="text-xs opacity-80 flex items-center justify-between">
+                    <div className="text-xs sm:text-sm opacity-80 flex items-center justify-between">
                       <span>Sensei: {sch.instructor_name || sch.instructor || 'Sensei Dojo'}</span>
                       <span className="font-bold px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-900/60">
                         Terdaftar
@@ -1507,10 +1502,10 @@ function EmbeddedUserScheduleCard({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-sm sm:max-w-md w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-3.5 sm:gap-4 animate-scale-up">
             <div className="flex justify-between items-start pb-2 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">
                   {selectedScheduleItem.type === 'mission' ? 'Detail Misi Mandiri' : 'Detail Kelas Live'}
                 </span>
-                <h3 className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-snug mt-0.5">
+                <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug mt-0.5">
                   {selectedScheduleItem.type === 'mission'
                     ? `Misi Harian (${selectedScheduleItem.date})`
                     : selectedScheduleItem.schedule.title}
@@ -1518,7 +1513,7 @@ function EmbeddedUserScheduleCard({
               </div>
               <button
                 onClick={() => setSelectedScheduleItem(null)}
-                className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 font-bold border-none cursor-pointer flex items-center justify-center text-xs"
+                className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 font-bold border-none cursor-pointer flex items-center justify-center text-xs sm:text-sm"
               >
                 <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1527,71 +1522,71 @@ function EmbeddedUserScheduleCard({
             </div>
 
             {selectedScheduleItem.type === 'mission' ? (
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-xs sm:text-sm">
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900 flex flex-col gap-1">
-                  <div className="font-extrabold text-amber-900 dark:text-amber-200 text-[0.72rem] sm:text-xs">
+                  <div className="font-extrabold text-amber-900 dark:text-amber-200 text-xs sm:text-sm">
                     Tanggal Pelaksanaan: {formatIndonesianFullDate(selectedScheduleItem.date)}
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[0.68rem] sm:text-[0.72rem]">
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">
                     Rencana belajar mandiri harian yang telah kamu susun untuk menguji pemahaman dan menjaga streak belajarmu.
                   </p>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
-                  <div className="font-extrabold text-slate-800 dark:text-white text-xs">Video Pembelajaran:</div>
+                  <div className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm">Video Pembelajaran:</div>
                   {selectedScheduleItem.mission.selectedVideos.length > 0 ? (
                     selectedScheduleItem.mission.selectedVideos.map((v: any, idx: number) => (
                       <div key={v.id || idx} className="p-2 sm:p-2.5 bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-2">
                         <div className="min-w-0">
-                          <div className="font-bold text-slate-800 dark:text-white truncate text-[0.72rem] sm:text-xs">
+                          <div className="font-bold text-slate-800 dark:text-white truncate text-xs sm:text-sm">
                             Jilid {v.jilid} · Bab {v.bab} (Part {v.videoNum})
                           </div>
-                          <div className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 truncate">{v.title}</div>
+                          <div className="text-xs sm:text-sm text-slate-400 truncate">{v.title}</div>
                         </div>
                         <button
                           onClick={() => {
                             setSelectedScheduleItem(null)
                             navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)
                           }}
-                          className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg sm:rounded-xl text-[0.7rem] sm:text-xs border-none cursor-pointer shrink-0 transition-all shadow-xs"
+                          className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg sm:rounded-xl text-xs sm:text-sm border-none cursor-pointer shrink-0 transition-all shadow-xs"
                         >
                           Tonton
                         </button>
                       </div>
                     ))
                   ) : (
-                    <span className="text-slate-400 text-xs">Tidak ada video khusus.</span>
+                    <span className="text-slate-400 text-xs sm:text-sm">Tidak ada video khusus.</span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-xs sm:text-sm">
                 <div className={`p-3 rounded-xl sm:rounded-2xl border flex flex-col gap-1.5 ${
                   selectedScheduleItem.schedule.type === 'online'
                     ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100'
                     : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100'
                 }`}>
-                  <div className="font-black text-[0.72rem] sm:text-xs">
+                  <div className="font-black text-xs sm:text-sm">
                     {selectedScheduleItem.schedule.type === 'online' ? 'Kelas Online (Live Zoom / Meet)' : 'Kelas Offline (Tatap Muka)'}
                   </div>
-                  <div className="font-semibold text-[0.7rem] sm:text-xs">
+                  <div className="font-semibold text-xs sm:text-sm">
                     {formatIndonesianFullDate(selectedScheduleItem.schedule.date)} ({selectedScheduleItem.schedule.start_time} - {selectedScheduleItem.schedule.end_time} WIB)
                   </div>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-                  <div className="font-extrabold text-slate-800 dark:text-white text-xs">Pengajar (Sensei):</div>
-                  <div className="font-bold text-slate-700 dark:text-slate-200 text-xs">
+                  <div className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm">Pengajar (Sensei):</div>
+                  <div className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm">
                     {selectedScheduleItem.schedule.instructor_name || selectedScheduleItem.schedule.instructor || 'Sensei Dojo'}
                   </div>
                   {selectedScheduleItem.schedule.type === 'online' && (
                     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-400 block mb-1 font-semibold text-[0.68rem] sm:text-[0.7rem]">Tautan Kelas:</span>
+                      <span className="text-slate-400 block mb-1 font-semibold text-xs sm:text-sm">Tautan Kelas:</span>
                       <a
                         href={selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sky-600 dark:text-sky-400 font-mono text-[0.68rem] sm:text-[0.72rem] font-bold select-all bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1.5 rounded-lg inline-block break-all hover:underline"
+                        className="text-sky-600 dark:text-sky-400 font-mono text-xs sm:text-sm font-bold select-all bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1.5 rounded-lg inline-block break-all hover:underline"
                       >
                         {selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
                       </a>
@@ -1608,14 +1603,14 @@ function EmbeddedUserScheduleCard({
                     setSelectedScheduleItem(null)
                     onOpenMissionModal()
                   }}
-                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl border-none cursor-pointer"
+                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold rounded-xl border-none cursor-pointer"
                 >
                   Ubah Misi Hari Ini
                 </button>
               )}
               <button
                 onClick={() => setSelectedScheduleItem(null)}
-                className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border-none cursor-pointer"
+                className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-xl border-none cursor-pointer"
               >
                 Tutup
               </button>
@@ -1908,7 +1903,7 @@ export default function Dashboard() {
                 className="size-10 sm:size-14 lg:size-16 rounded-xl sm:rounded-2xl border-2 border-white/30 object-cover shadow-md shrink-0"
               />
             ) : (
-              <div className="size-10 sm:size-14 lg:size-16 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-bold text-white text-base sm:text-2xl shadow-md font-serif shrink-0">
+              <div className="size-10 sm:size-14 lg:size-16 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-bold text-white text-sm sm:text-base shadow-md font-serif shrink-0">
                 {profile?.full_name?.[0] || '学'}
               </div>
             )}
@@ -1916,16 +1911,16 @@ export default function Dashboard() {
             <div className="min-w-0 flex-1">
               {profile?.group_name && (
                 <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="bg-white/15 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.2 rounded-full border border-white/20 truncate max-w-[150px]">
+                  <span className="bg-white/15 backdrop-blur-md text-white text-xs sm:text-sm font-bold px-2 py-0.2 rounded-full border border-white/20 truncate max-w-[150px]">
                     Grup: {profile.group_name}
                   </span>
                 </div>
               )}
 
-              <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-white leading-tight truncate">
+              <h1 className="text-sm sm:text-base font-extrabold text-white leading-tight truncate">
                 {greetingJp}, {profile?.full_name || 'Pelajar'}!
               </h1>
-              <p className="text-[11px] sm:text-xs text-white/90 font-normal mt-0.5 leading-snug sm:leading-relaxed">
+              <p className="text-xs sm:text-sm text-white/90 font-normal mt-0.5 leading-snug sm:leading-relaxed">
                 {greetingKanji} • Latihan percakapan bahasa Jepang harianmu.
               </p>
             </div>
@@ -1947,26 +1942,26 @@ export default function Dashboard() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                   Papan Pengumuman Dojo
                 </span>
                 {unreadAnnouncements.length > 0 ? (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
+                  <span className="text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
                     {unreadAnnouncements.length} Baru
                   </span>
                 ) : (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                  <span className="text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
                     Terkini
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                 {unreadAnnouncements.length > 0 ? unreadAnnouncements[0]?.title : announcements[0]?.title}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs font-bold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-0.5 transition-transform">
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-0.5 transition-transform">
             <span className="hidden sm:inline">Buka</span>
             <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center">
               <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2002,15 +1997,12 @@ export default function Dashboard() {
               </svg>
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Misi Harian Hari Ini</h2>
-                {!missionProgress?.isFullyCompleted && (
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full shrink-0">
-                    {missionProgress ? `${missionProgress.overallPct}% Progress` : 'Belum Dibuat'}
-                  </span>
-                )}
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
+                  Misi Harian Hari Ini
+                </h2>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                 {dailyMission
                   ? `Target: ${dailyMission.selectedVideos.length > 0 ? dailyMission.selectedVideos.map(v => `Bab ${v.bab} Part ${v.videoNum}`).join(', ') : 'Tanpa Video'} (${missionProgress?.targetReplays}x Replays) ${dailyMission.targetQuizCount > 0 ? `• ${dailyMission.targetQuizCount} Kuis` : ''} ${dailyMission.targetKotobaCount > 0 ? `• ${dailyMission.targetKotobaCount} Kotoba` : ''}`
                   : 'Buat misi harian kamu untuk mulai menambah streak sakura hari ini!'}
@@ -2050,16 +2042,16 @@ export default function Dashboard() {
                     }`}
                   >
                     <div>
-                      <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-white mb-1">
+                      <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
                         <span className="truncate pr-1 group-hover:text-primary transition-colors flex items-center gap-1.5">
                           <svg className="size-3.5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                           <span className="truncate">Jilid {v.jilid} · Bab {v.bab} (Part {v.videoNum})</span>
                         </span>
-                        <span className={isVidDone ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-[0.7rem] sm:text-xs' : 'text-primary dark:text-red-400 font-bold shrink-0 text-[0.7rem] sm:text-xs'}>
+                        <span className={isVidDone ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-primary dark:text-red-400 font-bold shrink-0 text-xs sm:text-sm'}>
                           {count}/3x
                         </span>
                       </div>
-                      <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 mb-1.5 truncate">
+                      <p className="text-xs sm:text-sm text-slate-400 mb-1.5 truncate">
                         {v.title}
                       </p>
                     </div>
@@ -2071,7 +2063,7 @@ export default function Dashboard() {
                           style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
                         />
                       </div>
-                      <div className="text-[0.65rem] sm:text-[0.68rem] font-extrabold text-primary dark:text-red-400 flex items-center justify-between">
+                      <div className="text-xs sm:text-sm font-extrabold text-primary dark:text-red-400 flex items-center justify-between">
                         <span>Tonton Video</span>
                         <span className="size-3.5 sm:size-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                           <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2084,9 +2076,9 @@ export default function Dashboard() {
                 )
               })
             ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
                 <span className="font-bold">Rencana Video</span>
-                <span className="text-[0.65rem] sm:text-[0.68rem]">Tidak ada video yang direncanakan</span>
+                <span className="text-xs sm:text-sm">Tidak ada video yang direncanakan</span>
               </div>
             )}
 
@@ -2105,16 +2097,16 @@ export default function Dashboard() {
                 }`}
               >
                 <div>
-                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-white mb-1">
+                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
                     <span className="group-hover:text-indigo-600 transition-colors flex items-center gap-1.5 truncate pr-1">
                       <svg className="size-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       <span className="truncate">Kuis Evaluasi Bab</span>
                     </span>
-                    <span className={missionProgress.quizCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-[0.7rem] sm:text-xs' : 'text-indigo-600 dark:text-indigo-400 font-bold shrink-0 text-[0.7rem] sm:text-xs'}>
+                    <span className={missionProgress.quizCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-indigo-600 dark:text-indigo-400 font-bold shrink-0 text-xs sm:text-sm'}>
                       {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
                     </span>
                   </div>
-                  <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 mb-1.5">
+                  <p className="text-xs sm:text-sm text-slate-400 mb-1.5">
                     Target: {missionProgress.targetQuizzes} kuis selesai
                   </p>
                 </div>
@@ -2126,7 +2118,7 @@ export default function Dashboard() {
                       style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100)}%` }}
                     />
                   </div>
-                  <div className="text-[0.65rem] sm:text-[0.68rem] font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                  <div className="text-xs sm:text-sm font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
                     <span>Mulai Kuis</span>
                     <span className="size-3.5 sm:size-4 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                       <svg className="size-2 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2137,9 +2129,9 @@ export default function Dashboard() {
                 </div>
               </button>
             ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
-                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs mb-1">Kuis Evaluasi Bab</div>
-                <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Tidak ada kuis yang direncanakan</p>
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
+                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs sm:text-sm mb-1">Kuis Evaluasi Bab</div>
+                <p className="text-xs sm:text-sm text-slate-400">Tidak ada kuis yang direncanakan</p>
               </div>
             )}
 
@@ -2154,16 +2146,16 @@ export default function Dashboard() {
                 }`}
               >
                 <div>
-                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-white mb-1">
+                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
                     <span className="group-hover:text-amber-600 transition-colors flex items-center gap-1.5 truncate pr-1">
                       <svg className="size-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                       <span className="truncate">Setoran Kotoba</span>
                     </span>
-                    <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-[0.7rem] sm:text-xs' : 'text-amber-600 dark:text-amber-400 font-bold shrink-0 text-[0.7rem] sm:text-xs'}>
+                    <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-amber-600 dark:text-amber-400 font-bold shrink-0 text-xs sm:text-sm'}>
                       {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
                     </span>
                   </div>
-                  <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 mb-1.5">
+                  <p className="text-xs sm:text-sm text-slate-400 mb-1.5">
                     Target: {missionProgress.targetKotoba} setoran selesai
                   </p>
                 </div>
@@ -2175,7 +2167,7 @@ export default function Dashboard() {
                       style={{ width: `${Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100)}%` }}
                     />
                   </div>
-                  <div className="text-[0.65rem] sm:text-[0.68rem] font-extrabold text-amber-600 dark:text-amber-400 flex items-center justify-between">
+                  <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 flex items-center justify-between">
                     <span>Buka Setoran</span>
                     <span className="size-3.5 sm:size-4 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                       <svg className="size-2 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2186,20 +2178,20 @@ export default function Dashboard() {
                 </div>
               </button>
             ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
-                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs mb-1">Setoran Kotoba</div>
-                <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400">Tidak ada kotoba yang direncanakan</p>
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
+                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs sm:text-sm mb-1">Setoran Kotoba</div>
+                <p className="text-xs sm:text-sm text-slate-400">Tidak ada kotoba yang direncanakan</p>
               </div>
             )}
           </div>
         ) : (
           <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2.5">
-            <p className="text-[0.72rem] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
               Kamu belum menyusun Misi Harian untuk hari ini.
             </p>
             <button
               onClick={() => setShowMissionModal(true)}
-              className="group px-3 sm:px-3.5 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white text-[0.68rem] sm:text-xs font-extrabold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[30px] sm:min-h-[34px]"
+              className="group px-3 sm:px-3.5 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-extrabold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[30px] sm:min-h-[34px]"
             >
               <span>Susun Misi Hari Ini</span>
               <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -2233,12 +2225,12 @@ export default function Dashboard() {
               onClick={() => navigate('/kotoba')}
               className="bg-amber-500 text-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-2 sm:gap-3 shadow-xs cursor-pointer border-none transition-all hover:-translate-y-0.5 hover:shadow-md text-left group touch-manipulation min-h-[50px] sm:min-h-[58px]"
             >
-              <span className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-amber-600/30 border border-amber-300/40 text-amber-100 flex items-center justify-center font-bold text-xs sm:text-base shrink-0 font-serif shadow-xs">
+              <span className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-amber-600/30 border border-amber-300/40 text-amber-100 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 font-serif shadow-xs">
                 語
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-xs sm:text-sm font-bold leading-snug truncate">Jurnal Kosakata</div>
-                <div className="text-white/80 text-[11px] sm:text-xs mt-0.5 truncate block">Catatan Kotoba</div>
+                <div className="text-sm sm:text-base font-bold leading-snug truncate">Jurnal Kosakata</div>
+                <div className="text-white/80 text-xs sm:text-sm mt-0.5 truncate block">Catatan Kotoba</div>
               </div>
               <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-white/20 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
                 <svg className="size-2 sm:size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2258,8 +2250,8 @@ export default function Dashboard() {
                 </svg>
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-snug truncate">Reservasi Kelas</div>
-                <div className="text-slate-400 text-[11px] sm:text-xs mt-0.5 truncate block">Live & Offline</div>
+                <div className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug truncate">Reservasi Kelas</div>
+                <div className="text-slate-400 text-xs sm:text-sm mt-0.5 truncate block">Live & Offline</div>
               </div>
               <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
                 <svg className="size-2 sm:size-2.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -2283,8 +2275,8 @@ export default function Dashboard() {
       <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex justify-between items-center mb-2.5 sm:mb-3.5">
           <div>
-            <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-800 dark:text-white flex items-center gap-1.5 sm:gap-2 leading-tight">
-              <svg className="size-3.5 sm:size-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 leading-tight">
+              <svg className="size-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
               <span>{t('dash_book_progress_title', 'Progress Belajar Buku')}</span>
@@ -2316,13 +2308,13 @@ export default function Dashboard() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-300 font-semibold mb-1">
+              <div className="flex justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-300 font-semibold mb-1">
                 <span>Pencapaian: {bookProgress.jilid1DoneItems}/125 Selesai</span>
                 <span>{bookProgress.jilid1Pct}%</span>
               </div>
@@ -2348,13 +2340,13 @@ export default function Dashboard() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-300 font-semibold mb-1">
+              <div className="flex justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-300 font-semibold mb-1">
                 <span>Pencapaian: {bookProgress.jilid2DoneItems}/125 Selesai</span>
                 <span>{bookProgress.jilid2Pct}%</span>
               </div>

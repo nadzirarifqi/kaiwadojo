@@ -118,8 +118,33 @@ body {
   text-align: left;
 }
 
-h1, h2, h3, h4, h5, h6 { margin: 0; line-height: 1.25; }
-p  { margin: 0; }
+/* Typography Hierarchy Standardization - Strictly 2 Variants Per Page */
+/* Variant 1: Judul / Headings (h1 - h6, page/section/card titles) */
+h1, h2, h3, h4, h5, h6, .page-heading, .section-heading, .card-heading, .subcard-heading {
+  margin: 0;
+  font-size: 0.875rem; /* 14px mobile */
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 640px) {
+  h1, h2, h3, h4, h5, h6, .page-heading, .section-heading, .card-heading, .subcard-heading {
+    font-size: 1rem; /* 16px desktop */
+  }
+}
+
+/* Variant 2: Teks biasa & Tombol (p, button, input, label, badge, text) */
+p, .body-text, button, input, select, textarea {
+  margin: 0;
+  font-size: 0.75rem; /* 12px mobile */
+  line-height: 1.5;
+}
+@media (min-width: 640px) {
+  p, .body-text, button, input, select, textarea {
+    font-size: 0.875rem; /* 14px desktop */
+    line-height: 1.55;
+  }
+}
 a  { text-decoration: none; color: inherit; }
 img { display: block; }
 button {

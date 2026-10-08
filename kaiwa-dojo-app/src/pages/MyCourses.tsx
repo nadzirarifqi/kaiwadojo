@@ -161,14 +161,14 @@ function SmartVideoPlayer({
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h4 className="text-sm font-extrabold text-white leading-snug">
+        <h4 className="text-sm sm:text-base font-bold text-white leading-snug">
           Format Video Perlu Penyesuaian
         </h4>
-        <p className="text-xs text-slate-300 leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
           Semua ekstensi (.mp4, .MP4, .mov) telah dicoba. Harap pastikan format HandBrake sesuai standar web browser:
         </p>
 
-        <div className="w-full p-3 rounded-xl bg-black/60 border border-slate-800 text-[0.68rem] text-left flex flex-col gap-1 text-slate-300 font-mono">
+        <div className="w-full p-3 rounded-xl bg-black/60 border border-slate-800 text-xs sm:text-sm text-left flex flex-col gap-1 text-slate-300 font-mono">
           <span className="font-bold text-amber-400 flex items-center gap-1.5">
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -188,7 +188,7 @@ function SmartVideoPlayer({
             setHasFailedAll(false)
             setCandidateIdx(0)
           }}
-          className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs border-none cursor-pointer hover:bg-primary-dark transition-all flex items-center gap-2"
+          className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm border-none cursor-pointer hover:bg-primary-dark transition-all flex items-center gap-2"
         >
           <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -889,14 +889,14 @@ export default function MyCourses() {
       {profile?.role === 'admin' && (
         <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black flex items-center gap-1.5">
+            <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs sm:text-sm font-bold flex items-center gap-1.5">
               <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
               <span>Preview Tampilan Pelajar</span>
             </span>
-            <span className="text-xs font-semibold text-slate-300">
+            <span className="text-xs sm:text-sm font-medium text-slate-300">
               {adminStudentViewMode
                 ? 'Menampilkan daftar bab persis seperti yang dilihat oleh Siswa (Bab Sembunyi & Bab luar grup disaring).'
                 : 'Menampilkan seluruh 50 Bab (Termasuk Bab yang disembunyikan / khusus grup).'}
@@ -904,7 +904,7 @@ export default function MyCourses() {
           </div>
           <button
             onClick={() => setAdminStudentViewMode(!adminStudentViewMode)}
-            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 cursor-pointer shrink-0 flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold transition-all border border-white/20 cursor-pointer shrink-0 flex items-center gap-1.5"
           >
             {adminStudentViewMode ? (
               <>
@@ -930,7 +930,7 @@ export default function MyCourses() {
       {/* Hero Section: Japan Fun Facts Banner */}
       <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 mb-4 sm:mb-6 shadow-md relative overflow-hidden animate-fade-in border border-rose-900/30 min-h-[145px] sm:min-h-[160px] flex flex-col justify-between">
         {/* Background Kanji Watermark */}
-        <div className="absolute right-2 -bottom-3 sm:right-3 sm:-bottom-4 text-5xl sm:text-7xl font-black text-rose-500/5 select-none pointer-events-none leading-none font-japanese">
+        <div className="absolute right-2 -bottom-3 sm:right-3 sm:-bottom-4 text-sm sm:text-base scale-[5] sm:scale-[7] origin-bottom-right font-bold text-rose-500/5 select-none pointer-events-none leading-none font-japanese">
           {currentFact.kanji}
         </div>
         <div className="absolute -left-10 -top-10 size-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -939,11 +939,11 @@ export default function MyCourses() {
           <div className="flex-1 min-w-0 w-full">
             {/* Tag Badge */}
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-rose-500/80 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                <span className="font-japanese text-[10px]">日</span>
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider bg-rose-500/80 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                <span className="font-japanese text-xs sm:text-sm">日</span>
                 <span>{t('mc_trivia_title', 'Japan Trivia & Fun Fact')}</span>
               </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold text-rose-200/80 bg-white/10 px-1.5 py-0.2 rounded-full">
+              <span className="text-xs sm:text-sm font-semibold text-rose-200/80 bg-white/10 px-1.5 py-0.2 rounded-full">
                 {currentFact.tag}
               </span>
             </div>
@@ -953,14 +953,14 @@ export default function MyCourses() {
               <span className="size-7 sm:size-8 rounded-lg bg-rose-500/20 text-rose-300 font-serif font-black text-sm sm:text-base flex items-center justify-center border border-rose-500/30 shrink-0 font-japanese">
                 {currentFact.kanji.charAt(0)}
               </span>
-              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-white leading-tight truncate">
-                {currentFact.title} <span className="text-rose-300 font-serif text-[11px] sm:text-xs ml-1 font-normal">({currentFact.kanji})</span>
+              <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">
+                {currentFact.title} <span className="text-rose-300 font-serif text-xs sm:text-sm ml-1 font-normal">({currentFact.kanji})</span>
               </h2>
             </div>
 
             {/* Fact Text */}
             <div className="bg-black/25 p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-white/10 min-h-[46px] sm:min-h-[48px] flex items-center">
-              <p className="text-[10px] sm:text-[11px] text-slate-200 leading-relaxed max-w-2xl line-clamp-2">
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-2xl line-clamp-2">
                 "{currentFact.fact}"
               </p>
             </div>
@@ -972,7 +972,7 @@ export default function MyCourses() {
               <button
                 type="button"
                 onClick={() => setFunFactIndex(prev => (prev === 0 ? JAPAN_FUN_FACTS.length - 1 : prev - 1))}
-                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-[10px] font-bold transition-all"
+                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                 title="Fun Fact Sebelumnya"
               >
                 &lt;
@@ -980,7 +980,7 @@ export default function MyCourses() {
               <button
                 type="button"
                 onClick={() => setFunFactIndex(Math.floor(Math.random() * JAPAN_FUN_FACTS.length))}
-                className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-[10px] font-bold transition-all shadow-xs flex items-center gap-1"
+                className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center gap-1"
                 title="Acak Fun Fact"
               >
                 <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -991,7 +991,7 @@ export default function MyCourses() {
               <button
                 type="button"
                 onClick={() => setFunFactIndex(prev => (prev + 1) % JAPAN_FUN_FACTS.length)}
-                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-[10px] font-bold transition-all"
+                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                 title="Fun Fact Selanjutnya"
               >
                 &gt;
@@ -1018,10 +1018,10 @@ export default function MyCourses() {
       {/* Header */}
       <div className="mb-4 sm:mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-white tracking-tight mb-0.5 leading-tight">
+          <h1 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white tracking-tight mb-0.5 leading-tight">
             {t('mc_title', headerSettings.page_title)}
           </h1>
-          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {t('mc_subtitle', headerSettings.page_subtitle)}
           </p>
         </div>
@@ -1029,7 +1029,7 @@ export default function MyCourses() {
         {isInstructor && (
           <button
             onClick={() => navigate('/kelola-kursus')}
-            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-[11px] sm:text-xs font-bold border-none cursor-pointer shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5 hover:-translate-y-0.5 group min-h-[28px] sm:min-h-[32px]"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-bold border-none cursor-pointer shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5 hover:-translate-y-0.5 group min-h-[28px] sm:min-h-[32px]"
           >
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1050,19 +1050,19 @@ export default function MyCourses() {
               : 'bg-white border-slate-200 text-slate-700 hover:border-primary/40 hover:bg-slate-50 shadow-xs'
           }`}
         >
-          <div className={`size-10 sm:size-12 rounded-xl flex items-center justify-center text-base sm:text-lg font-black shrink-0 ${
+          <div className={`size-10 sm:size-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shrink-0 ${
             selectedJilid === 1 ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
           }`}>
-            <span className="font-japanese text-base sm:text-lg">一</span>
+            <span className="font-japanese text-sm sm:text-base">一</span>
           </div>
           <div className="min-w-0 flex-1">
-            <div className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
+            <div className={`text-xs sm:text-sm font-bold uppercase tracking-wider mb-0.5 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
               {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}
             </div>
             <div className="text-xs sm:text-sm font-bold truncate leading-tight">
               {t('course_title_vol1', 'Bahasa Jepang Dasar (Jilid 1)')}
             </div>
-            <div className={`text-[10px] sm:text-[11px] font-semibold mt-0.5 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
+            <div className={`text-xs sm:text-sm font-medium mt-0.5 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
               {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}
             </div>
           </div>
@@ -1079,23 +1079,23 @@ export default function MyCourses() {
           className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all flex items-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed bg-slate-50 border-slate-200 shadow-xs select-none"
         >
           {/* Coming Soon Ribbon */}
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-amber-400 text-amber-900 text-[9px] font-bold uppercase tracking-wider px-2 py-0.2 rounded-full shadow-xs">
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-amber-400 text-amber-900 text-xs sm:text-sm font-bold uppercase tracking-wider px-2 py-0.2 rounded-full shadow-xs">
             <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <span>Coming Soon</span>
           </div>
-          <div className="size-10 sm:size-12 rounded-xl flex items-center justify-center text-base sm:text-lg font-black shrink-0 bg-slate-100 text-slate-400 grayscale font-japanese">
+          <div className="size-10 sm:size-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shrink-0 bg-slate-100 text-slate-400 grayscale font-japanese">
             二
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-slate-400">
+            <div className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-0.5 text-slate-400">
               {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}
             </div>
             <div className="text-xs sm:text-sm font-bold truncate leading-tight text-slate-500">
               {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
             </div>
-            <div className="text-[10px] sm:text-[11px] font-semibold mt-0.5 text-slate-400">
+            <div className="text-xs sm:text-sm font-medium mt-0.5 text-slate-400">
               Segera Hadir • Bab 26 s/d Bab 50
             </div>
           </div>
@@ -1140,23 +1140,23 @@ export default function MyCourses() {
       {selectedJilid === 2 && (
         <div className="flex flex-col items-center justify-center py-16 px-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center gap-5">
           <div className="relative">
-            <div className="size-24 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-4xl text-white shadow-lg font-japanese font-black">
+            <div className="size-24 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm sm:text-base text-white shadow-lg font-japanese font-bold">
               二
             </div>
-            <div className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[0.65rem] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow border border-amber-300">
+            <div className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-xs sm:text-sm font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow border border-amber-300">
               Coming Soon
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-black text-slate-800 mb-2">
+            <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2">
               Minna no Nihongo — Jilid 2
             </h3>
-            <p className="text-sm text-slate-500 font-semibold max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
               Materi <strong>Bab 26 s/d Bab 50</strong> sedang dalam persiapan oleh tim Kaiwa Dojo.<br />
               Selesaikan materi Jilid 1 terlebih dahulu untuk membuka akses.
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 text-xs font-bold text-slate-400">
+          <div className="flex flex-wrap justify-center gap-2 text-xs sm:text-sm font-bold text-slate-400">
             {[26,27,28,29,30,31,32,33,34,35].map(n => (
               <span key={n} className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 grayscale opacity-60">
                 第{n}課
@@ -1166,9 +1166,9 @@ export default function MyCourses() {
           </div>
           <button
             onClick={() => setSelectedJilid(1)}
-            className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-extrabold text-sm border-none cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-2 group mx-auto"
+            className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-bold text-xs sm:text-sm border-none cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-2 group mx-auto"
           >
-            <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:-translate-x-0.5 transition-transform">
+            <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:-translate-x-0.5 transition-transform">
               &lt;
             </span>
             <span>Kembali ke Jilid 1</span>
@@ -1186,8 +1186,8 @@ export default function MyCourses() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-slate-700">Tidak ada bab yang cocok</h3>
-          <p className="text-xs text-slate-400">Coba ubah kata kunci pencarianmu.</p>
+          <h3 className="text-sm sm:text-base font-bold text-slate-700">Tidak ada bab yang cocok</h3>
+          <p className="text-xs sm:text-sm text-slate-400">Coba ubah kata kunci pencarianmu.</p>
         </div>
       ) : selectedJilid === 1 ? (
         <div className="flex flex-col gap-4">
@@ -1213,11 +1213,11 @@ export default function MyCourses() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug truncate">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-snug truncate">
                           {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
                         </h3>
                         {!shouldHideUnreleased && isRestricted && (
-                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 flex items-center gap-1.5">
+                          <span className="text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 flex items-center gap-1.5">
                             <svg className="size-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
@@ -1226,17 +1226,17 @@ export default function MyCourses() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">
+                      <p className="text-xs sm:text-sm text-slate-500 font-medium truncate mt-0.5">
                         {chap.subtitle}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0 ml-2">
-                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full hidden sm:inline-block">
+                    <span className="text-xs sm:text-sm font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full hidden sm:inline-block">
                       {completedInBab}/5 {t('completed', 'Selesai')}
                     </span>
-                    <span className="text-slate-400 text-sm font-bold">
+                    <span className="text-slate-400 text-xs sm:text-sm font-bold">
                       {isExpanded ? '▲' : '▼'}
                     </span>
                   </div>
@@ -1297,18 +1297,18 @@ export default function MyCourses() {
                                     : 'bg-gradient-to-br from-primary to-primary-dark'
                           }`}>
                             {/* Decorative Background Symbol */}
-                            <span className="text-5xl opacity-20 absolute -right-2 -bottom-2 select-none pointer-events-none text-white font-black font-japanese">
+                            <span className="text-sm sm:text-base scale-[4] origin-bottom-right opacity-20 absolute right-1 bottom-1 select-none pointer-events-none text-white font-bold font-japanese">
                               {isQuizLocked ? '鎖' : isKotoba ? '語' : isQuiz ? '試' : '画'}
                             </span>
 
                             {/* Center Visual Icon / Play Button */}
-                            <div className="size-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white text-lg font-bold shadow-md transition-transform group-hover:scale-110">
+                            <div className="size-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white text-sm sm:text-base font-bold shadow-md transition-transform group-hover:scale-110">
                               {isQuizLocked ? (
                                 <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                               ) : isKotoba ? (
-                                <span className="font-japanese font-bold text-base">語</span>
+                                <span className="font-japanese font-bold text-sm sm:text-base">語</span>
                               ) : isQuiz ? (
                                 <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1320,32 +1320,32 @@ export default function MyCourses() {
 
                             {/* Top Status Badges */}
                             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                              <span className="text-[0.65rem] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md bg-black/40 text-white backdrop-blur-sm">
+                              <span className="text-xs sm:text-sm font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-black/40 text-white backdrop-blur-sm">
                                 {isKotoba ? t('mc_lesson_kotoba', 'Kotoba') : isQuiz ? t('mc_lesson_quiz', 'Kuis') : `${t('mc_lesson_video', 'Video')} ${lesson.lesson_number}`}
                               </span>
                               {isQuizLocked ? (
-                                <span className="text-[0.65rem] font-extrabold bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                <span className="text-xs sm:text-sm font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                                   <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                   </svg>
                                   <span>{t('mc_locked', 'Terkunci')} ({watchedCount}/3)</span>
                                 </span>
                               ) : lesson.is_completed ? (
-                                <span className="text-[0.65rem] font-extrabold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                                <span className="text-xs sm:text-sm font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                                   <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                   </svg>
                                   <span>{t('completed', 'Selesai')}</span>
                                 </span>
                               ) : lesson.is_placeholder ? (
-                                <span className="text-[0.65rem] font-bold bg-amber-500/90 text-white px-2 py-0.5 rounded-full shadow-xs">
+                                <span className="text-xs sm:text-sm font-bold bg-amber-500/90 text-white px-2 py-0.5 rounded-full shadow-xs">
                                   {t('mc_coming_soon', 'Segera Hadir')}
                                 </span>
                               ) : null}
                             </div>
 
                             {/* Duration Tag */}
-                            <span className="absolute bottom-2 right-2 text-[0.65rem] font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs font-mono flex items-center gap-1">
+                            <span className="absolute bottom-2 right-2 text-xs sm:text-sm font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs font-mono flex items-center gap-1">
                               <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
@@ -1356,10 +1356,10 @@ export default function MyCourses() {
                           {/* Card Content */}
                           <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between gap-2.5 sm:gap-3">
                             <div>
-                              <h4 className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-0.5">
+                              <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-0.5">
                                 {lesson.title}
                               </h4>
-                              <p className="text-[10px] text-slate-400 font-medium">
+                              <p className="text-xs sm:text-sm text-slate-400 font-medium">
                                 {isQuizLocked
                                   ? (language === 'ja' ? `あと${3 - watchedCount}個の動画を視聴して解除` : language === 'en' ? `Watch ${3 - watchedCount} more video(s) to unlock` : `Tonton ${3 - watchedCount} video lagi untuk membuka`)
                                   : isKotoba
@@ -1373,7 +1373,7 @@ export default function MyCourses() {
                             </div>
 
                             <button
-                              className={`w-full min-h-[28px] sm:min-h-[32px] py-1.5 sm:py-2 px-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                              className={`w-full min-h-[28px] sm:min-h-[32px] py-1.5 sm:py-2 px-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                                 isQuizLocked
                                   ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                                   : isKotoba
@@ -1389,7 +1389,7 @@ export default function MyCourses() {
                                 <span>Terkunci ({watchedCount}/3 Video)</span>
                               ) : isKotoba ? (
                                 <>
-                                  <span className="font-japanese font-bold text-xs">語</span>
+                                  <span className="font-japanese font-bold text-xs sm:text-sm">語</span>
                                   <span>Setor Kotoba</span>
                                 </>
                               ) : isQuiz ? (
@@ -1399,7 +1399,7 @@ export default function MyCourses() {
                               ) : (
                                 <>
                                   <span>Buka Materi</span>
-                                  <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-[0.55rem] font-black">
+                                  <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold">
                                     &gt;
                                   </span>
                                 </>
@@ -1425,14 +1425,14 @@ export default function MyCourses() {
             {/* Modal Header */}
             <div className="px-3.5 py-2 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
               <div className="min-w-0 pr-2">
-                <span className="text-[0.65rem] sm:text-xs text-primary-lighter font-bold uppercase tracking-wider block truncate">
+                <span className="text-xs sm:text-sm text-primary-lighter font-bold uppercase tracking-wider block truncate">
                   {activeChapter?.title || `Minna no Nihongo Jilid ${selectedJilid}`}
                 </span>
-                <h2 className="text-xs sm:text-lg font-bold truncate leading-tight">{activeLesson.title}</h2>
+                <h2 className="text-sm sm:text-base font-bold truncate leading-tight">{activeLesson.title}</h2>
               </div>
               <button
                 onClick={() => { setActiveLesson(null); setActiveChapter(null) }}
-                className="size-7 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-base sm:text-xl flex items-center justify-center shrink-0"
+                className="size-7 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-sm sm:text-base flex items-center justify-center shrink-0"
               >
                 ×
               </button>
@@ -1447,28 +1447,28 @@ export default function MyCourses() {
 
                 {/* Mobile-only: Toggle button for lesson list */}
                 <div className="lg:hidden flex items-center justify-between shrink-0 py-0.5 px-1">
-                  <div className="flex items-center gap-1.5 text-[0.68rem] text-slate-500 font-semibold truncate">
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium truncate">
                     <svg className="size-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" />
                     </svg>
                     <span>{activeChapter?.lessons.length || 0} Materi di Bab Ini</span>
                   </div>
                   <button
                     onClick={() => setShowLessonList(prev => !prev)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[0.68rem] font-bold border-none cursor-pointer flex items-center gap-1.5 shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold border-none cursor-pointer flex items-center gap-1.5 shrink-0"
                   >
                     <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
                     </svg>
                     <span>Daftar Materi</span>
-                    <span className="text-[0.6rem]">{showLessonList ? '▲' : '▼'}</span>
+                    <span className="text-xs sm:text-sm font-bold">{showLessonList ? '▲' : '▼'}</span>
                   </button>
                 </div>
 
                 {/* Mobile-only: Collapsible lesson list (shows when toggled) */}
                 {showLessonList && (
                   <div className="lg:hidden animate-slide-down bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 p-2 flex flex-col gap-1 shrink-0">
-                    <h4 className="font-bold text-slate-700 dark:text-slate-300 text-[0.65rem] uppercase tracking-wider mb-0.5">
+                    <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm sm:text-base uppercase tracking-wider mb-0.5">
                       Materi {activeChapter?.title || 'Bab Ini'}
                     </h4>
                     {activeChapter?.lessons.map(l => {
@@ -1508,7 +1508,7 @@ export default function MyCourses() {
                         >
                           <div className="min-w-0 flex-1 pr-2">
                             <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className={`text-[0.6rem] font-extrabold px-1.5 py-0.5 rounded-md ${
+                              <span className={`text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-md ${
                                 lIsLocked ? 'bg-amber-500/20 text-amber-600' :
                                 lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-primary/10 text-primary'
                               }`}>
@@ -1520,8 +1520,8 @@ export default function MyCourses() {
                                 </svg>
                               )}
                             </div>
-                            <div className="text-xs font-bold truncate">{l.title}</div>
-                            <div className="text-[0.65rem] text-slate-400 mt-0.5 flex items-center gap-1">
+                            <div className="text-xs sm:text-sm font-bold truncate">{l.title}</div>
+                            <div className="text-xs sm:text-sm text-slate-400 mt-0.5 flex items-center gap-1">
                               <span>{l.duration_minutes}m</span>
                               {lIsLocked ? (
                                 <span className="text-amber-500 font-semibold">• Tonton {3 - watchedVids} video lagi</span>
@@ -1539,7 +1539,7 @@ export default function MyCourses() {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                           ) : (
-                            <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black text-slate-600 shrink-0">
+                            <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold text-slate-600 shrink-0">
                               &gt;
                             </span>
                           )}
@@ -1553,17 +1553,17 @@ export default function MyCourses() {
                   <div className="w-full rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-200 p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 shadow-sm shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 sm:size-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black shadow-md font-japanese">
+                        <div className="size-10 sm:size-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-sm sm:text-base font-bold shadow-md font-japanese">
                           語
                         </div>
                         <div>
-                          <span className="text-[0.65rem] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">Setoran Kotoba</span>
-                          <h3 className="text-sm sm:text-lg font-extrabold text-slate-800 leading-tight">
+                          <span className="text-xs sm:text-sm font-bold text-amber-700 uppercase tracking-wider">Setoran Kotoba</span>
+                          <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-tight">
                             Setoran Kosakata Bahasa Jepang — {activeChapter?.title}
                           </h3>
                         </div>
                       </div>
-                      <span className="text-[0.65rem] sm:text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <span className="text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full flex items-center gap-1">
                         <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1571,13 +1571,13 @@ export default function MyCourses() {
                       </span>
                     </div>
 
-                    <p className="text-[0.7rem] sm:text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                       Hafalkan kosakata dasar bab ini sebelum melanjutkan ke video tata bahasa. Kamu dapat mencocokkan kata Jepang dan artinya!
                     </p>
 
                     {/* Sample Interactive Vocabulary Card */}
                     <div className="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200/80 shadow-xs flex flex-col gap-2.5">
-                      <div className="text-[0.65rem] sm:text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                      <div className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1.5">
                         Daftar Kosakata Bab {activeChapter?.bab_number}
                       </div>
 
@@ -1592,21 +1592,21 @@ export default function MyCourses() {
                           { kana: 'かいしゃいん (kaishain)', arti: 'Pegawai perusahaan' },
                           { kana: 'エンジニア (enjinia)', arti: 'Insinyur / Engineer' },
                         ].map((item, idx) => (
-                          <div key={idx} className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 flex justify-between items-center text-xs">
-                            <span className="font-extrabold text-slate-800 text-xs sm:text-sm">{item.kana}</span>
-                            <span className="font-bold text-amber-700 bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-[0.68rem]">{item.arti}</span>
+                          <div key={idx} className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 flex justify-between items-center text-xs sm:text-sm">
+                            <span className="font-bold text-slate-800 text-xs sm:text-sm">{item.kana}</span>
+                            <span className="font-bold text-amber-700 bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-xs sm:text-sm">{item.arti}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[0.7rem] font-semibold text-slate-500">
+                      <span className="text-xs sm:text-sm font-medium text-slate-500">
                         {activeLesson.is_completed ? 'Status: Sudah Disetor' : 'Hafalkan lalu tandai selesai!'}
                       </span>
                       <button
                         onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 ${
+                        className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 ${
                           activeLesson.is_completed
                             ? 'bg-emerald-100 text-emerald-700'
                             : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
@@ -1636,20 +1636,20 @@ export default function MyCourses() {
                       </svg>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[0.65rem] sm:text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-300 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300 relative z-10">
                       <span>Fitur Kuis Segera Hadir</span>
                     </div>
 
                     <div className="relative z-10 max-w-md">
-                      <h3 className="text-base sm:text-xl font-extrabold text-white mb-1">
+                      <h3 className="text-sm sm:text-base font-bold text-white mb-1">
                         Kuis Evaluasi — {activeChapter?.title}
                       </h3>
-                      <p className="text-[0.7rem] sm:text-xs text-slate-300 leading-relaxed font-medium">
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
                         Soal kuis pilihan ganda untuk Bab ini sedang dalam tahap penyusunan & validasi oleh pengajar. Kamu bisa mempelajari video & setoran kotoba terlebih dahulu!
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-[0.7rem] text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-0.5 text-left">
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs sm:text-sm text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-0.5 text-left">
                       <span className="font-bold text-white flex items-center gap-1.5">
                         <svg className="size-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1664,7 +1664,7 @@ export default function MyCourses() {
                   <div className="w-full bg-slate-950 sm:bg-gradient-to-b sm:from-slate-950 sm:via-slate-900 sm:to-slate-950 rounded-2xl sm:rounded-3xl p-1.5 sm:p-5 flex flex-col items-center justify-start sm:justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden">
                     <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
 
-                    <div className="hidden sm:flex items-center gap-1.5 mb-2 z-10 text-[0.65rem] sm:text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                    <div className="hidden sm:flex items-center gap-1.5 mb-2 z-10 text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                       <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
@@ -1678,7 +1678,7 @@ export default function MyCourses() {
                       {isVideoRefreshing ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white gap-3 p-4 select-none animate-fade-in">
                           <div className="size-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs font-bold text-slate-300 animate-pulse">Memuat materi video...</span>
+                          <span className="text-xs sm:text-sm font-bold text-slate-300 animate-pulse">Memuat materi video...</span>
                         </div>
                       ) : (
                         <SmartVideoPlayer
@@ -1712,13 +1712,13 @@ export default function MyCourses() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full mb-2 border border-amber-500/30">
+                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full mb-2 border border-amber-500/30">
                       Video Sedang Disiapkan oleh Pengajar
                     </span>
-                    <h3 className="text-base sm:text-lg font-bold max-w-md leading-snug mb-1">
+                    <h3 className="text-sm sm:text-base font-bold max-w-md leading-snug mb-1">
                       {activeLesson.title}
                     </h3>
-                    <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-300 max-w-sm leading-relaxed">
                       Video materi ini sedang dalam tahap perekaman/upload oleh admin. Kamu tetap bisa mencatat judul bab dan lanjut ke video berikutnya!
                     </p>
                   </div>
@@ -1728,10 +1728,10 @@ export default function MyCourses() {
                 <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight">
+                      <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight">
                         {activeLesson.title}
                       </h3>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 flex items-center gap-1">
                         <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1740,7 +1740,7 @@ export default function MyCourses() {
                     </div>
 
                     {activeLesson.is_completed && (
-                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5 self-start sm:self-center">
+                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold flex items-center gap-1.5 self-start sm:self-center">
                         <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -1755,13 +1755,13 @@ export default function MyCourses() {
                       type="button"
                       disabled={!prevLesson}
                       onClick={() => prevLesson && handleSwitchLesson(prevLesson)}
-                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border transition-all flex items-center gap-1.5 group ${
+                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-1.5 group ${
                         !prevLesson
                           ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
                           : 'cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary shadow-2xs'
                       }`}
                     >
-                      <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black group-hover:-translate-x-0.5 transition-transform">
+                      <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:-translate-x-0.5 transition-transform">
                         &lt;
                       </span>
                       <span>Materi Sebelumnya</span>
@@ -1788,14 +1788,14 @@ export default function MyCourses() {
                         }
                         handleSwitchLesson(nextLesson)
                       }}
-                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border transition-all flex items-center gap-1.5 group ${
+                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-1.5 group ${
                         !nextLesson
                           ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
                           : 'cursor-pointer bg-primary text-white border-primary hover:bg-primary-dark shadow-xs'
                       }`}
                     >
                       <span>Materi Selanjutnya</span>
-                      <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center text-[0.55rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:translate-x-0.5 transition-transform">
                         &gt;
                       </span>
                     </button>
@@ -1806,10 +1806,10 @@ export default function MyCourses() {
 
               {/* Right Column: Playlist of 5 Videos in active Chapter (desktop only) */}
               <div className="hidden lg:flex bg-slate-50 border-l border-slate-200 p-4 overflow-y-auto flex-col gap-2">
-                <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider px-2 mb-1">
+                <h4 className="font-bold text-slate-700 text-sm sm:text-base uppercase tracking-wider px-2 mb-1">
                   Materi {activeChapter?.title || 'Bab Ini'}
                 </h4>
-                <p className="text-[0.65rem] text-slate-400 px-2 mb-2 font-medium">
+                <p className="text-xs sm:text-sm text-slate-400 px-2 mb-2 font-medium">
                   {activeChapter?.lessons.filter(l => l.is_completed).length || 0} / {activeChapter?.lessons.length || 0} selesai
                 </p>
                 {activeChapter?.lessons.map(l => {
@@ -1848,7 +1848,7 @@ export default function MyCourses() {
                       }`}
                     >
                       {/* Left: type icon */}
-                      <div className={`size-8 rounded-lg flex items-center justify-center text-sm shrink-0 mt-0.5 ${
+                      <div className={`size-8 rounded-lg flex items-center justify-center text-xs sm:text-sm shrink-0 mt-0.5 ${
                         lIsLocked ? 'bg-amber-100 text-amber-500' :
                         isActive ? 'bg-primary/15 text-primary' :
                         lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
@@ -1862,7 +1862,7 @@ export default function MyCourses() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         ) : l.is_placeholder ? (
-                          <span className="text-[0.6rem] font-bold">N/A</span>
+                          <span className="text-xs sm:text-sm font-bold">N/A</span>
                         ) : isActive ? (
                           <span className="size-2.5 border-y-transparent border-y-3 border-l-5 border-l-primary ml-0.5" />
                         ) : (
@@ -1876,7 +1876,7 @@ export default function MyCourses() {
                       {/* Right: text */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`text-[0.6rem] font-extrabold px-1.5 py-0.5 rounded-md leading-none ${
+                          <span className={`text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-md leading-none ${
                             lIsLocked ? 'bg-amber-100 text-amber-600' :
                             isActive ? 'bg-primary/10 text-primary' :
                             lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
@@ -1884,7 +1884,7 @@ export default function MyCourses() {
                             {lIsLocked ? `Kuis ${quizNum} (Terkunci)` : contentLabel}
                           </span>
                           {l.is_completed && !lIsLocked && (
-                            <span className="text-[0.6rem] text-emerald-600 font-extrabold flex items-center gap-0.5">
+                            <span className="text-xs sm:text-sm text-emerald-600 font-bold flex items-center gap-0.5">
                               <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
@@ -1892,8 +1892,8 @@ export default function MyCourses() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs font-bold truncate leading-snug">{l.title}</div>
-                        <div className="text-[0.68rem] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <div className="text-xs sm:text-sm font-bold truncate leading-snug">{l.title}</div>
+                        <div className="text-xs sm:text-sm text-slate-400 mt-0.5 flex items-center gap-1">
                           <span>{l.duration_minutes}m</span>
                           {lIsLocked ? (
                             <span className="text-amber-500 font-semibold">• Tonton {3 - watchedVids} video lagi</span>
@@ -1910,11 +1910,11 @@ export default function MyCourses() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         ) : l.is_placeholder ? (
-                          <span className="text-[0.6rem] text-slate-400 shrink-0">N/A</span>
+                          <span className="text-xs sm:text-sm text-slate-400 shrink-0">N/A</span>
                         ) : isActive ? (
                           <span className="size-2 rounded-full bg-primary shrink-0 mt-2"></span>
                         ) : (
-                          <span className="size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black text-slate-500 shrink-0">
+                          <span className="size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold text-slate-500 shrink-0">
                             &gt;
                           </span>
                         )
