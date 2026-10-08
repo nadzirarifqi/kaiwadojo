@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -11,7 +11,7 @@ interface SidebarProps {
 }
 
 const navBase =
-  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold ' +
+  'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold ' +
   'transition-all duration-200 w-full text-left no-underline cursor-pointer'
 const navActive   = 'bg-primary/[0.08] text-primary dark:bg-primary/20 dark:text-red-400 font-bold'
 const navInactive = 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
@@ -21,38 +21,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { profile, signOut } = useAuth()
   const { t } = useLanguage()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-
-  // Theme Sync State
-  const [isDark, setIsDark] = useState(() =>
-    typeof document !== 'undefined'
-      ? document.documentElement.classList.contains('dark')
-      : false
-  )
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const updateTheme = () => setIsDark(document.documentElement.classList.contains('dark'))
-    updateTheme()
-
-    const observer = new MutationObserver(updateTheme)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-    return () => observer.disconnect()
-  }, [])
-
-  function handleThemeChange(targetTheme: 'light' | 'dark') {
-    const root = document.documentElement
-    if (targetTheme === 'dark') {
-      root.classList.add('dark')
-      localStorage.setItem('kaiwa_theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('kaiwa_theme', 'light')
-    }
-    setIsDark(targetTheme === 'dark')
-  }
 
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -330,29 +298,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* User card & Popup Menu */}
-        <div className="p-2.5 sm:p-3 pb-6 sm:pb-3 border-t border-slate-100 dark:border-slate-800 relative shrink-0">
-          {/* Theme Switch */}
-          <button
-            type="button"
-            onClick={() => handleThemeChange(isDark ? 'light' : 'dark')}
-            title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-            aria-label="Toggle Theme"
-            className="w-full flex items-center gap-3 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer transition-all mb-1"
-          >
-            <span className="size-6 sm:size-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs shrink-0">
-              {isDark ? (
-                <svg className="size-3.5 text-amber-400 fill-current" viewBox="0 0 24 24">
-                  <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              ) : (
-                <svg className="size-3.5 text-amber-500 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              )}
-            </span>
-            <span>{isDark ? 'Mode Gelap' : 'Mode Terang'}</span>
-            <span className="ml-auto text-slate-400 text-[0.6rem]">Ganti</span>
-          </button>
+        <div className="p-2 sm:p-2.5 pb-4 sm:pb-3 border-t border-slate-100 dark:border-slate-800 relative shrink-0">
           {/* User Menu Popover */}
           {userMenuOpen && (
             <>
@@ -433,13 +379,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* User Card Trigger */}
           <div
             onClick={() => setUserMenuOpen(prev => !prev)}
-            className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all border ${
+            className={`flex items-center gap-2 sm:gap-2.5 p-1.5 sm:p-2 rounded-xl cursor-pointer transition-all border ${
               userMenuOpen
                 ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                 : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="size-8 sm:size-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+            <div className="size-7.5 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -447,14 +393,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="size-full object-cover rounded-full"
                 />
               ) : (
-                <div className="size-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-xs font-bold text-white">
+                <div className="size-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-[11px] font-bold text-white">
                   {initials}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[0.78rem] sm:text-[0.82rem] font-bold text-slate-800 dark:text-slate-100 truncate">{profile?.full_name ?? 'Memuat...'}</div>
-              <div className="text-[0.65rem] sm:text-[0.7rem] text-slate-400 capitalize flex items-center gap-1">
+              <div className="text-xs sm:text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate leading-snug">{profile?.full_name ?? 'Memuat...'}</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 capitalize flex items-center gap-1">
                 <span className="font-semibold text-primary dark:text-red-400">
                   {currentRole === 'pemateri' ? 'Admin Pengajar' : currentRole === 'admin' ? 'Admin' : 'Pelajar'}
                 </span>

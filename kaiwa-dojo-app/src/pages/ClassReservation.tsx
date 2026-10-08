@@ -316,13 +316,13 @@ export default function ClassReservationPage() {
       )}
 
       {/* ── MANDATORY ONLINE CLASS BANNER ────────────────────── */}
-      <div className="bg-gradient-to-r from-slate-900 via-primary/90 to-primary text-white rounded-3xl p-5 sm:p-6 shadow-md border border-white/10 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-slate-900 via-primary/90 to-primary text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm border border-white/10 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="relative z-10 flex-1">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[0.7rem] font-extrabold uppercase tracking-wider text-white">
+          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white">
               Target Wajib Bulanan
             </span>
-            <span className="text-xs text-white/80 font-bold">({reqStatus.currentMonthLabel})</span>
+            <span className="text-[10px] sm:text-[11px] text-white/80 font-bold">({reqStatus.currentMonthLabel})</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-white/90 text-xs font-semibold backdrop-blur-xs">
               <span>{userName}</span>
               {resolvedUserGroup ? (
@@ -332,23 +332,23 @@ export default function ClassReservationPage() {
               )}
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-white">
+          <h2 className="text-sm sm:text-base lg:text-lg font-bold text-white leading-tight">
             {t('cr_requirement', 'Wajib Mengambil Minimal 2 Kelas Online / Bulan')}
           </h2>
-          <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-[10px] sm:text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">
             {t('cr_requirement_sub', 'Untuk memastikan kemampuan percakapan Bahasa Jepang kamu terus terasah, setiap siswa diwajibkan mengikuti sekurang-kurangnya 2 sesi kelas online live per minggu/bulan.')}
           </p>
         </div>
 
         {/* Progress Card */}
-        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center min-w-[200px] w-full md:w-auto shrink-0">
-          <div className="text-xs font-bold text-white/90 mb-1">Status Progres</div>
-          <div className="text-3xl font-black text-white flex items-baseline gap-1">
+        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex flex-col items-center justify-center min-w-[160px] sm:min-w-[180px] w-full md:w-auto shrink-0">
+          <div className="text-[10px] sm:text-[11px] font-bold text-white/90 mb-0.5">Status Progres</div>
+          <div className="text-xl sm:text-2xl font-black text-white flex items-baseline gap-1">
             <span>{reqStatus.bookedCount}</span>
-            <span className="text-lg text-white/70">/ {reqStatus.targetCount}</span>
-            <span className="text-sm text-white/90 font-bold ml-1">Kelas</span>
+            <span className="text-sm sm:text-base text-white/70">/ {reqStatus.targetCount}</span>
+            <span className="text-[10px] sm:text-xs text-white/90 font-bold ml-0.5">Kelas</span>
           </div>
-          <div className={`mt-2.5 px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5 ${
+          <div className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold flex items-center gap-1 ${
             reqStatus.isFulfilled
               ? 'bg-emerald-400 text-slate-950'
               : 'bg-amber-400 text-slate-950'
@@ -369,15 +369,15 @@ export default function ClassReservationPage() {
       </div>
 
       {/* ── FILTER & TAB BAR ────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
         
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-100 dark:border-slate-800">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all border-none cursor-pointer whitespace-nowrap ${
               activeTab === 'all'
-                ? 'bg-primary text-white shadow-md'
+                ? 'bg-primary text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -386,37 +386,37 @@ export default function ClassReservationPage() {
 
           <button
             onClick={() => setActiveTab('online')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'online'
                 ? 'bg-sky-600 text-white shadow-md'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <svg className="size-3.5 sm:size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
             <span>{t('cr_tab_online', 'Kelas Online (Mingguan)')}</span> ({accessibleSchedules.filter(s => s.type === 'online').length})
           </button>
 
           <button
             onClick={() => setActiveTab('offline')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'offline'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <svg className="size-3.5 sm:size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
             <span>{t('cr_tab_offline', 'Kelas Offline (Bulanan)')}</span> ({accessibleSchedules.filter(s => s.type === 'offline').length})
           </button>
 
           <button
             onClick={() => setActiveTab('my-schedules')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-auto ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-extrabold transition-all border-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-auto ${
               activeTab === 'my-schedules'
                 ? 'bg-orange-500 text-white shadow-md'
                 : 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60'
             }`}
           >
-            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            <svg className="size-3.5 sm:size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
             <span>{t('cr_tab_my_booking', 'Jadwal Saya')} ({myReservationsList.length})</span>
           </button>
         </div>
@@ -506,7 +506,7 @@ export default function ClassReservationPage() {
                 return (
                   <div
                     key={sch.id}
-                    className={`bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-md relative overflow-hidden group ${
+                    className={`bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md relative overflow-hidden group ${
                       userRes
                         ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10'
                         : isLocked
@@ -516,8 +516,8 @@ export default function ClassReservationPage() {
                   >
                     {/* Header: Class Mode & Quota Status */}
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`px-3 py-1 rounded-full text-[0.7rem] font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
                           sch.type === 'online'
                             ? 'bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
                             : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
@@ -536,7 +536,7 @@ export default function ClassReservationPage() {
                         </span>
 
                         {/* Quota Badge */}
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold flex items-center gap-1.5 ${
                           isFull
                             ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-900/60'
                             : enrolledCount >= sch.max_quota - 2
@@ -601,7 +601,7 @@ export default function ClassReservationPage() {
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                       {userRes ? (
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-white font-extrabold text-xs text-center flex items-center justify-center gap-1.5 shadow-sm">
+                          <div className="flex-1 min-h-[30px] sm:min-h-[34px] py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl bg-emerald-500 text-white font-extrabold text-[11px] sm:text-xs text-center flex items-center justify-center gap-1.5 shadow-xs">
                             <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                             <span>Terdaftar</span>
                           </div>
@@ -611,7 +611,7 @@ export default function ClassReservationPage() {
                               setTargetReservationId(userRes.id)
                               setConfirmModalType('cancel')
                             }}
-                            className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-bold text-xs border-none cursor-pointer transition-all"
+                            className="min-h-[30px] sm:min-h-[34px] px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 font-bold text-[10px] sm:text-xs border-none cursor-pointer transition-all"
                             title="Batalkan Reservasi"
                           >
                             Batalkan
@@ -620,7 +620,7 @@ export default function ClassReservationPage() {
                       ) : isLocked ? (
                         <button
                           disabled
-                          className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs border-none cursor-not-allowed flex items-center justify-center gap-1.5"
+                          className="w-full min-h-[30px] sm:min-h-[34px] py-1.5 sm:py-2 px-3 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-[10px] sm:text-xs border-none cursor-not-allowed flex items-center justify-center gap-1.5"
                         >
                           <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                           <span>{reason}</span>
@@ -631,7 +631,7 @@ export default function ClassReservationPage() {
                             setTargetSchedule(sch)
                             setConfirmModalType('book')
                           }}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-xs border-none cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                          className="w-full min-h-[30px] sm:min-h-[34px] py-1.5 sm:py-2 px-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-extrabold text-[11px] sm:text-xs border-none cursor-pointer transition-all shadow-xs hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
                         >
                           <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                           <span>Reservasi Kelas</span>
@@ -720,13 +720,13 @@ export default function ClassReservationPage() {
                           setTargetReservationId(reservation.id)
                           setConfirmModalType('cancel')
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 text-xs font-bold border-none cursor-pointer shrink-0"
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 text-[10px] sm:text-xs font-bold border-none cursor-pointer shrink-0"
                       >
                         Batalkan
                       </button>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-2 text-[11px] sm:text-xs text-slate-700 dark:text-slate-200">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400 font-medium">Detail Tanggal:</span>
                         <span className="font-extrabold">{formattedDate}</span>
@@ -748,9 +748,9 @@ export default function ClassReservationPage() {
                             href={schedule.meet_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs text-center no-underline flex items-center justify-center gap-2 shadow-sm transition-all"
+                            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] sm:text-xs text-center no-underline flex items-center justify-center gap-1.5 sm:gap-2 shadow-xs transition-all"
                           >
-                            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <svg className="size-3.5 sm:size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                             <span>Buka Link Google Meet</span>
                           </a>
                         ) : (
@@ -859,13 +859,13 @@ export default function ClassReservationPage() {
             </p>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center gap-2.5 pt-1">
               <button
                 onClick={() => {
                   setConfirmModalType(null)
                   setTargetSchedule(null)
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs border-none cursor-pointer transition-colors"
+                className="flex-1 min-h-[32px] sm:min-h-[36px] py-1.5 sm:py-2 px-3 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-[11px] sm:text-xs border-none cursor-pointer transition-colors"
               >
                 Batal
               </button>
@@ -873,7 +873,7 @@ export default function ClassReservationPage() {
               <button
                 disabled={actionLoading}
                 onClick={handleConfirmAction}
-                className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs text-white border-none cursor-pointer transition-all shadow-md ${
+                className={`flex-1 min-h-[32px] sm:min-h-[36px] py-1.5 sm:py-2 px-3 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-xs text-white border-none cursor-pointer transition-all shadow-xs ${
                   confirmModalType === 'book'
                     ? 'bg-gradient-to-r from-sky-600 to-primary hover:from-sky-700 hover:to-primary-dark'
                     : 'bg-red-600 hover:bg-red-700'

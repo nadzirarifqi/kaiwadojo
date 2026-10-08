@@ -132,18 +132,18 @@ function AppNavbar({
     : 'KD'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-2.5 sm:px-4 shadow-xs safe-left safe-right transition-colors">
+    <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-2 sm:px-4 shadow-xs safe-left safe-right transition-colors">
       {/* Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Tulisan KaiwaDojo */}
-      <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
         {/* Tombol Menu Garis Tiga (Desktop & Mobile) */}
         <button
           type="button"
           onClick={onToggleSidebar}
           aria-label={sidebarOpen ? 'Tutup navigasi' : 'Buka navigasi'}
           title={sidebarOpen ? 'Tutup navigasi' : 'Buka navigasi'}
-          className="size-9 sm:size-10 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer shrink-0"
+          className="size-8 sm:size-9 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer shrink-0"
         >
-          <svg className="size-5 sm:size-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="size-4.5 sm:size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -159,16 +159,16 @@ function AppNavbar({
           }}
           aria-label="Kembali ke Dashboard KaiwaDojo"
           title="Kembali ke Dashboard"
-          className="flex items-center gap-2 sm:gap-2.5 px-1.5 sm:px-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 active:scale-[0.98] transition-all cursor-pointer border-none bg-transparent group text-left shrink-0"
+          className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 active:scale-[0.98] transition-all cursor-pointer border-none bg-transparent group text-left shrink-0"
         >
-          <div className="size-8 sm:size-8.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-xs group-hover:scale-105 transition-transform">
-            <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-6 sm:size-6.5 object-contain" />
+          <div className="size-7 sm:size-7.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-xs group-hover:scale-105 transition-transform">
+            <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-5 sm:size-5.5 object-contain" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-black text-primary dark:text-red-400 text-sm sm:text-base tracking-tight leading-none group-hover:text-primary-dark dark:group-hover:text-red-300 transition-colors">
+          <div className="flex items-center gap-1">
+            <span className="font-extrabold text-primary dark:text-red-400 text-xs sm:text-sm tracking-tight leading-none group-hover:text-primary-dark dark:group-hover:text-red-300 transition-colors">
               KaiwaDojo
             </span>
-            <span className="text-[0.6rem] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">
+            <span className="text-[9px] px-1 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">
               会話
             </span>
           </div>
@@ -176,10 +176,10 @@ function AppNavbar({
       </div>
 
       {/* Pojok kanan atas: Role Badge + Theme Switch + Profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Role badge */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
-          <span className="size-2 rounded-full bg-primary animate-pulse" />
+        <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
           <span>{roleLabel}</span>
         </div>
 
@@ -189,14 +189,14 @@ function AppNavbar({
           onClick={toggleTheme}
           title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
           aria-label="Ganti tema tampilan"
-          className="size-9 flex items-center justify-center rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer"
+          className="size-8 sm:size-8.5 flex items-center justify-center rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer"
         >
           {isDark ? (
-            <svg className="size-4.5 text-amber-400 fill-current" viewBox="0 0 24 24">
+            <svg className="size-4 text-amber-400 fill-current" viewBox="0 0 24 24">
               <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           ) : (
-            <svg className="size-4.5 text-slate-600 hover:text-amber-500 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="size-4 text-slate-600 hover:text-amber-500 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           )}
@@ -208,7 +208,7 @@ function AppNavbar({
           onClick={() => navigate('/profile')}
           title={profile?.full_name ? `Profil: ${profile.full_name}` : 'Lihat Profil'}
           aria-label="Lihat Profil"
-          className="size-8.5 sm:size-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all cursor-pointer p-0 shrink-0"
+          className="size-7.5 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all cursor-pointer p-0 shrink-0"
         >
           {profile?.avatar_url ? (
             <img
@@ -217,7 +217,7 @@ function AppNavbar({
               className="size-full object-cover rounded-full"
             />
           ) : (
-            <div className="size-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-xs font-bold text-white">
+            <div className="size-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
               {initials}
             </div>
           )}

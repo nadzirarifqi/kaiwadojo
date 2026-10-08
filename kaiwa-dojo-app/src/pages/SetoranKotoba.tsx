@@ -669,34 +669,34 @@ export default function SetoranKotobaPage() {
   return (
     <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
       {/* Header Banner */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-2xl sm:rounded-3xl p-4 sm:p-8 mb-4 sm:mb-6 text-white shadow-xl animate-fade-in">
+      <header className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-white shadow-md animate-fade-in">
         <div className="absolute -top-12 -right-12 size-56 bg-white/10 rounded-full pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4.5">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
-              <span className="text-[0.65rem] sm:text-xs font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full backdrop-blur-xs">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-xs">
                 Catatan Kosakata Mandiri
               </span>
             </div>
-            <h1 className="text-xl sm:text-3xl font-black tracking-tight mb-1 sm:mb-2">
+            <h1 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight mb-0.5 leading-tight">
               {t('sk_title', 'Jurnal Kosakata (Kotoba) Saya')}
             </h1>
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
+            <p className="text-white/90 text-[11px] sm:text-xs leading-relaxed">
               {t('sk_subtitle', 'Catat dan simpan setiap kosakata Bahasa Jepang baru yang kamu temukan. Uji hafalanmu secara berkala untuk menentukan kata yang sudah kamu kuasai!')}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
             <button
               onClick={handleStartTest}
-              className="group px-4 py-2.5 sm:px-5 sm:py-3.5 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+              className="group px-3 py-1.5 sm:px-3.5 sm:py-2 bg-amber-900/40 hover:bg-amber-900/60 border border-white/30 text-white text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 min-h-[30px] sm:min-h-[34px]"
             >
-              <svg className="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               <span>{t('sk_test_btn', 'Uji Hafalan Kosakata')}</span>
-              <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:translate-x-0.5 transition-transform">
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:translate-x-0.5 transition-transform">
+                <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </span>
@@ -704,9 +704,9 @@ export default function SetoranKotobaPage() {
 
             <button
               onClick={handleOpenCreateModal}
-              className="group px-4 py-2.5 sm:px-6 sm:py-3.5 bg-white text-amber-600 hover:bg-amber-50 text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="group px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-amber-600 hover:bg-amber-50 text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5 min-h-[30px] sm:min-h-[34px]"
             >
-              <svg className="size-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="size-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               <span>{t('sk_add_btn', 'Tambah Kosakata')}</span>
@@ -802,10 +802,10 @@ export default function SetoranKotobaPage() {
       {/* Filter & Search Toolbar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
         {/* Filter Pills */}
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl w-full sm:w-auto overflow-x-auto gap-1">
           <button
             onClick={() => setFilterMode('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
               filterMode === 'all'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
@@ -815,7 +815,7 @@ export default function SetoranKotobaPage() {
           </button>
           <button
             onClick={() => setFilterMode('unmastered')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
               filterMode === 'unmastered'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
@@ -825,7 +825,7 @@ export default function SetoranKotobaPage() {
           </button>
           <button
             onClick={() => setFilterMode('mastered')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
               filterMode === 'mastered'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500'
@@ -932,11 +932,11 @@ export default function SetoranKotobaPage() {
               {/* Japanese & Romaji Header */}
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
+                    <div>
+                    <h3 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
                       {item.japanese}
                     </h3>
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                    <div className="text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
                       {item.romaji}
                     </div>
                   </div>
@@ -944,7 +944,7 @@ export default function SetoranKotobaPage() {
                   {!item.image_url && (
                     <button
                       onClick={() => handleToggleMastered(item)}
-                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-bold cursor-pointer border-none transition-all shrink-0 flex items-center gap-1 ${
+                      className={`px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer border-none transition-all shrink-0 flex items-center gap-1 ${
                         item.is_mastered
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                           : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700'
@@ -968,19 +968,19 @@ export default function SetoranKotobaPage() {
                 </div>
 
                 {/* Meaning */}
-                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="text-xs text-slate-400 font-semibold mb-0.5">{t('sk_meaning_label', 'Makna / Arti:')}</div>
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                <div className="mt-2.5 pt-2.5 sm:mt-3 sm:pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="text-[10px] sm:text-xs text-slate-400 font-semibold mb-0.5">{t('sk_meaning_label', 'Makna / Arti:')}</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
                     {item.meaning}
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons Footer */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-1.5 sm:gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => handleOpenEditModal(item)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all flex items-center gap-1.5"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all flex items-center gap-1 sm:gap-1.5 min-h-[26px] sm:min-h-[30px]"
                 >
                   <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -989,7 +989,7 @@ export default function SetoranKotobaPage() {
                 </button>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all flex items-center gap-1.5"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all flex items-center gap-1 sm:gap-1.5 min-h-[26px] sm:min-h-[30px]"
                 >
                   <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -928,51 +928,51 @@ export default function MyCourses() {
       )}
 
       {/* Hero Section: Japan Fun Facts Banner */}
-      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] p-4.5 sm:p-7 lg:p-9 mb-7 shadow-xl relative overflow-hidden animate-fade-in border border-rose-900/30 min-h-[255px] sm:min-h-[200px] md:min-h-[175px] flex flex-col justify-between">
+      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 mb-4 sm:mb-6 shadow-md relative overflow-hidden animate-fade-in border border-rose-900/30 min-h-[145px] sm:min-h-[160px] flex flex-col justify-between">
         {/* Background Kanji Watermark */}
-        <div className="absolute right-3 -bottom-4 sm:right-4 sm:-bottom-6 text-[8rem] sm:text-[10rem] font-black text-rose-500/5 select-none pointer-events-none leading-none font-japanese">
+        <div className="absolute right-2 -bottom-3 sm:right-3 sm:-bottom-4 text-5xl sm:text-7xl font-black text-rose-500/5 select-none pointer-events-none leading-none font-japanese">
           {currentFact.kanji}
         </div>
         <div className="absolute -left-10 -top-10 size-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-6 flex-1">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 sm:gap-4 flex-1">
           <div className="flex-1 min-w-0 w-full">
             {/* Tag Badge */}
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[0.62rem] sm:text-[0.65rem] font-black uppercase tracking-widest bg-rose-500/80 text-white px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs flex items-center gap-1.5">
-                <span className="font-japanese text-[0.7rem]">日</span>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-rose-500/80 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                <span className="font-japanese text-[10px]">日</span>
                 <span>{t('mc_trivia_title', 'Japan Trivia & Fun Fact')}</span>
               </span>
-              <span className="text-[0.65rem] sm:text-[0.68rem] font-bold text-rose-200/80 bg-white/10 px-2 py-0.5 rounded-full">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-rose-200/80 bg-white/10 px-1.5 py-0.2 rounded-full">
                 {currentFact.tag}
               </span>
             </div>
 
             {/* Kanji & Title */}
-            <div className="flex items-center gap-3 mb-1.5 min-h-[28px] sm:min-h-[32px]">
-              <span className="size-9 sm:size-10 rounded-xl bg-rose-500/20 text-rose-300 font-serif font-black text-lg sm:text-xl flex items-center justify-center border border-rose-500/30 shrink-0 font-japanese">
+            <div className="flex items-center gap-2 mb-1 min-h-[24px] sm:min-h-[28px]">
+              <span className="size-7 sm:size-8 rounded-lg bg-rose-500/20 text-rose-300 font-serif font-black text-sm sm:text-base flex items-center justify-center border border-rose-500/30 shrink-0 font-japanese">
                 {currentFact.kanji.charAt(0)}
               </span>
-              <h2 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-tight truncate">
-                {currentFact.title} <span className="text-rose-300 font-serif text-sm sm:text-base ml-1.5 font-normal">({currentFact.kanji})</span>
+              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-white leading-tight truncate">
+                {currentFact.title} <span className="text-rose-300 font-serif text-[11px] sm:text-xs ml-1 font-normal">({currentFact.kanji})</span>
               </h2>
             </div>
 
             {/* Fact Text */}
-            <div className="bg-black/25 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-white/10 min-h-[66px] sm:min-h-[54px] flex items-center">
-              <p className="text-[0.72rem] sm:text-xs lg:text-sm text-slate-200 leading-relaxed max-w-2xl line-clamp-3 sm:line-clamp-2">
+            <div className="bg-black/25 p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-white/10 min-h-[46px] sm:min-h-[48px] flex items-center">
+              <p className="text-[10px] sm:text-[11px] text-slate-200 leading-relaxed max-w-2xl line-clamp-2">
                 "{currentFact.fact}"
               </p>
             </div>
           </div>
 
           {/* Fact Nav Controls & Dots */}
-          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2.5 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 w-full md:w-auto pt-1.5 md:pt-0 border-t md:border-t-0 border-white/10">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setFunFactIndex(prev => (prev === 0 ? JAPAN_FUN_FACTS.length - 1 : prev - 1))}
-                className="size-8 sm:size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-black transition-all"
+                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-[10px] font-bold transition-all"
                 title="Fun Fact Sebelumnya"
               >
                 &lt;
@@ -980,10 +980,10 @@ export default function MyCourses() {
               <button
                 type="button"
                 onClick={() => setFunFactIndex(Math.floor(Math.random() * JAPAN_FUN_FACTS.length))}
-                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-[0.7rem] sm:text-xs font-black transition-all shadow-md flex items-center gap-1.5"
+                className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-[10px] font-bold transition-all shadow-xs flex items-center gap-1"
                 title="Acak Fun Fact"
               >
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>Acak Fact</span>
@@ -991,7 +991,7 @@ export default function MyCourses() {
               <button
                 type="button"
                 onClick={() => setFunFactIndex(prev => (prev + 1) % JAPAN_FUN_FACTS.length)}
-                className="size-8 sm:size-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs font-black transition-all"
+                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-[10px] font-bold transition-all"
                 title="Fun Fact Selanjutnya"
               >
                 &gt;
@@ -999,14 +999,14 @@ export default function MyCourses() {
             </div>
 
             {/* Dots Indicator */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               {JAPAN_FUN_FACTS.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setFunFactIndex(idx)}
-                  className={`h-1.5 rounded-full border-none cursor-pointer transition-all ${
-                    idx === funFactIndex ? 'bg-rose-400 w-4.5 sm:w-5' : 'bg-white/30 hover:bg-white/60 w-1.5'
+                  className={`h-1 rounded-full border-none cursor-pointer transition-all ${
+                    idx === funFactIndex ? 'bg-rose-400 w-3.5 sm:w-4' : 'bg-white/30 hover:bg-white/60 w-1'
                   }`}
                 />
               ))}
@@ -1016,12 +1016,12 @@ export default function MyCourses() {
       </div>
 
       {/* Header */}
-      <div className="mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-4 sm:mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-1.5">
+          <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-white tracking-tight mb-0.5 leading-tight">
             {t('mc_title', headerSettings.page_title)}
           </h1>
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
             {t('mc_subtitle', headerSettings.page_subtitle)}
           </p>
         </div>
@@ -1029,9 +1029,9 @@ export default function MyCourses() {
         {isInstructor && (
           <button
             onClick={() => navigate('/kelola-kursus')}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold border-none cursor-pointer shadow-md transition-all shrink-0 flex items-center justify-center gap-2 hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-[11px] sm:text-xs font-bold border-none cursor-pointer shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5 hover:-translate-y-0.5 group min-h-[28px] sm:min-h-[32px]"
           >
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -1041,34 +1041,34 @@ export default function MyCourses() {
       </div>
 
       {/* ── Book Selector Tabs (Jilid 1 vs Jilid 2) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5 mb-4 sm:mb-6">
         <button
           onClick={() => setSelectedJilid(1)}
-          className={`p-5 rounded-2xl border text-left cursor-pointer transition-all flex items-center gap-4 ${
+          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all flex items-center gap-3 ${
             selectedJilid === 1
-              ? 'bg-gradient-to-br from-primary to-primary-light text-white border-primary shadow-lg scale-[1.01]'
-              : 'bg-white border-slate-200 text-slate-700 hover:border-primary/40 hover:bg-slate-50 shadow-sm'
+              ? 'bg-gradient-to-br from-primary to-primary-light text-white border-primary shadow-md scale-[1.005]'
+              : 'bg-white border-slate-200 text-slate-700 hover:border-primary/40 hover:bg-slate-50 shadow-xs'
           }`}
         >
-          <div className={`size-14 rounded-2xl flex items-center justify-center text-lg font-black shrink-0 ${
+          <div className={`size-10 sm:size-12 rounded-xl flex items-center justify-center text-base sm:text-lg font-black shrink-0 ${
             selectedJilid === 1 ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
           }`}>
-            <span className="font-japanese text-xl">一</span>
+            <span className="font-japanese text-base sm:text-lg">一</span>
           </div>
           <div className="min-w-0 flex-1">
-            <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
               {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}
             </div>
-            <div className="text-base sm:text-lg font-extrabold truncate leading-tight">
+            <div className="text-xs sm:text-sm font-bold truncate leading-tight">
               {t('course_title_vol1', 'Bahasa Jepang Dasar (Jilid 1)')}
             </div>
-            <div className={`text-xs font-semibold mt-1 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
+            <div className={`text-[10px] sm:text-[11px] font-semibold mt-0.5 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
               {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}
             </div>
           </div>
           {selectedJilid === 1 && (
-            <span className="size-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-white">
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <span className="size-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-white">
+              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
@@ -1076,26 +1076,26 @@ export default function MyCourses() {
         </button>
 
         <div
-          className="p-5 rounded-2xl border text-left transition-all flex items-center gap-4 relative overflow-hidden opacity-70 cursor-not-allowed bg-slate-50 border-slate-200 shadow-sm select-none"
+          className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all flex items-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed bg-slate-50 border-slate-200 shadow-xs select-none"
         >
           {/* Coming Soon Ribbon */}
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-amber-400 text-amber-900 text-[0.6rem] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-amber-400 text-amber-900 text-[9px] font-bold uppercase tracking-wider px-2 py-0.2 rounded-full shadow-xs">
             <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <span>Coming Soon</span>
           </div>
-          <div className="size-14 rounded-2xl flex items-center justify-center text-lg font-black shrink-0 bg-slate-100 text-slate-400 grayscale font-japanese">
+          <div className="size-10 sm:size-12 rounded-xl flex items-center justify-center text-base sm:text-lg font-black shrink-0 bg-slate-100 text-slate-400 grayscale font-japanese">
             二
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-400">
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-slate-400">
               {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}
             </div>
-            <div className="text-base sm:text-lg font-extrabold truncate leading-tight text-slate-500">
+            <div className="text-xs sm:text-sm font-bold truncate leading-tight text-slate-500">
               {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
             </div>
-            <div className="text-xs font-semibold mt-1 text-slate-400">
+            <div className="text-[10px] sm:text-[11px] font-semibold mt-0.5 text-slate-400">
               Segera Hadir • Bab 26 s/d Bab 50
             </div>
           </div>
@@ -1354,12 +1354,12 @@ export default function MyCourses() {
                           </div>
 
                           {/* Card Content */}
-                          <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
+                          <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between gap-2.5 sm:gap-3">
                             <div>
-                              <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-1">
+                              <h4 className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-0.5">
                                 {lesson.title}
                               </h4>
-                              <p className="text-[0.7rem] text-slate-400 font-medium">
+                              <p className="text-[10px] text-slate-400 font-medium">
                                 {isQuizLocked
                                   ? (language === 'ja' ? `あと${3 - watchedCount}個の動画を視聴して解除` : language === 'en' ? `Watch ${3 - watchedCount} more video(s) to unlock` : `Tonton ${3 - watchedCount} video lagi untuk membuka`)
                                   : isKotoba
@@ -1373,7 +1373,7 @@ export default function MyCourses() {
                             </div>
 
                             <button
-                              className={`w-full py-2 rounded-xl text-xs font-extrabold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                              className={`w-full min-h-[28px] sm:min-h-[32px] py-1.5 sm:py-2 px-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                                 isQuizLocked
                                   ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                                   : isKotoba
@@ -1755,13 +1755,13 @@ export default function MyCourses() {
                       type="button"
                       disabled={!prevLesson}
                       onClick={() => prevLesson && handleSwitchLesson(prevLesson)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 group ${
+                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border transition-all flex items-center gap-1.5 group ${
                         !prevLesson
                           ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
                           : 'cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary shadow-2xs'
                       }`}
                     >
-                      <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black group-hover:-translate-x-0.5 transition-transform">
+                      <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[0.55rem] font-black group-hover:-translate-x-0.5 transition-transform">
                         &lt;
                       </span>
                       <span>Materi Sebelumnya</span>
@@ -1788,14 +1788,14 @@ export default function MyCourses() {
                         }
                         handleSwitchLesson(nextLesson)
                       }}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 group ${
+                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border transition-all flex items-center gap-1.5 group ${
                         !nextLesson
                           ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
                           : 'cursor-pointer bg-primary text-white border-primary hover:bg-primary-dark shadow-xs'
                       }`}
                     >
                       <span>Materi Selanjutnya</span>
-                      <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-[0.55rem] font-black group-hover:translate-x-0.5 transition-transform">
+                      <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center text-[0.55rem] font-black group-hover:translate-x-0.5 transition-transform">
                         &gt;
                       </span>
                     </button>
