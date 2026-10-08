@@ -132,7 +132,7 @@ function AppNavbar({
     : 'KD'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-2 sm:px-4 shadow-xs safe-left safe-right transition-colors">
+    <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-3 sm:px-5 lg:px-6 shadow-xs safe-left safe-right transition-colors">
       {/* Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Tulisan KaiwaDojo */}
       <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
         {/* Tombol Menu Garis Tiga (Desktop & Mobile) */}
@@ -176,7 +176,7 @@ function AppNavbar({
       </div>
 
       {/* Pojok kanan atas: Role Badge + Theme Switch + Profile */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pr-1 sm:pr-2">
         {/* Role badge */}
         <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
           <span className="size-1.5 rounded-full bg-primary animate-pulse" />
@@ -208,7 +208,7 @@ function AppNavbar({
           onClick={() => navigate('/profile')}
           title={profile?.full_name ? `Profil: ${profile.full_name}` : 'Lihat Profil'}
           aria-label="Lihat Profil"
-          className="size-7.5 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all cursor-pointer p-0 shrink-0"
+          className="size-7.5 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all cursor-pointer p-0 shrink-0 mr-1 sm:mr-1.5"
         >
           {profile?.avatar_url ? (
             <img

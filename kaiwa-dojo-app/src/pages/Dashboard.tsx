@@ -1053,11 +1053,7 @@ function UnifiedMobileSakuraMissionCard({
         <div className="flex items-center justify-between pb-0.5">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-slate-800 dark:text-white">Misi Harian Hari Ini</span>
-            {missionProgress?.isFullyCompleted ? (
-              <span className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                100% Selesai
-              </span>
-            ) : missionProgress && hasAnyMission ? (
+            {!missionProgress?.isFullyCompleted && missionProgress && hasAnyMission ? (
               <span className="text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full">
                 {missionProgress.overallPct}% Selesai
               </span>
@@ -1068,13 +1064,13 @@ function UnifiedMobileSakuraMissionCard({
             <button
               type="button"
               onClick={onOpenMissionModal}
-              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+              className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center justify-center shrink-0 hover:text-primary dark:hover:text-primary-light"
               title="Edit Misi Harian"
+              aria-label="Edit Misi Harian"
             >
-              <svg className="size-3 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              <span>Edit Misi</span>
             </button>
           )}
         </div>
@@ -1372,7 +1368,6 @@ function EmbeddedUserScheduleCard({
               <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
                 Jadwal & Agenda Saya
               </h2>
-              <span className="text-xs text-slate-400 font-medium block truncate">Rencana Belajar Mulai Hari Ini</span>
             </div>
           </div>
 
@@ -1386,20 +1381,6 @@ function EmbeddedUserScheduleCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
-        </div>
-
-        {/* Subheader info: Today & Count */}
-        <div className="flex items-center justify-between mb-2.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800/80 text-xs shrink-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Hari ini:</span>
-            <span className="font-bold text-slate-800 dark:text-white truncate">
-              {formatIndonesianFullDate(todayStr).split(',')[0]}
-            </span>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-xs shrink-0">
-            {displayedTimeline.length} Agenda
-          </span>
         </div>
 
         {/* Scrollable Timeline List */}
@@ -2023,12 +2004,7 @@ export default function Dashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Misi Harian Hari Ini</h2>
-                {missionProgress?.isFullyCompleted ? (
-                  <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded-full border border-emerald-200 flex items-center gap-1 shrink-0">
-                    <svg className="size-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    <span>100% Selesai</span>
-                  </span>
-                ) : (
+                {!missionProgress?.isFullyCompleted && (
                   <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full shrink-0">
                     {missionProgress ? `${missionProgress.overallPct}% Progress` : 'Belum Dibuat'}
                   </span>
@@ -2046,13 +2022,13 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => setShowMissionModal(true)}
-              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center gap-1.5 shrink-0"
+              className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center justify-center shrink-0 hover:text-primary dark:hover:text-primary-light"
               title="Edit Misi Harian"
+              aria-label="Edit Misi Harian"
             >
-              <svg className="size-3 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              <span>Edit Misi</span>
             </button>
           )}
         </div>
@@ -2313,7 +2289,6 @@ export default function Dashboard() {
               </svg>
               <span>{t('dash_book_progress_title', 'Progress Belajar Buku')}</span>
             </h2>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{t('dash_book_progress_sub', 'Minna no Nihongo Jilid 1 & 2 (Bab 1 - 50)')}</p>
           </div>
           <button
             onClick={() => navigate('/my-courses')}
@@ -2344,9 +2319,6 @@ export default function Dashboard() {
                   <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
                 </div>
               </div>
-              <span className="text-xs font-bold text-primary dark:text-red-400 bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-md shrink-0">
-                {bookProgress.jilid1Pct}%
-              </span>
             </div>
 
             <div>
@@ -2379,9 +2351,6 @@ export default function Dashboard() {
                   <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
                 </div>
               </div>
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md shrink-0">
-                {bookProgress.jilid2Pct}%
-              </span>
             </div>
 
             <div>
