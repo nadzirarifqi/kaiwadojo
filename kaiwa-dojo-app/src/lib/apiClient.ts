@@ -61,13 +61,78 @@ const authListeners = new Set<(event: AuthChangeEvent, session: Session | null) 
 
 function notifyAuth(event: AuthChangeEvent, s: Session | null) {
   saveSession(s)
+  if (event === 'SIGNED_OUT') {
+    queryCache.clear()
+    inFlightQueries.clear()
+  }
   authListeners.forEach(cb => {
     try { cb(event, s) } catch {}
   })
 }
 
-// ── In-Flight Request Deduplication ──
+// ── In-Flight Request Deduplication & SWR Response Cache ──
 const inFlightQueries = new Map<string, Promise<{ data: any; error: any; count?: number | null }>>()
+
+interface QueryCacheEntry {
+  data: any
+  count?: number | null
+  error: any
+  timestamp: number
+}
+const queryCache = new Map<string, QueryCacheEntry>()
+const QUERY_CACHE_TTL_MS = 15_000 // 15 detik TTL untuk cache data SELECT
+
+export function invalidateTableCache(table?: string) {
+  if (!table || table === '*') {
+    queryCache.clear()
+    return
+  }
+  for (const key of queryCache.keys()) {
+    if (key.startsWith(`${table}:`)) {
+      queryCache.delete(key)
+    }
+  }
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 2,
+  timeoutMs: number = 8000
+): Promise<Response> {
+  let lastError: any = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+
+      // Retry jika server overload / gateway timeout (500, 502, 503, 504, 408)
+      if (!res.ok && [500, 502, 503, 504, 408].includes(res.status) && attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 200 * (attempt + 1) + Math.random() * 100))
+        continue
+      }
+
+      return res
+    } catch (err: any) {
+      clearTimeout(timeoutId)
+      lastError = err
+
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 200 * (attempt + 1) + Math.random() * 100))
+        continue
+      }
+    }
+  }
+
+  throw lastError || new Error('Koneksi server gagal setelah percobaan ulang')
+}
 
 // ── Query Builder Shim ──
 class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; count?: number | null }> {
@@ -244,6 +309,15 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
       ? `${this.payload.table}:${JSON.stringify(this.payload)}:${currentSession?.access_token || ''}`
       : null
 
+    // 1. Cek fast cache jika SELECT
+    if (dedupeKey && queryCache.has(dedupeKey)) {
+      const cached = queryCache.get(dedupeKey)!
+      if (Date.now() - cached.timestamp < QUERY_CACHE_TTL_MS) {
+        return { data: cached.data, error: null, count: cached.count }
+      }
+    }
+
+    // 2. Cegah request duplikat in-flight
     if (dedupeKey && inFlightQueries.has(dedupeKey)) {
       return inFlightQueries.get(dedupeKey)!
     }
@@ -288,25 +362,55 @@ class QueryChain<T = any> implements PromiseLike<{ data: T | null; error: any; c
           ;(bodyPayload as any)._token = currentSession.access_token
         }
 
-        const res = await fetch(queryUrl, {
+        const res = await fetchWithRetry(queryUrl, {
           method: 'POST',
           headers,
           body: JSON.stringify(bodyPayload),
-        })
+        }, 2, 8000)
 
         const rawText = await res.text()
         let json: any = null
         try {
           json = JSON.parse(rawText)
         } catch {
-          return { data: null, error: { message: `Server HTTP ${res.status}: ${rawText.slice(0, 300) || 'Respons kosong dari server'}` } }
+          throw new Error(`Server HTTP ${res.status}: ${rawText.slice(0, 300) || 'Respons kosong dari server'}`)
         }
 
         if (!res.ok && !json.error) {
-          return { data: null, error: { message: `HTTP Error ${res.status}` } }
+          throw new Error(`HTTP Error ${res.status}`)
         }
+
+        if (json.error) {
+          // Jika ada error dari server tapi kita memiliki cache lama, sajikan cache lama agar UI tidak ngeglitch
+          if (dedupeKey && queryCache.has(dedupeKey)) {
+            const stale = queryCache.get(dedupeKey)!
+            console.warn(`[apiClient] Query error on ${this.payload.table}, preserving stale data:`, json.error)
+            return { data: stale.data, error: null, count: stale.count }
+          }
+          return json
+        }
+
+        // Simpan cache untuk SELECT query
+        if (dedupeKey) {
+          queryCache.set(dedupeKey, {
+            data: json.data,
+            count: json.count,
+            error: null,
+            timestamp: Date.now(),
+          })
+        } else if (['insert', 'update', 'upsert', 'delete'].includes(this.payload.action)) {
+          // Mutasi sukses: Invalidate cache tabel ini agar pemanggilan berikutnya fresh
+          invalidateTableCache(this.payload.table)
+        }
+
         return json
       } catch (err: any) {
+        // Fallback ke stale cache jika koneksi terputus/timeout
+        if (dedupeKey && queryCache.has(dedupeKey)) {
+          const stale = queryCache.get(dedupeKey)!
+          console.warn(`[apiClient] Connection blip on ${this.payload.table}, serving stale cache:`, err.message)
+          return { data: stale.data, error: null, count: stale.count }
+        }
         return { data: null, error: { message: err.message || 'Koneksi API gagal' } }
       } finally {
         if (dedupeKey) {
@@ -351,6 +455,10 @@ class RealtimeChannel {
     return this
   }
 
+  getSubscribedTables(): string[] {
+    return this.subscriptions.map(s => s.table)
+  }
+
   subscribe(callback?: (status: string) => void) {
     RealtimeManager.register(this)
     if (callback) callback('SUBSCRIBED')
@@ -378,9 +486,11 @@ class RealtimeManager {
   private static lastChangeId = 0
   private static pollTimer: any = null
   private static isPolling = false
+  private static visibilityListenerSetup = false
 
   static register(ch: RealtimeChannel) {
     this.channels.add(ch)
+    this.setupVisibilityListener()
     this.ensurePolling()
   }
 
@@ -392,9 +502,25 @@ class RealtimeManager {
     }
   }
 
+  private static setupVisibilityListener() {
+    if (this.visibilityListenerSetup || typeof document === 'undefined') return
+    this.visibilityListenerSetup = true
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.channels.size > 0) {
+        // Tab baru saja dibuka kembali oleh user: trigger poll segera
+        this.poll()
+      }
+    })
+  }
+
   private static ensurePolling() {
     if (!this.pollTimer && typeof window !== 'undefined') {
-      this.pollTimer = setInterval(() => this.poll(), AppConfig.auth.realtimePollIntervalMs)
+      this.pollTimer = setInterval(() => {
+        // Jangan poll jika tab sedang di-minimize/background untuk hemat resource
+        if (typeof document !== 'undefined' && document.hidden) return
+        this.poll()
+      }, AppConfig.auth.realtimePollIntervalMs)
       this.poll()
     }
   }
@@ -403,11 +529,23 @@ class RealtimeManager {
     if (this.isPolling || this.channels.size === 0) return
     this.isPolling = true
     try {
-      const res = await fetch(`${API_BASE}/changes.php?since=${this.lastChangeId}`)
+      // Ambil daftar tabel yang disubscribe untuk query parameter efisien
+      const allTables = new Set<string>()
+      this.channels.forEach(ch => ch.getSubscribedTables().forEach(t => allTables.add(t)))
+      let tablesParam = ''
+      if (allTables.size > 0 && !allTables.has('*')) {
+        tablesParam = `&tables=${encodeURIComponent(Array.from(allTables).join(','))}`
+      }
+
+      const res = await fetch(`${API_BASE}/changes.php?since=${this.lastChangeId}${tablesParam}`)
       if (res.ok) {
         const json = await res.json()
         if (json.data && Array.isArray(json.data) && json.data.length > 0) {
           json.data.forEach((change: any) => {
+            // Invalidate cache lokal untuk tabel yang berubah
+            if (change.table) {
+              invalidateTableCache(change.table)
+            }
             this.channels.forEach(ch => ch.dispatch(change))
           })
         }

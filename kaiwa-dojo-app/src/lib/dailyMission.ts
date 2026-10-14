@@ -634,74 +634,44 @@ export async function calculateMissionProgress(
     targetPctSum += kotobaPct
   }
 
-  const overallPct = isNoPlan ? 100 : (targetComponentsCount > 0 ? Math.round(targetPctSum / targetComponentsCount) : 0)
+  let overallPct = isNoPlan ? 100 : (targetComponentsCount > 0 ? Math.round(targetPctSum / targetComponentsCount) : 0)
+
+  // Anti-glitch guard: Jika data progress kosong (misal jaringan terputus sementara),
+  // gunakan snapshot progress terakhir yang valid (> 0%) agar tidak ngeglitch ke 0%
+  if (!isNoPlan && overallPct === 0 && (!progressData || progressData.length === 0)) {
+    try {
+      const cachedRaw = localStorage.getItem(`kaiwa_last_progress_${userId}_${dateStr}`)
+      if (cachedRaw) {
+        const cachedProg: MissionProgress = JSON.parse(cachedRaw)
+        if (cachedProg && typeof cachedProg.overallPct === 'number' && cachedProg.overallPct > 0) {
+          return cachedProg
+        }
+      }
+    } catch {}
+  }
   
   // Streak is earned if:
   // 1) Explicit rest day ("Tidak Ada Rencana" / Freeze Cap Biru), OR
   // 2) User set specific targets and all of them are completed 100%
   const isFullyCompleted = isNoPlan || (hasAnyTarget && videoCompleted && quizCompleted && kotobaCompleted && overallPct === 100)
 
-  // Sync streak if fully completed on target date
-  if (isFullyCompleted) {
-    try {
-      const customId = ensureUUID(`${userId}_${dateStr}`, '00000000-0000-0000-0005-')
-      await supabase.from('learning_streaks').upsert({
-        id: customId,
-        student_id: userId,
-        date: dateStr,
-      }, { onConflict: 'student_id,date' })
-
-      // Calculate streak & update profile streak_days count in DB
-      const { data: streaksData } = await supabase
-        .from('learning_streaks')
-        .select('date')
-        .eq('student_id', userId)
-
-      if (streaksData) {
-        const streakDates = new Set<string>(streaksData.map((s: any) => String(s.date)))
-        const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
-        await supabase
-          .from('profiles')
-          .update({ streak_days: streakCount, last_active_at: new Date().toISOString() })
-          .eq('id', userId)
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('kaiwa_profile_updated'))
-        }
+  // Sync streak if calculating for today and NOT in bulk preFetched mode (prevents recursive queries & event loops)
+  if (!preFetched && dateStr === getTodayDateString()) {
+    if (isFullyCompleted) {
+      try {
+        const customId = ensureUUID(`${userId}_${dateStr}`, '00000000-0000-0000-0005-')
+        await supabase.from('learning_streaks').upsert({
+          id: customId,
+          student_id: userId,
+          date: dateStr,
+        }, { onConflict: 'student_id,date' })
+      } catch (e) {
+        console.warn('Learning streak DB upsert note:', e)
       }
-    } catch (e) {
-      console.warn('Learning streak DB upsert note:', e)
-    }
-  } else {
-    // If progress is NOT 100% completed, remove entry from learning_streaks so streak is not awarded prematurely
-    try {
-      await supabase
-        .from('learning_streaks')
-        .delete()
-        .eq('student_id', userId)
-        .eq('date', dateStr)
-
-      const { data: streaksData } = await supabase
-        .from('learning_streaks')
-        .select('date')
-        .eq('student_id', userId)
-
-      if (streaksData) {
-        const streakDates = new Set<string>(streaksData.map((s: any) => String(s.date)))
-        const streakCount = calculateStreakFromDates(streakDates, getTodayDateString())
-        await supabase
-          .from('profiles')
-          .update({ streak_days: streakCount, last_active_at: new Date().toISOString() })
-          .eq('id', userId)
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('kaiwa_profile_updated'))
-        }
-      }
-    } catch (e) {
-      console.warn('Learning streak delete note:', e)
     }
   }
 
-  return {
+  const result: MissionProgress = {
     actualReplays,
     targetReplays: mission.targetReplayCount,
     videoCompleted,
@@ -718,6 +688,15 @@ export async function calculateMissionProgress(
     overallPct,
     isFullyCompleted,
   }
+
+  // Simpan progress terakhir di localStorage sebagai guard anti-glitch
+  if (userId && dateStr) {
+    try {
+      localStorage.setItem(`kaiwa_last_progress_${userId}_${dateStr}`, JSON.stringify(result))
+    } catch {}
+  }
+
+  return result
 }
 
 /**

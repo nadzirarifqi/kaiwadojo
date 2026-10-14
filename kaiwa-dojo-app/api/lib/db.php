@@ -7,12 +7,17 @@ class DB {
     private static ?PDO $instance = null;
     private static ?string $verifiedHost = null;
 
+    public static function reset(): void {
+        self::$instance = null;
+    }
+
     public static function get(): PDO {
         if (self::$instance === null) {
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_TIMEOUT            => 3,
             ];
             if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
                 $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
@@ -25,12 +30,12 @@ class DB {
                 $cachedHost = trim(@file_get_contents($cacheFile) ?: '');
             }
 
-            // Urutan prioritas host: host terverifikasi -> DB_HOST -> 127.0.0.1 -> localhost
+            // Urutan prioritas host: host terverifikasi -> cachedHost -> 127.0.0.1 -> DB_HOST -> localhost
             $hosts = array_filter(array_unique([
                 self::$verifiedHost,
                 $cachedHost,
-                DB_HOST,
                 '127.0.0.1',
+                DB_HOST,
                 'localhost'
             ]));
 

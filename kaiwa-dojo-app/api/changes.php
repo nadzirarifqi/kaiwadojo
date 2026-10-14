@@ -14,6 +14,21 @@ $tablesStr = trim($_GET['tables'] ?? '');
 
 $db = DB::get();
 
+// Jika request pertama kali (since <= 0), langsung ambil ID tertinggi saat ini agar tidak mendownload riwayat lama
+if ($since <= 0) {
+    try {
+        $maxId = (int)$db->query("SELECT IFNULL(MAX(id), 0) FROM change_log")->fetchColumn();
+    } catch (Throwable $e) {
+        $maxId = 0;
+    }
+    echo json_encode([
+        'data'    => [],
+        'last_id' => $maxId,
+        'error'   => null
+    ]);
+    exit;
+}
+
 // Pembersihan berkala change_log lebih lama dari 2 jam (dijalankan maksimal setiap 15 menit, bukan di tiap polling)
 $cleanFlag = sys_get_temp_dir() . '/kaiwa_changelog_clean.ts';
 $lastClean = file_exists($cleanFlag) ? (int)@file_get_contents($cleanFlag) : 0;

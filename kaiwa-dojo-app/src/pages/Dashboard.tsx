@@ -479,9 +479,17 @@ function SakuraRingProgressBar({
   missionProgress?: MissionProgress | null
   onClick?: () => void
 }) {
+  const [lastNonZeroPct, setLastNonZeroPct] = useState(0)
+
+  useEffect(() => {
+    if (missionProgress && typeof missionProgress.overallPct === 'number' && missionProgress.overallPct > 0) {
+      setLastNonZeroPct(missionProgress.overallPct)
+    }
+  }, [missionProgress])
+
   const pct = dailyMission && missionProgress
     ? Math.min(100, Math.max(0, missionProgress.overallPct))
-    : 0
+    : (dailyMission && lastNonZeroPct > 0 ? lastNonZeroPct : 0)
   const isCompleted = pct >= 100 || (missionProgress?.isFullyCompleted ?? false)
 
   // Circular progress calculations (Radius = 68, circumference = 2 * PI * 68 ≈ 427.26)
@@ -1308,8 +1316,12 @@ function EmbeddedUserScheduleCard({
 
     loadSchedulesAndMissions()
 
+    let updateTimer: any = null
     const handleUpdate = () => {
-      loadSchedulesAndMissions()
+      if (updateTimer) clearTimeout(updateTimer)
+      updateTimer = setTimeout(() => {
+        loadSchedulesAndMissions()
+      }, 300)
     }
 
     window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleUpdate)
@@ -1318,6 +1330,7 @@ function EmbeddedUserScheduleCard({
     window.addEventListener('storage', handleUpdate)
 
     return () => {
+      if (updateTimer) clearTimeout(updateTimer)
       window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleUpdate)
       window.removeEventListener(RESERVATION_UPDATE_EVENT, handleUpdate)
       window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleUpdate)
@@ -1705,17 +1718,21 @@ export default function Dashboard() {
 
       const todayDate = getTodayDateString()
       const mission = (await fetchDailyMission(effectiveUserId, todayDate)) || getDailyMission(effectiveUserId, todayDate)
-      setDailyMission(mission)
+      
+      let prog: MissionProgress | null = null
+      let newVideoMap = new Map<string, number>()
       if (mission) {
-        const prog = await calculateMissionProgress(effectiveUserId, mission)
-        setMissionProgress(prog)
-
-        if (prog.videoProgressMap) {
+        prog = await calculateMissionProgress(effectiveUserId, mission)
+        if (prog?.videoProgressMap) {
           const map = new Map<string, number>()
           Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
-          setVideoProgressMap(map)
+          newVideoMap = map
         }
       }
+
+      setDailyMission(mission)
+      setMissionProgress(prog)
+      setVideoProgressMap(newVideoMap)
 
       backfillHistoricalStreakCaps(effectiveUserId).catch(() => {})
 
@@ -1836,45 +1853,50 @@ export default function Dashboard() {
 
     loadDashboardData()
 
-    const handleSync = () => {
-      loadDashboardData()
+    let syncTimer: any = null
+    const debouncedSync = () => {
+      if (syncTimer) clearTimeout(syncTimer)
+      syncTimer = setTimeout(() => {
+        loadDashboardData()
+      }, 350)
     }
 
-    window.addEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
-    window.addEventListener(RESERVATION_UPDATE_EVENT, handleSync)
-    window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
-    window.addEventListener('kaiwa_mission_progress_updated', handleSync)
-    window.addEventListener('kaiwa_lesson_progress_updated', handleSync)
-    window.addEventListener('kaiwa_profile_updated', handleSync)
-    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
-    window.addEventListener('storage', handleSync)
+    window.addEventListener(SCHEDULE_UPDATE_EVENT, debouncedSync)
+    window.addEventListener(RESERVATION_UPDATE_EVENT, debouncedSync)
+    window.addEventListener(DAILY_MISSION_UPDATE_EVENT, debouncedSync)
+    window.addEventListener('kaiwa_mission_progress_updated', debouncedSync)
+    window.addEventListener('kaiwa_lesson_progress_updated', debouncedSync)
+    window.addEventListener('kaiwa_profile_updated', debouncedSync)
+    window.addEventListener(ANNOUNCEMENT_UPDATE_EVENT, debouncedSync)
+    window.addEventListener('storage', debouncedSync)
 
-    const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(handleSync)
-    const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleSync)
-    const unsubscribeAnnouncementRealtime = subscribeToAnnouncementRealtime(handleSync)
+    const unsubscribeScheduleRealtime = subscribeToScheduleRealtime(debouncedSync)
+    const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(debouncedSync)
+    const unsubscribeAnnouncementRealtime = subscribeToAnnouncementRealtime(debouncedSync)
 
     const lessonProgressChannel = supabase
       .channel('dashboard_lesson_progress_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, handleSync)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, handleSync)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_progress' }, debouncedSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions' }, debouncedSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, debouncedSync)
       .subscribe()
 
     return () => {
-      window.removeEventListener(SCHEDULE_UPDATE_EVENT, handleSync)
-      window.removeEventListener(RESERVATION_UPDATE_EVENT, handleSync)
-      window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleSync)
-      window.removeEventListener('kaiwa_mission_progress_updated', handleSync)
-      window.removeEventListener('kaiwa_lesson_progress_updated', handleSync)
-      window.removeEventListener('kaiwa_profile_updated', handleSync)
-      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, handleSync)
-      window.removeEventListener('storage', handleSync)
+      if (syncTimer) clearTimeout(syncTimer)
+      window.removeEventListener(SCHEDULE_UPDATE_EVENT, debouncedSync)
+      window.removeEventListener(RESERVATION_UPDATE_EVENT, debouncedSync)
+      window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, debouncedSync)
+      window.removeEventListener('kaiwa_mission_progress_updated', debouncedSync)
+      window.removeEventListener('kaiwa_lesson_progress_updated', debouncedSync)
+      window.removeEventListener('kaiwa_profile_updated', debouncedSync)
+      window.removeEventListener(ANNOUNCEMENT_UPDATE_EVENT, debouncedSync)
+      window.removeEventListener('storage', debouncedSync)
       unsubscribeScheduleRealtime()
       unsubscribeMissionRealtime()
       unsubscribeAnnouncementRealtime()
       supabase.removeChannel(lessonProgressChannel)
     }
-  }, [user, profile])
+  }, [user?.id, profile?.id])
 
   if (loading) {
     return <DashboardSkeleton />

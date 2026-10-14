@@ -508,8 +508,12 @@ export default function LearningPlanPage() {
     if (!activeUserId) return
     loadData()
 
+    let syncTimer: any = null
     const handleMissionSync = () => {
-      loadData()
+      if (syncTimer) clearTimeout(syncTimer)
+      syncTimer = setTimeout(() => {
+        loadData()
+      }, 350)
     }
     window.addEventListener('kaiwa_mission_progress_updated', handleMissionSync)
     window.addEventListener(DAILY_MISSION_UPDATE_EVENT, handleMissionSync)
@@ -517,6 +521,7 @@ export default function LearningPlanPage() {
     const unsubscribeMissionRealtime = subscribeToDailyMissionRealtime(handleMissionSync)
 
     return () => {
+      if (syncTimer) clearTimeout(syncTimer)
       window.removeEventListener('kaiwa_mission_progress_updated', handleMissionSync)
       window.removeEventListener(DAILY_MISSION_UPDATE_EVENT, handleMissionSync)
       window.removeEventListener('storage', handleMissionSync)
@@ -593,14 +598,14 @@ export default function LearningPlanPage() {
     if (!mission && (user?.id || profile?.id)) {
       mission = await fetchDailyMission(activeUserId, selectedDateStr)
     }
-    setSelectedMission(mission)
 
+    let prog: MissionProgress | null = null
     if (mission) {
-      const prog = await calculateMissionProgress(activeUserId, mission, preFetched)
-      setMissionProgress(prog)
-    } else {
-      setMissionProgress(null)
+      prog = await calculateMissionProgress(activeUserId, mission, preFetched)
     }
+
+    setSelectedMission(mission)
+    setMissionProgress(prog)
   }
 
   async function handleSaveMission(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
