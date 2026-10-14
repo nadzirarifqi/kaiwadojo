@@ -124,7 +124,7 @@ class DB {
         if ($indexesChecked || self::$instance === null) return;
         $indexesChecked = true;
 
-        $flagFile = sys_get_temp_dir() . '/kaiwa_indexes_v1.ok';
+        $flagFile = sys_get_temp_dir() . '/kaiwa_indexes_v2_kotoba.ok';
         if (file_exists($flagFile)) {
             return;
         }
@@ -144,8 +144,11 @@ class DB {
                 ['profiles', 'idx_profiles_group_name', '(`group_name`(191))'],
                 ['profiles', 'idx_profiles_last_active', '(`last_active_at`)'],
                 ['quiz_attempts', 'idx_quiz_attempts_student_lesson', '(`student_id`, `lesson_id`)'],
-                ['quiz_questions', 'idx_quiz_questions_lesson', '(`lesson_id`, `order_index`)'],
                 ['change_log', 'idx_change_log_id_created', '(`id`, `created_at`)'],
+                ['user_kotoba_submissions', 'idx_user_kotoba_submissions_user_created', '(`user_id`, `created_at`)'],
+                ['user_kotoba_submissions', 'idx_user_kotoba_submissions_user_id', '(`user_id`)'],
+                ['user_kotoba_submissions', 'idx_user_kotoba_submissions_mastered', '(`is_mastered`)'],
+                ['user_kotoba_submissions', 'idx_user_kotoba_submissions_user_mastered', '(`user_id`, `is_mastered`)'],
             ];
 
             foreach ($indexDefinitions as [$tbl, $idxName, $colsSql]) {

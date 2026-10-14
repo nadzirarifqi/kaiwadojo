@@ -31,15 +31,29 @@ class QueryBuilder {
         return $schema['tables'][$table];
     }
 
+    private static function sanitizeRowForLog(?array $row): ?array {
+        if ($row === null) return null;
+        $clean = $row;
+        foreach ($clean as $k => $v) {
+            if (is_string($v) && (strlen($v) > 300) && str_starts_with($v, 'data:image')) {
+                // Jangan simpan string base64 raksasa di change_log agar polling realtime ringan & cepat
+                $clean[$k] = '[image_data]';
+            }
+        }
+        return $clean;
+    }
+
     public static function logChange(string $table, string $event, ?array $newRow, ?array $oldRow = null): void {
         try {
+            $cleanNew = self::sanitizeRowForLog($newRow);
+            $cleanOld = self::sanitizeRowForLog($oldRow);
             $db = DB::get();
             $stmt = $db->prepare("INSERT INTO change_log (table_name, event, new_row, old_row, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(3))");
             $stmt->execute([
                 $table,
                 $event,
-                $newRow !== null ? json_encode($newRow, JSON_UNESCAPED_UNICODE) : null,
-                $oldRow !== null ? json_encode($oldRow, JSON_UNESCAPED_UNICODE) : null
+                $cleanNew !== null ? json_encode($cleanNew, JSON_UNESCAPED_UNICODE) : null,
+                $cleanOld !== null ? json_encode($cleanOld, JSON_UNESCAPED_UNICODE) : null
             ]);
         } catch (Throwable $e) {
             // Non-blocking logger

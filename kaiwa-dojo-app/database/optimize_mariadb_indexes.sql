@@ -57,3 +57,9 @@ CREATE INDEX IF NOT EXISTS `idx_change_log_id_created` ON `kaiw_database`.`chang
 
 -- 9. Optimasi komentar materi (comments)
 CREATE INDEX IF NOT EXISTS `idx_comments_lesson_created` ON `kaiw_database`.`comments` (`lesson_id`, `created_at`);
+
+-- 10. Optimasi tabel setoran kosakata (user_kotoba_submissions)
+CREATE INDEX IF NOT EXISTS `idx_user_kotoba_submissions_user_created` ON `kaiw_database`.`user_kotoba_submissions` (`user_id`, `created_at` DESC);
+CREATE INDEX IF NOT EXISTS `idx_user_kotoba_submissions_user_id` ON `kaiw_database`.`user_kotoba_submissions` (`user_id`);
+CREATE INDEX IF NOT EXISTS `idx_user_kotoba_submissions_mastered` ON `kaiw_database`.`user_kotoba_submissions` (`is_mastered`);
+CREATE INDEX IF NOT EXISTS `idx_user_kotoba_submissions_user_mastered` ON `kaiw_database`.`user_kotoba_submissions` (`user_id`, `is_mastered`);

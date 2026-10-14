@@ -200,7 +200,7 @@ export async function fetchKotobaByStudent(studentId: string): Promise<UserKotob
   try {
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
-      .select('*')
+      .select('id, user_id, japanese, romaji, meaning, image_url, is_mastered, created_at')
       .eq('user_id', studentId)
       .order('created_at', { ascending: false })
 

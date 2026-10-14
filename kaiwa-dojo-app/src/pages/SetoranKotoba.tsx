@@ -45,73 +45,77 @@ export function detectJapaneseScript(text: string) {
   }
 }
 
-/* ── Image Compressor Helper for Fast DB Saves ── */
-// Target base64 character length under 56KB so it fits within even standard MySQL TEXT (64KB limit)
-// and loads instantly on mobile networks without triggering "Data too long for column" error.
-const MAX_IMAGE_BASE64_CHARS = 56 * 1024
+/* ── High-Performance Image Upload & Compressor Helpers ── */
 
-async function compressImageDataUrl(dataUrl: string, maxWidth = 600, quality = 0.65): Promise<string> {
-  if (!dataUrl || !dataUrl.startsWith('data:image')) return dataUrl
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      let width = img.width
-      let height = img.height
+/**
+ * Mengunggah file gambar ke server PHP (/upload_kotoba.php).
+ * File otomatis dioptimasi dan disimpan ke /uploads/kotoba/ sehingga DB hanya menyimpan URL pendek.
+ * Jika endpoint gagal / offline, fallback ke base64 thumbnail yang sangat ringan.
+ */
+async function uploadKotobaImage(file: File): Promise<string> {
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
 
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width)
-        width = maxWidth
-      }
-
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, width, height)
-        let result = canvas.toDataURL('image/jpeg', quality)
-
-        // Pass 1: If still above safe threshold, lower quality to 0.45
-        if (result.length > MAX_IMAGE_BASE64_CHARS) {
-          result = canvas.toDataURL('image/jpeg', 0.45)
-        }
-
-        // Pass 2: If still above safe threshold, downscale dimensions
-        if (result.length > MAX_IMAGE_BASE64_CHARS) {
-          const smallCanvas = document.createElement('canvas')
-          const smallW = Math.round(width * 0.7)
-          const smallH = Math.round(height * 0.7)
-          smallCanvas.width = smallW
-          smallCanvas.height = smallH
-          const ctx2 = smallCanvas.getContext('2d')
-          if (ctx2) {
-            ctx2.drawImage(img, 0, 0, smallW, smallH)
-            result = smallCanvas.toDataURL('image/jpeg', 0.5)
+    const endpoints = ['/upload_kotoba.php', '/api/upload_kotoba.php']
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          body: formData,
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && (json.relative_url || json.url)) {
+            return json.relative_url || json.url
           }
         }
-
-        // Pass 3: Ultra safety fallback for dense phone camera photos
-        if (result.length > MAX_IMAGE_BASE64_CHARS) {
-          const tinyCanvas = document.createElement('canvas')
-          const tinyW = Math.round(width * 0.5)
-          const tinyH = Math.round(height * 0.5)
-          tinyCanvas.width = tinyW
-          tinyCanvas.height = tinyH
-          const ctx3 = tinyCanvas.getContext('2d')
-          if (ctx3) {
-            ctx3.drawImage(img, 0, 0, tinyW, tinyH)
-            result = tinyCanvas.toDataURL('image/jpeg', 0.4)
-          }
-        }
-
-        resolve(result)
-      } else {
-        resolve(dataUrl)
-      }
+      } catch {}
     }
-    img.onerror = () => resolve(dataUrl)
-    img.src = dataUrl
+  } catch (err) {
+    console.warn('Upload kotoba direct note, fallback to fast client compressor:', err)
+  }
+
+  // Fallback cepat single-pass jika server endpoint tidak terjangkau (misal mode offline / local dev)
+  return compressImageFileFast(file, 480, 0.6)
+}
+
+function compressImageFileFast(file: File, maxWidth = 480, quality = 0.6): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const raw = reader.result as string
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let w = img.width
+        let h = img.height
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w)
+          w = maxWidth
+        }
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h)
+          try {
+            const webp = canvas.toDataURL('image/webp', quality)
+            if (webp && webp.startsWith('data:image/webp') && webp.length < 40 * 1024) {
+              resolve(webp)
+              return
+            }
+          } catch {}
+          resolve(canvas.toDataURL('image/jpeg', quality))
+        } else {
+          resolve(raw)
+        }
+      }
+      img.onerror = () => resolve(raw)
+      img.src = raw
+    }
+    reader.onerror = () => resolve('')
+    reader.readAsDataURL(file)
   })
 }
 
@@ -128,6 +132,7 @@ export default function SetoranKotobaPage() {
   // Modal Create/Edit State
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<UserKotoba | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [formData, setFormData]       = useState({
     japanese: '',
     romaji: '',
@@ -136,8 +141,11 @@ export default function SetoranKotobaPage() {
   })
   const [saving, setSaving]           = useState(false)
 
-  // Ref untuk scroll-to-modal saat form dibuka
+  // Ref untuk scroll-to-modal saat form dibuka & sinkronisasi realtime
   const modalRef = useRef<HTMLDivElement>(null)
+  const realtimeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSubmitTimeRef = useRef<number>(0)
+  const uploadPromiseRef = useRef<Promise<string> | null>(null)
 
   // Flashcard Test Mode State
   const [isTestActive, setIsTestActive]       = useState(false)
@@ -159,9 +167,6 @@ export default function SetoranKotobaPage() {
     onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
   })
 
-  // Debounce timer ref for realtime reloads (prevents flood during bulk inserts)
-  const realtimeDebounceRef = { current: 0 as ReturnType<typeof setTimeout> }
-
   // Load Kotoba from Database and Local Storage Backup with Realtime Sync
   useEffect(() => {
     localStorage.removeItem('kaiwa_user_kotoba_active_global')
@@ -176,15 +181,23 @@ export default function SetoranKotobaPage() {
     // Realtime Postgres listener — debounced so bulk inserts don't trigger N re-fetches
     const channel = supabase
       .channel('kotoba_realtime_' + effectiveUserId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_kotoba_submissions',
-        filter: `user_id=eq.${effectiveUserId}` }, () => {
-        clearTimeout(realtimeDebounceRef.current)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_kotoba_submissions',
+        filter: `user_id=eq.${effectiveUserId}`
+      }, () => {
+        // Lewati reload jika perubahannya berasal dari submit lokal kita sendiri dalam 2.5 detik terakhir
+        if (Date.now() - lastSubmitTimeRef.current < 2500) {
+          return
+        }
+        if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current)
         realtimeDebounceRef.current = setTimeout(() => loadKotobaList(), 800)
       })
       .subscribe()
 
     return () => {
-      clearTimeout(realtimeDebounceRef.current)
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current)
       supabase.removeChannel(channel)
     }
   }, [user?.id, profile?.id, effectiveUserId])
@@ -198,20 +211,12 @@ export default function SetoranKotobaPage() {
 
     const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
 
-    // 1. Baca cache localStorage — buat image recovery map dari cache
-    //    (cache mungkin punya image_url yang sudah hilang dari DB akibat bug sebelumnya)
+    // 1. Baca cache localStorage untuk rendering instan
     const localData = localStorage.getItem(storageKey)
     let localItems: UserKotoba[] = []
-    const localImageCache = new Map<string, string>()
     if (localData) {
       try {
         localItems = JSON.parse(localData)
-        // Bangun map: id → image_url dari cache lokal
-        for (const item of localItems) {
-          if (item.id && item.image_url) {
-            localImageCache.set(item.id, item.image_url)
-          }
-        }
         if (localItems.length > 0) {
           setKotobaList(localItems)
           setLoading(false)
@@ -223,7 +228,7 @@ export default function SetoranKotobaPage() {
       setLoading(true)
     }
 
-    // 2. Auto-migrate local-only items (id 'kotoba-*') ke Supabase — BATCH insert
+    // 2. Auto-migrate local-only items (id 'kotoba-*') ke Supabase jika ada
     if (effectiveUserId && effectiveUserId !== 'guest') {
       const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
       if (unsyncedLocals.length > 0) {
@@ -244,7 +249,7 @@ export default function SetoranKotobaPage() {
       }
     }
 
-    // 3. Fetch dari DB dengan image_url
+    // 3. Fetch dari DB dengan image_url secara efisien
     let dbItems: UserKotoba[] = []
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
@@ -253,50 +258,35 @@ export default function SetoranKotobaPage() {
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      // Recovery: jika DB punya null image_url tapi localStorage masih punya → pulihkan
-      const itemsNeedingDbHeal: Array<{ id: string; image_url: string }> = []
-
-      dbItems = (data as UserKotoba[]).map(dbItem => {
-        if (!dbItem.image_url && localImageCache.has(dbItem.id)) {
-          // DB kehilangan gambar (akibat bug sebelumnya) — ambil dari cache lokal
-          const recoveredImage = localImageCache.get(dbItem.id)!
-          itemsNeedingDbHeal.push({ id: dbItem.id, image_url: recoveredImage })
-          return { ...dbItem, image_url: recoveredImage }
-        }
-        return dbItem
-      })
-
-      // Heal DB di background: restore image_url yang hilang
-      if (itemsNeedingDbHeal.length > 0) {
-        ;(async () => {
-          for (const item of itemsNeedingDbHeal) {
-            supabase
-              .from('user_kotoba_submissions')
-              .update({ image_url: item.image_url })
-              .eq('id', item.id)
-              .then(({ error: e }) => {
-                if (!e) console.log(`[Kotoba] Gambar dipulihkan ke DB: ${item.id}`)
-              })
-          }
-        })()
-      }
+      dbItems = data as UserKotoba[]
     }
 
     if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
       setKotobaList(dbItems)
-      localStorage.setItem(storageKey, JSON.stringify(dbItems))
+      saveToLocal(dbItems)
     } else if (localItems.length > 0) {
       setKotobaList(localItems)
     }
     setLoading(false)
-
   }
 
   function saveToLocal(updatedList: UserKotoba[]) {
     setKotobaList(updatedList)
     if (effectiveUserId) {
       const storageKey = `kaiwa_user_kotoba_${effectiveUserId}`
-      localStorage.setItem(storageKey, JSON.stringify(updatedList))
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updatedList))
+      } catch (e) {
+        console.warn('localStorage save warning (quota exceeded):', e)
+        try {
+          // Bersihkan data base64 dari cache lokal jika storage browser hampir habis
+          const lightweight = updatedList.map(item => ({
+            ...item,
+            image_url: item.image_url?.startsWith('data:image') ? undefined : item.image_url,
+          }))
+          localStorage.setItem(storageKey, JSON.stringify(lightweight))
+        } catch {}
+      }
     }
     // Dispatch mission event only — NOT 'storage' to avoid triggering redundant loadKotobaList
     window.dispatchEvent(new Event('kaiwa_mission_progress_updated'))
@@ -306,13 +296,14 @@ export default function SetoranKotobaPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      const rawUrl = reader.result as string
-      const compressed = await compressImageDataUrl(rawUrl, 640, 0.65)
-      setFormData(prev => ({ ...prev, image_url: compressed }))
-    }
-    reader.readAsDataURL(file)
+    setSelectedFile(file)
+
+    // Tampilkan preview instan 0ms menggunakan Object URL (bebas lag CPU)
+    const previewUrl = URL.createObjectURL(file)
+    setFormData(prev => ({ ...prev, image_url: previewUrl }))
+
+    // Mulai upload ke server di background selagi user mengisi form
+    uploadPromiseRef.current = uploadKotobaImage(file)
   }
 
   function scrollToModal() {
@@ -322,6 +313,8 @@ export default function SetoranKotobaPage() {
 
   function handleOpenCreateModal() {
     setEditingItem(null)
+    setSelectedFile(null)
+    uploadPromiseRef.current = null
     setFormData({
       japanese: '',
       romaji: '',
@@ -333,6 +326,9 @@ export default function SetoranKotobaPage() {
   }
 
   async function handleOpenEditModal(item: UserKotoba) {
+    setSelectedFile(null)
+    uploadPromiseRef.current = null
+
     // Jika image_url tidak ada di state (tidak ter-cache), fetch dari DB dulu
     // agar edit modal selalu menampilkan gambar yang benar
     let imageUrl = item.image_url || ''
@@ -398,11 +394,20 @@ export default function SetoranKotobaPage() {
     }
 
     setSaving(true)
+    lastSubmitTimeRef.current = Date.now()
 
-    // Image compression runs before UI closes (required to get the URL)
-    const processedImageUrl = formData.image_url.trim()
-      ? await compressImageDataUrl(formData.image_url.trim())
-      : undefined
+    // Ambil URL gambar yang sudah diupload (atau tunggu background upload selesai)
+    let processedImageUrl: string | undefined = undefined
+    if (selectedFile) {
+      if (uploadPromiseRef.current) {
+        processedImageUrl = await uploadPromiseRef.current
+      } else {
+        processedImageUrl = await uploadKotobaImage(selectedFile)
+      }
+    } else if (formData.image_url.trim()) {
+      // Gambar tidak diubah oleh user, pertahankan URL lama
+      processedImageUrl = formData.image_url.trim()
+    }
 
     const targetUid = profile?.id || user?.id || effectiveUserId || ''
 
@@ -424,9 +429,7 @@ export default function SetoranKotobaPage() {
       setSaving(false)
 
       // Fire-and-forget DB update — UI is already responsive
-      // image_url hanya diupdate ke DB jika user memang mengubah gambarnya
-      // (mencegah gambar terhapus jika image tidak ter-load di cache)
-      const imageChanged = formData.image_url !== (editingItem.image_url || '')
+      const imageChanged = processedImageUrl !== (editingItem.image_url || '')
       const updatePayload: Record<string, unknown> = {
         japanese: formData.japanese.trim(),
         romaji: formData.romaji.trim(),
@@ -897,6 +900,8 @@ export default function SetoranKotobaPage() {
                   <img
                     src={item.image_url}
                     alt={item.romaji}
+                    loading="lazy"
+                    decoding="async"
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={e => {
                       ;(e.target as HTMLElement).style.display = 'none'
@@ -1348,7 +1353,11 @@ export default function SetoranKotobaPage() {
                       <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                        onClick={() => {
+                          setSelectedFile(null)
+                          uploadPromiseRef.current = null
+                          setFormData(prev => ({ ...prev, image_url: '' }))
+                        }}
                         className="absolute top-1.5 right-1.5 px-2.5 py-1 bg-red-600/90 hover:bg-red-700 text-white text-xs font-bold rounded-lg border-none cursor-pointer backdrop-blur-xs transition-all shadow-xs touch-manipulation flex items-center gap-1"
                       >
                         <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
