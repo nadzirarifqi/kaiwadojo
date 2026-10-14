@@ -1,12 +1,82 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import FeedbackModal from './FeedbackModal'
 import { AppConfig } from '../config/appConfig'
+
+/**
+ * Helper to detect if any modal, dialog, or high z-index overlay is open in the DOM
+ */
+function isAnyModalInDOM(): boolean {
+  if (typeof document === 'undefined') return false
+
+  // 1. Check for standard modal dialogs or explicit modal ARIA elements
+  const dialogs = document.querySelectorAll('[role="dialog"], [aria-modal="true"]')
+  for (const el of Array.from(dialogs)) {
+    if (el.closest('#floating-action-widgets')) continue
+    const htmlEl = el as HTMLElement
+    if (htmlEl.offsetWidth > 0 || htmlEl.offsetHeight > 0 || htmlEl.getClientRects().length > 0) {
+      const style = window.getComputedStyle(htmlEl)
+      if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+        return true
+      }
+    }
+  }
+
+  // 2. Check for high z-index modal backdrops / full-screen overlays (z >= 50 or arbitrary tailwind z-[...])
+  const highZCandidates = document.querySelectorAll(
+    '[class*="z-[999"], [class*="z-[99999"], [class*="z-[500"], [class*="z-[600"], [class*="z-[650"]'
+  )
+  for (const el of Array.from(highZCandidates)) {
+    if (el.closest('#floating-action-widgets')) continue
+    const htmlEl = el as HTMLElement
+    const cls = htmlEl.className || ''
+    if (typeof cls === 'string' && cls.includes('fixed') && (cls.includes('inset-0') || cls.includes('top-0'))) {
+      const style = window.getComputedStyle(htmlEl)
+      if (
+        style.pointerEvents !== 'none' &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0'
+      ) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
 
 export default function WhatsAppWidget() {
   const location = useLocation()
   const [isWaOpen, setIsWaOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
+  const [isDomModalOpen, setIsDomModalOpen] = useState(false)
+
+  // Observe DOM changes to detect any modal opening or closing
+  useEffect(() => {
+    const checkModal = () => {
+      setIsDomModalOpen(isAnyModalInDOM())
+    }
+
+    // Initial check
+    checkModal()
+
+    // MutationObserver to react immediately to modals mounting or unmounting
+    const observer = new MutationObserver(() => {
+      checkModal()
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'role', 'aria-modal'],
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [location.pathname])
 
   // Hide feedback button specifically on landing page, login, and registration pages
   const normalizedPath = location.pathname.toLowerCase().replace(/\/+$/, '') || '/'
@@ -21,10 +91,19 @@ export default function WhatsAppWidget() {
     setIsWaOpen(false)
   }
 
+  const shouldHideWidgets = isDomModalOpen || isWaOpen || isFeedbackOpen
+
   return (
     <>
       {/* Floating Action Buttons Group (Bottom Right) */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-2.5 sm:gap-3">
+      <div
+        id="floating-action-widgets"
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-2.5 sm:gap-3 transition-all duration-300 ${
+          shouldHideWidgets
+            ? 'opacity-0 pointer-events-none translate-y-6 scale-90'
+            : 'opacity-100 pointer-events-auto translate-y-0 scale-100'
+        }`}
+      >
         
         {/* 1. Floating Feedback & Saran Trigger Button (Hidden on Landing, Login, Register) */}
         {!isAuthOrLandingPage && (
