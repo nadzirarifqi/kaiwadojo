@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react'
+
 const LIGHT_LOGO = '/logo-kaiwadojo-light.png?v=2'
 const DARK_LOGO = '/logo-kaiwadojo-dark.png?v=2'
 
@@ -9,41 +11,46 @@ interface KaiwaLogoProps {
 
 export default function KaiwaLogo({
   className = 'size-full object-contain',
-  alt = 'KaiwaDojo',
+  alt = 'kaiwadojo',
   mode = 'auto',
 }: KaiwaLogoProps) {
-  if (mode === 'light') {
-    return (
-      <img
-        src={LIGHT_LOGO}
-        alt={alt}
-        className={className}
-      />
-    )
-  }
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document === 'undefined') return false
+    return document.documentElement.classList.contains('dark')
+  })
 
-  if (mode === 'dark') {
-    return (
-      <img
-        src={DARK_LOGO}
-        alt={alt}
-        className={className}
-      />
-    )
-  }
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const updateTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }
+
+    updateTheme()
+
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const currentSrc =
+    mode === 'dark'
+      ? DARK_LOGO
+      : mode === 'light'
+      ? LIGHT_LOGO
+      : isDark
+      ? DARK_LOGO
+      : LIGHT_LOGO
 
   return (
-    <>
-      <img
-        src={LIGHT_LOGO}
-        alt={alt}
-        className={`${className} dark:hidden`}
-      />
-      <img
-        src={DARK_LOGO}
-        alt={alt}
-        className={`${className} hidden dark:block`}
-      />
-    </>
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+    />
   )
 }
