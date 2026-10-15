@@ -51,7 +51,7 @@ export default function InstructorScheduleManagerPage() {
   const [formSubtitle, setFormSubtitle] = useState('')
   const [formInstructorName, setFormInstructorName] = useState(instructorName)
   const [formMeetUrl, setFormMeetUrl] = useState('https://meet.google.com/kaiwa-live-session')
-  const [formLocation, setFormLocation] = useState('Kaiwa Dojo Center (Jl. Sudirman No. 12)')
+  const [formLocation, setFormLocation] = useState('kaiwadojo Center (Jl. Sudirman No. 12)')
   const [formMaxQuota, setFormMaxQuota] = useState(10)
   const [formTargetGroup, setFormTargetGroup] = useState<string>('') // '' = semua siswa
 
@@ -130,7 +130,7 @@ export default function InstructorScheduleManagerPage() {
     setFormSubtitle('')
     setFormInstructorName(instructorName)
     setFormMeetUrl('https://meet.google.com/kaiwa-live-session')
-    setFormLocation('Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
+    setFormLocation('kaiwadojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(10)
     setFormTargetGroup('')
     setScheduleSlots([
@@ -152,7 +152,7 @@ export default function InstructorScheduleManagerPage() {
     setFormSubtitle(sch.subtitle_chapter)
     setFormInstructorName(sch.instructor_name)
     setFormMeetUrl(sch.meet_url || 'https://meet.google.com/kaiwa-live-session')
-    setFormLocation(sch.location || 'Kaiwa Dojo Center, Room A (Jl. Sudirman No. 12)')
+    setFormLocation(sch.location || 'kaiwadojo Center, Room A (Jl. Sudirman No. 12)')
     setFormMaxQuota(sch.max_quota)
     setFormTargetGroup(sch.target_group || '')
     setScheduleSlots([

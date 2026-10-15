@@ -260,7 +260,7 @@ export default function InstructorManager() {
                           </div>
                           <div>
                             <div className="font-extrabold text-slate-800 dark:text-white">{inst.full_name}</div>
-                            <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1">{inst.bio || 'Pengajar KaiwaDojo'}</div>
+                            <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1">{inst.bio || 'Pengajar kaiwadojo'}</div>
                           </div>
                         </div>
                       </td>

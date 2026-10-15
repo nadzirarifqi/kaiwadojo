@@ -191,7 +191,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           'Akun Ditolak / Nonaktif',
-          `Akun Anda ("${studentMatch.full_name}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo. Silakan hubungi tim pengelola jika terjadi kekeliruan.`,
+          `Akun Anda ("${studentMatch.full_name}") telah ditolak atau dinonaktifkan oleh Admin kaiwadojo. Silakan hubungi tim pengelola jika terjadi kekeliruan.`,
           'warning',
           'Mengerti'
         )
@@ -219,7 +219,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           'Username Tidak Ditemukan',
-          `Username "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan username Anda atau daftar akun baru jika belum memiliki akun.`,
+          `Username "**${username}**" belum terdaftar di sistem kaiwadojo.\n\nSilakan periksa kembali ejaan username Anda atau daftar akun baru jika belum memiliki akun.`,
           'warning',
           'Periksa Username'
         )
@@ -243,7 +243,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           'Akun Ditolak / Nonaktif',
-          `Akun Anda ("${userProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+          `Akun Anda ("${userProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin kaiwadojo.`,
           'warning',
           'Mengerti'
         )
@@ -287,7 +287,7 @@ export default function LoginPage() {
         setLoading(false)
         showAlert(
           'Akun Ditolak / Nonaktif',
-          `Akun Anda ("${emailProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+          `Akun Anda ("${emailProfile.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin kaiwadojo.`,
           'warning',
           'Mengerti'
         )
@@ -328,7 +328,7 @@ export default function LoginPage() {
         if (!userFoundInDb && inputClean.includes('@')) {
           showAlert(
             'Email Tidak Ditemukan',
-            `Email "**${username}**" belum terdaftar di sistem KaiwaDojo.\n\nSilakan periksa kembali ejaan email Anda atau buat akun baru. (Sisa percobaan: ${res.remainingAttempts}x)`,
+            `Email "**${username}**" belum terdaftar di sistem kaiwadojo.\n\nSilakan periksa kembali ejaan email Anda atau buat akun baru. (Sisa percobaan: ${res.remainingAttempts}x)`,
             'warning',
             'Periksa Email'
           )
@@ -372,7 +372,7 @@ export default function LoginPage() {
           setLoading(false)
           showAlert(
             'Akun Ditolak / Nonaktif',
-            `Akun Anda ("${profData.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin KaiwaDojo.`,
+            `Akun Anda ("${profData.full_name || username}") telah ditolak atau dinonaktifkan oleh Admin kaiwadojo.`,
             'warning',
             'Mengerti'
           )
@@ -478,7 +478,7 @@ export default function LoginPage() {
           <div className="size-16 bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 overflow-hidden">
             <KaiwaLogo className="size-11 object-contain" />
           </div>
-          <h1 className="text-2xl font-black text-primary dark:text-red-400 tracking-tight">KaiwaDoJo</h1>
+          <h1 className="text-2xl font-black text-primary dark:text-red-400 tracking-tight">kaiwadojo</h1>
           <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">Platform Belajar Bahasa Jepang</p>
         </div>
 
@@ -623,7 +623,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6 font-medium">
-          © {new Date().getFullYear()} KaiwaDoJo. All rights reserved.
+          © {new Date().getFullYear()} kaiwadojo. All rights reserved.
         </p>
       </div>
 

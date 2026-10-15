@@ -1,5 +1,5 @@
 /**
- * src/config/appConfig.ts - Konfigurasi Terpusat Aplikasi Kaiwa Dojo
+ * src/config/appConfig.ts - Konfigurasi Terpusat Aplikasi kaiwadojo
  * 
  * File ini adalah Single Source of Truth untuk semua konstanta, endpoint API,
  * kunci penyimpanan lokal, durasi timeout, dan nomor kontak admin.
@@ -9,7 +9,7 @@
 export const AppConfig = {
   // ── Informasi Aplikasi ──
   app: {
-    name: 'KaiwaDojo',
+    name: 'kaiwadojo',
     tagline: 'Platform Interaktif Belajar Bahasa Jepang',
     version: '1.0.0',
     websiteUrl: 'https://kaiwadojo.inaconnext.it.com',

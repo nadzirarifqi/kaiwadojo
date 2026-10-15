@@ -428,7 +428,7 @@ export default function StudentManager() {
             <span>Kelola & Verifikasi Akun Pelajar</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar Kaiwa Dojo.
+            Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menyetujui (approve), menolak, menambah, dan mengedit** data akun Pelajar kaiwadojo.
           </p>
         </div>
 

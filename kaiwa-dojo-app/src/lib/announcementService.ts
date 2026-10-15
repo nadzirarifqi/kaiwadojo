@@ -70,7 +70,7 @@ export const CATEGORY_CONFIG: Record<
     badgeClass: 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-500/30',
     borderClass: 'border-indigo-500/40',
     bgGradient: 'from-indigo-500/10 via-indigo-500/5 to-transparent',
-    desc: 'Pembaruan fitur, materi bab baru, atau peningkatan sistem KaiwaDojo',
+    desc: 'Pembaruan fitur, materi bab baru, atau peningkatan sistem kaiwadojo',
   },
   event: {
     label: 'Acara & Dojo',
@@ -115,7 +115,7 @@ function notifyUpdate() {
 const DEFAULT_SEED_ANNOUNCEMENTS: Announcement[] = [
   {
     id: 'seed-announcement-001',
-    title: 'Selamat Datang di Portal Pembelajaran KaiwaDojo! ⛩️',
+    title: 'Selamat Datang di Portal Pembelajaran kaiwadojo! ⛩️',
     content:
       'Selamat datang para pejuang Kaiwa! Di platform ini Anda dapat mengakses materi video terstruktur, setoran kotoba harian, reservasi kelas interaktif dengan Sensei penutur asli, dan memantau progres belajar Anda. Pastikan untuk menyelesaikan Daily Mission setiap hari untuk menjaga streak belajar!',
     category: 'important',

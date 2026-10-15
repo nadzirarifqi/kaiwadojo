@@ -382,7 +382,7 @@ export default function ProfilePage() {
     {
       id: 'welcome',
       title: 'Murid Baru',
-      description: 'Bergabung dengan KaiwaDoJo',
+      description: 'Bergabung dengan kaiwadojo',
       unlocked: true,
       icon: (
         <svg className="size-7 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -639,7 +639,7 @@ export default function ProfilePage() {
           <div className="flex-1 text-center md:text-left">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 mb-2">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
-                {profile?.full_name || 'Pengguna KaiwaDoJo'}
+                {profile?.full_name || 'Pengguna kaiwadojo'}
               </h1>
               <span className="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-sm flex items-center gap-1.5">
                 <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -990,7 +990,7 @@ export default function ProfilePage() {
                 <svg className="size-4.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span>Akses Cepat KaiwaDoJo</span>
+                <span>Akses Cepat kaiwadojo</span>
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Kelola jadwal belajar harian Anda atau lanjutkan kelas yang sedang Anda tempuh.

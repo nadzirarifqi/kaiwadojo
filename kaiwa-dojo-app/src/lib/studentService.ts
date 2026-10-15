@@ -147,7 +147,7 @@ export async function createStudentAccount(data: {
     kabupaten: data.kabupaten || undefined,
     role: 'pelajar',
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
-    bio: data.bio || 'Siswa Kaiwa Dojo',
+    bio: data.bio || 'Siswa kaiwadojo',
     streak_days: 0,
     status: targetStatus,
     created_at: new Date().toISOString(),

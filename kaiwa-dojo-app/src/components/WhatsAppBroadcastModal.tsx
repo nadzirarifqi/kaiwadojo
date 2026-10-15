@@ -18,19 +18,19 @@ interface Props {
 const MESSAGE_TEMPLATES = [
   {
     label: 'Pengumuman Umum',
-    text: '*[PENGUMUMAN KAIWADOJO]*\n\nHalo Kaka!\n\nAdmin KaiwaDojo ingin menyampaikan:\n\n{isi pengumuman di sini}\n\nTerima kasih!\n— Tim Admin KaiwaDojo',
+    text: '*[PENGUMUMAN KAIWADOJO]*\n\nHalo Kaka!\n\nAdmin kaiwadojo ingin menyampaikan:\n\n{isi pengumuman di sini}\n\nTerima kasih!\n— Tim Admin kaiwadojo',
   },
   {
     label: 'Jadwal Kelas Live',
-    text: '*[JADWAL KELAS LIVE BARU]*\n\nHalo Kaka! Kelas Live berikutnya:\n\nTanggal: {tanggal}\nJam: {jam} WIB\nPemateri: {nama pemateri}\nMateri: {bab}\n\nSegera reservasi di aplikasi KaiwaDojo sebelum kuota penuh!',
+    text: '*[JADWAL KELAS LIVE BARU]*\n\nHalo Kaka! Kelas Live berikutnya:\n\nTanggal: {tanggal}\nJam: {jam} WIB\nPemateri: {nama pemateri}\nMateri: {bab}\n\nSegera reservasi di aplikasi kaiwadojo sebelum kuota penuh!',
   },
   {
     label: 'Reminder Misi',
-    text: '*[REMINDER MISI HARIAN]*\n\nHalo Kaka! Jangan lupa susun Misi Belajar Harian kamu di KaiwaDojo ya!\n\nLogin -> Rencana Belajar -> Susun Misi Hari Ini\n\nKonsistensi adalah kunci sukses belajar Bahasa Jepang!\n— Tim Admin KaiwaDojo',
+    text: '*[REMINDER MISI HARIAN]*\n\nHalo Kaka! Jangan lupa susun Misi Belajar Harian kamu di kaiwadojo ya!\n\nLogin -> Rencana Belajar -> Susun Misi Hari Ini\n\nKonsistensi adalah kunci sukses belajar Bahasa Jepang!\n— Tim Admin kaiwadojo',
   },
   {
     label: 'Pesan Motivasi',
-    text: '*[SEMANGAT BELAJAR BAHASA JEPANG]*\n\nHalo Kaka! Tetap semangat belajarnya!\n\nIngat, setiap langkah kecil hari ini adalah kemajuan besar untuk masa depan!\n\nSampai jumpa di kelas ya!\n— Tim Admin KaiwaDojo',
+    text: '*[SEMANGAT BELAJAR BAHASA JEPANG]*\n\nHalo Kaka! Tetap semangat belajarnya!\n\nIngat, setiap langkah kecil hari ini adalah kemajuan besar untuk masa depan!\n\nSampai jumpa di kelas ya!\n— Tim Admin kaiwadojo',
   },
 ]
 

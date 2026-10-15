@@ -1152,7 +1152,7 @@ export default function MyCourses() {
               Minna no Nihongo — Jilid 2
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-              Materi <strong>Bab 26 s/d Bab 50</strong> sedang dalam persiapan oleh tim Kaiwa Dojo.<br />
+              Materi <strong>Bab 26 s/d Bab 50</strong> sedang dalam persiapan oleh tim kaiwadojo.<br />
               Selesaikan materi Jilid 1 terlebih dahulu untuk membuka akses.
             </p>
           </div>

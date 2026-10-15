@@ -76,7 +76,7 @@ function DashboardRoute() {
 
 /* ── Universal App Navbar (YouTube-Style Layout) ───
    Tampil di Desktop & Mobile:
-   • Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Wordmark KaiwaDojo
+   • Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Wordmark kaiwadojo
    • Klik logo / wordmark → kembali ke Dashboard (/dashboard)
    • Pojok kanan: Badge Role + Switch Dark/Light Mode + Foto/Avatar Profil
    ─────────────────────────────────────────────── */
@@ -134,7 +134,7 @@ function AppNavbar({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-3 sm:px-5 lg:px-6 shadow-xs safe-left safe-right transition-colors">
-      {/* Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Tulisan KaiwaDojo */}
+      {/* Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Tulisan kaiwadojo */}
       <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
         {/* Tombol Menu Garis Tiga (Desktop & Mobile) */}
         <button
@@ -149,7 +149,7 @@ function AppNavbar({
           </svg>
         </button>
 
-        {/* Logo & Tulisan KaiwaDojo - Klik untuk balik ke dashboard */}
+        {/* Logo & Tulisan kaiwadojo - Klik untuk balik ke dashboard */}
         <button
           type="button"
           onClick={() => {
@@ -158,7 +158,7 @@ function AppNavbar({
               onToggleSidebar()
             }
           }}
-          aria-label="Kembali ke Dashboard KaiwaDojo"
+          aria-label="Kembali ke Dashboard kaiwadojo"
           title="Kembali ke Dashboard"
           className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 active:scale-[0.98] transition-all cursor-pointer border-none bg-transparent group text-left shrink-0"
         >
@@ -167,7 +167,7 @@ function AppNavbar({
           </div>
           <div className="flex items-center gap-1">
             <span className="font-extrabold text-primary dark:text-red-400 text-xs sm:text-sm tracking-tight leading-none group-hover:text-primary-dark dark:group-hover:text-red-300 transition-colors">
-              KaiwaDojo
+              kaiwadojo
             </span>
             <span className="text-[9px] px-1 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">
               会話
@@ -317,7 +317,7 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   // Gating status akun: Akun nonaktif/rejected atau pending dilarang masuk ke Dashboard
   if (profile.role === 'pelajar' && (profile.status === 'rejected' || profile.status === 'pending')) {
     const reasonMsg = profile.status === 'rejected'
-      ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin KaiwaDojo.'
+      ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin kaiwadojo.'
       : 'Akun Anda masih dalam proses verifikasi Admin.'
     signOut(reasonMsg)
     return null  // signOut() performs window.location.replace('/') — no need to render Navigate

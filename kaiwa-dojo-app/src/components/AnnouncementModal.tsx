@@ -292,7 +292,7 @@ export default function AnnouncementModal({
             ) : (
               <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
                 <span className="size-1.5 rounded-full bg-primary" />
-                <span>Pengumuman resmi KaiwaDojo</span>
+                <span>Pengumuman resmi kaiwadojo</span>
               </span>
             )}
           </div>

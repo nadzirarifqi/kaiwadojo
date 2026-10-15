@@ -83,7 +83,7 @@ export default function WhatsAppWidget() {
   const isAuthOrLandingPage = ['/', '/login', '/register', '/admin'].includes(normalizedPath)
 
   const adminWaNumber = AppConfig.contacts.getAdminWaFormatted()
-  const defaultMessage = encodeURIComponent('Halo Admin KaiwaDojo, saya ingin bertanya mengenai aplikasi...')
+  const defaultMessage = encodeURIComponent('Halo Admin kaiwadojo, saya ingin bertanya mengenai aplikasi...')
   const waUrl = `https://wa.me/${adminWaNumber}?text=${defaultMessage}`
 
   function handleOpenWhatsApp() {
@@ -115,7 +115,7 @@ export default function WhatsAppWidget() {
             <button
               type="button"
               onClick={() => setIsFeedbackOpen(true)}
-              aria-label="Kirim Masukan & Saran untuk Website KaiwaDojo"
+              aria-label="Kirim Masukan & Saran untuk Website kaiwadojo"
               className="relative size-12 sm:size-13 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border-none overflow-visible"
             >
               <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -134,7 +134,7 @@ export default function WhatsAppWidget() {
           <button
             type="button"
             onClick={() => setIsWaOpen(true)}
-            aria-label="Hubungi Admin KaiwaDojo via WhatsApp"
+            aria-label="Hubungi Admin kaiwadojo via WhatsApp"
             className="relative size-12 sm:size-13 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border-none overflow-visible"
           >
             {/* Ambient Pulse Ring */}
@@ -175,7 +175,7 @@ export default function WhatsAppWidget() {
               Hubungi Admin WhatsApp
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6 font-medium">
-              Hubungi Tim Admin KaiwaDojo untuk informasi jadwal, pendaftaran, atau bantuan akun.
+              Hubungi Tim Admin kaiwadojo untuk informasi jadwal, pendaftaran, atau bantuan akun.
             </p>
 
             <div className="flex flex-col gap-2.5">

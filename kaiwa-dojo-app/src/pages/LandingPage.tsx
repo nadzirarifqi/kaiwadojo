@@ -199,7 +199,7 @@ export default function LandingPage() {
             </div>
             <div>
               <span className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                Kaiwa<span className="text-primary dark:text-red-400">Dojo</span>
+                kaiwadojo
                 <span className="text-[0.58rem] sm:text-[0.62rem] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary dark:text-red-400 font-extrabold border border-primary/20">
                   会話
                 </span>
@@ -786,7 +786,7 @@ export default function LandingPage() {
           
           <div className="text-center max-w-xl mx-auto mb-6 sm:mb-10">
             <span className="text-[0.65rem] sm:text-xs font-black uppercase tracking-wider text-primary dark:text-red-400 block mb-1">
-              Mengapa KaiwaDojo?
+              Mengapa kaiwadojo?
             </span>
             <h2 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Metode Praktik Efektif & Terarah
@@ -1168,7 +1168,7 @@ export default function LandingPage() {
               <KaiwaLogo className="size-full object-contain" />
             </div>
             <span className="font-extrabold text-slate-800 dark:text-white text-[0.72rem] sm:text-xs">
-              KaiwaDojo &copy; {new Date().getFullYear()}. All Rights Reserved.
+              kaiwadojo &copy; {new Date().getFullYear()}. All Rights Reserved.
             </span>
           </div>
 

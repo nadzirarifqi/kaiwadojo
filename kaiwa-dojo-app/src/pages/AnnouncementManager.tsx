@@ -108,7 +108,7 @@ export default function AnnouncementManager() {
             Akses Khusus Administrator
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-            Halaman ini hanya dapat diakses oleh Admin KaiwaDojo untuk mempublikasikan pengumuman resmi ke seluruh platform.
+            Halaman ini hanya dapat diakses oleh Admin kaiwadojo untuk mempublikasikan pengumuman resmi ke seluruh platform.
           </p>
           <button
             onClick={() => navigate('/dashboard')}

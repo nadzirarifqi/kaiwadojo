@@ -57,7 +57,7 @@ export const CATEGORY_META: Record<
     label: 'Saran Fitur Baru',
     icon: '💡',
     badgeClass: 'bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border-amber-500/20',
-    desc: 'Ide atau penambahan fitur baru untuk KaiwaDojo',
+    desc: 'Ide atau penambahan fitur baru untuk kaiwadojo',
   },
   laporan_bug: {
     label: 'Laporan Bug / Kendala',

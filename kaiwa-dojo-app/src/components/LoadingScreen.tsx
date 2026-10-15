@@ -22,7 +22,7 @@ export default function LoadingScreen({
 
       <div className="flex flex-col items-center gap-1">
         <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-          Kaiwa<span className="text-primary dark:text-red-400">Dojo</span>
+          kaiwadojo
         </span>
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 animate-pulse">
           {message}

@@ -20,7 +20,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Akun KaiwaDojo Disetujui</title>
+      <title>Akun kaiwadojo Disetujui</title>
     </head>
     <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px;">
       <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -30,7 +30,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
           <div style="display: inline-block; background-color: #fef2f2; padding: 12px; border-radius: 16px; margin-bottom: 8px;">
             <span style="font-size: 36px;">🎉</span>
           </div>
-          <h1 style="color: #b91c1c; margin: 0; font-size: 24px; font-weight: 900;">KaiwaDoJo</h1>
+          <h1 style="color: #b91c1c; margin: 0; font-size: 24px; font-weight: 900;">kaiwadojo</h1>
           <p style="color: #64748b; font-size: 11px; margin-top: 4px; uppercase; font-weight: 800; letter-spacing: 1px;">Platform Interaktif Belajar Bahasa Jepang</p>
         </div>
 
@@ -41,7 +41,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
 
         <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">Halo <strong>${fullName}</strong>,</p>
         <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
-          Pendaftaran akun Anda di <strong>KaiwaDojo</strong> telah berhasil diverifikasi dan <strong>disetujui oleh Admin</strong>.
+          Pendaftaran akun Anda di <strong>kaiwadojo</strong> telah berhasil diverifikasi dan <strong>disetujui oleh Admin</strong>.
         </p>
 
         <!-- Account Info Card -->
@@ -62,7 +62,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
         
         <!-- Footer -->
         <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0; line-height: 1.5;">
-          Email ini dikirimkan secara otomatis oleh sistem KaiwaDojo.<br />
+          Email ini dikirimkan secara otomatis oleh sistem kaiwadojo.<br />
           Jika Anda memiliki pertanyaan, silakan hubungi tim pengelola.
         </p>
       </div>
@@ -78,7 +78,7 @@ export async function sendApprovalEmail({ toEmail, fullName, username }: Approva
       },
       body: JSON.stringify({
         to: [toEmail],
-        subject: '🎉 Selamat! Akun KaiwaDojo Anda Telah Disetujui Admin',
+        subject: '🎉 Selamat! Akun kaiwadojo Anda Telah Disetujui Admin',
         html: emailHtml,
       }),
     })

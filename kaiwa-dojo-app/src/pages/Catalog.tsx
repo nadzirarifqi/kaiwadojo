@@ -118,7 +118,7 @@ export default function CatalogPage() {
           <span>Katalog Kursus</span>
         </h1>
         <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-          Temukan dan ikuti berbagai kursus berkualitas di KaiwaDoJo
+          Temukan dan ikuti berbagai kursus berkualitas di kaiwadojo
         </p>
       </div>
 

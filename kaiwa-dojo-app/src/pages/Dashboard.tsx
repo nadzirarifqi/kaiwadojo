@@ -858,7 +858,7 @@ function SakuraEvolutionModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
         </div>
 
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-          Di KaiwaDojo, konsistensi belajar diibaratkan pohon sakura yang bertumbuh semakin megah seiring bertambahnya streak Anda:
+          Di kaiwadojo, konsistensi belajar diibaratkan pohon sakura yang bertumbuh semakin megah seiring bertambahnya streak Anda:
         </p>
 
         <div className="space-y-2 text-xs sm:text-sm">

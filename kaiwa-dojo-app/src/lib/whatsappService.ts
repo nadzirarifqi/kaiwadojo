@@ -34,7 +34,7 @@ export async function sendWhatsAppOtp({ phoneNumber, otpCode }: SendWhatsAppOtpP
     formattedPhone = '62' + formattedPhone.slice(1)
   }
 
-  const messageText = `[KaiwaDojo] Kode OTP Pendaftaran Akun Anda adalah: ${otpCode}\n\nMasukkan kode ini pada aplikasi KaiwaDojo untuk memverifikasi pendaftaran. Jangan berikan kode ini kepada siapapun.`
+  const messageText = `[kaiwadojo] Kode OTP Pendaftaran Akun Anda adalah: ${otpCode}\n\nMasukkan kode ini pada aplikasi kaiwadojo untuk memverifikasi pendaftaran. Jangan berikan kode ini kepada siapapun.`
 
   try {
     const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
@@ -81,7 +81,7 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
     return false
   }
 
-  const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun KaiwaDojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
+  const messageText = `🎉 *BERHASIL! AKUN KAIWADOJO ANDA TELAH DISETUJUI ADMIN*\n\nHalo *${fullName}*,\n\nPendaftaran akun kaiwadojo Anda telah diverifikasi dan *disetujui oleh Admin*.\n\nDetail Login Anda:\n• Username: *@${username}*\n• Website: https://kaiwadojo.inaconnext.it.com/login\n\nSilakan masuk ke Dashboard dan mulai petualangan belajar Bahasa Jepang Anda sekarang! 🚀`
 
   try {
     const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
@@ -157,7 +157,7 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isV
 export function getAdminWhatsAppUrl(username: string): string {
   const formatted = AppConfig.contacts.getAdminWaFormatted()
   const cleanUser = (username || '').replace(/^@/, '')
-  const messageText = `Halo Admin KaiwaDojo, akun saya @${cleanUser} sudah registrasi.`
+  const messageText = `Halo Admin kaiwadojo, akun saya @${cleanUser} sudah registrasi.`
   return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
 }
 
@@ -169,7 +169,7 @@ export function getAdminWhatsAppDeleteAccountUrl(username?: string, fullName?: s
   const cleanUser = (username || '').replace(/^@/, '')
   const nameStr = fullName ? ` (${fullName})` : ''
   const emailStr = email ? `\n• Email: ${email}` : ''
-  const messageText = `Halo Admin KaiwaDojo, saya ingin mengajukan permohonan penghapusan akun saya:\n• Username: @${cleanUser}${nameStr}${emailStr}\n\nMohon bantuannya untuk memproses konfirmasi dan penghapusan akun saya dari sistem KaiwaDojo. Terima kasih.`
+  const messageText = `Halo Admin kaiwadojo, saya ingin mengajukan permohonan penghapusan akun saya:\n• Username: @${cleanUser}${nameStr}${emailStr}\n\nMohon bantuannya untuk memproses konfirmasi dan penghapusan akun saya dari sistem kaiwadojo. Terima kasih.`
   return `https://wa.me/${formatted}?text=${encodeURIComponent(messageText)}`
 }
 /**

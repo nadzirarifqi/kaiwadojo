@@ -1,5 +1,5 @@
 /**
- * KaiwaDoJo Security Utilities
+ * kaiwadojo Security Utilities
  * 
  * Provides defenses against:
  * 1. Cross-Site Scripting (XSS) & HTML Injection

@@ -180,7 +180,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Profile
     pf_title: 'Profil Pengguna',
     pf_subtitle: 'Kelola informasi pribadi, statistik belajar, dan pencapaian lencana Anda',
-    pf_role_student: 'Pelajar KaiwaDoJo',
+    pf_role_student: 'Pelajar kaiwadojo',
     pf_tab_overview: 'Ringkasan & Edit Profil',
     pf_tab_courses: 'Kursus Saya',
     pf_tab_achievements: 'Pencapaian & Lencana',
@@ -211,7 +211,7 @@ export const translations: Record<Language, Record<string, string>> = {
     danger_desc: 'Penghapusan akun akan menghapus data profil, histori pembelajaran, dan progres belajar secara permanen. Untuk keamanan, proses ini dikonfirmasi langsung dengan Admin via WhatsApp.',
     delete_account: 'Ajukan Hapus Akun',
     delete_modal_title: 'Konfirmasi Hapus Akun via WhatsApp',
-    delete_modal_prompt: 'Untuk alasan keamanan dan verifikasi kepemilikan akun, permohonan penghapusan akun diproses melalui konfirmasi langsung dengan Admin KaiwaDojo melalui WhatsApp.',
+    delete_modal_prompt: 'Untuk alasan keamanan dan verifikasi kepemilikan akun, permohonan penghapusan akun diproses melalui konfirmasi langsung dengan Admin kaiwadojo melalui WhatsApp.',
     delete_modal_wa_btn: 'Hubungi Admin via WhatsApp',
 
     // Toast Notifications
@@ -428,7 +428,7 @@ export const translations: Record<Language, Record<string, string>> = {
     danger_desc: 'Deleting your account will permanently remove profile data, study history, and streak progress. For security, this is confirmed directly with the Admin via WhatsApp.',
     delete_account: 'Request Account Deletion',
     delete_modal_title: 'Confirm Account Deletion via WhatsApp',
-    delete_modal_prompt: 'For account security and ownership verification, account deletion requests are processed through direct confirmation with KaiwaDojo Admin via WhatsApp.',
+    delete_modal_prompt: 'For account security and ownership verification, account deletion requests are processed through direct confirmation with kaiwadojo Admin via WhatsApp.',
     delete_modal_wa_btn: 'Contact Admin via WhatsApp',
 
     // Toast Notifications
@@ -651,7 +651,7 @@ export const translations: Record<Language, Record<string, string>> = {
     danger_desc: 'アカウントを削除すると、プロフィールデータ、学習履歴、ストリーク進捗が永久に消去されます。安全のため、WhatsAppを通じて管理者に直接確認して処理されます。',
     delete_account: 'アカウント削除を申請',
     delete_modal_title: 'WhatsAppでアカウント削除を確認',
-    delete_modal_prompt: 'セキュリティと本人確認のため、アカウントの削除手続きはWhatsAppを通じてKaiwaDojoの管理者と直接確認の上で実施されます。',
+    delete_modal_prompt: 'セキュリティと本人確認のため、アカウントの削除手続きはWhatsAppを通じてkaiwadojoの管理者と直接確認の上で実施されます。',
     delete_modal_wa_btn: 'WhatsAppで管理者に連絡する',
 
     // Toast Notifications

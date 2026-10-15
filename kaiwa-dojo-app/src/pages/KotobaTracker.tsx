@@ -221,7 +221,7 @@ export default function KotobaTrackerPage() {
           </div>
           <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Akses Terbatas</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-            Halaman ini khusus diperuntukkan untuk Admin dan Pemateri Kaiwa Dojo.
+            Halaman ini khusus diperuntukkan untuk Admin dan Pemateri kaiwadojo.
           </p>
           <button
             onClick={() => navigate('/dashboard')}

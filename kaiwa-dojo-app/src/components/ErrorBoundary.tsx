@@ -33,7 +33,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo })
     // Log error for debugging (visible in browser DevTools console)
-    console.error('[KaiwaDojo ErrorBoundary]', error, errorInfo)
+    console.error('[kaiwadojo ErrorBoundary]', error, errorInfo)
   }
 
   handleReload = () => {

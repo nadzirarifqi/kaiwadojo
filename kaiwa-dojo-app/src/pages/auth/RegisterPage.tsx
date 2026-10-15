@@ -488,7 +488,7 @@ export default function RegisterPage() {
       kelurahan: cleanKelurahan,
       kecamatan: cleanKecamatan,
       kabupaten: cleanKabupaten,
-      bio: 'Siswa Baru Kaiwa Dojo',
+      bio: 'Siswa Baru kaiwadojo',
       status: 'pending',
     })
 
@@ -533,7 +533,7 @@ export default function RegisterPage() {
             Menunggu Verifikasi Admin
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Pendaftaran akun <span className="font-bold text-slate-900 dark:text-white">{fullName}</span> telah selesai. Akun Anda saat ini sedang dalam proses aktivasi oleh Admin KaiwaDojo.
+            Pendaftaran akun <span className="font-bold text-slate-900 dark:text-white">{fullName}</span> telah selesai. Akun Anda saat ini sedang dalam proses aktivasi oleh Admin kaiwadojo.
           </p>
 
           <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 mb-6 text-left leading-relaxed flex items-start gap-2.5">
@@ -623,7 +623,7 @@ export default function RegisterPage() {
             Pendaftaran Akun
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
-            Bergabung bersama KaiwaDoJo untuk belajar bahasa Jepang interaktif.
+            Bergabung bersama kaiwadojo untuk belajar bahasa Jepang interaktif.
           </p>
         </div>
 
@@ -1122,7 +1122,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6">
-          &copy; {new Date().getFullYear()} KaiwaDoJo. All rights reserved.
+          &copy; {new Date().getFullYear()} kaiwadojo. All rights reserved.
         </p>
       </div>
 

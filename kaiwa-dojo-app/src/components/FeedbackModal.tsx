@@ -100,7 +100,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     setSubmitting(true)
     setErrorMsg(null)
 
-    const senderName = isAnonymous ? 'Anonim' : (name.trim() || 'Pengguna KaiwaDojo')
+    const senderName = isAnonymous ? 'Anonim' : (name.trim() || 'Pengguna kaiwadojo')
     const senderEmail = isAnonymous ? null : (email.trim() || null)
     const senderPhone = isAnonymous ? null : (phoneNumber.trim() || null)
     const senderRole = isAnonymous ? 'tamu' : (profile?.role || 'pelajar')
@@ -168,7 +168,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               Arigatou Gozaimasu! (ありがとうございます)
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md leading-relaxed font-medium mb-6">
-              Masukan & saran berharga Anda telah kami terima dengan baik. Tim KaiwaDojo akan meninjau saran ini untuk terus menyempurnakan platform belajar kita!
+              Masukan & saran berharga Anda telah kami terima dengan baik. Tim kaiwadojo akan meninjau saran ini untuk terus menyempurnakan platform belajar kita!
             </p>
             <div className="flex gap-3">
               <button
@@ -190,7 +190,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 <span>Kolom Masukan & Saran Website</span>
               </div>
               <h2 id="feedback-modal-title" className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                <span>Bantu Kami Mengembangkan KaiwaDojo</span>
+                <span>Bantu Kami Mengembangkan kaiwadojo</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Punya saran fitur baru, menemukan kendala (bug), atau ingin memberi masukan materi? Ceritakan kepada kami!

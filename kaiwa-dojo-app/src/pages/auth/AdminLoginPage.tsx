@@ -265,7 +265,7 @@ export default function AdminLoginPage() {
             </svg>
             <span>Restricted Portal Admin /admin</span>
           </span>
-          <h1 className="text-2xl font-black tracking-tight text-white">KaiwaDoJo Admin System</h1>
+          <h1 className="text-2xl font-black tracking-tight text-white">kaiwadojo Admin System</h1>
         </div>
 
         {/* ── PHASE 1: PIN SECURITY GATE (899876) ────────────────── */}

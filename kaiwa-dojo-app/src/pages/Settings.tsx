@@ -368,7 +368,7 @@ export default function SettingsPage() {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              {t('delete_modal_prompt', 'Untuk alasan keamanan dan verifikasi kepemilikan akun, permohonan penghapusan akun diproses melalui konfirmasi langsung dengan Admin KaiwaDojo melalui WhatsApp.')}
+              {t('delete_modal_prompt', 'Untuk alasan keamanan dan verifikasi kepemilikan akun, permohonan penghapusan akun diproses melalui konfirmasi langsung dengan Admin kaiwadojo melalui WhatsApp.')}
             </p>
 
             {/* Account Detail Card */}
