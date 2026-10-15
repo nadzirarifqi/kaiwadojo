@@ -810,15 +810,16 @@ export default function LearningPlanPage() {
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-              {/* Segmented View Mode Toggle: Kalender vs Agenda Schedule */}
-              <div className="flex items-center p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap shrink-0">
+              {/* Segmented View Mode Toggle: Kalender vs Agenda */}
+              <div className="flex items-center p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-800 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
                 <button
+                  type="button"
                   onClick={() => setViewMode('calendar')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     viewMode === 'calendar'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   <svg className="size-3 sm:size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -827,28 +828,29 @@ export default function LearningPlanPage() {
                   <span>{t('lp_calendar_view', 'Kalender')}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setViewMode('schedule')}
-                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer border-none flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     viewMode === 'schedule'
                       ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   <svg className="size-3 sm:size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  <span>{t('lp_schedule_view', 'Agenda Schedule')}</span>
+                  <span>{t('lp_agenda_view', 'Agenda')}</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <button
-                  onClick={handleTodayClick}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all"
-                >
-                  {t('lp_today_btn', 'Hari Ini')}
-                </button>
-              </div>
+              {/* Hari Ini Button */}
+              <button
+                type="button"
+                onClick={handleTodayClick}
+                className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all whitespace-nowrap shadow-2xs shrink-0"
+              >
+                {t('lp_today_btn', 'Hari Ini')}
+              </button>
             </div>
           </div>
 
@@ -865,17 +867,31 @@ export default function LearningPlanPage() {
                   <span>{t('lp_agenda_header', 'Agenda Jadwal Pembelajaran & Kelas Live')}</span>
                 </span>
                 <button
+                  type="button"
                   onClick={() => setShowOnlyActivities(prev => !prev)}
-                  className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer border-none flex items-center gap-1.5 shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer border flex items-center gap-2 shrink-0 ${
                     showOnlyActivities
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 shadow-xs'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
+                  title="Klik untuk menyaring jadwal beragenda atau seluruh tanggal"
+                  aria-label="Filter agenda"
                 >
-                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span>{showOnlyActivities ? t('lp_only_activities', 'Hanya Hari Beragenda') : t('lp_show_all_dates', 'Tampilkan Semua Tanggal')}</span>
+                  <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    <span>Filter:</span>
+                  </span>
+                  <span className="font-extrabold text-slate-800 dark:text-white">
+                    {showOnlyActivities ? 'Hanya Beragenda' : 'Semua Tanggal'}
+                  </span>
+                  {/* Interactive toggle switch visual */}
+                  <span className={`w-8 h-4.5 rounded-full p-0.5 transition-colors flex items-center ${
+                    showOnlyActivities ? 'bg-amber-500 justify-end' : 'bg-slate-300 dark:bg-slate-600 justify-start'
+                  }`}>
+                    <span className="size-3.5 rounded-full bg-white shadow-xs block" />
+                  </span>
                 </button>
               </div>
 
@@ -1424,11 +1440,13 @@ export default function LearningPlanPage() {
 
                       {/* Desktop Only: Past Hanko Stamp Overlay */}
                       {isPastEligibleForStamp && (
-                        <img
-                          src={stampSrc}
-                          alt={stampAlt}
-                          className="hidden sm:block absolute top-1 right-1 size-8 object-contain pointer-events-none opacity-90 rotate-[-12deg] z-10 transition-transform group-hover:scale-110 drop-shadow-xs"
-                        />
+                        <div className="hidden sm:block absolute top-1 right-1 size-8 pointer-events-none z-10">
+                          <img
+                            src={stampSrc}
+                            alt={stampAlt}
+                            className="size-full object-contain pointer-events-none opacity-90 rotate-[-12deg] transition-transform group-hover:scale-110 drop-shadow-xs"
+                          />
+                        </div>
                       )}
 
                       {/* Desktop Only: Header */}
@@ -1533,13 +1551,53 @@ export default function LearningPlanPage() {
 
 
 
-        {/* Section 2: Detail Rencana (Sesuai Tema Light / Dark) */}
-        <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-colors">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div>
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-500/30">
-                {isDisplayDatePast ? t('lp_archive_mode', 'Arsip Rencana Belajar') : t('lp_target_missions', 'Target & Misi')}
-              </span>
+        {/* Section 2: Target & Misi Belajar (Hanya tampil di mode Kalender) */}
+        {viewMode === 'calendar' && (
+          isDisplayDatePast ? (
+            /* Simple & modern past-date alert (Card Arsip dihapus karena fungsinya overlap dengan Agenda View) */
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+                <div>
+                  <div className="font-bold text-slate-800 dark:text-white">
+                    {formatDateIndonesian(displayDateStr, language)} (Tanggal Telah Berlalu)
+                  </div>
+                  <div className="text-slate-500 dark:text-slate-400 text-xs">
+                    Riwayat rencana belajar & sesi kelas lampau tersedia lengkap di Agenda View.
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('schedule')}
+                  className="flex-1 sm:flex-none px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl border-none cursor-pointer text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                >
+                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span>Buka Agenda View</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTodayClick}
+                  className="flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer text-xs transition-all"
+                >
+                  Ke Hari Ini
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-500/30">
+                    {t('lp_target_missions', 'Target & Misi Belajar')}
+                  </span>
               <h3 className="text-sm sm:text-base font-bold mt-1 text-slate-900 dark:text-white leading-snug">
                 {formatDateIndonesian(displayDateStr, language)}
               </h3>
@@ -1799,60 +1857,42 @@ export default function LearningPlanPage() {
                   </div>
                 </div>
 
-                {/* If past date, show read-only note instead of edit button */}
-                {isDisplayDatePast ? (
-                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-1.5">
-                    <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                    <span>{t('lp_past_date_locked', 'Tanggal telah berlalu (Mode Lihat Arsip)')}</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedDateStr(displayDateStr)
-                      setShowMissionModal(true)
-                    }}
-                    className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-xs transition-all mt-1 flex items-center justify-center gap-2"
-                  >
-                    <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                    <span>{t('lp_edit_mission_btn', 'Edit Misi Tanggal Ini')}</span>
-                  </button>
-                )}
+                                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDateStr(displayDateStr)
+                    setShowMissionModal(true)
+                  }}
+                  className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer text-xs sm:text-sm shadow-xs transition-all mt-1 flex items-center justify-center gap-2"
+                >
+                  <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <span>{t('lp_edit_mission_btn', 'Edit Misi Tanggal Ini')}</span>
+                </button>
               </div>
             ) : (
               <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/80 text-center flex flex-col items-center gap-3">
-                {isDisplayDatePast ? (
-                  <div className="flex flex-col items-center gap-2.5">
-                    <img src="/kosong.png" alt="Belum Buat Rencana (Cap Abu-abu)" className="size-12 object-contain opacity-90 rotate-[-6deg]" />
-                    <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                      Cap Abu-abu: Belum Buat Rencana
-                    </span>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
-                      Hari ini telah berlalu dan <strong>tidak ada rencana belajar</strong> yang disusun pada <strong>{formatDateIndonesian(displayDateStr, language)}</strong>.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
-                      <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Belum ada misi harian yang dibuat untuk <strong>{formatDateIndonesian(displayDateStr, language)}</strong>.
-                    </p>
-                    <button
-                      onClick={() => {
-                        setSelectedDateStr(displayDateStr)
-                        setShowMissionModal(true)
-                      }}
-                      className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
-                    >
-                      <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                      <span>{t('lp_btn_create', 'Susun Misi Tanggal Ini')}</span>
-                    </button>
-                  </>
-                )}
+                <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Belum ada rencana belajar yang disusun untuk <strong>{formatDateIndonesian(displayDateStr, language)}</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDateStr(displayDateStr)
+                    setShowMissionModal(true)
+                  }}
+                  className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-2xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                  <span>{t('lp_btn_create', 'Susun Rencana Belajar')}</span>
+                </button>
               </div>
             )}
           </div>
+        )
+      )}
 
         {/* Section 3: Penjelasan Logo & Status */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3 sm:gap-4 text-xs sm:text-sm">

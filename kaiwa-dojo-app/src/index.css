@@ -146,7 +146,8 @@ p, .body-text, button, input, select, textarea {
   }
 }
 a  { text-decoration: none; color: inherit; }
-img { display: block; }
+img:not(.hidden) { display: block; }
+img.hidden { display: none !important; }
 button {
   font-family: inherit;
   font-size: inherit;
