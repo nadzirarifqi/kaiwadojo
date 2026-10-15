@@ -7,6 +7,7 @@ import { getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import CustomAlertModal from '../../components/CustomAlertModal'
 import { claimDeviceSession } from '../../lib/deviceUtils'
 import { SecurityRateLimiter, sanitizeInput } from '../../lib/securityUtils'
+import KaiwaLogo from '../../components/KaiwaLogo'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -475,7 +476,7 @@ export default function LoginPage() {
         {/* Header Logo */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="size-16 bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 overflow-hidden">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-11 object-contain" />
+            <KaiwaLogo className="size-11 object-contain" />
           </div>
           <h1 className="text-2xl font-black text-primary dark:text-red-400 tracking-tight">KaiwaDoJo</h1>
           <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-medium">Platform Belajar Bahasa Jepang</p>

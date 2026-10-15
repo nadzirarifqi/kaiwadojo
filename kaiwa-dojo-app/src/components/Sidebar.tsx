@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { prefetchRoute } from '../utils/routePrefetch'
+import KaiwaLogo from './KaiwaLogo'
 
 interface SidebarProps {
   isOpen: boolean
@@ -262,7 +263,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="lg:hidden px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2">
             <div className="size-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md flex items-center justify-center overflow-hidden">
-              <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-4.5 object-contain" />
+              <KaiwaLogo className="size-4.5 object-contain" />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
               Navigasi Dojo

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { claimDeviceSession } from '../../lib/deviceUtils'
 import { SecurityRateLimiter, sanitizeUsername } from '../../lib/securityUtils'
+import KaiwaLogo from '../../components/KaiwaLogo'
 
 const ADMIN_CORRECT_PIN = '899876'
 
@@ -256,7 +257,7 @@ export default function AdminLoginPage() {
         {/* Header Logo */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="size-16 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex items-center justify-center mb-3 p-2">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-11 object-contain" />
+            <KaiwaLogo mode="dark" className="size-11 object-contain" />
           </div>
           <span className="px-3 py-1 rounded-full bg-primary/20 text-red-400 border border-primary/30 text-[0.7rem] font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
             <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
+import KaiwaLogo from './components/KaiwaLogo'
 import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
@@ -162,7 +163,7 @@ function AppNavbar({
           className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 active:scale-[0.98] transition-all cursor-pointer border-none bg-transparent group text-left shrink-0"
         >
           <div className="size-7 sm:size-7.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-xs group-hover:scale-105 transition-transform">
-            <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-5 sm:size-5.5 object-contain" />
+            <KaiwaLogo className="size-5 sm:size-5.5 object-contain" />
           </div>
           <div className="flex items-center gap-1">
             <span className="font-extrabold text-primary dark:text-red-400 text-xs sm:text-sm tracking-tight leading-none group-hover:text-primary-dark dark:group-hover:text-red-300 transition-colors">

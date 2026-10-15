@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { createStudentAccount } from '../../lib/studentService'
 import { sendWhatsAppOtp, validateWhatsAppNumber, getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import { sanitizeInput, sanitizeUsername, sanitizePhoneNumber, isValidEmail, SecurityRateLimiter } from '../../lib/securityUtils'
+import KaiwaLogo from '../../components/KaiwaLogo'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -616,7 +617,7 @@ export default function RegisterPage() {
         {/* Header Branding */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="size-13 sm:size-14 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 p-2">
-            <img src="/kaiwa-logo.png" alt="KaiwaDoJo" className="size-full object-contain" />
+            <KaiwaLogo className="size-full object-contain" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Pendaftaran Akun

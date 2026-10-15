@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import KaiwaLogo from '../components/KaiwaLogo'
 
 /* ── Custom Character Avatars for Live Kaiwa Simulation ── */
 function SenseiAvatar({ isSpeaking }: { isSpeaking: boolean }) {
@@ -194,7 +195,7 @@ export default function LandingPage() {
             onClick={() => navigate('/')}
           >
             <div className="size-8 sm:size-10 bg-white dark:bg-slate-800 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700 flex items-center justify-center p-1 sm:p-1.5 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
-              <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-full object-contain" />
+              <KaiwaLogo className="size-full object-contain" />
             </div>
             <div>
               <span className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -1164,7 +1165,7 @@ export default function LandingPage() {
           
           <div className="flex items-center gap-2">
             <div className="size-6 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center p-1 shrink-0">
-              <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-full object-contain" />
+              <KaiwaLogo className="size-full object-contain" />
             </div>
             <span className="font-extrabold text-slate-800 dark:text-white text-[0.72rem] sm:text-xs">
               KaiwaDojo &copy; {new Date().getFullYear()}. All Rights Reserved.

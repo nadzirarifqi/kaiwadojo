@@ -1,3 +1,5 @@
+import KaiwaLogo from './KaiwaLogo'
+
 interface LoadingScreenProps {
   message?: string
   fullScreen?: boolean
@@ -14,7 +16,7 @@ export default function LoadingScreen({
         <div className="absolute inset-0 rounded-full border-4 border-primary/20 dark:border-red-900/40" />
         <div className="absolute inset-0 rounded-full border-4 border-primary dark:border-red-500 border-t-transparent animate-spin" />
         <div className="size-10 bg-white dark:bg-slate-800 rounded-xl p-1 shadow-md flex items-center justify-center overflow-hidden animate-pulse">
-          <img src="/kaiwa-logo.png" alt="KaiwaDojo" className="size-full object-contain" />
+          <KaiwaLogo className="size-full object-contain" />
         </div>
       </div>
 
