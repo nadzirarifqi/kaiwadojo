@@ -1,3 +1,6 @@
+const LIGHT_LOGO = '/logo-kaiwadojo-light.png?v=2'
+const DARK_LOGO = '/logo-kaiwadojo-dark.png?v=2'
+
 interface KaiwaLogoProps {
   className?: string
   alt?: string
@@ -12,7 +15,7 @@ export default function KaiwaLogo({
   if (mode === 'light') {
     return (
       <img
-        src="/logo-kaiwadojo-light.png"
+        src={LIGHT_LOGO}
         alt={alt}
         className={className}
       />
@@ -22,7 +25,7 @@ export default function KaiwaLogo({
   if (mode === 'dark') {
     return (
       <img
-        src="/logo-kaiwadojo-dark.png"
+        src={DARK_LOGO}
         alt={alt}
         className={className}
       />
@@ -32,12 +35,12 @@ export default function KaiwaLogo({
   return (
     <>
       <img
-        src="/logo-kaiwadojo-light.png"
+        src={LIGHT_LOGO}
         alt={alt}
         className={`${className} dark:hidden`}
       />
       <img
-        src="/logo-kaiwadojo-dark.png"
+        src={DARK_LOGO}
         alt={alt}
         className={`${className} hidden dark:block`}
       />
