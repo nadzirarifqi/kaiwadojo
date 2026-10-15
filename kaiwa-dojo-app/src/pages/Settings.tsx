@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage, type Language } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import { getAdminWhatsAppDeleteAccountUrl } from '../lib/whatsappService'
 
 export default function SettingsPage() {
   const { user, profile } = useAuth()
   const { language, setLanguage, t } = useLanguage()
+  const { toast } = useToast()
 
   // ── 1. Preferences State ──────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
@@ -32,12 +34,12 @@ export default function SettingsPage() {
   // ── 3. Delete Account Modal State ─────────────────────
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
-  // ── UI Toast Notification ─────────────────────────────
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
   const showToast = (type: 'success' | 'error', text: string) => {
-    setToastMessage({ type, text })
-    setTimeout(() => setToastMessage(null), 4000)
+    if (type === 'success') {
+      toast.success(text, 'Pengaturan')
+    } else {
+      toast.error(text, 'Pengaturan')
+    }
   }
 
   // Apply Theme Mode (Light / Dark / System)
@@ -107,25 +109,6 @@ export default function SettingsPage() {
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-page-slide space-y-8">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-bold animate-slide-fade ${
-          toastMessage.type === 'success'
-            ? 'bg-emerald-500 text-white border-emerald-600'
-            : 'bg-red-500 text-white border-red-600'
-        }`}>
-          {toastMessage.type === 'success' ? (
-            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          )}
-          <span>{toastMessage.text}</span>
-        </div>
-      )}
 
       {/* Header */}
       <div>

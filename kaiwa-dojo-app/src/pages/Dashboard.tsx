@@ -26,6 +26,7 @@ import {
   matchScheduleId,
 } from '../lib/scheduleService'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import { DashboardSkeleton } from '../components/Skeleton'
 import {
   type Announcement,
@@ -1640,6 +1641,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [stats, setStats] = useState({
     enrolledCoursesCount: 0,
     completedCoursesCount: 0,
@@ -1666,20 +1668,35 @@ export default function Dashboard() {
 
   async function handleSaveMissionFromDashboard(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
     const effectiveUserId = user?.id || profile?.id || null
-    if (!effectiveUserId) return
-    await saveDailyMission(effectiveUserId, data, dateStr)
-    const updated = (await fetchDailyMission(effectiveUserId, dateStr)) || getDailyMission(effectiveUserId, dateStr)
-    setDailyMission(updated)
-    if (updated) {
-      const prog = await calculateMissionProgress(effectiveUserId, updated)
-      setMissionProgress(prog)
-      if (prog.videoProgressMap) {
-        const map = new Map<string, number>()
-        Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
-        setVideoProgressMap(map)
-      }
+    if (!effectiveUserId) {
+      toast.error('Sesi login tidak ditemukan. Silakan login kembali.', 'Gagal')
+      return
     }
-    setShowMissionModal(false)
+
+    try {
+      await saveDailyMission(effectiveUserId, data, dateStr)
+      const updated = (await fetchDailyMission(effectiveUserId, dateStr)) || getDailyMission(effectiveUserId, dateStr)
+      setDailyMission(updated)
+      if (updated) {
+        const prog = await calculateMissionProgress(effectiveUserId, updated)
+        setMissionProgress(prog)
+        if (prog.videoProgressMap) {
+          const map = new Map<string, number>()
+          Object.entries(prog.videoProgressMap).forEach(([k, val]) => map.set(k, val))
+          setVideoProgressMap(map)
+        }
+      }
+      setShowMissionModal(false)
+
+      const isRest = data.selectedVideos.length === 0 && data.targetKotobaCount === 0 && data.targetQuizCount === 0
+      if (isRest) {
+        toast.info('Hari istirahat terencana berhasil diatur! 🛌', 'Target Hari Ini')
+      } else {
+        toast.success('Target misi hari ini berhasil disimpan! Semangat belajarnya! 🎯', 'Misi Aktif')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan target misi. Silakan coba lagi.', 'Gagal Menyimpan')
+    }
   }
 
   // Personalized Greeting based on Local Hour

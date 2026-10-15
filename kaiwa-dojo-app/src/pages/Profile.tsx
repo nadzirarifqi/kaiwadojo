@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import { ProfileSkeleton } from '../components/Skeleton'
 import { normalizeGroup } from '../lib/studentService'
 import { getDailyMission, isNoPlanMission } from '../lib/dailyMission'
@@ -39,6 +40,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { user, profile, refreshProfile } = useAuth()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const isFreezeToday = isNoPlanMission(getDailyMission(profile?.id || user?.id || ''))
 
@@ -63,7 +65,6 @@ export default function ProfilePage() {
 
   // UI state
   const [isSaving, setIsSaving] = useState(false)
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Database Stats State
   const [enrollments, setEnrollments] = useState<CourseEnrollmentItem[]>([])
@@ -196,8 +197,11 @@ export default function ProfilePage() {
 
   // Toast notification timer
   const showToast = (type: 'success' | 'error', text: string) => {
-    setToastMessage({ type, text })
-    setTimeout(() => setToastMessage(null), 4000)
+    if (type === 'success') {
+      toast.success(text, 'Profil')
+    } else {
+      toast.error(text, 'Profil')
+    }
   }
 
   // Handle Image File Selection from modal
@@ -476,25 +480,6 @@ export default function ProfilePage() {
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-page-slide">
-      {/* Toast Popup */}
-      {toastMessage && (
-        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-bold animate-slide-fade ${
-          toastMessage.type === 'success'
-            ? 'bg-emerald-500 text-white border-emerald-600'
-            : 'bg-red-500 text-white border-red-600'
-        }`}>
-          {toastMessage.type === 'success' ? (
-            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          )}
-          <span>{toastMessage.text}</span>
-        </div>
-      )}
 
       {/* Hidden File Input for Image Upload */}
       <input

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import {
   type DailyMissionData,
   type MissionProgress,
@@ -98,32 +99,48 @@ function DateClassEnrollModal({
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
+  const { toast: globalToast } = useToast()
+
   function showToast(text: string, type: 'success' | 'error' = 'success') {
     setToast({ text, type })
     setTimeout(() => setToast(null), 3500)
   }
 
   async function handleBook(sch: ClassSchedule) {
+    if (!window.confirm(`Konfirmasi Reservasi Kelas:\n"${sch.title}"\n${formatDateIndonesian(sch.date, language)} (${sch.start_time} - ${sch.end_time} WIB)\n\nApakah kamu ingin mereservasi kelas ini?`)) {
+      return
+    }
+
     setLoadingId(sch.id)
     const res = await bookClass(sch, userId, userName, userEmail, profile, groups)
     setLoadingId(null)
     if (res.success) {
-      showToast(`Berhasil mendaftar di kelas "${sch.title}"!`)
+      const msg = res.message || `Berhasil reservasi kelas "${sch.title}"!`
+      showToast(msg)
+      globalToast.success(msg, 'Reservasi Berhasil')
       await onRefresh()
     } else {
       showToast(res.message, 'error')
+      globalToast.error(res.message, 'Gagal Reservasi')
     }
   }
 
   async function handleCancel(resId: string) {
+    if (!window.confirm('Apakah kamu yakin ingin membatalkan reservasi kelas ini? Slot kuota akan dilepaskan.')) {
+      return
+    }
+
     setLoadingId(resId)
     const ok = await cancelClassBooking(resId)
     setLoadingId(null)
     if (ok) {
-      showToast('Reservasi kelas berhasil dibatalkan.')
+      const msg = 'Reservasi kelas berhasil dibatalkan.'
+      showToast(msg)
+      globalToast.info(msg, 'Reservasi Dibatalkan')
       await onRefresh()
     } else {
       showToast('Gagal membatalkan reservasi.', 'error')
+      globalToast.error('Gagal membatalkan reservasi.', 'Gagal')
     }
   }
 
@@ -418,6 +435,7 @@ export default function LearningPlanPage() {
 
   const { user, profile } = useAuth()
   const { language, t } = useLanguage()
+  const { toast } = useToast()
 
   // Calendar State
   const todayStr = getTodayDateString()
@@ -611,20 +629,33 @@ export default function LearningPlanPage() {
   async function handleSaveMission(data: Omit<DailyMissionData, 'date'>, dateStr: string) {
     const activeUserId = profile?.id || user?.id
     if (!activeUserId) {
+      toast.error('Sesi pengguna tidak terdeteksi. Silakan login kembali.', 'Gagal')
       throw new Error('Sesi pengguna tidak terdeteksi. Silakan muat ulang halaman atau login kembali.')
     }
-    const saved = await saveDailyMission(activeUserId, data, dateStr)
-    setSelectedDateStr(dateStr)
-    setSelectedMission(saved)
-    setUserMissions(prev => {
-      const next = new Map(prev)
-      next.set(dateStr, saved)
-      return next
-    })
-    const prog = await calculateMissionProgress(activeUserId, saved)
-    setMissionProgress(prog)
-    setShowMissionModal(false)
-    await loadData()
+    try {
+      const saved = await saveDailyMission(activeUserId, data, dateStr)
+      setSelectedDateStr(dateStr)
+      setSelectedMission(saved)
+      setUserMissions(prev => {
+        const next = new Map(prev)
+        next.set(dateStr, saved)
+        return next
+      })
+      const prog = await calculateMissionProgress(activeUserId, saved)
+      setMissionProgress(prog)
+      setShowMissionModal(false)
+      await loadData()
+
+      const isRest = data.selectedVideos.length === 0 && data.targetKotobaCount === 0 && data.targetQuizCount === 0
+      if (isRest) {
+        toast.info('Hari istirahat terencana berhasil diatur untuk tanggal ini! 🛌', 'Rencana Belajar')
+      } else {
+        toast.success('Rencana belajar harian berhasil disimpan! Target belajarmu telah aktif. 🎯', 'Rencana Belajar')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan rencana belajar. Silakan coba lagi.', 'Gagal Menyimpan')
+      throw err
+    }
   }
 
   /* ── Calendar Grid Calculations ──────────────────── */

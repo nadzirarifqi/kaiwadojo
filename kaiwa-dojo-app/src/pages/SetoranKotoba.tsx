@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import {
   fetchDailyMission,
@@ -122,6 +123,7 @@ function compressImageFileFast(file: File, maxWidth = 480, quality = 0.6): Promi
 export default function SetoranKotobaPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const effectiveUserId = user?.id || profile?.id || null
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
@@ -427,6 +429,7 @@ export default function SetoranKotobaPage() {
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
+      toast.success(`Kosakata "${formData.japanese.trim()}" berhasil diperbarui!`, 'Setoran Kotoba')
 
       // Fire-and-forget DB update — UI is already responsive
       const imageChanged = processedImageUrl !== (editingItem.image_url || '')
@@ -463,6 +466,7 @@ export default function SetoranKotobaPage() {
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
+      toast.success(`Kosakata "${formData.japanese.trim()}" berhasil disetor! 📚`, 'Setoran Berhasil')
 
       // DB insert + mission sync run in background (non-blocking)
       if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
@@ -543,6 +547,12 @@ export default function SetoranKotobaPage() {
     const updated = kotobaList.map(k => k.id === item.id ? { ...k, is_mastered: updatedStatus } : k)
     saveToLocal(updated)
 
+    if (updatedStatus) {
+      toast.success(`Hebat! "${item.japanese}" ditandai sudah hafal 🎉`, 'Progres Kotoba')
+    } else {
+      toast.info(`Status "${item.japanese}" diubah ke belum hafal`, 'Progres Kotoba')
+    }
+
     try {
       await supabase
         .from('user_kotoba_submissions')
@@ -554,9 +564,13 @@ export default function SetoranKotobaPage() {
   }
 
   async function handleDeleteItem(id: string) {
-    if (!confirm('Apakah kamu yakin ingin menghapus kosakata ini dari catatanmu?')) return
+    const targetItem = kotobaList.find(k => k.id === id)
+    const wordLabel = targetItem?.japanese ? `"${targetItem.japanese}"` : 'kosakata ini'
+    if (!confirm(`Apakah kamu yakin ingin menghapus ${wordLabel} dari catatan setoran kotoba?`)) return
+
     const updated = kotobaList.filter(k => k.id !== id)
     saveToLocal(updated)
+    toast.info(`Kosakata ${wordLabel} telah dihapus dari catatan.`, 'Dihapus')
 
     if (effectiveUserId && effectiveUserId !== 'guest' && effectiveUserId !== 'active_user') {
       try {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { parseTargetGroups } from '../lib/chapterService'
@@ -29,6 +30,7 @@ import { ScheduleCardSkeleton } from '../components/Skeleton'
 export default function ClassReservationPage() {
   const { profile } = useAuth()
   const { language, t } = useLanguage()
+  const { toast: globalToast } = useToast()
 
   // Use real Supabase Auth UUID — critical for RLS policy (auth.uid() = user_id)
   const userId = profile?.id ?? ''
@@ -50,7 +52,6 @@ export default function ClassReservationPage() {
   const [confirmModalType, setConfirmModalType] = useState<'book' | 'cancel' | null>(null)
   const [targetReservationId, setTargetReservationId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Requirement status
   const [reqStatus, setReqStatus] = useState<{
@@ -114,8 +115,11 @@ export default function ClassReservationPage() {
   }, [userId])
 
   function showToast(text: string, type: 'success' | 'error' = 'success') {
-    setToastMessage({ text, type })
-    setTimeout(() => setToastMessage(null), 4000)
+    if (type === 'success') {
+      globalToast.success(text, 'Reservasi Kelas')
+    } else {
+      globalToast.error(text, 'Reservasi Kelas')
+    }
   }
 
   // Get enrolled count for a schedule (uses matchScheduleId for UUID/string compatibility)
@@ -298,22 +302,6 @@ export default function ClassReservationPage() {
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col gap-6 animate-page-slide">
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className={`fixed top-5 right-5 z-[600] px-5 py-3.5 rounded-2xl shadow-xl border flex items-center gap-3 animate-slide-down ${
-          toastMessage.type === 'success'
-            ? 'bg-emerald-500 text-white border-emerald-600'
-            : 'bg-red-500 text-white border-red-600'
-        }`}>
-          {toastMessage.type === 'success' ? (
-            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-          ) : (
-            <svg className="size-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          )}
-          <span className="text-xs sm:text-sm font-bold">{toastMessage.text}</span>
-        </div>
-      )}
 
       {/* ── MANDATORY ONLINE CLASS BANNER ────────────────────── */}
       <div className="bg-gradient-to-r from-slate-900 via-primary/90 to-primary text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm border border-white/10 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">

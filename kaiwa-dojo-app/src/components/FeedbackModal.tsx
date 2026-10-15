@@ -124,9 +124,17 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       setIsSuccess(true)
       setTitle('')
       setMessage('')
-      setTimeout(() => {
-        // Automatically close after a short delay if user doesn't click
-      }, 3000)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('kaiwa-toast', {
+            detail: {
+              type: 'success',
+              title: 'Masukan Terkirim',
+              message: 'Terima kasih! Masukan Anda berhasil dikirim ke tim kaiwadojo.',
+            },
+          })
+        )
+      }
     } else {
       setErrorMsg(res.error || 'Terjadi kesalahan saat mengirim masukan.')
     }

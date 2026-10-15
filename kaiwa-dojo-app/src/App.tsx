@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './contexts/LanguageContext'
+import { ToastProvider } from './contexts/ToastContext'
 import Sidebar from './components/Sidebar'
 import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
@@ -343,7 +344,8 @@ export function AppRoutes() {
     <ErrorBoundary>
       <LanguageProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <ToastProvider>
+            <BrowserRouter>
             <PageTransition>
               <Suspense fallback={<LoadingScreen fullScreen={true} />}>
                 <Routes>
@@ -384,6 +386,7 @@ export function AppRoutes() {
             </PageTransition>
             <FloatingWidgets />
           </BrowserRouter>
+          </ToastProvider>
         </AuthProvider>
       </LanguageProvider>
     </ErrorBoundary>
