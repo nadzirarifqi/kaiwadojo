@@ -11,6 +11,7 @@ export interface StudentAccount {
   phone_number?: string
   institution?: string
   group_name?: string  // Matches admin registered group (e.g. 'VLI2608'), or empty for regular student
+  referral_code?: string
   domisili?: string
   kelurahan?: string
   kecamatan?: string
@@ -60,7 +61,7 @@ export async function fetchStudentsCount(): Promise<number> {
 // Kolom yang diambil untuk list pelajar — bio dihilangkan (tidak ditampilkan di tabel, hemat egress)
 const STUDENT_LIST_COLUMNS = [
   'id', 'full_name', 'username', 'email', 'phone_number',
-  'institution', 'group_name', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
+  'institution', 'group_name', 'referral_code', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
   'avatar_url', 'streak_days', 'status', 'last_active_at', 'created_at',
 ].join(', ')
 
@@ -86,6 +87,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         phone_number: p.phone_number,
         institution: p.institution,
         group_name: p.group_name ? p.group_name.trim() : undefined,
+        referral_code: p.referral_code || undefined,
         domisili: p.domisili || undefined,
         kelurahan: p.kelurahan || undefined,
         kecamatan: p.kecamatan || undefined,
@@ -117,6 +119,7 @@ export async function createStudentAccount(data: {
   phone_number?: string
   institution?: string
   group_name?: string | null
+  referral_code?: string | null
   domisili?: string | null
   kelurahan?: string | null
   kecamatan?: string | null
@@ -141,6 +144,7 @@ export async function createStudentAccount(data: {
     phone_number: data.phone_number,
     institution: data.institution,
     group_name: resolvedGroup || undefined,
+    referral_code: data.referral_code || undefined,
     domisili: data.domisili || undefined,
     kelurahan: data.kelurahan || undefined,
     kecamatan: data.kecamatan || undefined,
@@ -162,6 +166,7 @@ export async function createStudentAccount(data: {
       phone_number: newStudent.phone_number,
       institution: newStudent.institution,
       group_name: resolvedGroup,
+      referral_code: data.referral_code || null,
       domisili: data.domisili || null,
       kelurahan: data.kelurahan || null,
       kecamatan: data.kecamatan || null,

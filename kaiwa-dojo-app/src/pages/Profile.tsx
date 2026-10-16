@@ -812,6 +812,20 @@ export default function ProfilePage() {
                 />
               </div>
 
+              {/* Kode Referral (Read Only) */}
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                  Kode Referral
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={profile?.referral_code || '-'}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-mono font-semibold cursor-not-allowed"
+                />
+                <p className="text-[0.7rem] text-slate-400 mt-1">Kode referral diisi saat pendaftaran dan tidak dapat diubah.</p>
+              </div>
+
               {/* Alamat Domisili */}
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
@@ -934,6 +948,13 @@ export default function ProfilePage() {
                   <span className="text-slate-500 dark:text-slate-400 font-semibold">Asal Lembaga / PT</span>
                   <span className="font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]">
                     {profile?.institution || '-'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Kode Referral</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]">
+                    {profile?.referral_code || '-'}
                   </span>
                 </div>
 

@@ -139,6 +139,7 @@ function issueTokenForUser(PDO $db, string $userId): void {
             'username'     => $profile['username'],
             'phone_number' => $profile['phone_number'],
             'institution'  => $profile['institution'] ?? null,
+            'referral_code' => $profile['referral_code'] ?? null,
             'domisili'     => $profile['domisili'] ?? null,
             'kelurahan'    => $profile['kelurahan'] ?? null,
             'kecamatan'    => $profile['kecamatan'] ?? null,
@@ -172,6 +173,7 @@ function handleSignUp(PDO $db, array $input): void {
     $username = strtolower(trim($meta['username'] ?? ''));
     $phone = trim($meta['phone_number'] ?? '');
     $institution = trim($meta['institution'] ?? '');
+    $referralCode = substr(preg_replace('/[^A-Z0-9_-]/', '', strtoupper(trim($meta['referral_code'] ?? ''))), 0, 32);
     $domisili = trim($meta['domisili'] ?? '');
     $kelurahan = trim($meta['kelurahan'] ?? '');
     $kecamatan = trim($meta['kecamatan'] ?? '');
@@ -240,8 +242,8 @@ function handleSignUp(PDO $db, array $input): void {
 
         // 3. Simpan ke profiles
         $stmtProf = $db->prepare("
-            INSERT INTO profiles (id, full_name, username, email, phone_number, role, status, institution, group_name, domisili, kelurahan, kecamatan, kabupaten, streak_days, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 'pelajar', ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+            INSERT INTO profiles (id, full_name, username, email, phone_number, role, status, institution, group_name, referral_code, domisili, kelurahan, kecamatan, kabupaten, streak_days, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'pelajar', ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
         ");
         $stmtProf->execute([
             $userId,
@@ -252,6 +254,7 @@ function handleSignUp(PDO $db, array $input): void {
             $status,
             $institution ?: null,
             $matchedGroup,
+            $referralCode ?: null,
             $domisili ?: null,
             $kelurahan ?: null,
             $kecamatan ?: null,

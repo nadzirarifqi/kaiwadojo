@@ -395,6 +395,7 @@ CREATE TABLE `profiles` (
   `status` TEXT NULL DEFAULT 'pending',
   `institution` TEXT NULL,
   `group_name` TEXT NULL,
+  `referral_code` VARCHAR(32) NULL,
   `domisili` TEXT NULL,
   `kelurahan` TEXT NULL,
   `kecamatan` TEXT NULL,

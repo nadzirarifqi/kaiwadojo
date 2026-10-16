@@ -102,6 +102,8 @@ class Policies {
                 if ($role !== 'admin') {
                     unset($updates['role']);
                     unset($updates['status']);
+                    // Kode referral hanya diisi saat pendaftaran
+                    unset($updates['referral_code']);
                 }
                 break;
 

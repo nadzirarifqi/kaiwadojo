@@ -973,6 +973,10 @@
           "type": "text",
           "nullable": true
         },
+        "referral_code": {
+          "type": "text",
+          "nullable": true
+        },
         "domisili": {
           "type": "text",
           "nullable": true

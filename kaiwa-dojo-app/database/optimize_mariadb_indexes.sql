@@ -13,7 +13,8 @@ ALTER TABLE `kaiw_database`.`profiles`
   ADD COLUMN IF NOT EXISTS `domisili` TEXT NULL DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `kelurahan` TEXT NULL DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `kecamatan` TEXT NULL DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `kabupaten` TEXT NULL DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS `kabupaten` TEXT NULL DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `referral_code` VARCHAR(32) NULL DEFAULT NULL;
 
 -- 0.1 Perbaiki tipe kolom image_url & avatar_url agar mampu menampung gambar base64 foto kamera HP (mencegah error "1406 Data too long")
 ALTER TABLE `kaiw_database`.`user_kotoba_submissions`

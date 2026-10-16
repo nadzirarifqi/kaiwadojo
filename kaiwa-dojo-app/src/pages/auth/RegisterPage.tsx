@@ -49,6 +49,8 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [institution, setInstitution] = useState('')
+
+  const [referralCode, setReferralCode] = useState('')
   const [domisili, setDomisili] = useState('')
   const [kelurahan, setKelurahan] = useState('')
   const [kecamatan, setKecamatan] = useState('')
@@ -395,6 +397,7 @@ export default function RegisterPage() {
     const cleanEmail = email.trim().toLowerCase()
     const cleanPhone = sanitizePhoneNumber(phoneNumber)
     const cleanInstitution = sanitizeInput(institution, 150)
+    const cleanReferralCode = sanitizeInput(referralCode, 32)
     const cleanDomisili = sanitizeInput(domisili, 255)
     const cleanKelurahan = sanitizeInput(kelurahan, 100)
     const cleanKecamatan = sanitizeInput(kecamatan, 100)
@@ -412,6 +415,7 @@ export default function RegisterPage() {
             username: cleanUsername,
             phone_number: cleanPhone,
             institution: cleanInstitution,
+            referral_code: cleanReferralCode,
             domisili: cleanDomisili,
             kelurahan: cleanKelurahan,
             kecamatan: cleanKecamatan,
@@ -484,6 +488,7 @@ export default function RegisterPage() {
       email: cleanEmail,
       phone_number: cleanPhone,
       institution: cleanInstitution,
+      referral_code: cleanReferralCode || null,
       domisili: cleanDomisili,
       kelurahan: cleanKelurahan,
       kecamatan: cleanKecamatan,
@@ -824,6 +829,33 @@ export default function RegisterPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Kode Referral */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="reg-referral" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                      <span>Kode Referral</span>
+                      <span className="text-[0.68rem] text-slate-400">Opsional</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                      </div>
+                      <input
+                        id="reg-referral"
+                        type="text"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        maxLength={32}
+                        placeholder="Contoh: KAIWA2026"
+                        value={referralCode}
+                        onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Step Action Button */}
@@ -1066,6 +1098,12 @@ export default function RegisterPage() {
                     <span className="text-slate-400">Domisili:</span>
                     <span className="truncate max-w-[200px] sm:max-w-xs">{kelurahan}, {kecamatan}, {kabupaten}</span>
                   </div>
+                  {referralCode && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Kode Referral:</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{referralCode}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Step Action Buttons */}

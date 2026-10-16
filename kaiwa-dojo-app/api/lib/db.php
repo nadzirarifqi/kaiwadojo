@@ -97,13 +97,13 @@ class DB {
         if ($checked || self::$instance === null) return;
         $checked = true;
 
-        $flagFile = sys_get_temp_dir() . '/kaiwa_profile_cols_v2.ok';
+        $flagFile = sys_get_temp_dir() . '/kaiwa_profile_cols_v3_referral.ok';
         if (file_exists($flagFile)) {
             return;
         }
 
         try {
-            $cols = ['domisili', 'kelurahan', 'kecamatan', 'kabupaten'];
+            $cols = ['domisili', 'kelurahan', 'kecamatan', 'kabupaten', 'referral_code'];
             $stmt = self::$instance->query("SHOW COLUMNS FROM `profiles`");
             $existing = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

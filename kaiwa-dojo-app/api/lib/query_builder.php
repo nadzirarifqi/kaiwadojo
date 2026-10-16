@@ -10,7 +10,8 @@ class QueryBuilder {
     public static function getSchema(): array {
         if (self::$schema === null) {
             $cachePhp = __DIR__ . '/schema.cache.php';
-            if (file_exists($cachePhp)) {
+            // Cache dianggap basi jika schema.json lebih baru (mis. setelah deploy kolom baru)
+            if (file_exists($cachePhp) && filemtime($cachePhp) >= filemtime(__DIR__ . '/schema.json')) {
                 self::$schema = require $cachePhp;
             } else {
                 $json = file_get_contents(__DIR__ . '/schema.json');
