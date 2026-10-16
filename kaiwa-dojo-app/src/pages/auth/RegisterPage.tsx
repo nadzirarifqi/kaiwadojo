@@ -254,19 +254,7 @@ export default function RegisterPage() {
 
     if (currentStep === 2) {
       if (!domisili.trim()) {
-        setStepError('Mohon isi Alamat Domisili lengkap.')
-        return
-      }
-      if (!kelurahan.trim()) {
-        setStepError('Mohon isi Kelurahan / Desa.')
-        return
-      }
-      if (!kecamatan.trim()) {
-        setStepError('Mohon isi Kecamatan.')
-        return
-      }
-      if (!kabupaten.trim()) {
-        setStepError('Mohon isi Kabupaten / Kota.')
+        setStepError('Mohon sebutkan kota domisili Anda.')
         return
       }
       setCurrentStep(3)
@@ -398,10 +386,10 @@ export default function RegisterPage() {
     const cleanPhone = sanitizePhoneNumber(phoneNumber)
     const cleanInstitution = sanitizeInput(institution, 150)
     const cleanReferralCode = sanitizeInput(referralCode, 32)
-    const cleanDomisili = sanitizeInput(domisili, 255)
-    const cleanKelurahan = sanitizeInput(kelurahan, 100)
-    const cleanKecamatan = sanitizeInput(kecamatan, 100)
-    const cleanKabupaten = sanitizeInput(kabupaten, 100)
+    const cleanDomisili = sanitizeInput(domisili, 150)
+    const cleanKelurahan = ''
+    const cleanKecamatan = ''
+    const cleanKabupaten = sanitizeInput(kabupaten || domisili, 100)
 
     let authUserId: string | undefined
 
@@ -640,7 +628,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
               {[
                 { step: 1, title: 'Profil', desc: 'Data Diri' },
-                { step: 2, title: 'Domisili', desc: 'Wilayah' },
+                { step: 2, title: 'Domisili', desc: 'Kota Tinggal' },
                 { step: 3, title: 'Keamanan', desc: 'Akun & Sandi' },
               ].map(item => {
                 const isActive = currentStep === item.step
@@ -874,79 +862,38 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* ── STEP 2: DOMISILI & WILAYAH ── */}
+            {/* ── STEP 2: DOMISILI (KOTA) ── */}
             {currentStep === 2 && (
               <div className="space-y-4 animate-fade-in">
-                {/* Alamat Domisili */}
+                {/* Kota Domisili */}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="reg-domisili" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                    <span>Alamat Domisili Lengkap</span>
-                    <span className="text-[0.68rem] text-slate-400">Jalan / RT / RW / No. Rumah</span>
+                    <span>Kota Domisili</span>
+                    <span className="text-[0.68rem] text-red-500">*Wajib</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3.5 top-3 text-slate-400">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                       <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
-                    <textarea
+                    <input
                       id="reg-domisili"
-                      rows={2}
-                      placeholder="Contoh: Jl. Melati No. 12 RT 03 / RW 05"
+                      type="text"
+                      placeholder="Contoh: Jakarta Selatan, Surabaya, Bandung, dll."
                       value={domisili}
-                      onChange={e => setDomisili(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all resize-none"
+                      onChange={e => {
+                        setDomisili(e.target.value)
+                        setKabupaten(e.target.value)
+                        if (stepError) setStepError(null)
+                      }}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
                     />
                   </div>
-                </div>
-
-                {/* Grid Wilayah */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  {/* Kelurahan */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kelurahan" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Kelurahan / Desa
-                    </label>
-                    <input
-                      id="reg-kelurahan"
-                      type="text"
-                      placeholder="Contoh: Sukamaju"
-                      value={kelurahan}
-                      onChange={e => setKelurahan(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                    />
-                  </div>
-
-                  {/* Kecamatan */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kecamatan" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Kecamatan
-                    </label>
-                    <input
-                      id="reg-kecamatan"
-                      type="text"
-                      placeholder="Contoh: Cilodong"
-                      value={kecamatan}
-                      onChange={e => setKecamatan(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                    />
-                  </div>
-
-                  {/* Kabupaten / Kota */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-kabupaten" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Kabupaten / Kota
-                    </label>
-                    <input
-                      id="reg-kabupaten"
-                      type="text"
-                      placeholder="Contoh: Depok"
-                      value={kabupaten}
-                      onChange={e => setKabupaten(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                    />
-                  </div>
+                  <p className="text-[0.72rem] text-slate-500 dark:text-slate-400">
+                    Cukup sebutkan nama kota atau kabupaten domisili Anda saat ini (tidak perlu alamat jalan lengkap).
+                  </p>
                 </div>
 
                 {/* Step Action Buttons */}
