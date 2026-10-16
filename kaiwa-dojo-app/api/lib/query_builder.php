@@ -154,6 +154,7 @@ class QueryBuilder {
                 $updates = $payload['updates'] ?? [];
                 Policies::enforceUpdate($table, $updates, $user);
                 $payload['updates'] = $updates;
+                $payload['filters'] = Policies::scopeFiltersToOwner($table, $payload['filters'] ?? [], $user);
                 return self::handleUpdate($db, $table, $meta, $payload);
 
             case 'upsert':
@@ -163,8 +164,8 @@ class QueryBuilder {
 
             case 'delete':
                 Policies::enforceDelete($table, $user);
-                $filters = $payload['filters'] ?? [];
-                return self::handleDelete($db, $table, $meta, $filters);
+                $filters = Policies::scopeFiltersToOwner($table, $payload['filters'] ?? [], $user);
+                return self::handleDelete($db, $table, $meta, $filters, $user);
 
             default:
                 throw new Exception("Aksi tidak didukung: $action");
@@ -450,8 +451,12 @@ class QueryBuilder {
         }
 
         $whereClauses = [];
-        self::buildWhere($meta, $filters, $whereClauses, $params);
+        self::buildWhere($meta, $filters, $whereClauses, $params, true);
         $whereSql = $whereClauses ? ' WHERE ' . implode(' AND ', $whereClauses) : '';
+
+        if (!$whereSql) {
+            throw new Exception("Pemberitahuan keamanan: UPDATE tanpa WHERE dilarang");
+        }
 
         $sql = "UPDATE `$table` SET " . implode(', ', $setClauses) . $whereSql;
         $stmt = $db->prepare($sql);
@@ -492,6 +497,19 @@ class QueryBuilder {
                 foreach ($meta['columns'] as $colName => $colDef) {
                     if ($colDef['type'] === 'uuid' && empty($row[$colName])) {
                         $row[$colName] = DB::generateUuid();
+                    }
+                }
+
+                // Cegah ON DUPLICATE KEY UPDATE menimpa baris milik akun lain
+                $ownerCol = Policies::ownerColumn($table, $user);
+                $pkCols = $meta['pk'] ?? [];
+                if ($ownerCol !== null && count($pkCols) === 1 && isset($row[$pkCols[0]])) {
+                    $pk = $pkCols[0];
+                    $stmtOwner = $db->prepare("SELECT `$ownerCol` FROM `$table` WHERE `$pk` = ? LIMIT 1");
+                    $stmtOwner->execute([$row[$pk]]);
+                    $existingOwner = $stmtOwner->fetchColumn();
+                    if ($existingOwner !== false && $existingOwner !== ($user['id'] ?? null)) {
+                        throw new Exception("Forbidden: Tidak dapat menimpa data milik akun lain");
                     }
                 }
 
@@ -542,36 +560,91 @@ class QueryBuilder {
         return ['data' => $upsertedRows, 'error' => null];
     }
 
-    private static function handleDelete(PDO $db, string $table, array $meta, array $filters): array {
+    private static function handleDelete(PDO $db, string $table, array $meta, array $filters, ?array $user = null): array {
         $whereClauses = [];
         $params = [];
-        self::buildWhere($meta, $filters, $whereClauses, $params);
+        self::buildWhere($meta, $filters, $whereClauses, $params, true);
         $whereSql = $whereClauses ? ' WHERE ' . implode(' AND ', $whereClauses) : '';
 
         if (!$whereSql) {
             throw new Exception("Pemberitahuan keamanan: DELETE tanpa WHERE dilarang");
         }
 
-        $stmt = $db->prepare("DELETE FROM `$table`" . $whereSql);
-        $stmt->execute($params);
+        $db->beginTransaction();
+        try {
+            if (in_array($table, Policies::ARCHIVE_ON_DELETE, true)) {
+                self::archiveRows($db, $table, $whereSql, $params, $user['id'] ?? null);
+            }
+            if ($table === 'profiles') {
+                // FK ON DELETE CASCADE akan ikut menghapus kotoba — arsipkan lebih dulu
+                self::archiveRows(
+                    $db,
+                    'user_kotoba_submissions',
+                    " WHERE `user_id` IN (SELECT `id` FROM `profiles`$whereSql)",
+                    $params,
+                    $user['id'] ?? null
+                );
+            }
+            $stmt = $db->prepare("DELETE FROM `$table`" . $whereSql);
+            $stmt->execute($params);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         self::logChange($table, 'DELETE', ['filters' => $filters]);
 
         return ['data' => null, 'error' => null];
     }
 
-    private static function buildWhere(array $meta, array $filters, array &$clauses, array &$params): void {
+    /**
+     * Menyalin baris yang akan dihapus ke deleted_rows_archive (dalam transaksi yang sama dengan DELETE).
+     * Jika arsip gagal, DELETE ikut dibatalkan — data tidak pernah hilang tanpa cadangan.
+     */
+    private static function archiveRows(PDO $db, string $table, string $whereSql, array $params, ?string $deletedBy): void {
+        $stmtRows = $db->prepare("SELECT * FROM `$table`" . $whereSql);
+        $stmtRows->execute($params);
+        $stmtArchive = $db->prepare("INSERT INTO deleted_rows_archive (table_name, row_id, owner_id, row_data, deleted_by, deleted_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP(3))");
+        while ($row = $stmtRows->fetch(PDO::FETCH_ASSOC)) {
+            $stmtArchive->execute([
+                $table,
+                $row['id'] ?? null,
+                $row['user_id'] ?? ($row['student_id'] ?? null),
+                json_encode($row, JSON_UNESCAPED_UNICODE),
+                $deletedBy,
+            ]);
+        }
+    }
+
+    /**
+     * @param bool $strict Untuk UPDATE/DELETE: filter yang tidak dikenal ditolak (bukan diabaikan),
+     *                     karena filter yang diabaikan diam-diam memperluas baris yang terkena.
+     */
+    private static function buildWhere(array $meta, array $filters, array &$clauses, array &$params, bool $strict = false): void {
+        $supportedOps = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 'in', 'is'];
         foreach ($filters as $f) {
             $col = $f['column'] ?? '';
             $op  = strtolower($f['op'] ?? 'eq');
             $val = $f['value'] ?? null;
 
             if ($col === 'or' && is_string($val)) {
+                if ($strict) {
+                    throw new Exception("Filter 'or' tidak didukung untuk perubahan data");
+                }
                 // Parse or syntax: (id.eq.1,name.eq.foo)
                 continue;
             }
 
-            if (!isset($meta['columns'][$col])) continue;
+            if (!isset($meta['columns'][$col])) {
+                if ($strict) {
+                    throw new Exception("Filter tidak valid pada kolom: $col");
+                }
+                continue;
+            }
+            if ($strict && !in_array($op, $supportedOps, true)) {
+                throw new Exception("Operator filter tidak didukung: $op");
+            }
             $type = $meta['columns'][$col]['type'];
 
             switch ($op) {

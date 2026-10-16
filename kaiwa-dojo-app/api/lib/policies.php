@@ -3,6 +3,53 @@
 
 class Policies {
     /**
+     * Tabel berisi data milik pribadi pelajar => kolom pemiliknya.
+     * Pelajar hanya boleh mengubah/menghapus baris miliknya sendiri.
+     */
+    private const OWNER_COLUMNS = [
+        'user_kotoba_submissions' => 'user_id',
+        'lesson_progress'         => 'student_id',
+        'learning_streaks'        => 'student_id',
+        'daily_missions'          => 'student_id',
+        'profiles'                => 'id',
+    ];
+
+    /**
+     * Tabel yang barisnya diarsipkan ke deleted_rows_archive sebelum dihapus,
+     * agar data pelajar selalu bisa dipulihkan.
+     */
+    public const ARCHIVE_ON_DELETE = ['user_kotoba_submissions'];
+
+    /**
+     * Kolom pemilik yang wajib dipakai sebagai filter untuk user ini,
+     * atau null jika user bebas (admin/pemateri) atau tabel tidak dimiliki per-user.
+     */
+    public static function ownerColumn(string $table, ?array $user): ?string {
+        $role = $user['role'] ?? 'guest';
+        if ($role === 'admin' || $role === 'pemateri') {
+            return null;
+        }
+        return self::OWNER_COLUMNS[$table] ?? null;
+    }
+
+    /**
+     * Menambahkan filter kepemilikan pada UPDATE/DELETE agar pelajar
+     * tidak dapat menyentuh data akun lain.
+     */
+    public static function scopeFiltersToOwner(string $table, array $filters, ?array $user): array {
+        $ownerCol = self::ownerColumn($table, $user);
+        if ($ownerCol === null) {
+            return $filters;
+        }
+        $userId = $user['id'] ?? null;
+        if (!$userId) {
+            throw new Exception("Forbidden: Silakan login untuk mengubah data $table");
+        }
+        $filters[] = ['column' => $ownerCol, 'op' => 'eq', 'value' => $userId];
+        return $filters;
+    }
+
+    /**
      * Memeriksa apakah user berhak melakukan SELECT pada tabel
      */
     public static function canSelect(string $table, ?array $user): bool {
@@ -35,6 +82,9 @@ class Policies {
             case 'user_kotoba_submissions':
                 if ($userId && empty($row['user_id'])) {
                     $row['user_id'] = $userId;
+                }
+                if (($row['user_id'] ?? '') !== $userId) {
+                    throw new Exception("Forbidden: Tidak dapat menyetor kotoba untuk akun lain");
                 }
                 break;
 

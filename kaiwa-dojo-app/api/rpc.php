@@ -99,6 +99,16 @@ function handleDeleteAuthUser(PDO $db, array $args): void {
         if ($userId) {
             $db->prepare("DELETE FROM daily_missions WHERE student_id = ?")->execute([$userId]);
             $db->prepare("DELETE FROM learning_streaks WHERE student_id = ?")->execute([$userId]);
+            // Arsipkan kotoba sebelum dihapus agar tetap bisa dipulihkan
+            $db->prepare("
+                INSERT INTO deleted_rows_archive (table_name, row_id, owner_id, row_data, deleted_by, deleted_at)
+                SELECT 'user_kotoba_submissions', k.id, k.user_id,
+                       JSON_OBJECT('id', k.id, 'user_id', k.user_id, 'japanese', k.japanese, 'romaji', k.romaji,
+                                   'meaning', k.meaning, 'image_url', k.image_url, 'is_mastered', k.is_mastered,
+                                   'created_at', k.created_at),
+                       ?, CURRENT_TIMESTAMP(3)
+                FROM user_kotoba_submissions k WHERE k.user_id = ?
+            ")->execute([$user['id'] ?? null, $userId]);
             $db->prepare("DELETE FROM user_kotoba_submissions WHERE user_id = ?")->execute([$userId]);
             $db->prepare("DELETE FROM lesson_progress WHERE student_id = ?")->execute([$userId]);
             $db->prepare("DELETE FROM class_reservations WHERE user_id = ?")->execute([$userId]);

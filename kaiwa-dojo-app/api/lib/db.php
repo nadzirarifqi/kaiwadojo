@@ -84,8 +84,44 @@ class DB {
 
             self::ensureProfileAddressColumns();
             self::ensureOptimizedIndexes();
+            self::ensureDeletedRowsArchive();
         }
         return self::$instance;
+    }
+
+    /**
+     * Memastikan tabel arsip penghapusan ada. Setiap baris user_kotoba_submissions yang dihapus
+     * disalin ke sini lebih dulu agar dapat dipulihkan.
+     */
+    public static function ensureDeletedRowsArchive(): void {
+        static $checked = false;
+        if ($checked || self::$instance === null) return;
+        $checked = true;
+
+        $flagFile = sys_get_temp_dir() . '/kaiwa_deleted_rows_archive_v1.ok';
+        if (file_exists($flagFile)) {
+            return;
+        }
+
+        try {
+            self::$instance->exec("
+                CREATE TABLE IF NOT EXISTS `deleted_rows_archive` (
+                  `id` BIGINT NOT NULL AUTO_INCREMENT,
+                  `table_name` VARCHAR(64) NOT NULL,
+                  `row_id` CHAR(36) NULL,
+                  `owner_id` CHAR(36) NULL,
+                  `row_data` LONGTEXT NOT NULL,
+                  `deleted_by` CHAR(36) NULL,
+                  `deleted_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                  PRIMARY KEY (`id`),
+                  KEY `idx_deleted_rows_owner` (`table_name`, `owner_id`),
+                  KEY `idx_deleted_rows_deleted_at` (`deleted_at`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            @file_put_contents($flagFile, '1');
+        } catch (Throwable $e) {
+            // Silently ignore jika DB user tidak punya hak CREATE; jalankan database/mysql_schema.sql manual
+        }
     }
 
     /**

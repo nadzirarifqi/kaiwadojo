@@ -10,6 +10,10 @@ require_once __DIR__ . '/lib/query_builder.php';
 
 header('Content-Type: application/json');
 
+// Daftar kotoba dengan gambar base64 bisa sangat besar; cegah fatal "memory exhausted" yang
+// membuat respons kosong (dan sebelumnya membuat daftar kotoba user tampak hilang)
+@ini_set('memory_limit', '512M');
+
 $rawInput = file_get_contents('php://input');
 $payload = json_decode($rawInput, true);
 

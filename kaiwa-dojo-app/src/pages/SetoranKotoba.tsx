@@ -230,46 +230,100 @@ export default function SetoranKotobaPage() {
       setLoading(true)
     }
 
-    // 2. Auto-migrate local-only items (id 'kotoba-*') ke Supabase jika ada
-    if (effectiveUserId && effectiveUserId !== 'guest') {
-      const unsyncedLocals = localItems.filter(item => item.id.startsWith('kotoba-'))
-      if (unsyncedLocals.length > 0) {
-        try {
-          await supabase.from('user_kotoba_submissions').insert(
-            unsyncedLocals.map(un => ({
-              user_id: effectiveUserId,
-              japanese: un.japanese,
-              romaji: un.romaji,
-              meaning: un.meaning,
-              image_url: un.image_url || null,
-              is_mastered: un.is_mastered || false,
-            }))
-          )
-        } catch (e) {
-          console.warn('Auto-sync kotoba batch note:', e)
-        }
-      }
+    if (effectiveUserId === 'guest') {
+      setKotobaList(localItems)
+      setLoading(false)
+      return
     }
 
-    // 3. Fetch dari DB dengan image_url secara efisien
-    let dbItems: UserKotoba[] = []
+    // 2. Ambil daftar dari DB TANPA image_url. Gambar (bisa base64 berukuran besar) diambil
+    //    terpisah per batch — sebelumnya satu respons raksasa membuat request gagal/timeout
+    //    saat jumlah kotoba sudah banyak (±120), lalu daftar ditimpa kosong.
     const { data, error } = await supabase
       .from('user_kotoba_submissions')
-      .select('id, user_id, japanese, romaji, meaning, image_url, is_mastered, created_at')
+      .select('id, user_id, japanese, romaji, meaning, is_mastered, created_at')
       .eq('user_id', effectiveUserId)
       .order('created_at', { ascending: false })
 
-    if (!error && data) {
-      dbItems = data as UserKotoba[]
+    if (error || !Array.isArray(data)) {
+      // JANGAN timpa daftar/cache dengan list kosong saat request gagal — data di server tetap aman
+      console.warn('Load kotoba DB error, keeping cached list:', error)
+      setKotobaList(localItems)
+      setLoading(false)
+      if (!localItems.length) {
+        toast.error('Gagal memuat daftar kotoba dari server. Data kamu tetap aman, silakan muat ulang halaman.', 'Koneksi Bermasalah')
+      }
+      return
     }
 
-    if (dbItems.length > 0 || (effectiveUserId && effectiveUserId !== 'guest')) {
-      setKotobaList(dbItems)
-      saveToLocal(dbItems)
-    } else if (localItems.length > 0) {
-      setKotobaList(localItems)
+    const localImageById = new Map(
+      localItems.filter(k => k.image_url).map(k => [k.id, k.image_url as string])
+    )
+    let dbItems: UserKotoba[] = (data as UserKotoba[]).map(k => ({
+      ...k,
+      image_url: localImageById.get(k.id),
+    }))
+
+    // 3. Sinkronkan item lokal yang belum tersimpan (id 'kotoba-*'), lewati yang sudah ada di DB
+    const dbWords = new Set(dbItems.map(k => k.japanese.trim().toLowerCase()))
+    const unsyncedLocals = localItems.filter(
+      item => item.id.startsWith('kotoba-') && !dbWords.has(item.japanese.trim().toLowerCase())
+    )
+    if (unsyncedLocals.length > 0) {
+      const { data: inserted, error: syncErr } = await supabase
+        .from('user_kotoba_submissions')
+        .insert(
+          unsyncedLocals.map(un => ({
+            user_id: effectiveUserId,
+            japanese: un.japanese,
+            romaji: un.romaji,
+            meaning: un.meaning,
+            image_url: un.image_url || null,
+            is_mastered: un.is_mastered || false,
+          }))
+        )
+      if (!syncErr && Array.isArray(inserted)) {
+        dbItems = [...(inserted as UserKotoba[]), ...dbItems]
+      } else {
+        // Tetap tampilkan & simpan item lokal agar tidak hilang; dicoba lagi pada load berikutnya
+        console.warn('Auto-sync kotoba batch note:', syncErr)
+        dbItems = [...unsyncedLocals, ...dbItems]
+      }
     }
+
+    saveToLocal(dbItems)
     setLoading(false)
+
+    // 4. Lengkapi gambar yang belum ada di cache, per batch kecil
+    const missingImageIds = dbItems
+      .filter(k => !k.image_url && !k.id.startsWith('kotoba-'))
+      .map(k => k.id)
+    const IMAGE_BATCH_SIZE = 10
+    for (let i = 0; i < missingImageIds.length; i += IMAGE_BATCH_SIZE) {
+      const batch = missingImageIds.slice(i, i + IMAGE_BATCH_SIZE)
+      const { data: imgRows, error: imgErr } = await supabase
+        .from('user_kotoba_submissions')
+        .select('id, image_url')
+        .in('id', batch)
+      if (imgErr || !Array.isArray(imgRows)) continue
+      const imgById = new Map(
+        (imgRows as { id: string; image_url: string | null }[])
+          .filter(r => r.image_url)
+          .map(r => [r.id, r.image_url as string])
+      )
+      if (imgById.size === 0) continue
+      // Patch state & cache secara terpisah (bukan menimpa dengan snapshot) agar kotoba yang
+      // ditambahkan user selama gambar dimuat tidak ikut tertimpa
+      const withImages = (list: UserKotoba[]) =>
+        list.map(k => imgById.has(k.id) ? { ...k, image_url: imgById.get(k.id) } : k)
+      setKotobaList(prev => withImages(prev))
+      try {
+        const cached = localStorage.getItem(storageKey)
+        if (cached) localStorage.setItem(storageKey, JSON.stringify(withImages(JSON.parse(cached))))
+      } catch {
+        // Kuota localStorage penuh: gambar tetap tampil dari state, cukup tidak di-cache
+      }
+    }
   }
 
   function saveToLocal(updatedList: UserKotoba[]) {

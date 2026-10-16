@@ -490,4 +490,19 @@ CREATE TABLE `user_kotoba_submissions` (
   CONSTRAINT `user_kotoba_submissions_fk1` FOREIGN KEY (`user_id`) REFERENCES `profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── deleted_rows_archive ────────────────────────────────
+-- Cadangan setiap baris kotoba yang dihapus (oleh user, admin, atau cascade hapus akun)
+CREATE TABLE IF NOT EXISTS `deleted_rows_archive` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `table_name` VARCHAR(64) NOT NULL,
+  `row_id` CHAR(36) NULL,
+  `owner_id` CHAR(36) NULL,
+  `row_data` LONGTEXT NOT NULL,
+  `deleted_by` CHAR(36) NULL,
+  `deleted_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `idx_deleted_rows_owner` (`table_name`, `owner_id`),
+  KEY `idx_deleted_rows_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
