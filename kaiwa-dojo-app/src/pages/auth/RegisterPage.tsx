@@ -52,8 +52,6 @@ export default function RegisterPage() {
 
   const [referralCode, setReferralCode] = useState('')
   const [domisili, setDomisili] = useState('')
-  const [kelurahan, setKelurahan] = useState('')
-  const [kecamatan, setKecamatan] = useState('')
   const [kabupaten, setKabupaten] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -1043,7 +1041,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Domisili:</span>
-                    <span className="truncate max-w-[200px] sm:max-w-xs">{kelurahan}, {kecamatan}, {kabupaten}</span>
+                    <span className="truncate max-w-[200px] sm:max-w-xs">{[domisili, kabupaten].filter(s => s.trim()).join(', ') || '-'}</span>
                   </div>
                   {referralCode && (
                     <div className="flex items-center justify-between">
