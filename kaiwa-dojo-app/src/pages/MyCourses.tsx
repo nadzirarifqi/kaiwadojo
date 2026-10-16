@@ -15,6 +15,7 @@ import {
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import { CourseCardSkeleton } from '../components/Skeleton'
+import { MOTIVATION_QUOTES, getDailyQuoteIndex } from '../data/motivationQuotes'
 import {
   getTodayDateString,
   fetchDailyMission,
@@ -282,57 +283,11 @@ const JILID_2_TITLES: { [key: number]: { title: string; subtitle: string; has_vi
   50: { title: 'Hormat Kenjougo & Sonkeigo II', subtitle: '私が参ります (Saya yang akan datang)', has_video: false },
 }
 
-/* ── Japan Fun Facts Data ────────────────────────────── */
-const JAPAN_FUN_FACTS = [
-  {
-    icon: '富士',
-    kanji: '富士山',
-    title: 'Gunung Fuji Sakral & Aktif',
-    fact: 'Gunung Fuji (3.776m) adalah simbol sakral Jepang yang sebenarnya merupakan gunung berapi aktif dan dikelilingi 5 danau eksotis!',
-    tag: '#GeografiJepang',
-  },
-  {
-    icon: '新幹',
-    kanji: '新幹線',
-    title: 'Kecepatan & Presisi Shinkansen',
-    fact: 'Rata-rata keterlambatan tahunan kereta cepat Shinkansen kurang dari 1 menit! Bukti ketepatan waktu budaya Jepang yang luar biasa.',
-    tag: '#TeknologiJepang',
-  },
-  {
-    icon: '桜',
-    kanji: '花見',
-    title: 'Tradisi Hanami 1.000 Tahun',
-    fact: 'Piknik Hanami (menikmati bunga Sakura mekar) sudah mentradisi sejak Zaman Heian (794 M). Bunga mekar melambangkan keindahan yang sementara.',
-    tag: '#BudayaJepang',
-  },
-  {
-    icon: '鳥居',
-    kanji: '鳥居',
-    title: 'Gerbang Torii Merah Kuil Shinto',
-    fact: 'Gerbang Torii merah melambangkan batas spiritual antara dunia manusia dan kawasan suci para Kami (dewa) di kuil Shinto.',
-    tag: '#SejarahJepang',
-  },
-  {
-    icon: '自動',
-    kanji: '自動販売機',
-    title: '5 Juta Mesin Penjual Otomatis',
-    fact: 'Jepang memiliki lebih dari 5 juta Jidouhanbaiki (Vending Machine). Kamu bisa membeli kopi hangat, es krim, bahkan sup di pinggir jalan!',
-    tag: '#KehidupanJepang',
-  },
-  {
-    icon: '心',
-    kanji: 'おもてなし',
-    title: 'Budaya Keramahan Omotenashi',
-    fact: 'Omotenashi adalah filosofi pelayanan sepenuh hati tanpa mengharapkan imbalan. Di Jepang, memberi tip bahkan bisa dianggap tidak sopan!',
-    tag: '#EtikaJepang',
-  },
-]
-
 export default function MyCourses() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
-  const { language, t } = useLanguage()
+  const { t } = useLanguage()
   const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
   // Admin student preview mode state
@@ -344,8 +299,9 @@ export default function MyCourses() {
     page_subtitle: 'Pilih jilid buku dan pelajari 5 video materi + 1 kuis di setiap babnya',
   })
 
-  // Fun Fact State
-  const [funFactIndex, setFunFactIndex]   = useState(0)
+  // Kata penyemangat (berganti harian) & filter status bab
+  const [quoteIndex, setQuoteIndex]       = useState(() => getDailyQuoteIndex(getTodayDateString()))
+  const [chapterFilter, setChapterFilter] = useState<'all' | 'progress' | 'done'>('all')
 
   // State Tabs
   const [selectedJilid, setSelectedJilid] = useState<1 | 2>(1)
@@ -848,14 +804,20 @@ export default function MyCourses() {
   /* ── Filter Chapters ─────────────────────────────── */
   const shouldHideUnreleased = !isInstructor || (profile?.role === 'admin' && adminStudentViewMode)
 
-  const filteredChapters = chapters.filter(c => {
-    // If student OR if admin is in adminStudentViewMode: hide if marked hidden by Admin
+  // Bab yang boleh dilihat user (tanpa filter pencarian) — dasar perhitungan progres
+  const accessibleChapters = chapters.filter(c => {
     if (shouldHideUnreleased && c.is_hidden) return false
+    if (shouldHideUnreleased && !isChapterAccessibleForUser(c, profile, groups)) return false
+    return true
+  })
 
-    // If student view, filter out group-restricted chapters the user cannot access
-    if (shouldHideUnreleased && !isChapterAccessibleForUser(c, profile, groups)) {
-      return false
-    }
+  function isChapterDone(c: ChapterItem) {
+    return c.lessons.length > 0 && c.lessons.every(l => l.is_completed)
+  }
+
+  const filteredChapters = accessibleChapters.filter(c => {
+    if (chapterFilter === 'done' && !isChapterDone(c)) return false
+    if (chapterFilter === 'progress' && isChapterDone(c)) return false
 
     if (!searchBab.trim()) return true
     const q = searchBab.toLowerCase()
@@ -869,14 +831,67 @@ export default function MyCourses() {
     )
   })
 
-  // Calculate total progress (based on chapters accessible/visible to the user)
-  const totalLessonsCount     = filteredChapters.reduce((acc, c) => acc + c.lessons.length, 0)
-  const completedLessonsCount = filteredChapters.reduce(
-    (acc, c) => acc + c.lessons.filter(l => l.is_completed).length, 0
-  )
+  // Progres total dihitung dari semua bab yang dapat diakses (tidak ikut berubah saat mencari)
+  const totalLessonsCount     = accessibleChapters.reduce((acc, c) => acc + c.lessons.length, 0)
+  const completedLessonsCount = accessibleChapters.reduce((acc, c) => acc + c.lessons.filter(l => l.is_completed).length, 0)
   const totalProgressPct      = totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0
+  const doneChaptersCount     = accessibleChapters.filter(isChapterDone).length
 
-  const currentFact = JAPAN_FUN_FACTS[funFactIndex]
+  function getLessonState(chap: ChapterItem, lesson: LessonItem) {
+    const isKotoba = lesson.content_type === 'kotoba'
+    const isQuiz = lesson.content_type === 'quiz'
+    const babVideos = chap.lessons.filter(l => l.content_type === 'video' || l.lesson_number <= 3)
+    const watchedCount = babVideos.filter(l => l.is_completed || (l.replay_count && l.replay_count > 0)).length
+    const isQuizLocked = isQuiz && watchedCount < 3
+    return { isKotoba, isQuiz, watchedCount, isQuizLocked }
+  }
+
+  function openLesson(chap: ChapterItem, lesson: LessonItem) {
+    const { isQuizLocked, watchedCount } = getLessonState(chap, lesson)
+    if (isQuizLocked) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Kuis Masih Terkunci',
+        message: `Kamu harus menonton seluruh 3 video materi pada "${chap.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedCount}/3 Video Selesai)`,
+        type: 'lock',
+        buttonText: 'Siap, Nonton Dulu!',
+        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
+      })
+      return
+    }
+    setActiveChapter(chap)
+    handleSwitchLesson(lesson)
+  }
+
+  // Materi berikutnya yang bisa dikerjakan (untuk kartu "Lanjutkan belajar")
+  let nextUp: { chap: ChapterItem; lesson: LessonItem } | null = null
+  outer: for (const chap of accessibleChapters) {
+    for (const lesson of chap.lessons) {
+      if (lesson.is_completed || lesson.is_placeholder) continue
+      if (getLessonState(chap, lesson).isQuizLocked) continue
+      nextUp = { chap, lesson }
+      break outer
+    }
+  }
+
+  // Buka otomatis bab tempat materi berikutnya berada (sekali saat halaman pertama dimuat)
+  const autoExpandedRef = useRef(false)
+  const nextUpBab = nextUp?.chap.bab_number
+  useEffect(() => {
+    if (loading || autoExpandedRef.current || !nextUpBab) return
+    autoExpandedRef.current = true
+    setExpandedBabs(prev => new Set(prev).add(nextUpBab))
+  }, [loading, nextUpBab])
+
+  const quote = MOTIVATION_QUOTES[quoteIndex]
+  const progressMessage =
+    totalProgressPct === 0 ? 'Langkah pertamamu dimulai hari ini. Ayo buka materi pertama!'
+    : totalProgressPct < 25 ? 'Awal yang bagus! Pertahankan ritme belajarmu.'
+    : totalProgressPct < 50 ? 'Kamu sudah melangkah jauh. Terus konsisten!'
+    : totalProgressPct < 75 ? 'Lebih dari setengah jalan. Hebat sekali!'
+    : totalProgressPct < 100 ? 'Sedikit lagi menuju garis akhir Jilid 1!'
+    : 'Luar biasa! Semua materi Jilid 1 sudah kamu selesaikan. おめでとう!'
+
   const currentLessonIdx = activeChapter?.lessons.findIndex(l => l.id === activeLesson?.id) ?? -1
   const prevLesson = currentLessonIdx > 0 && activeChapter ? activeChapter.lessons[currentLessonIdx - 1] : null
   const nextLesson = currentLessonIdx >= 0 && activeChapter && currentLessonIdx < activeChapter.lessons.length - 1
@@ -927,495 +942,391 @@ export default function MyCourses() {
         </div>
       )}
 
-      {/* Hero Section: Japan Fun Facts Banner */}
-      <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 mb-4 sm:mb-6 shadow-md relative overflow-hidden animate-fade-in border border-rose-900/30 min-h-[145px] sm:min-h-[160px] flex flex-col justify-between">
-        {/* Background Kanji Watermark */}
-        <div className="absolute right-2 -bottom-3 sm:right-3 sm:-bottom-4 text-sm sm:text-base scale-[5] sm:scale-[7] origin-bottom-right font-bold text-rose-500/5 select-none pointer-events-none leading-none font-japanese">
-          {currentFact.kanji}
-        </div>
-        <div className="absolute -left-10 -top-10 size-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── HEADER: progres & kata penyemangat ── */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 text-white shadow-md animate-fade-in">
+        <div className="absolute -top-16 -right-16 size-60 bg-white/10 rounded-full pointer-events-none" />
+        <span aria-hidden="true" className="absolute -bottom-10 left-1/3 font-serif font-black text-[11rem] leading-none text-white/[0.05] select-none pointer-events-none">学</span>
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 sm:gap-4 flex-1">
-          <div className="flex-1 min-w-0 w-full">
-            {/* Tag Badge */}
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider bg-rose-500/80 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                <span className="font-japanese text-xs sm:text-sm">日</span>
-                <span>{t('mc_trivia_title', 'Japan Trivia & Fun Fact')}</span>
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-rose-200/80 bg-white/10 px-1.5 py-0.2 rounded-full">
-                {currentFact.tag}
-              </span>
-            </div>
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-4 lg:gap-8 items-center">
+          <div className="min-w-0">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full mb-2">
+              {t('nav_my_courses', 'Kursus Saya')}
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">{t('mc_title', headerSettings.page_title)}</h1>
+            <p className="text-sm text-white/85 mt-1 leading-relaxed">{t('mc_subtitle', headerSettings.page_subtitle)}</p>
 
-            {/* Kanji & Title */}
-            <div className="flex items-center gap-2 mb-1 min-h-[24px] sm:min-h-[28px]">
-              <span className="size-7 sm:size-8 rounded-lg bg-rose-500/20 text-rose-300 font-serif font-black text-sm sm:text-base flex items-center justify-center border border-rose-500/30 shrink-0 font-japanese">
-                {currentFact.kanji.charAt(0)}
-              </span>
-              <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">
-                {currentFact.title} <span className="text-rose-300 font-serif text-xs sm:text-sm ml-1 font-normal">({currentFact.kanji})</span>
-              </h2>
-            </div>
+            {selectedJilid === 1 && (
+              <div className="mt-4 max-w-md">
+                <div className="flex items-end justify-between gap-3 mb-1.5">
+                  <p className="text-sm text-white/85">
+                    <span className="font-bold text-white">{completedLessonsCount}</span> dari {totalLessonsCount} materi selesai
+                    <span className="text-white/60"> · {doneChaptersCount} bab tuntas</span>
+                  </p>
+                  <span className="text-2xl font-black tabular-nums leading-none">{totalProgressPct}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+                  <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${totalProgressPct}%` }} />
+                </div>
+                <p className="text-[13px] text-white/80 mt-2">{progressMessage}</p>
+              </div>
+            )}
 
-            {/* Fact Text */}
-            <div className="bg-black/25 p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-white/10 min-h-[46px] sm:min-h-[48px] flex items-center">
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-2xl line-clamp-2">
-                "{currentFact.fact}"
-              </p>
-            </div>
+            {isInstructor && (
+              <button
+                onClick={() => navigate('/kelola-kursus')}
+                className="mt-4 h-10 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-sm font-semibold cursor-pointer transition-colors inline-flex items-center gap-2"
+              >
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Edit Judul & Visibilitas
+              </button>
+            )}
           </div>
 
-          {/* Fact Nav Controls & Dots */}
-          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 w-full md:w-auto pt-1.5 md:pt-0 border-t md:border-t-0 border-white/10">
-            <div className="flex items-center gap-1">
+          {/* Kata penyemangat */}
+          <figure className="m-0 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <figcaption className="text-xs font-semibold text-white/80">Kata penyemangat hari ini</figcaption>
               <button
                 type="button"
-                onClick={() => setFunFactIndex(prev => (prev === 0 ? JAPAN_FUN_FACTS.length - 1 : prev - 1))}
-                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
-                title="Fun Fact Sebelumnya"
+                onClick={() => setQuoteIndex(i => (i + 1 + Math.floor(Math.random() * (MOTIVATION_QUOTES.length - 1))) % MOTIVATION_QUOTES.length)}
+                aria-label="Kata penyemangat lain"
+                title="Kata penyemangat lain"
+                className="size-9 rounded-lg bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer flex items-center justify-center transition-colors"
               >
-                &lt;
-              </button>
-              <button
-                type="button"
-                onClick={() => setFunFactIndex(Math.floor(Math.random() * JAPAN_FUN_FACTS.length))}
-                className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white border-none cursor-pointer text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center gap-1"
-                title="Acak Fun Fact"
-              >
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>Acak Fact</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setFunFactIndex(prev => (prev + 1) % JAPAN_FUN_FACTS.length)}
-                className="size-6.5 sm:size-7.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 cursor-pointer flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
-                title="Fun Fact Selanjutnya"
-              >
-                &gt;
               </button>
             </div>
+            <blockquote className="m-0" aria-live="polite">
+              <p className="font-serif text-2xl font-bold leading-snug">{quote.jp}</p>
+              <p className="text-xs italic text-white/70 mt-0.5">{quote.reading}</p>
+              <p className="text-sm font-semibold mt-2">“{quote.meaning}”</p>
+              <p className="text-[13px] text-white/80 mt-1 leading-relaxed">{quote.message}</p>
+            </blockquote>
+          </figure>
+        </div>
+      </header>
 
-            {/* Dots Indicator */}
-            <div className="flex items-center gap-1">
-              {JAPAN_FUN_FACTS.map((_, idx) => (
+      {/* ── Lanjutkan belajar ── */}
+      {selectedJilid === 1 && !loading && nextUp && (() => {
+        const { chap, lesson } = nextUp
+        const { isQuiz, isKotoba } = getLessonState(chap, lesson)
+        const typeLabel = isKotoba ? 'Kotoba' : isQuiz ? `Kuis ${lesson.lesson_number - 3}` : `Video ${lesson.lesson_number}`
+        return (
+          <button
+            type="button"
+            onClick={() => openLesson(chap, lesson)}
+            className="group w-full text-left mb-4 sm:mb-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 cursor-pointer"
+          >
+            <span className={`size-12 sm:size-14 shrink-0 rounded-xl flex items-center justify-center text-white shadow-sm ${
+              isQuiz ? 'bg-gradient-to-br from-indigo-500 to-indigo-700' : isKotoba ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-primary to-primary-dark'
+            }`}>
+              {isQuiz ? (
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              ) : (
+                <svg className="size-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5.14v13.72a1 1 0 001.52.85l10.29-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z" /></svg>
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-bold text-primary dark:text-red-400">
+                {completedLessonsCount === 0 ? 'Mulai belajar' : 'Lanjutkan belajar'}
+              </span>
+              <span className="block text-[15px] sm:text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-1">{lesson.title}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                Bab {chap.bab_number} · {typeLabel} · {lesson.duration_text || lesson.duration_minutes} menit
+              </span>
+            </span>
+            <span className="shrink-0 h-10 sm:px-4 w-10 sm:w-auto rounded-xl bg-primary group-hover:bg-primary-dark text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-colors">
+              <span className="hidden sm:inline">{completedLessonsCount === 0 ? 'Mulai' : 'Lanjutkan'}</span>
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </span>
+          </button>
+        )
+      })()}
+
+      {/* ── Toolbar: jilid, filter, pencarian ── */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-3 sm:p-4 mb-4 sm:mb-5 flex flex-col lg:flex-row lg:items-center gap-3">
+        <div role="tablist" aria-label="Pilih jilid" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 lg:w-80 shrink-0">
+          <button
+            role="tab"
+            aria-selected={selectedJilid === 1}
+            onClick={() => setSelectedJilid(1)}
+            className={`min-h-11 px-2 rounded-lg border-none cursor-pointer transition-all flex flex-col items-center justify-center ${
+              selectedJilid === 1 ? 'bg-white dark:bg-slate-900 text-primary dark:text-red-400 shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <span className="text-sm font-bold leading-tight">Jilid 1</span>
+            <span className="text-[11px] font-medium opacity-80 leading-tight">Bab 1–25</span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={selectedJilid === 2}
+            onClick={() => setSelectedJilid(2)}
+            className={`min-h-11 px-2 rounded-lg border-none cursor-pointer transition-all flex flex-col items-center justify-center ${
+              selectedJilid === 2 ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <span className="text-sm font-bold leading-tight flex items-center gap-1">
+              Jilid 2
+              <span className="text-[10px] font-bold uppercase px-1.5 py-px rounded-full bg-amber-400 text-amber-950">Segera</span>
+            </span>
+            <span className="text-[11px] font-medium opacity-80 leading-tight">Bab 26–50</span>
+          </button>
+        </div>
+
+        {selectedJilid === 1 && (
+          <>
+            <div role="tablist" aria-label="Filter bab" className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 lg:w-72 shrink-0">
+              {([
+                { key: 'all', label: 'Semua' },
+                { key: 'progress', label: 'Berjalan' },
+                { key: 'done', label: 'Selesai' },
+              ] as const).map(f => (
                 <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setFunFactIndex(idx)}
-                  className={`h-1 rounded-full border-none cursor-pointer transition-all ${
-                    idx === funFactIndex ? 'bg-rose-400 w-3.5 sm:w-4' : 'bg-white/30 hover:bg-white/60 w-1'
+                  key={f.key}
+                  role="tab"
+                  aria-selected={chapterFilter === f.key}
+                  onClick={() => setChapterFilter(f.key)}
+                  className={`min-h-10 px-2 rounded-lg text-[13px] sm:text-sm font-semibold border-none cursor-pointer transition-all ${
+                    chapterFilter === f.key ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400'
                   }`}
-                />
+                >
+                  {f.label}
+                </button>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Header */}
-      <div className="mb-4 sm:mb-6 animate-fade-in-up flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white tracking-tight mb-0.5 leading-tight">
-            {t('mc_title', headerSettings.page_title)}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            {t('mc_subtitle', headerSettings.page_subtitle)}
-          </p>
-        </div>
-
-        {isInstructor && (
-          <button
-            onClick={() => navigate('/kelola-kursus')}
-            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-bold border-none cursor-pointer shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5 hover:-translate-y-0.5 group min-h-[28px] sm:min-h-[32px]"
-          >
-            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>Edit Judul & Visibilitas</span>
-          </button>
+            <div className="relative flex-1 min-w-0">
+              <svg className="size-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="search"
+                enterKeyHint="search"
+                placeholder={t('mc_search_placeholder', 'Cari bab atau materi...')}
+                value={searchBab}
+                onChange={e => setSearchBab(e.target.value)}
+                className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 [&::-webkit-search-cancel-button]:hidden"
+              />
+              {searchBab && (
+                <button
+                  type="button"
+                  onClick={() => setSearchBab('')}
+                  aria-label="Hapus pencarian"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 size-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 border-none bg-transparent cursor-pointer"
+                >
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* ── Book Selector Tabs (Jilid 1 vs Jilid 2) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5 mb-4 sm:mb-6">
-        <button
-          onClick={() => setSelectedJilid(1)}
-          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all flex items-center gap-3 ${
-            selectedJilid === 1
-              ? 'bg-gradient-to-br from-primary to-primary-light text-white border-primary shadow-md scale-[1.005]'
-              : 'bg-white border-slate-200 text-slate-700 hover:border-primary/40 hover:bg-slate-50 shadow-xs'
-          }`}
-        >
-          <div className={`size-10 sm:size-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shrink-0 ${
-            selectedJilid === 1 ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-          }`}>
-            <span className="font-japanese text-sm sm:text-base">一</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className={`text-xs sm:text-sm font-bold uppercase tracking-wider mb-0.5 ${selectedJilid === 1 ? 'text-white/80' : 'text-slate-400'}`}>
-              {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}
-            </div>
-            <div className="text-xs sm:text-sm font-bold truncate leading-tight">
-              {t('course_title_vol1', 'Bahasa Jepang Dasar (Jilid 1)')}
-            </div>
-            <div className={`text-xs sm:text-sm font-medium mt-0.5 ${selectedJilid === 1 ? 'text-white/90' : 'text-slate-500'}`}>
-              {t('dash_jilid_1_desc', 'Bab 1 s/d Bab 25 • 75 Video & 50 Kuis')}
-            </div>
-          </div>
-          {selectedJilid === 1 && (
-            <span className="size-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-white">
-              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
-          )}
-        </button>
-
-        <div
-          className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all flex items-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed bg-slate-50 border-slate-200 shadow-xs select-none"
-        >
-          {/* Coming Soon Ribbon */}
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-amber-400 text-amber-900 text-xs sm:text-sm font-bold uppercase tracking-wider px-2 py-0.2 rounded-full shadow-xs">
-            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span>Coming Soon</span>
-          </div>
-          <div className="size-10 sm:size-12 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shrink-0 bg-slate-100 text-slate-400 grayscale font-japanese">
-            二
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-0.5 text-slate-400">
-              {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}
-            </div>
-            <div className="text-xs sm:text-sm font-bold truncate leading-tight text-slate-500">
-              {t('course_title_vol2', 'Bahasa Jepang Menengah (Jilid 2)')}
-            </div>
-            <div className="text-xs sm:text-sm font-medium mt-0.5 text-slate-400">
-              Segera Hadir • Bab 26 s/d Bab 50
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Progress & Filter Bar (only Jilid 1) ── */}
-      {selectedJilid === 1 && (
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="w-full sm:w-auto flex-1 min-w-0">
-            <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5 text-slate-700">
-              <span>{t('dash_book_progress_title', 'Progress Minna no Nihongo')} (Jilid {selectedJilid})</span>
-              <span className="text-primary font-black">{completedLessonsCount} / {totalLessonsCount} {t('completed', 'Selesai')} ({totalProgressPct}%)</span>
-            </div>
-            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500"
-                style={{ width: `${totalProgressPct}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Search Bab */}
-          <div className="w-full sm:w-64 relative shrink-0">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <input
-              type="text"
-              placeholder={t('mc_search_placeholder', 'Cari bab atau materi...')}
-              value={searchBab}
-              onChange={e => setSearchBab(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-primary bg-slate-50 font-medium"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Coming Soon Panel (Jilid 2) ── */}
+      {/* ── Jilid 2: segera hadir ── */}
       {selectedJilid === 2 && (
-        <div className="flex flex-col items-center justify-center py-16 px-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center gap-5">
+        <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center gap-5">
           <div className="relative">
-            <div className="size-24 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm sm:text-base text-white shadow-lg font-japanese font-bold">
-              二
-            </div>
-            <div className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-xs sm:text-sm font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow border border-amber-300">
-              Coming Soon
-            </div>
+            <div className="size-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-4xl text-white shadow-lg font-serif font-black">二</div>
+            <span className="absolute -top-2 -right-4 bg-amber-400 text-amber-950 text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shadow">Segera</span>
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2">
-              Minna no Nihongo — Jilid 2
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-              Materi <strong>Bab 26 s/d Bab 50</strong> sedang dalam persiapan oleh tim kaiwadojo.<br />
-              Selesaikan materi Jilid 1 terlebih dahulu untuk membuka akses.
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5">Minna no Nihongo — Jilid 2</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              Materi <strong className="text-slate-700 dark:text-slate-200">Bab 26–50</strong> sedang disiapkan tim kaiwadojo. Selesaikan Jilid 1 terlebih dahulu, ya!
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 text-xs sm:text-sm font-bold text-slate-400">
-            {[26,27,28,29,30,31,32,33,34,35].map(n => (
-              <span key={n} className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 grayscale opacity-60">
-                第{n}課
-              </span>
+          <div className="flex flex-wrap justify-center gap-1.5 max-w-md">
+            {[26, 27, 28, 29, 30, 31, 32, 33].map(n => (
+              <span key={n} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-400">第{n}課</span>
             ))}
-            <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-300">…+15 Bab</span>
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-400">+17 bab</span>
           </div>
           <button
             onClick={() => setSelectedJilid(1)}
-            className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-bold text-xs sm:text-sm border-none cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-2 group mx-auto"
+            className="h-11 px-5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer transition-colors"
           >
-            <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:-translate-x-0.5 transition-transform">
-              &lt;
-            </span>
-            <span>Kembali ke Jilid 1</span>
+            Kembali ke Jilid 1
           </button>
         </div>
       )}
 
-      {/* ── Chapters List (25 Bab Grid/Accordion) ── */}
-      {selectedJilid === 1 && loading ? (
-        <CourseCardSkeleton count={5} />
-      ) : selectedJilid === 1 && filteredChapters.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 flex flex-col items-center gap-3">
-          <div className="size-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
-            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+      {/* ── Daftar bab ── */}
+      {selectedJilid === 1 && (
+        loading ? (
+          <CourseCardSkeleton count={5} />
+        ) : filteredChapters.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-3">
+            <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+              <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              {chapterFilter === 'done' && !searchBab ? 'Belum ada bab yang tuntas' : 'Tidak ada bab yang cocok'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {chapterFilter === 'done' && !searchBab ? 'Selesaikan semua materi dalam satu bab untuk melihatnya di sini.' : 'Coba ubah kata kunci atau filter.'}
+            </p>
+            <button
+              onClick={() => { setSearchBab(''); setChapterFilter('all') }}
+              className="mt-1 h-11 px-5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold border-none cursor-pointer"
+            >
+              Tampilkan Semua Bab
+            </button>
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-slate-700">Tidak ada bab yang cocok</h3>
-          <p className="text-xs sm:text-sm text-slate-400">Coba ubah kata kunci pencarianmu.</p>
-        </div>
-      ) : selectedJilid === 1 ? (
-        <div className="flex flex-col gap-4">
-          {filteredChapters.map(chap => {
-            const isExpanded = expandedBabs.has(chap.bab_number)
-            const completedInBab = chap.lessons.filter(l => l.is_completed).length
-            const targetGroupList = parseTargetGroups(chap.target_group)
-            const isRestricted = targetGroupList.length > 0
+        ) : (
+          <div className="flex flex-col gap-3">
+            {filteredChapters.map(chap => {
+              const isExpanded = expandedBabs.has(chap.bab_number)
+              const completedInBab = chap.lessons.filter(l => l.is_completed).length
+              const babPct = chap.lessons.length ? Math.round((completedInBab / chap.lessons.length) * 100) : 0
+              const isDone = isChapterDone(chap)
+              const targetGroupList = parseTargetGroups(chap.target_group)
+              const isRestricted = targetGroupList.length > 0
+              const plainTitle = chap.title.replace(/^(第\d+課|Bab\s+\d+):\s*/i, '')
+              const hasNextUp = nextUp?.chap.bab_number === chap.bab_number
 
-            return (
-              <div
-                key={chap.bab_number}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all"
-              >
-                {/* Bab Header */}
-                <div
-                  onClick={() => toggleBabAccordion(chap.bab_number)}
-                  className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-all select-none"
+              return (
+                <article
+                  key={chap.bab_number}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-xs overflow-hidden transition-colors ${
+                    isExpanded ? 'border-slate-300 dark:border-slate-700' : 'border-slate-200 dark:border-slate-800'
+                  }`}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="size-10 sm:size-11 rounded-xl bg-primary/10 text-primary font-black text-sm sm:text-base flex items-center justify-center shrink-0">
-                      {chap.bab_number}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-snug truncate">
-                          {chap.title.replace(/^Bab\s+(\d+):\s*/i, '第$1課: ')}
-                        </h3>
+                  <button
+                    type="button"
+                    onClick={() => toggleBabAccordion(chap.bab_number)}
+                    aria-expanded={isExpanded}
+                    className="w-full p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4 text-left bg-transparent border-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
+                    {/* Ring progres bab */}
+                    <span
+                      className="size-12 shrink-0 rounded-full p-[3px]"
+                      style={{ background: `conic-gradient(${isDone ? '#10b981' : 'var(--color-primary)'} ${babPct * 3.6}deg, rgba(148,163,184,0.25) 0deg)` }}
+                      aria-hidden="true"
+                    >
+                      <span className={`size-full rounded-full flex items-center justify-center text-sm font-black ${
+                        isDone ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white'
+                      }`}>
+                        {isDone ? (
+                          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : chap.bab_number}
+                      </span>
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="text-xs font-bold text-primary dark:text-red-400 font-serif">第{chap.bab_number}課</span>
+                        {hasNextUp && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-px rounded-full bg-primary/10 text-primary dark:text-red-300">Sedang dipelajari</span>
+                        )}
                         {!shouldHideUnreleased && isRestricted && (
-                          <span className="text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 flex items-center gap-1.5">
-                            <svg className="size-3 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <span>Khusus ({targetGroupList.length}):</span>
-                            <span>{targetGroupList.join(', ')}</span>
+                          <span className="text-[11px] font-semibold px-2 py-px rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 truncate max-w-[12rem]">
+                            Khusus: {targetGroupList.join(', ')}
                           </span>
                         )}
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-500 font-medium truncate mt-0.5">
-                        {chap.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0 ml-2">
-                    <span className="text-xs sm:text-sm font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full hidden sm:inline-block">
-                      {completedInBab}/5 {t('completed', 'Selesai')}
+                        {!shouldHideUnreleased && chap.is_hidden && (
+                          <span className="text-[11px] font-semibold px-2 py-px rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Disembunyikan</span>
+                        )}
+                      </span>
+                      <span className="block text-[15px] sm:text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-1">{plainTitle}</span>
+                      <span className="block text-[13px] text-slate-500 dark:text-slate-400 line-clamp-1">{chap.subtitle}</span>
                     </span>
-                    <span className="text-slate-400 text-xs sm:text-sm font-bold">
-                      {isExpanded ? '▲' : '▼'}
+
+                    <span className="shrink-0 flex items-center gap-2 sm:gap-3">
+                      <span className={`text-xs font-bold tabular-nums ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {completedInBab}/{chap.lessons.length}
+                      </span>
+                      <svg className={`size-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
                     </span>
-                  </div>
-                </div>
+                  </button>
 
-                {/* 1 Horizontal Row with Visual Cards (Scrollable inside box) */}
-                {isExpanded && (
-                  <div className="p-4 sm:p-5 pt-3 border-t border-slate-100 flex items-stretch gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 pb-4">
-                    {chap.lessons.map(lesson => {
-                      const isKotoba = lesson.content_type === 'kotoba'
-                      const isQuiz   = lesson.content_type === 'quiz'
+                  {isExpanded && (
+                    <ul className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 animate-fade-in">
+                      {chap.lessons.map(lesson => {
+                        const { isKotoba, isQuiz, watchedCount, isQuizLocked } = getLessonState(chap, lesson)
+                        const isNext = nextUp?.lesson.id === lesson.id
+                        const typeLabel = isKotoba ? 'Kotoba' : isQuiz ? `Kuis ${lesson.lesson_number - 3}` : `Video ${lesson.lesson_number}`
+                        const meta = isQuizLocked
+                          ? `Tonton ${3 - watchedCount} video lagi untuk membuka`
+                          : lesson.is_placeholder
+                            ? t('mc_video_prep_desc', 'Video sedang disiapkan')
+                            : isQuiz
+                              ? t('mc_quiz_desc', '10 soal pilihan ganda')
+                              : `${lesson.duration_text || lesson.duration_minutes} menit${lesson.replay_count ? ` · ditonton ${lesson.replay_count}x` : ''}`
 
-                      // Check if all 3 videos in this chapter are watched by user
-                      const babVideos = chap.lessons.filter(l => l.content_type === 'video' || l.lesson_number <= 3)
-                      const watchedCount = babVideos.filter(l => l.is_completed || (l.replay_count && l.replay_count > 0)).length
-                      const areAllVideosWatched = watchedCount >= 3
-
-                      const isQuizLocked = isQuiz && !areAllVideosWatched
-
-                      return (
-                        <div
-                          key={lesson.id}
-                          onClick={() => {
-                            if (isQuizLocked) {
-                              setAlertConfig({
-                                isOpen: true,
-                                title: 'Kuis Masih Terkunci',
-                                message: `Kamu harus menonton seluruh 3 video materi pada "${chap.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedCount}/3 Video Selesai)`,
-                                type: 'lock',
-                                buttonText: 'Siap, Nonton Dulu!',
-                                onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-                              })
-                              return
-                            }
-                            setActiveChapter(chap)
-                            handleSwitchLesson(lesson)
-                          }}
-                          className={`w-[230px] sm:w-[250px] shrink-0 rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg ${
-                            isQuizLocked
-                              ? 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700 opacity-80'
-                              : lesson.is_completed
-                                ? 'bg-emerald-50/40 border-emerald-300'
-                                : lesson.is_placeholder
-                                  ? 'bg-slate-50 border-slate-200'
-                                  : 'bg-white border-slate-200 shadow-sm'
-                          }`}
-                        >
-                          {/* Visual Banner Thumbnail */}
-                          <div className={`w-full aspect-[16/9] relative flex items-center justify-center overflow-hidden ${
-                            isQuizLocked
-                              ? 'bg-gradient-to-br from-slate-700 to-slate-900'
-                              : isKotoba
-                                ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-                                : isQuiz
-                                  ? 'bg-gradient-to-br from-indigo-600 to-purple-700'
-                                  : lesson.is_placeholder
-                                    ? 'bg-gradient-to-br from-slate-700 to-slate-900'
-                                    : 'bg-gradient-to-br from-primary to-primary-dark'
-                          }`}>
-                            {/* Decorative Background Symbol */}
-                            <span className="text-sm sm:text-base scale-[4] origin-bottom-right opacity-20 absolute right-1 bottom-1 select-none pointer-events-none text-white font-bold font-japanese">
-                              {isQuizLocked ? '鎖' : isKotoba ? '語' : isQuiz ? '試' : '画'}
-                            </span>
-
-                            {/* Center Visual Icon / Play Button */}
-                            <div className="size-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white text-sm sm:text-base font-bold shadow-md transition-transform group-hover:scale-110">
-                              {isQuizLocked ? (
-                                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                              ) : isKotoba ? (
-                                <span className="font-japanese font-bold text-sm sm:text-base">語</span>
-                              ) : isQuiz ? (
-                                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              ) : (
-                                <span className="size-3.5 border-y-transparent border-y-4 border-l-7 border-l-white ml-0.5" />
-                              )}
-                            </div>
-
-                            {/* Top Status Badges */}
-                            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                              <span className="text-xs sm:text-sm font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-black/40 text-white backdrop-blur-sm">
-                                {isKotoba ? t('mc_lesson_kotoba', 'Kotoba') : isQuiz ? t('mc_lesson_quiz', 'Kuis') : `${t('mc_lesson_video', 'Video')} ${lesson.lesson_number}`}
-                              </span>
-                              {isQuizLocked ? (
-                                <span className="text-xs sm:text-sm font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                                  <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                  </svg>
-                                  <span>{t('mc_locked', 'Terkunci')} ({watchedCount}/3)</span>
-                                </span>
-                              ) : lesson.is_completed ? (
-                                <span className="text-xs sm:text-sm font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
-                                  <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  <span>{t('completed', 'Selesai')}</span>
-                                </span>
-                              ) : lesson.is_placeholder ? (
-                                <span className="text-xs sm:text-sm font-bold bg-amber-500/90 text-white px-2 py-0.5 rounded-full shadow-xs">
-                                  {t('mc_coming_soon', 'Segera Hadir')}
-                                </span>
-                              ) : null}
-                            </div>
-
-                            {/* Duration Tag */}
-                            <span className="absolute bottom-2 right-2 text-xs sm:text-sm font-bold bg-black/60 text-white/90 px-2 py-0.5 rounded-md backdrop-blur-xs font-mono flex items-center gap-1">
-                              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span>{lesson.duration_text || `${lesson.duration_minutes}.00`}</span>
-                            </span>
-                          </div>
-
-                          {/* Card Content */}
-                          <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between gap-2.5 sm:gap-3">
-                            <div>
-                              <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug line-clamp-2 mb-0.5">
-                                {lesson.title}
-                              </h4>
-                              <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                                {isQuizLocked
-                                  ? (language === 'ja' ? `あと${3 - watchedCount}個の動画を視聴して解除` : language === 'en' ? `Watch ${3 - watchedCount} more video(s) to unlock` : `Tonton ${3 - watchedCount} video lagi untuk membuka`)
-                                  : isKotoba
-                                    ? t('mc_kotoba_desc', 'Setoran Kosakata & Artinya')
-                                    : isQuiz
-                                      ? t('mc_quiz_desc', '10 Soal Pilihan Ganda')
-                                      : lesson.is_placeholder
-                                        ? t('mc_video_prep_desc', 'Video sedang disiapkan')
-                                        : t('mc_video_desc', 'Materi Bahasa Jepang')}
-                              </p>
-                            </div>
-
+                        return (
+                          <li key={lesson.id}>
                             <button
-                              className={`w-full min-h-[28px] sm:min-h-[32px] py-1.5 sm:py-2 px-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-                                isQuizLocked
-                                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-                                  : isKotoba
-                                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
-                                    : isQuiz
-                                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
-                                      : lesson.is_placeholder
-                                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 shadow-xs'
-                                        : 'bg-primary hover:bg-primary-dark text-white shadow-xs'
+                              type="button"
+                              onClick={() => openLesson(chap, lesson)}
+                              className={`w-full px-3.5 sm:px-4 py-3 flex items-center gap-3 text-left border-none cursor-pointer transition-colors ${
+                                isNext ? 'bg-primary/[0.04] dark:bg-primary/10 hover:bg-primary/[0.07]' : 'bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/40'
                               }`}
                             >
-                              {isQuizLocked ? (
-                                <span>Terkunci ({watchedCount}/3 Video)</span>
-                              ) : isKotoba ? (
-                                <>
-                                  <span className="font-japanese font-bold text-xs sm:text-sm">語</span>
-                                  <span>Setor Kotoba</span>
-                                </>
-                              ) : isQuiz ? (
-                                <span>Kerjakan Kuis</span>
-                              ) : lesson.is_placeholder ? (
-                                <span>Lihat Preview</span>
-                              ) : (
-                                <>
-                                  <span>Buka Materi</span>
-                                  <span className="size-4 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold">
-                                    &gt;
+                              <span className={`relative size-11 shrink-0 rounded-xl flex items-center justify-center ${
+                                isQuizLocked || lesson.is_placeholder
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                  : isQuiz
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                                    : isKotoba
+                                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+                                      : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400'
+                              }`}>
+                                {isQuizLocked ? (
+                                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>
+                                ) : lesson.is_placeholder ? (
+                                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="9" /><path strokeLinecap="round" d="M12 7v5l3 2" /></svg>
+                                ) : isQuiz ? (
+                                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                ) : isKotoba ? (
+                                  <span className="font-serif font-black text-base">語</span>
+                                ) : (
+                                  <svg className="size-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5.14v13.72a1 1 0 001.52.85l10.29-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z" /></svg>
+                                )}
+                                {lesson.is_completed && (
+                                  <span className="absolute -bottom-1 -right-1 size-5 rounded-full bg-emerald-500 text-white ring-2 ring-white dark:ring-slate-900 flex items-center justify-center">
+                                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                                   </span>
-                                </>
+                                )}
+                              </span>
+
+                              <span className="min-w-0 flex-1">
+                                <span className="flex items-center gap-2">
+                                  <span className={`text-[11px] font-bold uppercase tracking-wide ${
+                                    isQuiz ? 'text-indigo-600 dark:text-indigo-400' : isKotoba ? 'text-amber-600 dark:text-amber-400' : 'text-primary dark:text-red-400'
+                                  }`}>{typeLabel}</span>
+                                  {isNext && <span className="text-[10px] font-bold uppercase px-1.5 py-px rounded-full bg-primary text-white">Berikutnya</span>}
+                                </span>
+                                <span className={`block text-sm font-semibold leading-snug line-clamp-2 ${
+                                  isQuizLocked || lesson.is_placeholder ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'
+                                }`}>{lesson.title}</span>
+                                <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{meta}</span>
+                              </span>
+
+                              {lesson.is_completed ? (
+                                <span className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('completed', 'Selesai')}</span>
+                              ) : (
+                                <svg className="size-5 shrink-0 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
                               )}
                             </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ) : null}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        )
+      )}
 
       {/* ── Video Player & Placeholder Modal ── */}
       {activeLesson && (

@@ -36,6 +36,7 @@ import {
 } from '../lib/announcementService'
 import AnnouncementModal from '../components/AnnouncementModal'
 import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
+import JapanFactCard from '../components/JapanFactCard'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -2010,6 +2011,11 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Fakta Jepang Hari Ini — insight singkat setiap kali membuka website */}
+      <div className="mb-3.5 sm:mb-5">
+        <JapanFactCard userId={profile?.id || user?.id} />
+      </div>
 
       {/* ── MOBILE: Combined Sakura Blossom & Daily Mission Card (lg:hidden) ── */}
       <div className="block lg:hidden mb-3.5">
