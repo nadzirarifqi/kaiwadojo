@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
@@ -631,78 +631,343 @@ function SakuraRingProgressBar({
   )
 }
 
-/* ── StreakCard Component (Sakura Blossom Dojo) ─────────── */
-function StreakCard({
+/* ── Komponen kecil yang dipakai bersama ─────────────────────── */
+const CARD = 'bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm'
+
+function SakuraIcon({ className = 'size-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      {[0, 72, 144, 216, 288].map(deg => (
+        <path key={deg} transform={`rotate(${deg} 12 12)`} d="M12 2.8 C10 6.2, 9.6 9.5, 12 12 C14.4 9.5, 14 6.2, 12 2.8 Z" />
+      ))}
+      <circle cx="12" cy="12" r="2.2" className="fill-white dark:fill-slate-900" />
+    </svg>
+  )
+}
+
+function ChevronRight({ className = 'size-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function CardHeader({
+  icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon: ReactNode
+  title: string
+  subtitle?: ReactNode
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {icon}
+      <div className="min-w-0 flex-1">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight truncate">{title}</h2>
+        {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  )
+}
+
+/* ── Tugas misi harian (dipakai kartu misi & tombol aksi utama di hero) ── */
+interface MissionTask {
+  key: string
+  kind: 'video' | 'quiz' | 'kotoba'
+  title: string
+  subtitle: string
+  current: number
+  target: number
+  done: boolean
+  path: string
+}
+
+function buildMissionTasks(
+  mission: DailyMissionData | null,
+  progress: MissionProgress | null,
+  videoProgressMap: Map<string, number>,
+): MissionTask[] {
+  if (!mission || !progress) return []
+  const tasks: MissionTask[] = mission.selectedVideos.map((v, idx) => {
+    const count = videoProgressMap.get(v.id) || 0
+    return {
+      key: v.id || `video-${idx}`,
+      kind: 'video',
+      title: `Bab ${v.bab} · Video ${v.videoNum}`,
+      subtitle: v.title || 'Materi video Minna no Nihongo',
+      current: Math.min(count, 3),
+      target: 3,
+      done: count >= 3,
+      path: `/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`,
+    }
+  })
+  if (mission.targetQuizCount > 0) {
+    const first = mission.selectedVideos[0]
+    tasks.push({
+      key: 'quiz',
+      kind: 'quiz',
+      title: 'Kuis Evaluasi Bab',
+      subtitle: `Selesaikan ${progress.targetQuizzes} kuis`,
+      current: Math.min(progress.actualQuizzes, progress.targetQuizzes),
+      target: progress.targetQuizzes,
+      done: progress.quizCompleted,
+      path: `/my-courses?jilid=${first?.jilid || 1}&bab=${first?.bab || 1}&item=4`,
+    })
+  }
+  if (mission.targetKotobaCount > 0) {
+    tasks.push({
+      key: 'kotoba',
+      kind: 'kotoba',
+      title: 'Setoran Kotoba',
+      subtitle: `Setor ${progress.targetKotoba} kosakata baru`,
+      current: Math.min(progress.actualKotoba, progress.targetKotoba),
+      target: progress.targetKotoba,
+      done: progress.kotobaCompleted,
+      path: '/kotoba',
+    })
+  }
+  return tasks
+}
+
+const TASK_STYLE: Record<MissionTask['kind'], { tile: string; bar: string; unit: string }> = {
+  video: { tile: 'bg-primary/10 text-primary dark:text-primary-lighter', bar: 'bg-primary', unit: 'tonton' },
+  quiz: { tile: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300', bar: 'bg-indigo-500', unit: 'kuis' },
+  kotoba: { tile: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400', bar: 'bg-amber-500', unit: 'kata' },
+}
+
+/* ── Kartu Misi Hari Ini (satu desain untuk mobile & desktop) ── */
+function TodayMissionCard({
+  dailyMission,
+  missionProgress,
+  videoProgressMap,
+  onOpenMissionModal,
+}: {
+  dailyMission: DailyMissionData | null
+  missionProgress: MissionProgress | null
+  videoProgressMap: Map<string, number>
+  onOpenMissionModal: () => void
+}) {
+  const navigate = useNavigate()
+  const isRest = isNoPlanMission(dailyMission)
+  const tasks = buildMissionTasks(dailyMission, missionProgress, videoProgressMap)
+  const doneCount = tasks.filter(t => t.done).length
+  const pct = Math.min(100, Math.max(0, Math.round(missionProgress?.overallPct ?? 0)))
+  const isDone = tasks.length > 0 && (missionProgress?.isFullyCompleted ?? false)
+
+  const editButton = dailyMission ? (
+    <button
+      type="button"
+      onClick={onOpenMissionModal}
+      aria-label="Ubah misi hari ini"
+      title="Ubah misi hari ini"
+      className="size-10 shrink-0 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-colors"
+    >
+      <svg className="size-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+      </svg>
+    </button>
+  ) : null
+
+  return (
+    <section aria-label="Misi hari ini" className={`${CARD} p-4 sm:p-5`}>
+      <CardHeader
+        icon={
+          <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${isDone ? 'bg-emerald-500 text-white' : 'bg-primary text-white'}`}>
+            {isDone ? (
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            ) : (
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+            )}
+          </span>
+        }
+        title="Misi Hari Ini"
+        subtitle={
+          !dailyMission ? 'Belum disusun'
+          : isRest ? 'Hari istirahat terencana'
+          : isDone ? 'Semua tugas selesai'
+          : `${doneCount} dari ${tasks.length} tugas selesai`
+        }
+        action={editButton}
+      />
+
+      {/* Belum ada misi */}
+      {!dailyMission && (
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 sm:p-6 text-center flex flex-col items-center">
+          <span className="size-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center">
+            <SakuraIcon className="size-6" />
+          </span>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mt-3">Mulai hari ini dengan target kecil</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mt-1 max-w-sm">
+            Pilih video, kuis, atau kotoba yang ingin kamu selesaikan. Tuntaskan misinya agar sakura-mu terus tumbuh.
+          </p>
+          <button
+            type="button"
+            onClick={onOpenMissionModal}
+            className="mt-4 h-11 px-5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer transition-colors flex items-center gap-2"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Susun misi hari ini
+          </button>
+        </div>
+      )}
+
+      {/* Hari istirahat */}
+      {dailyMission && isRest && (
+        <div className="mt-4 rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 p-4 flex items-start gap-3">
+          <span className="size-10 shrink-0 rounded-xl bg-sky-500 text-white flex items-center justify-center">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-sky-900 dark:text-sky-100">Istirahat juga bagian dari belajar</p>
+            <p className="text-sm text-sky-800/80 dark:text-sky-200/80 leading-relaxed mt-0.5">Streak-mu tetap aman hari ini. Berubah pikiran? Kamu bisa menambah target kapan saja.</p>
+            <button
+              type="button"
+              onClick={onOpenMissionModal}
+              className="mt-2.5 h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-sm font-semibold cursor-pointer hover:bg-sky-100/60 dark:hover:bg-sky-950/60 transition-colors"
+            >
+              Tambah target belajar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Ada tugas */}
+      {tasks.length > 0 && (
+        <>
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-sm mb-1.5">
+              <span className="text-slate-500 dark:text-slate-400">Progres misi</span>
+              <span className={`font-bold tabular-nums ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>{pct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+
+          {isDone && (
+            <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-3.5 py-2.5 text-sm text-emerald-800 dark:text-emerald-200 flex items-center gap-2 animate-fade-in">
+              <SakuraIcon className="size-4 shrink-0 text-emerald-500" />
+              <span><strong>Misi tuntas!</strong> Sakura-mu tumbuh hari ini. お疲れさま!</span>
+            </div>
+          )}
+
+          <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+            {tasks.map(task => {
+              const style = TASK_STYLE[task.kind]
+              const taskPct = task.target > 0 ? Math.min(100, (task.current / task.target) * 100) : 0
+              return (
+                <li key={task.key}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(task.path)}
+                    className={`w-full h-full text-left p-3 rounded-xl border cursor-pointer transition-colors flex items-center gap-3 group ${
+                      task.done
+                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/60'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${task.done ? 'bg-emerald-500 text-white' : style.tile}`}>
+                      {task.done ? (
+                        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      ) : task.kind === 'video' ? (
+                        <svg className="size-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 001.52.85l11-6.86a1 1 0 000-1.7l-11-6.86A1 1 0 008 5.14z" /></svg>
+                      ) : task.kind === 'quiz' ? (
+                        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                      ) : (
+                        <span className="font-serif font-bold text-base leading-none">語</span>
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className={`text-sm font-semibold truncate ${task.done ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>{task.title}</span>
+                        <span className={`text-xs font-bold tabular-nums shrink-0 ${task.done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {task.current}/{task.target} {style.unit}
+                        </span>
+                      </span>
+                      <span className="block text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{task.subtitle}</span>
+                      <span className="block h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
+                        <span className={`block h-full rounded-full transition-all duration-500 ${task.done ? 'bg-emerald-500' : style.bar}`} style={{ width: `${taskPct}%` }} />
+                      </span>
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-primary transition-colors" />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
+    </section>
+  )
+}
+
+/* ── Kartu Streak Sakura ─────────────────────────────────────── */
+const NEXT_STAGE_NAME: Record<number, string> = {
+  1: 'Tunas Sakura',
+  3: 'Pohon Muda',
+  7: 'Sakura Mekar',
+  30: 'Sakura Rimbun',
+  100: 'Sakura Abadi',
+  365: 'satu tahun penuh',
+}
+
+function SakuraStreakCard({
   streakDays,
   history,
   isFreezeToday,
   dailyMission,
   missionProgress,
-  onOpenMissionModal,
 }: {
   streakDays: number
   history: StreakDayHistory[]
   isFreezeToday?: boolean
   dailyMission?: DailyMissionData | null
   missionProgress?: MissionProgress | null
-  onOpenMissionModal?: () => void
 }) {
-  const navigate = useNavigate()
   const dayLabels = getLast7DayLabels()
   const todayItem = history[history.length - 1]
-  const todayDone = todayItem?.done || false
   const isTodayFreeze = isFreezeToday || todayItem?.isFreeze || false
-
   const sakuraInfo = getSakuraStage(streakDays, isTodayFreeze)
-  const nextMilestone = sakuraInfo.nextGoal
-  const pct = Math.min(Math.round((streakDays / nextMilestone) * 100), 100)
-
+  const nextGoal = sakuraInfo.nextGoal
+  const daysLeft = Math.max(0, nextGoal - streakDays)
+  const goalPct = Math.min(100, Math.round((streakDays / nextGoal) * 100))
   const [showSakuraModal, setShowSakuraModal] = useState(false)
 
-  const milestones = [
-    { days: 7,   label: '7 Hari',   stageName: 'Mekar' },
-    { days: 30,  label: '30 Hari',  stageName: 'Rimbun' },
-    { days: 100, label: '100 Hari', stageName: 'Emas' },
-  ]
-
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-3 sm:p-4.5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-3 sm:gap-3.5 h-full relative overflow-hidden">
-      {/* Decorative ambient Sakura glow */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+    <section aria-label="Streak Sakura" className={`${CARD} p-4 sm:p-5 relative overflow-hidden`}>
+      <div className="absolute -top-20 -right-16 size-56 rounded-full bg-rose-500/[0.06] dark:bg-rose-500/10 blur-2xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex justify-between items-center relative z-10">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="size-6.5 sm:size-7.5 rounded-lg bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
-            <svg className="size-3.5 sm:size-4" viewBox="0 0 24 24" fill="currentColor">
-              {[0, 72, 144, 216, 288].map(deg => (
-                <path
-                  key={deg}
-                  transform={`rotate(${deg} 12 12)`}
-                  d="M12 2.8 C10 6.2, 9.6 9.5, 12 12 C14.4 9.5, 14 6.2, 12 2.8 Z"
-                />
-              ))}
-              <circle cx="12" cy="12" r="2.2" className="fill-white dark:fill-slate-900" />
-              <circle cx="12" cy="12" r="1.1" className="fill-rose-500" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
-              {sakuraInfo.stageName}
-            </h2>
-            <span className="text-xs sm:text-sm text-slate-400 font-medium block truncate">
-              {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
+      <div className="relative">
+        <CardHeader
+          icon={
+            <span className="size-10 shrink-0 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-500 flex items-center justify-center">
+              <SakuraIcon className="size-5" />
             </span>
-          </div>
-        </div>
+          }
+          title={sakuraInfo.stageName}
+          subtitle={<span><span className="font-serif">{sakuraInfo.japaneseName}</span> · Streak Sakura</span>}
+          action={
+            <button
+              type="button"
+              onClick={() => setShowSakuraModal(true)}
+              aria-label="Lihat tahapan pertumbuhan sakura"
+              title="Tahapan pertumbuhan sakura"
+              className="size-10 shrink-0 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-colors"
+            >
+              <svg className="size-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+          }
+        />
 
-        {/* Level pill badge removed per user request */}
-      </div>
-
-      {/* Sakura Blossom Visualizer + Circular Progress Ring + 7-Day History */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 relative z-10">
-        {/* Animated Sakura Visual + Ring Progress */}
-        <div className="flex flex-col items-center shrink-0">
+        <div className="flex items-center gap-4 sm:gap-5 mt-4">
           <SakuraRingProgressBar
             streakDays={streakDays}
             isFreeze={isTodayFreeze}
@@ -710,212 +975,143 @@ function StreakCard({
             missionProgress={missionProgress}
             onClick={() => setShowSakuraModal(true)}
           />
-          <div className={`text-sm sm:text-base font-black leading-none mt-1 tracking-tight ${sakuraInfo.colorClass}`}>
-            {streakDays}
-          </div>
-          <div className="text-xs sm:text-sm text-slate-400 font-bold mt-0.5 text-center whitespace-nowrap">
-            Hari Konsisten
-          </div>
-        </div>
-
-        {/* 7-Day History & Progress */}
-        <div className="flex-1 min-w-0 w-full">
-          {/* 7-Day Dots with mini Sakura blossoms */}
-          <div className="flex gap-1 sm:gap-1.5 mb-2 sm:mb-2.5">
-            {history.map((item, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
-                <div
-                  className={`w-full aspect-square max-w-[22px] sm:max-w-[28px] rounded-full flex items-center justify-center transition-all ${
-                    item.done
-                      ? item.isFreeze
-                        ? 'bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-xs ring-1 ring-sky-200 dark:ring-sky-900'
-                        : 'bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-xs ring-1 ring-rose-200 dark:ring-rose-950'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
-                  }`}
-                  title={`${dayLabels[i]}: ${item.done ? (item.isFreeze ? 'Istirahat (Freeze)' : 'Misi Selesai') : 'Belum selesai'}`}
-                >
-                  {item.done ? (
-                    item.isFreeze ? (
-                      <svg className="size-2.5 sm:size-3 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <svg className="size-2.5 sm:size-3 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
-                      </svg>
-                    )
-                  ) : (
-                    <span className="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  )}
-                </div>
-                <span className="text-xs sm:text-sm text-slate-400 font-bold mt-1">{dayLabels[i]}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Progress Bar to Next Sakura Milestone */}
-          <div>
-            <div className="flex justify-between text-xs sm:text-sm font-semibold mb-1">
-              <span className="text-slate-500 dark:text-slate-400 truncate">
-                Target {nextMilestone} Hari
-              </span>
-              <span className={`font-black shrink-0 ${sakuraInfo.colorClass}`}>
-                {streakDays}/{nextMilestone}
-              </span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="min-w-0 flex-1">
+            <p className="leading-none">
+              <span className={`text-4xl font-black tabular-nums tracking-tight ${sakuraInfo.colorClass}`}>{streakDays}</span>
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1.5">hari beruntun</span>
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-snug mt-2">
+              {daysLeft > 0
+                ? <>{daysLeft} hari lagi menuju <strong className="font-semibold">{NEXT_STAGE_NAME[nextGoal] || `${nextGoal} hari`}</strong></>
+                : 'Target tahap ini tercapai!'}
+            </p>
+            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
               <div
-                className={`h-full rounded-full transition-all duration-700 ${
-                  isTodayFreeze
-                    ? 'bg-gradient-to-r from-sky-400 to-cyan-500'
-                    : 'bg-gradient-to-r from-rose-400 to-pink-500'
-                }`}
-                style={{ width: `${pct}%` }}
+                className={`h-full rounded-full transition-all duration-700 ${isTodayFreeze ? 'bg-sky-500' : 'bg-gradient-to-r from-rose-400 to-pink-500'}`}
+                style={{ width: `${goalPct}%` }}
               />
             </div>
           </div>
-
-          {/* Milestone Badges without Emojis */}
-          <div className="flex gap-1.5 mt-2">
-            {milestones.map(m => (
-              <div
-                key={m.days}
-                className={`flex-1 py-1 px-1.5 rounded-lg text-center text-xs sm:text-sm font-bold border transition-all ${
-                  streakDays >= m.days
-                    ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400'
-                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400'
-                }`}
-              >
-                <span>{m.label}</span>
-                <span className="hidden sm:inline opacity-75"> ({m.stageName})</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Today Status Banner with Clean Separated Button */}
-      <div
-        className={`p-3 rounded-xl text-xs sm:text-sm font-medium border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-          isTodayFreeze
-            ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800'
-            : todayDone
-            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
-            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-current animate-pulse shrink-0" />
-          <span className="leading-snug">
-            {isTodayFreeze
-              ? 'Hari istirahat terencana (Cap Biru). Streak aman bertambah.'
-              : todayDone
-              ? 'Misi hari ini telah selesai! Sakura mekar indah.'
-              : 'Selesaikan misi hari ini agar sakura tetap mekar.'}
-          </span>
         </div>
 
-        {!todayDone && !isTodayFreeze && (
-          <button
-            onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-            className="group px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-stretch sm:self-auto touch-manipulation min-h-[30px]"
-          >
-            <span>Susun Misi Hari Ini</span>
-            <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-              <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </button>
-        )}
+        {/* Riwayat 7 hari */}
+        <ol className="mt-5 grid grid-cols-7 gap-1" aria-label="Riwayat 7 hari terakhir">
+          {history.map((item, i) => {
+            const isToday = i === history.length - 1
+            const status = item.done ? (item.isFreeze ? 'Istirahat' : 'Misi selesai') : 'Belum selesai'
+            return (
+              <li key={item.date || i} className="flex flex-col items-center gap-1" title={`${dayLabels[i]}: ${status}`}>
+                <span className={`size-8 rounded-full flex items-center justify-center ${
+                  item.done
+                    ? item.isFreeze ? 'bg-sky-500 text-white' : 'bg-gradient-to-br from-rose-400 to-pink-500 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
+                } ${isToday ? 'ring-2 ring-offset-2 ring-rose-300 dark:ring-rose-800 ring-offset-white dark:ring-offset-slate-900' : ''}`}>
+                  {item.done ? (
+                    item.isFreeze
+                      ? <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4" /></svg>
+                      : <SakuraIcon className="size-3.5" />
+                  ) : (
+                    <span className="size-1.5 rounded-full bg-current" />
+                  )}
+                  <span className="sr-only">{status}</span>
+                </span>
+                <span className={`text-xs ${isToday ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-400'}`}>
+                  {isToday ? 'Ini' : dayLabels[i]}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
       </div>
 
-      {/* Interactive Sakura Evolution Info Modal */}
-      <SakuraEvolutionModal isOpen={showSakuraModal} onClose={() => setShowSakuraModal(false)} />
-    </div>
+      <SakuraEvolutionModal isOpen={showSakuraModal} onClose={() => setShowSakuraModal(false)} currentStreak={streakDays} />
+    </section>
   )
 }
 
-/* ── Sakura Evolution Info Modal ────────────────────────────── */
-function SakuraEvolutionModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+/* ── Modal tahapan pertumbuhan sakura ──────────────────────────── */
+const SAKURA_STAGES = [
+  { range: '0 hari', name: 'Benih Bunga Sakura', jp: '桜の種', min: 0 },
+  { range: '1–2 hari', name: 'Tunas Bunga Sakura', jp: '桜の若芽', min: 1 },
+  { range: '3–6 hari', name: 'Pohon Muda Sakura', jp: '若木の桜', min: 3 },
+  { range: '7–29 hari', name: 'Pohon Sakura Mekar', jp: '開花の桜', min: 7 },
+  { range: '30–99 hari', name: 'Pohon Sakura Rimbun', jp: '満開の桜', min: 30 },
+  { range: '100+ hari', name: 'Pohon Sakura Abadi', jp: '悠久の桜', min: 100 },
+]
+
+function SakuraEvolutionModal({ isOpen, onClose, currentStreak = 0 }: { isOpen: boolean; onClose: () => void; currentStreak?: number }) {
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
+  const currentIdx = SAKURA_STAGES.reduce((acc, s, i) => (currentStreak >= s.min ? i : acc), 0)
+
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[999] animate-fade-in">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-sm w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-3.5 sm:gap-4 animate-scale-up">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-rose-500" />
-            <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-white">
-              Tahapan Pertumbuhan Pohon Sakura
-            </h3>
+    <div
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sakura-stage-title"
+        onClick={e => e.stopPropagation()}
+        className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 px-5 pt-3 sm:pt-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6 max-h-[90dvh] overflow-y-auto animate-fade-in-up"
+      >
+        <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 id="sakura-stage-title" className="text-lg font-bold text-slate-900 dark:text-white">Tahapan Pohon Sakura</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+              Setiap hari kamu menuntaskan misi, pohon sakura-mu tumbuh satu langkah. Hari istirahat terencana tidak memutus streak.
+            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold text-xs sm:text-sm"
+            aria-label="Tutup"
+            className="size-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer flex items-center justify-center"
           >
-            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-          Di kaiwadojo, konsistensi belajar diibaratkan pohon sakura yang bertumbuh semakin megah seiring bertambahnya streak Anda:
-        </p>
-
-        <div className="space-y-2 text-xs sm:text-sm">
-          <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-slate-800 dark:text-white">0 Hari</div>
-              <div className="text-xs sm:text-sm text-slate-400">Benih Bunga Sakura</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 font-bold text-xs sm:text-sm">Tahap 0</span>
-          </div>
-
-          <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-slate-800 dark:text-white">1 - 2 Hari</div>
-              <div className="text-xs sm:text-sm text-slate-400">Tunas Bunga Sakura</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold text-xs sm:text-sm">Tahap 1</span>
-          </div>
-
-          <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-slate-800 dark:text-white">3 - 6 Hari</div>
-              <div className="text-xs sm:text-sm text-slate-400">Pohon Muda Sakura</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 font-bold text-xs sm:text-sm">Tahap 2</span>
-          </div>
-
-          <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-slate-800 dark:text-white">7 - 29 Hari</div>
-              <div className="text-xs sm:text-sm text-slate-400">Pohon Sakura Mekar (Kaika)</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-xs sm:text-sm">Tahap 3</span>
-          </div>
-
-          <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-slate-800 dark:text-white">30 - 99 Hari</div>
-              <div className="text-xs sm:text-sm text-slate-400">Pohon Sakura Rimbun (Mankai)</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 font-bold text-xs sm:text-sm">Tahap 4</span>
-          </div>
-
-          <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
-            <div>
-              <div className="font-extrabold text-amber-900 dark:text-amber-200">100+ Hari</div>
-              <div className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">Pohon Sakura Abadi</div>
-            </div>
-            <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-bold text-xs sm:text-sm">Master</span>
-          </div>
-        </div>
+        <ol className="mt-4 flex flex-col gap-1.5">
+          {SAKURA_STAGES.map((s, i) => {
+            const reached = i <= currentIdx
+            const isCurrent = i === currentIdx
+            return (
+              <li
+                key={s.name}
+                className={`flex items-center gap-3 p-3 rounded-xl border ${
+                  isCurrent
+                    ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                }`}
+              >
+                <span className={`size-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${
+                  reached ? 'bg-gradient-to-br from-rose-400 to-pink-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                }`}>
+                  {reached ? <SakuraIcon className="size-4" /> : i}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{s.name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-serif">{s.jp}</span> · {s.range}</p>
+                </div>
+                {isCurrent && <span className="text-xs font-bold text-rose-600 dark:text-rose-400 shrink-0">Kamu di sini</span>}
+              </li>
+            )
+          })}
+        </ol>
 
         <button
+          type="button"
           onClick={onClose}
-          className="w-full py-2 sm:py-2.5 bg-primary text-white font-bold rounded-xl text-xs sm:text-sm border-none cursor-pointer mt-1"
+          className="w-full h-11 mt-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm border-none cursor-pointer transition-colors"
         >
           Mengerti
         </button>
@@ -924,331 +1120,55 @@ function SakuraEvolutionModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   )
 }
 
-/* ── Unified Mobile Card: Sakura Blossom + Daily Mission (per contoh mockup) ── */
-interface UnifiedMobileSakuraMissionCardProps {
-  streakDays: number
-  history: StreakDayHistory[]
-  isFreezeToday?: boolean
-  dailyMission: DailyMissionData | null
-  missionProgress: MissionProgress | null
-  videoProgressMap: Map<string, number>
-  onOpenMissionModal?: () => void
-}
+/* ── Akses Cepat ──────────────────────────────────────────────── */
+const QUICK_ACTIONS = [
+  {
+    to: '/my-courses', label: 'Kursus Saya', hint: 'Video & kuis',
+    tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',
+    icon: <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+  },
+  {
+    to: '/kotoba', label: 'Setoran Kotoba', hint: 'Kosakata',
+    tile: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',
+    icon: <span className="font-serif font-bold text-lg leading-none">語</span>,
+  },
+  {
+    to: '/reservasi-kelas', label: 'Reservasi Kelas', hint: 'Live & offline',
+    tile: 'bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400',
+    icon: <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
+  },
+  {
+    to: '/learning-plan', label: 'Rencana Belajar', hint: 'Kalender',
+    tile: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400',
+    icon: <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+  },
+]
 
-function UnifiedMobileSakuraMissionCard({
-  streakDays,
-  history,
-  isFreezeToday,
-  dailyMission,
-  missionProgress,
-  videoProgressMap,
-  onOpenMissionModal,
-}: UnifiedMobileSakuraMissionCardProps) {
+function QuickActions() {
   const navigate = useNavigate()
-  const dayLabels = getLast7DayLabels()
-  const todayItem = history[history.length - 1]
-  const todayDone = todayItem?.done || false
-  const isTodayFreeze = isFreezeToday || todayItem?.isFreeze || false
-
-  const sakuraInfo = getSakuraStage(streakDays, isTodayFreeze)
-  const [showSakuraModal, setShowSakuraModal] = useState(false)
-  const isMissionDone = missionProgress?.isFullyCompleted ?? false
-
-  const hasVideos = (dailyMission?.selectedVideos?.length ?? 0) > 0
-  const hasQuizzes = (dailyMission?.targetQuizCount ?? 0) > 0
-  const hasKotoba = (dailyMission?.targetKotobaCount ?? 0) > 0
-  const hasAnyMission = Boolean(dailyMission && (hasVideos || hasQuizzes || hasKotoba))
-
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col gap-3.5 sm:gap-4 relative overflow-hidden">
-      {/* Ambient pink aura glow */}
-      <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-64 bg-rose-500/8 dark:bg-rose-500/12 rounded-full blur-3xl pointer-events-none" />
-
-      {/* ── TOP HEADER: Stage Title ── */}
-      <div className="flex items-center justify-between relative z-10 pb-2 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="size-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
-            <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
-              {[0, 72, 144, 216, 288].map(deg => (
-                <path
-                  key={deg}
-                  transform={`rotate(${deg} 12 12)`}
-                  d="M12 2.8 C10 6.2, 9.6 9.5, 12 12 C14.4 9.5, 14 6.2, 12 2.8 Z"
-                />
-              ))}
-              <circle cx="12" cy="12" r="2.2" className="fill-white dark:fill-slate-900" />
-              <circle cx="12" cy="12" r="1.1" className="fill-rose-500" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
-              {sakuraInfo.stageName}
-            </h2>
-            <span className="text-xs sm:text-sm text-slate-400 font-medium block truncate">
-              {sakuraInfo.japaneseName} • {streakDays} Hari Konsisten
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── CENTER: Sakura Flower Illustration + Circular Mission Progress Ring ── */}
-      <div className="flex flex-col items-center justify-center py-2 relative z-10">
-        <SakuraRingProgressBar
-          streakDays={streakDays}
-          isFreeze={isTodayFreeze}
-          dailyMission={dailyMission}
-          missionProgress={missionProgress}
-          onClick={() => setShowSakuraModal(true)}
-        />
-        
-        {/* Streak & Status Message */}
-        <div className="mt-2.5 flex flex-col items-center text-center">
-          <div className={`text-sm sm:text-base font-black leading-none tracking-tight ${sakuraInfo.colorClass}`}>
-            {streakDays} <span className="text-xs sm:text-sm font-bold text-slate-400">Hari Berturut-turut</span>
-          </div>
-
-          {isMissionDone ? (
-            <div className="mt-2 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-              <span>✦</span>
-              <span>Pohon makin tumbuh hari ini!</span>
-              <span>✦</span>
-            </div>
-          ) : (
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5 max-w-xs leading-relaxed">
-              {isTodayFreeze
-                ? 'Hari istirahat terencana (Freeze). Streak kamu tetap aman.'
-                : todayDone
-                ? 'Misi hari ini telah selesai! Sakura mekar indah.'
-                : 'Selesaikan misi harian agar sakura tetap mekar.'}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* ── MIDDLE: 7-Day History Dots in Rounded Bar ── */}
-      <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 px-3 flex items-center justify-between gap-1 border border-slate-100 dark:border-slate-800 relative z-10">
-        {history.map((item, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-            <div
-              className={`size-7 rounded-full flex items-center justify-center transition-all ${
-                item.done
-                  ? item.isFreeze
-                    ? 'bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-xs'
-                    : 'bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-xs'
-                  : 'bg-slate-200/80 dark:bg-slate-700/80 text-slate-400'
-              }`}
-              title={`${dayLabels[i]}: ${item.done ? (item.isFreeze ? 'Istirahat (Freeze)' : 'Misi Selesai') : 'Belum selesai'}`}
-            >
-              {item.done ? (
-                item.isFreeze ? (
-                  <svg className="size-3 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-                  </svg>
-                ) : (
-                  <svg className="size-3 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
-                  </svg>
-                )
-              ) : (
-                <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-              )}
-            </div>
-            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold">{dayLabels[i]}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ── BOTTOM: Daily Mission Task Bars ── */}
-      <div className="flex flex-col gap-2.5 relative z-10 pt-1">
-        <div className="flex items-center justify-between pb-0.5">
-          <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
-            Misi Harian Hari Ini
-          </h2>
-
-          {hasAnyMission && onOpenMissionModal && (
-            <button
-              type="button"
-              onClick={onOpenMissionModal}
-              className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center justify-center shrink-0 hover:text-primary dark:hover:text-primary-light"
-              title="Edit Misi Harian"
-              aria-label="Edit Misi Harian"
-            >
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {hasAnyMission && missionProgress ? (
-          <div className="flex flex-col gap-2.5">
-            {/* Task Bar 1: Video Tata Bahasa / Materi */}
-            {dailyMission!.selectedVideos.map((v, idx) => {
-              const count = videoProgressMap.get(v.id) || 0
-              const isVidDone = count >= 3
-              return (
-                <div
-                  key={v.id || idx}
-                  onClick={() => navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
-                    isVidDone
-                      ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                      : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        isVidDone ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'
-                      }`}>
-                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
-                          Bab {v.bab} (Part {v.videoNum})
-                        </h4>
-                        <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
-                          {v.title || 'Materi Video Minna no Nihongo'}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
-                      isVidDone
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}>
-                      {count}/3 Replays
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Task Bar 2: Kuis Evaluasi Bab */}
-            {dailyMission!.targetQuizCount > 0 && (
-              <div
-                onClick={() => navigate('/my-courses')}
-                className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
-                  missionProgress.quizCompleted
-                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      missionProgress.quizCompleted ? 'bg-emerald-500 text-white' : 'bg-indigo-500/10 text-indigo-500'
-                    }`}>
-                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
-                        Kuis Evaluasi Bab
-                      </h4>
-                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
-                        Target: {missionProgress.targetQuizzes} Kuis Selesai
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
-                    missionProgress.quizCompleted
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Task Bar 3: Setoran Kotoba */}
-            {dailyMission!.targetKotobaCount > 0 && (
-              <div
-                onClick={() => navigate('/kotoba')}
-                className={`p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.99] flex flex-col gap-2 ${
-                  missionProgress.kotobaCompleted
-                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-amber-400'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`size-8 rounded-lg flex items-center justify-center font-serif font-bold text-xs sm:text-sm shrink-0 ${
-                      missionProgress.kotobaCompleted ? 'bg-emerald-500 text-white' : 'bg-amber-500/10 text-amber-600'
-                    }`}>
-                      語
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
-                        Setoran Kosakata (Kotoba)
-                      </h4>
-                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block truncate">
-                        Target: {missionProgress.targetKotoba} Kosakata Disetor
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`text-xs sm:text-sm font-extrabold shrink-0 px-2.5 py-1 rounded-lg ${
-                    missionProgress.kotobaCompleted
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2.5">
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Kamu belum menyusun Misi Harian untuk hari ini.
-            </p>
-            <button
-              type="button"
-              onClick={() => onOpenMissionModal ? onOpenMissionModal() : navigate('/learning-plan')}
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-2 active:scale-95 touch-manipulation"
-            >
-              <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Susun Misi Hari Ini</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Interactive Sakura Evolution Info Modal */}
-      <SakuraEvolutionModal isOpen={showSakuraModal} onClose={() => setShowSakuraModal(false)} />
-    </div>
+    <nav aria-label="Akses cepat" className="grid grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3">
+      {QUICK_ACTIONS.map(a => (
+        <button
+          key={a.to}
+          type="button"
+          onClick={() => navigate(a.to)}
+          className={`${CARD} shadow-none hover:shadow-sm p-2.5 sm:p-3 flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-3 text-center lg:text-left cursor-pointer transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 min-h-[76px] lg:min-h-0`}
+        >
+          <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${a.tile}`}>{a.icon}</span>
+          <span className="min-w-0">
+            <span className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{a.label}</span>
+            <span className="hidden lg:block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{a.hint}</span>
+          </span>
+        </button>
+      ))}
+    </nav>
   )
 }
 
-/* ── EmbeddedUserScheduleCard Component ─────────────────────── */
+/* ── Agenda Mendatang ─────────────────────────────────────────── */
 function getRelativeDayLabel(dateStr: string, todayStr: string): string {
-  if (dateStr === todayStr) return 'Hari Ini'
+  if (dateStr === todayStr) return 'Hari ini'
   const [ty, tm, td] = todayStr.split('-').map(Number)
   const [dy, dm, dd] = dateStr.split('-').map(Number)
   const tDate = new Date(ty, tm - 1, td)
@@ -1261,17 +1181,23 @@ function getRelativeDayLabel(dateStr: string, todayStr: string): string {
   return `${Math.abs(diffDays)} hari lalu`
 }
 
-function EmbeddedUserScheduleCard({
-  userId,
-  onOpenMissionModal,
-}: {
-  userId: string
-  onOpenMissionModal?: () => void
-}) {
+const SHORT_DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
+function parseLocalDate(dateStr: string): Date | null {
+  const [y, m, d] = (dateStr || '').split('T')[0].split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d)
+}
+
+const AGENDA_LIMIT = 4
+
+function AgendaCard({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [userReservations, setUserReservations] = useState<any[]>([])
   const [userMissions, setUserMissions]         = useState<{ date: string; mission: DailyMissionData }[]>([])
   const [loading, setLoading]                   = useState(true)
+  const [selectedScheduleItem, setSelectedScheduleItem] = useState<any | null>(null)
 
   const todayStr = getTodayDateString()
 
@@ -1281,7 +1207,6 @@ function EmbeddedUserScheduleCard({
         setLoading(false)
         return
       }
-      setLoading(true)
 
       try {
         const [missionsMap, allSchedules, allReservations] = await Promise.all([
@@ -1290,7 +1215,7 @@ function EmbeddedUserScheduleCard({
           fetchReservations(),
         ])
 
-        // User reservations starting from today
+        // Kelas yang dipesan user mulai hari ini
         const myReservations = allReservations.filter(r => r.user_id === userId)
         const myReservedSchedules = myReservations
           .map(r => {
@@ -1302,9 +1227,9 @@ function EmbeddedUserScheduleCard({
 
         setUserReservations(myReservedSchedules)
 
-        // User missions starting from today
+        // Misi mulai besok (misi hari ini sudah tampil di kartu Misi Hari Ini)
         const missionsList: { date: string; mission: DailyMissionData }[] = Array.from(missionsMap.entries())
-          .filter(([date]) => date >= todayStr)
+          .filter(([date, mission]) => date > todayStr && !isNoPlanMission(mission))
           .map(([date, mission]) => ({ date, mission }))
           .sort((a, b) => a.date.localeCompare(b.date))
 
@@ -1340,20 +1265,9 @@ function EmbeddedUserScheduleCard({
     }
   }, [userId, todayStr])
 
-  // Combined plans starting from today
-  const displayedTimeline = [
-    ...userMissions.map(m => ({
-      id: `mission-${m.date}`,
-      type: 'mission' as const,
-      date: m.date,
-      mission: m.mission,
-    })),
-    ...userReservations.map(r => ({
-      id: `class-${r.id}`,
-      type: 'class' as const,
-      date: r.date || r.start_date || '',
-      schedule: r,
-    })),
+  const timeline = [
+    ...userMissions.map(m => ({ id: `mission-${m.date}`, type: 'mission' as const, date: m.date, mission: m.mission })),
+    ...userReservations.map(r => ({ id: `class-${r.id}`, type: 'class' as const, date: r.date || r.start_date || '', schedule: r })),
   ]
     .filter(item => item.date >= todayStr)
     .sort((a, b) => {
@@ -1361,271 +1275,226 @@ function EmbeddedUserScheduleCard({
       return a.type === 'class' ? -1 : 1
     })
 
-  const [selectedScheduleItem, setSelectedScheduleItem] = useState<any | null>(null)
+  const visible = timeline.slice(0, AGENDA_LIMIT)
+  const hiddenCount = timeline.length - visible.length
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-2.5 sm:gap-3 h-full min-h-0">
-      <div className="flex flex-col min-h-0 flex-1">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-              <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
-                Jadwal & Agenda Saya
-              </h2>
-            </div>
-          </div>
-
+    <section aria-label="Agenda mendatang" className={`${CARD} p-4 sm:p-5`}>
+      <CardHeader
+        icon={
+          <span className="size-10 shrink-0 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </span>
+        }
+        title="Agenda Mendatang"
+        subtitle="Kelas & rencana belajarmu"
+        action={
           <button
+            type="button"
             onClick={() => navigate('/learning-plan')}
-            title="Lihat Kalender"
-            aria-label="Lihat Kalender"
-            className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 hover:text-primary dark:hover:text-primary-light"
+            className="h-10 px-3 shrink-0 rounded-xl text-sm font-semibold text-primary dark:text-primary-lighter hover:bg-primary/5 dark:hover:bg-primary/10 bg-transparent border-none cursor-pointer transition-colors"
           >
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+            Kalender
           </button>
-        </div>
+        }
+      />
 
-        {/* Scrollable Timeline List */}
-        {loading ? (
-          <div className="py-6 text-center text-xs sm:text-sm text-slate-400">Memuat linimasa jadwalku...</div>
-        ) : displayedTimeline.length === 0 ? (
-          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-400 text-center flex flex-col items-center gap-2.5 flex-1 justify-center">
-            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Belum ada agenda belajar atau kelas terjadwal mulai hari ini.</span>
+      {loading ? (
+        <div className="mt-4 flex flex-col gap-2">
+          {[0, 1].map(i => <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />)}
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="mt-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Belum ada agenda mendatang</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Ikut kelas live atau rencanakan misi untuk hari-hari berikutnya.</p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button
-              onClick={onOpenMissionModal || (() => navigate('/learning-plan'))}
-              className="group px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold border-none cursor-pointer transition-all text-xs sm:text-sm shadow-xs flex items-center gap-1.5 min-h-[30px]"
+              type="button"
+              onClick={() => navigate('/reservasi-kelas')}
+              className="h-10 px-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold border-none cursor-pointer transition-colors"
             >
-              <span>Susun Misi Hari Ini</span>
-              <span className="size-3.5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                <svg className="size-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
+              Pesan kelas
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/learning-plan')}
+              className="h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Susun rencana
             </button>
           </div>
-        ) : (
-          <div className="space-y-2 overflow-y-auto pr-1 max-h-[260px] sm:max-h-[300px]">
-            {displayedTimeline.map(item => {
-              const isToday = item.date === todayStr
-              const relLabel = getRelativeDayLabel(item.date, todayStr)
-
-              if (item.type === 'mission') {
-                const m = item.mission
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedScheduleItem(item)}
-                    className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all hover:border-amber-500 flex flex-col gap-1 group ${
-                      isToday
-                        ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-400 dark:border-amber-800 ring-1 ring-amber-300/30 shadow-xs'
-                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-bold">
-                      <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-amber-500" />
-                        <span className="text-xs sm:text-sm">Misi Harian</span>
-                        {isToday ? (
-                          <span className="text-xs sm:text-sm bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
-                            Hari Ini
-                          </span>
-                        ) : relLabel === 'Besok' ? (
-                          <span className="text-xs sm:text-sm bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
-                            Besok
-                          </span>
-                        ) : null}
+        </div>
+      ) : (
+        <ul className="mt-3 flex flex-col">
+          {visible.map(item => {
+            const d = parseLocalDate(item.date)
+            const rel = getRelativeDayLabel(item.date, todayStr)
+            const isToday = item.date === todayStr
+            const isClass = item.type === 'class'
+            const sch = isClass ? item.schedule : null
+            const m = !isClass ? item.mission : null
+            const title = isClass
+              ? sch.title
+              : m!.selectedVideos.length > 0
+                ? m!.selectedVideos.map(v => `Bab ${v.bab} · Video ${v.videoNum}`).join(', ')
+                : 'Misi tanpa video'
+            const meta = isClass
+              ? `${sch.start_time || ''}${sch.start_time ? ' WIB · ' : ''}${sch.type === 'online' ? 'Online' : 'Offline'}`
+              : [m!.selectedVideos.length > 0 && `${m!.selectedVideos.length} video`, m!.targetQuizCount > 0 && `${m!.targetQuizCount} kuis`, m!.targetKotobaCount > 0 && `${m!.targetKotobaCount} kotoba`].filter(Boolean).join(' · ')
+            return (
+              <li key={item.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedScheduleItem(item)}
+                  className="w-full py-2.5 px-1 -mx-1 rounded-xl flex items-center gap-3 text-left bg-transparent border-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                >
+                  <span className={`w-12 shrink-0 rounded-xl py-1.5 flex flex-col items-center leading-none ${
+                    isToday ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                  }`}>
+                    <span className={`text-[11px] font-semibold ${isToday ? 'text-white/85' : 'text-slate-500 dark:text-slate-400'}`}>{d ? SHORT_DAYS[d.getDay()] : ''}</span>
+                    <span className="text-lg font-bold tabular-nums mt-0.5">{d ? d.getDate() : '–'}</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className={`text-xs font-semibold ${isClass ? 'text-sky-600 dark:text-sky-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        {isClass ? 'Kelas' : 'Misi'}
                       </span>
-                      <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold group-hover:text-amber-600 transition-colors">
-                        {formatIndonesianFullDate(item.date)}
-                      </span>
-                    </div>
+                      <span className="text-xs text-slate-400">· {rel}</span>
+                    </span>
+                    <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{title}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{meta || (d ? `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}` : '')}</span>
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-slate-300 dark:text-slate-600" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
-                    <div className="font-bold text-slate-800 dark:text-white truncate text-xs sm:text-sm">
-                      {m.selectedVideos.length > 0
-                        ? m.selectedVideos.map(v => `Bab ${v.bab} (Part ${v.videoNum})`).join(', ')
-                        : 'Misi Mandiri Non-Video'}
-                    </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate('/learning-plan')}
+          className="mt-2 w-full h-10 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-colors"
+        >
+          Lihat {hiddenCount} agenda lainnya
+        </button>
+      )}
 
-                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
-                      <span>Target: {m.targetReplayCount}x Replays</span>
-                      <span>• {m.targetQuizCount} Kuis • {m.targetKotobaCount} Kotoba</span>
-                    </div>
-                  </div>
-                )
-              } else {
-                const sch = item.schedule
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedScheduleItem(item)}
-                    className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-1 group ${
-                      isToday
-                        ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-700 ring-1 ring-sky-300/30 shadow-xs'
-                        : sch.type === 'online'
-                          ? 'bg-sky-50/70 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100 hover:border-sky-400'
-                          : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 hover:border-emerald-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-sky-500" />
-                        <span className="text-xs sm:text-sm">{sch.type === 'online' ? 'Kelas Online' : 'Kelas Offline'}</span>
-                        {isToday ? (
-                          <span className="text-xs sm:text-sm bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold uppercase">
-                            Hari Ini
-                          </span>
-                        ) : relLabel === 'Besok' ? (
-                          <span className="text-xs sm:text-sm bg-sky-500 text-white px-1.5 py-0.2 rounded font-bold uppercase">
-                            Besok
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold">
-                        {formatIndonesianFullDate(sch.date)} ({sch.start_time} WIB)
-                      </span>
-                    </div>
-
-                    <div className="font-bold truncate text-slate-800 dark:text-white text-xs sm:text-sm">
-                      {sch.title}
-                    </div>
-
-                    <div className="text-xs sm:text-sm opacity-80 flex items-center justify-between">
-                      <span>Sensei: {sch.instructor_name || sch.instructor || 'Sensei Dojo'}</span>
-                      <span className="font-bold px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-900/60">
-                        Terdaftar
-                      </span>
-                    </div>
-                  </div>
-                )
-              }
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Detail Pop-up Modal View */}
+      {/* Detail agenda (bottom sheet di HP) */}
       {selectedScheduleItem && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[999] animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-sm sm:max-w-md w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-3.5 sm:gap-4 animate-scale-up">
-            <div className="flex justify-between items-start pb-2 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">
-                  {selectedScheduleItem.type === 'mission' ? 'Detail Misi Mandiri' : 'Detail Kelas Live'}
-                </span>
-                <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug mt-0.5">
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
+          onClick={() => setSelectedScheduleItem(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 px-5 pt-3 sm:pt-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6 max-h-[90dvh] overflow-y-auto animate-fade-in-up flex flex-col gap-4"
+          >
+            <div className="sm:hidden mx-auto h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className={`text-xs font-semibold ${selectedScheduleItem.type === 'class' ? 'text-sky-600 dark:text-sky-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   {selectedScheduleItem.type === 'mission'
-                    ? `Misi Harian (${selectedScheduleItem.date})`
-                    : selectedScheduleItem.schedule.title}
+                    ? 'Misi belajar mandiri'
+                    : selectedScheduleItem.schedule.type === 'online' ? 'Kelas online' : 'Kelas offline'}
+                </p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug mt-0.5">
+                  {selectedScheduleItem.type === 'mission' ? 'Rencana misi harian' : selectedScheduleItem.schedule.title}
                 </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  {formatIndonesianFullDate(selectedScheduleItem.date)}
+                  {selectedScheduleItem.type === 'class' && selectedScheduleItem.schedule.start_time && (
+                    <> · {selectedScheduleItem.schedule.start_time}{selectedScheduleItem.schedule.end_time ? `–${selectedScheduleItem.schedule.end_time}` : ''} WIB</>
+                  )}
+                </p>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedScheduleItem(null)}
-                className="size-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 font-bold border-none cursor-pointer flex items-center justify-center text-xs sm:text-sm"
+                aria-label="Tutup"
+                className="size-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer flex items-center justify-center"
               >
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {selectedScheduleItem.type === 'mission' ? (
-              <div className="space-y-3 text-xs sm:text-sm">
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-900 flex flex-col gap-1">
-                  <div className="font-extrabold text-amber-900 dark:text-amber-200 text-xs sm:text-sm">
-                    Tanggal Pelaksanaan: {formatIndonesianFullDate(selectedScheduleItem.date)}
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">
-                    Rencana belajar mandiri harian yang telah kamu susun untuk menguji pemahaman dan menjaga streak belajarmu.
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
-                  <div className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm">Video Pembelajaran:</div>
-                  {selectedScheduleItem.mission.selectedVideos.length > 0 ? (
-                    selectedScheduleItem.mission.selectedVideos.map((v: any, idx: number) => (
-                      <div key={v.id || idx} className="p-2 sm:p-2.5 bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-2">
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-800 dark:text-white truncate text-xs sm:text-sm">
-                            Jilid {v.jilid} · Bab {v.bab} (Part {v.videoNum})
-                          </div>
-                          <div className="text-xs sm:text-sm text-slate-400 truncate">{v.title}</div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedScheduleItem(null)
-                            navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)
-                          }}
-                          className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg sm:rounded-xl text-xs sm:text-sm border-none cursor-pointer shrink-0 transition-all shadow-xs"
-                        >
-                          Tonton
-                        </button>
+              <div className="flex flex-col gap-2">
+                {selectedScheduleItem.mission.selectedVideos.length > 0 ? (
+                  selectedScheduleItem.mission.selectedVideos.map((v: any, idx: number) => (
+                    <div key={v.id || idx} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">Jilid {v.jilid} · Bab {v.bab} · Video {v.videoNum}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{v.title}</p>
                       </div>
-                    ))
-                  ) : (
-                    <span className="text-slate-400 text-xs sm:text-sm">Tidak ada video khusus.</span>
-                  )}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedScheduleItem(null)
+                          navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)
+                        }}
+                        className="h-10 px-3.5 shrink-0 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold border-none cursor-pointer transition-colors"
+                      >
+                        Tonton
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada video di misi ini.</p>
+                )}
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Target: {selectedScheduleItem.mission.targetQuizCount} kuis · {selectedScheduleItem.mission.targetKotobaCount} kotoba
+                </p>
               </div>
             ) : (
-              <div className="space-y-3 text-xs sm:text-sm">
-                <div className={`p-3 rounded-xl sm:rounded-2xl border flex flex-col gap-1.5 ${
-                  selectedScheduleItem.schedule.type === 'online'
-                    ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100'
-                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100'
-                }`}>
-                  <div className="font-black text-xs sm:text-sm">
-                    {selectedScheduleItem.schedule.type === 'online' ? 'Kelas Online (Live Zoom / Meet)' : 'Kelas Offline (Tatap Muka)'}
-                  </div>
-                  <div className="font-semibold text-xs sm:text-sm">
-                    {formatIndonesianFullDate(selectedScheduleItem.schedule.date)} ({selectedScheduleItem.schedule.start_time} - {selectedScheduleItem.schedule.end_time} WIB)
-                  </div>
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex flex-col gap-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-slate-500 dark:text-slate-400">Pengajar</span>
+                  <span className="font-semibold text-slate-900 dark:text-white text-right">{selectedScheduleItem.schedule.instructor_name || selectedScheduleItem.schedule.instructor || 'Sensei Dojo'}</span>
                 </div>
-
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-                  <div className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm">Pengajar (Sensei):</div>
-                  <div className="font-bold text-slate-700 dark:text-slate-200 text-xs sm:text-sm">
-                    {selectedScheduleItem.schedule.instructor_name || selectedScheduleItem.schedule.instructor || 'Sensei Dojo'}
+                {selectedScheduleItem.schedule.type === 'online' && selectedScheduleItem.schedule.meet_url && (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400 block mb-1">Tautan kelas</span>
+                    <a
+                      href={selectedScheduleItem.schedule.meet_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-600 dark:text-sky-400 font-semibold break-all hover:underline"
+                    >
+                      {selectedScheduleItem.schedule.meet_url}
+                    </a>
                   </div>
-                  {selectedScheduleItem.schedule.type === 'online' && (
-                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-400 block mb-1 font-semibold text-xs sm:text-sm">Tautan Kelas:</span>
-                      <a
-                        href={selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sky-600 dark:text-sky-400 font-mono text-xs sm:text-sm font-bold select-all bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1.5 rounded-lg inline-block break-all hover:underline"
-                      >
-                        {selectedScheduleItem.schedule.meet_url || 'https://zoom.us/j/kaiwadojo-live-session'}
-                      </a>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
 
-            <div className="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
-              {selectedScheduleItem.type === 'mission' && onOpenMissionModal && (
+            <div className="flex gap-2">
+              {selectedScheduleItem.type === 'class' && (
                 <button
-                  onClick={() => {
-                    setSelectedScheduleItem(null)
-                    onOpenMissionModal()
-                  }}
-                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold rounded-xl border-none cursor-pointer"
+                  type="button"
+                  onClick={() => { setSelectedScheduleItem(null); navigate('/reservasi-kelas') }}
+                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer transition-colors"
                 >
-                  Ubah Misi Hari Ini
+                  Buka reservasi
+                </button>
+              )}
+              {selectedScheduleItem.type === 'mission' && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedScheduleItem(null); navigate('/learning-plan') }}
+                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer transition-colors"
+                >
+                  Ubah di Rencana Belajar
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => setSelectedScheduleItem(null)}
-                className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold rounded-xl border-none cursor-pointer"
+                className="h-11 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold border-none cursor-pointer transition-colors"
               >
                 Tutup
               </button>
@@ -1633,7 +1502,7 @@ function EmbeddedUserScheduleCard({
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -1920,488 +1789,216 @@ export default function Dashboard() {
     return <DashboardSkeleton />
   }
 
+  /* ── Data personal untuk hero ── */
+  const todayStr = getTodayDateString()
+  const firstName = (profile?.full_name || '').trim().split(/\s+/)[0] || 'Pelajar'
+  const isRestDay = isNoPlanMission(dailyMission)
+  const missionTasks = buildMissionTasks(dailyMission, missionProgress, videoProgressMap)
+  const remainingTasks = missionTasks.filter(task => !task.done)
+  const missionDone = missionTasks.length > 0 && (missionProgress?.isFullyCompleted ?? false)
+  const missionPct = Math.min(100, Math.max(0, Math.round(missionProgress?.overallPct ?? 0)))
+
+  const heroMessage = !dailyMission
+    ? stats.streakDays > 0
+      ? `Streak ${stats.streakDays} harimu menunggu. Susun misi kecil hari ini agar sakura-mu tetap mekar.`
+      : 'Yuk mulai dengan target kecil hari ini. Satu video saja sudah langkah yang berarti.'
+    : isRestDay
+      ? 'Hari ini jadwal istirahatmu. Streak tetap aman, nikmati harimu!'
+      : missionDone
+        ? `Misi hari ini tuntas! ${stats.streakDays > 0 ? `${stats.streakDays} hari beruntun, ` : ''}素晴らしい!`
+        : remainingTasks.length === missionTasks.length
+          ? `Ada ${missionTasks.length} tugas menantimu hari ini. Mulai dari yang paling ringan, ya!`
+          : `Tinggal ${remainingTasks.length} tugas lagi untuk menuntaskan misi hari ini. Semangat!`
+
+  const heroAction: { label: string; onClick: () => void } =
+    !dailyMission
+      ? { label: 'Susun misi hari ini', onClick: () => setShowMissionModal(true) }
+      : remainingTasks.length > 0
+        ? { label: remainingTasks.length === missionTasks.length ? 'Mulai misi' : 'Lanjutkan misi', onClick: () => navigate(remainingTasks[0].path) }
+        : { label: missionDone ? 'Rencanakan besok' : 'Buka rencana belajar', onClick: () => navigate('/learning-plan') }
+
+  const heroStats = [
+    { label: 'Hari beruntun', value: String(stats.streakDays) },
+    { label: 'Misi hari ini', value: !dailyMission ? '–' : isRestDay ? 'Libur' : `${missionPct}%` },
+    { label: 'Jilid 1', value: `${bookProgress.jilid1Pct}%` },
+  ]
+
+  const hasUnread = unreadAnnouncements.length > 0
+  const bannerAnnouncement = hasUnread ? unreadAnnouncements[0] : announcements[0]
+
   return (
-    <main className="flex-1 px-3.5 py-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
+    <main className="flex-1 px-4 py-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
 
-      {/* Hero Header with Personalized Japanese Greeting & Badges */}
-      <header
-        className="relative overflow-hidden rounded-xl sm:rounded-2xl px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 mb-3.5 sm:mb-5 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3.5 sm:gap-5 shadow-md animate-fade-in-up bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(185,28,28,0.94), rgba(127,29,29,0.88)), url('/japan-background(2).jpg')",
-        }}
-      >
-        <div className="absolute -top-14 -right-14 size-48 sm:size-64 bg-white/5 rounded-full pointer-events-none" />
-        <div className="absolute -bottom-16 right-20 size-36 sm:size-48 bg-white/[0.04] rounded-full pointer-events-none" />
+      {/* ── Hero: sapaan personal, status hari ini, aksi utama ── */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark rounded-2xl p-4 sm:p-6 lg:p-7 mb-4 sm:mb-6 text-white shadow-md animate-fade-in">
+        <div className="absolute -top-16 -right-16 size-60 bg-white/10 rounded-full pointer-events-none" />
+        <span aria-hidden="true" className="absolute -bottom-12 right-6 sm:right-1/3 font-serif font-black text-[10rem] sm:text-[12rem] leading-none text-white/[0.06] select-none pointer-events-none">道</span>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4.5 w-full">
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="size-10 sm:size-14 lg:size-16 rounded-xl sm:rounded-2xl border-2 border-white/30 object-cover shadow-md shrink-0"
-              />
-            ) : (
-              <div className="size-10 sm:size-14 lg:size-16 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-bold text-white text-sm sm:text-base shadow-md font-serif shrink-0">
-                {profile?.full_name?.[0] || '学'}
-              </div>
-            )}
-
-            <div className="min-w-0 flex-1">
-              {profile?.group_name && (
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="bg-white/15 backdrop-blur-md text-white text-xs sm:text-sm font-bold px-2 py-0.2 rounded-full border border-white/20 truncate max-w-[150px]">
-                    Grup: {profile.group_name}
-                  </span>
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-5 lg:gap-10 items-center">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="size-12 sm:size-14 rounded-2xl border-2 border-white/30 object-cover shrink-0"
+                />
+              ) : (
+                <div className="size-12 sm:size-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center font-bold text-xl shrink-0">
+                  {firstName[0]?.toUpperCase() || '学'}
                 </div>
               )}
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-white/80 truncate">
+                  {formatIndonesianFullDate(todayStr)}
+                  {profile?.group_name && <span className="hidden sm:inline"> · Grup {profile.group_name}</span>}
+                </p>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight truncate">
+                  {greetingJp}, {firstName}!
+                </h1>
+                <p className="font-serif text-sm text-white/70 leading-tight">{greetingKanji}</p>
+              </div>
+            </div>
 
-              <h1 className="text-sm sm:text-base font-extrabold text-white leading-tight truncate">
-                {greetingJp}, {profile?.full_name || 'Pelajar'}!
-              </h1>
-              <p className="text-xs sm:text-sm text-white/90 font-normal mt-0.5 leading-snug sm:leading-relaxed">
-                {greetingKanji} • Latihan percakapan bahasa Jepang harianmu.
-              </p>
+            <p className="text-sm sm:text-[15px] text-white/90 leading-relaxed mt-3.5 max-w-xl">{heroMessage}</p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={heroAction.onClick}
+                className="h-11 px-5 rounded-xl bg-white text-primary hover:bg-white/90 text-sm font-bold border-none cursor-pointer transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {heroAction.label}
+                <ChevronRight className="size-4" />
+              </button>
+              {profile?.group_name && (
+                <span className="sm:hidden text-xs font-semibold bg-white/15 border border-white/20 px-2.5 py-1 rounded-full truncate max-w-[45vw]">
+                  Grup {profile.group_name}
+                </span>
+              )}
             </div>
           </div>
+
+          <dl className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-[22rem]">
+            {heroStats.map(s => (
+              <div key={s.label} className="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5 sm:py-3">
+                <dt className="text-[11px] sm:text-xs text-white/75 leading-tight">{s.label}</dt>
+                <dd className="text-xl sm:text-2xl font-black tabular-nums leading-tight mt-0.5">{s.value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </header>
 
-      {/* Papan Pengumuman Banner (if active announcements exist) */}
-      {announcements.length > 0 && (
-        <div
+      {/* ── Pengumuman ── */}
+      {bannerAnnouncement && (
+        <button
+          type="button"
           onClick={() => setShowAnnouncementModal(true)}
-          className="bg-gradient-to-r from-red-600/10 via-rose-500/5 to-amber-500/10 dark:from-red-950/40 dark:via-rose-950/20 dark:to-amber-950/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-red-500/20 dark:border-red-800/40 shadow-xs mb-3.5 sm:mb-5 flex items-center justify-between gap-2.5 cursor-pointer hover:border-red-500/40 transition-all hover:shadow-xs group"
+          className={`w-full mb-4 sm:mb-6 p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 text-left cursor-pointer transition-colors group ${
+            hasUnread
+              ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 hover:border-rose-300'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-8 sm:size-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <svg className="size-4 sm:size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                  Papan Pengumuman Dojo
-                </span>
-                {unreadAnnouncements.length > 0 ? (
-                  <span className="text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
-                    {unreadAnnouncements.length} Baru
-                  </span>
-                ) : (
-                  <span className="text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
-                    Terkini
-                  </span>
-                )}
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                {unreadAnnouncements.length > 0 ? unreadAnnouncements[0]?.title : announcements[0]?.title}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary dark:text-red-400 shrink-0 group-hover:translate-x-0.5 transition-transform">
-            <span className="hidden sm:inline">Buka</span>
-            <span className="size-4 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+          <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${hasUnread ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pengumuman</span>
+              {hasUnread && (
+                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-white leading-none">{unreadAnnouncements.length} baru</span>
+              )}
             </span>
-          </div>
-        </div>
+            <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{bannerAnnouncement.title}</span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-slate-400 group-hover:text-primary transition-colors" />
+        </button>
       )}
 
-      {/* Fakta Jepang Hari Ini — insight singkat setiap kali membuka website */}
-      <div className="mb-3.5 sm:mb-5">
-        <JapanFactCard userId={profile?.id || user?.id} />
-      </div>
-
-      {/* ── MOBILE: Combined Sakura Blossom & Daily Mission Card (lg:hidden) ── */}
-      <div className="block lg:hidden mb-3.5">
-        <UnifiedMobileSakuraMissionCard
-          streakDays={stats.streakDays}
-          history={streakHistory}
-          isFreezeToday={isNoPlanMission(dailyMission)}
-          dailyMission={dailyMission}
-          missionProgress={missionProgress}
-          videoProgressMap={videoProgressMap}
-          onOpenMissionModal={() => setShowMissionModal(true)}
-        />
-      </div>
-
-      {/* ── DESKTOP: Separate Daily Mission Dashboard Widget (hidden lg:flex) ── */}
-      <div className="hidden lg:flex flex-col bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-5 gap-3.5">
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="size-8 sm:size-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
-              <svg className="size-4.5 sm:size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="9" />
-                <circle cx="12" cy="12" r="5" />
-                <circle cx="12" cy="12" r="2" fill="currentColor" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
-                  Misi Harian Hari Ini
-                </h2>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                {dailyMission
-                  ? `Target: ${dailyMission.selectedVideos.length > 0 ? dailyMission.selectedVideos.map(v => `Bab ${v.bab} Part ${v.videoNum}`).join(', ') : 'Tanpa Video'} (${missionProgress?.targetReplays}x Replays) ${dailyMission.targetQuizCount > 0 ? `• ${dailyMission.targetQuizCount} Kuis` : ''} ${dailyMission.targetKotobaCount > 0 ? `• ${dailyMission.targetKotobaCount} Kotoba` : ''}`
-                  : 'Buat misi harian kamu untuk mulai menambah streak sakura hari ini!'}
-              </p>
-            </div>
-          </div>
-
-          {dailyMission && (
-            <button
-              type="button"
-              onClick={() => setShowMissionModal(true)}
-              className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all flex items-center justify-center shrink-0 hover:text-primary dark:hover:text-primary-light"
-              title="Edit Misi Harian"
-              aria-label="Edit Misi Harian"
-            >
-              <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {dailyMission && missionProgress ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-            {dailyMission.selectedVideos.length > 0 ? (
-              dailyMission.selectedVideos.map((v, idx) => {
-                const count = videoProgressMap.get(v.id) || 0
-                const isVidDone = count >= 3
-                return (
-                  <button
-                    key={v.id || idx}
-                    onClick={() => navigate(`/my-courses?jilid=${v.jilid}&bab=${v.bab}&item=${v.videoNum}`)}
-                    className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md group flex flex-col justify-between gap-2.5 ${
-                      isVidDone
-                        ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
-                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-primary'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
-                        <span className="truncate pr-1 group-hover:text-primary transition-colors flex items-center gap-1.5">
-                          <svg className="size-3.5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                          <span className="truncate">Jilid {v.jilid} · Bab {v.bab} (Part {v.videoNum})</span>
-                        </span>
-                        <span className={isVidDone ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-primary dark:text-red-400 font-bold shrink-0 text-xs sm:text-sm'}>
-                          {count}/3x
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-400 mb-1.5 truncate">
-                        {v.title}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1.5">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
-                        />
-                      </div>
-                      <div className="text-xs sm:text-sm font-extrabold text-primary dark:text-red-400 flex items-center justify-between">
-                        <span>Tonton Video</span>
-                        <span className="size-3.5 sm:size-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                          <svg className="size-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })
-            ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
-                <span className="font-bold">Rencana Video</span>
-                <span className="text-xs sm:text-sm">Tidak ada video yang direncanakan</span>
-              </div>
-            )}
-
-            {/* Target Kuis Card */}
-            {dailyMission.targetQuizCount > 0 ? (
-              <button
-                onClick={() => {
-                  const targetBab = dailyMission.selectedVideos[0]?.bab || 1
-                  const targetJilid = dailyMission.selectedVideos[0]?.jilid || 1
-                  navigate(`/my-courses?jilid=${targetJilid}&bab=${targetBab}&item=4`)
-                }}
-                className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md group flex flex-col justify-between gap-2.5 ${
-                  missionProgress.quizCompleted
-                    ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
-                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-indigo-500'
-                }`}
-              >
-                <div>
-                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
-                    <span className="group-hover:text-indigo-600 transition-colors flex items-center gap-1.5 truncate pr-1">
-                      <svg className="size-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                      <span className="truncate">Kuis Evaluasi Bab</span>
-                    </span>
-                    <span className={missionProgress.quizCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-indigo-600 dark:text-indigo-400 font-bold shrink-0 text-xs sm:text-sm'}>
-                      {missionProgress.actualQuizzes}/{missionProgress.targetQuizzes}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-400 mb-1.5">
-                    Target: {missionProgress.targetQuizzes} kuis selesai
-                  </p>
-                </div>
-
-                <div>
-                  <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1.5">
-                    <div
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (missionProgress.actualQuizzes / missionProgress.targetQuizzes) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
-                    <span>Mulai Kuis</span>
-                    <span className="size-3.5 sm:size-4 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                      <svg className="size-2 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
-                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs sm:text-sm mb-1">Kuis Evaluasi Bab</div>
-                <p className="text-xs sm:text-sm text-slate-400">Tidak ada kuis yang direncanakan</p>
-              </div>
-            )}
-
-            {/* Target Kotoba Card */}
-            {dailyMission.targetKotobaCount > 0 ? (
-              <button
-                onClick={() => navigate('/kotoba')}
-                className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md group flex flex-col justify-between gap-2.5 ${
-                  missionProgress.kotobaCompleted
-                    ? 'bg-emerald-50/90 border-emerald-200 hover:border-emerald-400'
-                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-amber-500'
-                }`}
-              >
-                <div>
-                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-800 dark:text-white mb-1">
-                    <span className="group-hover:text-amber-600 transition-colors flex items-center gap-1.5 truncate pr-1">
-                      <svg className="size-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                      <span className="truncate">Setoran Kotoba</span>
-                    </span>
-                    <span className={missionProgress.kotobaCompleted ? 'text-emerald-700 dark:text-emerald-400 font-extrabold shrink-0 text-xs sm:text-sm' : 'text-amber-600 dark:text-amber-400 font-bold shrink-0 text-xs sm:text-sm'}>
-                      {missionProgress.actualKotoba}/{missionProgress.targetKotoba}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-400 mb-1.5">
-                    Target: {missionProgress.targetKotoba} setoran selesai
-                  </p>
-                </div>
-
-                <div>
-                  <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1.5">
-                    <div
-                      className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (missionProgress.actualKotoba / missionProgress.targetKotoba) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 flex items-center justify-between">
-                    <span>Buka Setoran</span>
-                    <span className="size-3.5 sm:size-4 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                      <svg className="size-2 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-400 text-xs sm:text-sm flex flex-col justify-center min-h-[75px] sm:min-h-[100px]">
-                <div className="font-extrabold text-slate-700 dark:text-slate-200 text-xs sm:text-sm mb-1">Setoran Kotoba</div>
-                <p className="text-xs sm:text-sm text-slate-400">Tidak ada kotoba yang direncanakan</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2.5">
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Kamu belum menyusun Misi Harian untuk hari ini.
-            </p>
-            <button
-              onClick={() => setShowMissionModal(true)}
-              className="group px-3 sm:px-3.5 py-1 sm:py-1.5 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-extrabold rounded-lg sm:rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center gap-1.5 touch-manipulation min-h-[30px] sm:min-h-[34px]"
-            >
-              <span>Susun Misi Hari Ini</span>
-              <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                <svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Streak Sakura & Embedded Schedule Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-3.5 sm:gap-5 mb-4 sm:mb-6 items-stretch">
-        <div className="flex flex-col gap-3.5 sm:gap-5">
-          {/* Desktop StreakCard (hidden on mobile, because merged into Unified Card) */}
-          <div className="hidden lg:block h-full">
-            <StreakCard
-              streakDays={stats.streakDays}
-              history={streakHistory}
-              isFreezeToday={isNoPlanMission(dailyMission)}
+      {/* ── Konten utama ──
+          HP: satu kolom, urutan diatur dengan `order` sesuai prioritas (misi → akses cepat → streak → agenda → fakta → progres).
+          Desktop: dua kolom (utama | samping). */}
+      <div className="flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:gap-6 lg:items-start">
+        <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
+          <div className="order-1">
+            <TodayMissionCard
               dailyMission={dailyMission}
               missionProgress={missionProgress}
+              videoProgressMap={videoProgressMap}
               onOpenMissionModal={() => setShowMissionModal(true)}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-            {/* Shortcut 1: Jurnal Kosakata */}
-            <button
-              onClick={() => navigate('/kotoba')}
-              className="bg-amber-500 text-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-2 sm:gap-3 shadow-xs cursor-pointer border-none transition-all hover:-translate-y-0.5 hover:shadow-md text-left group touch-manipulation min-h-[50px] sm:min-h-[58px]"
-            >
-              <span className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-amber-600/30 border border-amber-300/40 text-amber-100 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 font-serif shadow-xs">
-                語
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm sm:text-base font-bold leading-snug truncate">Jurnal Kosakata</div>
-                <div className="text-white/80 text-xs sm:text-sm mt-0.5 truncate block">Catatan Kotoba</div>
-              </div>
-              <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-white/20 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
-                <svg className="size-2 sm:size-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </button>
-
-            {/* Shortcut 2: Reservasi Kelas */}
-            <button
-              onClick={() => navigate('/reservasi-kelas')}
-              className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-2 sm:gap-3 shadow-xs border border-slate-200 dark:border-slate-800 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-sky-500 text-left group touch-manipulation min-h-[50px] sm:min-h-[58px]"
-            >
-              <span className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-sky-500/10 dark:bg-sky-400/20 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
-                <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-snug truncate">Reservasi Kelas</div>
-                <div className="text-slate-400 text-xs sm:text-sm mt-0.5 truncate block">Live & Offline</div>
-              </div>
-              <span className="hidden sm:flex ml-auto size-4.5 sm:size-5 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center group-hover:translate-x-0.5 transition-transform shrink-0">
-                <svg className="size-2 sm:size-2.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Embedded Schedule View Card */}
-        <div className="h-full">
-          <EmbeddedUserScheduleCard
-            userId={user?.id || ''}
-            onOpenMissionModal={() => setShowMissionModal(true)}
-          />
-        </div>
-      </div>
-
-      {/* Progress Preview for Minna no Nihongo Jilid 1 & 2 */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex justify-between items-center mb-2.5 sm:mb-3.5">
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 leading-tight">
-              <svg className="size-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span>{t('dash_book_progress_title', 'Progress Belajar Buku')}</span>
-            </h2>
-          </div>
-          <button
-            onClick={() => navigate('/my-courses')}
-            title={t('dash_open_course_btn', 'Buka Kursus')}
-            aria-label={t('dash_open_course_btn', 'Buka Kursus')}
-            className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shrink-0 hover:text-primary dark:hover:text-primary-light"
-          >
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
-          {/* Card 1: Jilid 1 */}
-          <div
-            onClick={() => navigate('/my-courses')}
-            className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-50/80 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/60 cursor-pointer transition-all hover:border-primary hover:shadow-md flex flex-col gap-2 sm:gap-2.5 group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="size-7.5 sm:size-9 rounded-lg sm:rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                  <svg className="size-3.5 sm:size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_1_title', 'Jilid 1 (Dasar I)')}</h3>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-300 font-semibold mb-1">
-                <span>Pencapaian: {bookProgress.jilid1DoneItems}/125 Selesai</span>
-                <span>{bookProgress.jilid1Pct}%</span>
-              </div>
-              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-700"
-                  style={{ width: `${bookProgress.jilid1Pct}%` }}
-                />
-              </div>
-            </div>
+          <div className="order-5">
+            <JapanFactCard userId={profile?.id || user?.id} />
           </div>
 
-          {/* Card 2: Jilid 2 */}
-          <div
-            onClick={() => navigate('/my-courses')}
-            className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md flex flex-col gap-2.5 group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="size-8 sm:size-9 rounded-lg sm:rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white truncate">Minna no Nihongo {t('dash_jilid_2_title', 'Jilid 2 (Dasar II)')}</h3>
-                </div>
-              </div>
+          {/* Progres buku */}
+          <section aria-label="Progres buku" className={`order-6 ${CARD} p-4 sm:p-5`}>
+            <CardHeader
+              icon={
+                <span className="size-10 shrink-0 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                </span>
+              }
+              title={t('dash_book_progress_title', 'Progres Belajar Buku')}
+              subtitle="Minna no Nihongo"
+              action={
+                <button
+                  type="button"
+                  onClick={() => navigate('/my-courses')}
+                  className="h-10 px-3 shrink-0 rounded-xl text-sm font-semibold text-primary dark:text-primary-lighter hover:bg-primary/5 dark:hover:bg-primary/10 bg-transparent border-none cursor-pointer transition-colors"
+                >
+                  {t('dash_open_course_btn', 'Buka Kursus')}
+                </button>
+              }
+            />
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: t('dash_jilid_1_title', 'Jilid 1 (Dasar I)'), pct: bookProgress.jilid1Pct, done: bookProgress.jilid1DoneItems, bar: 'bg-primary' },
+                { label: t('dash_jilid_2_title', 'Jilid 2 (Dasar II)'), pct: bookProgress.jilid2Pct, done: bookProgress.jilid2DoneItems, bar: 'bg-emerald-500' },
+              ].map(book => (
+                <button
+                  key={book.label}
+                  type="button"
+                  onClick={() => navigate('/my-courses')}
+                  className="text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                >
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">{book.label}</span>
+                    <span className="text-lg font-black tabular-nums text-slate-900 dark:text-white">{book.pct}%</span>
+                  </span>
+                  <span className="block h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
+                    <span className={`block h-full rounded-full transition-all duration-700 ${book.bar}`} style={{ width: `${book.pct}%` }} />
+                  </span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400 mt-1.5">{book.done} dari 125 materi selesai</span>
+                </button>
+              ))}
             </div>
+          </section>
+        </div>
 
-            <div>
-              <div className="flex justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-300 font-semibold mb-1">
-                <span>Pencapaian: {bookProgress.jilid2DoneItems}/125 Selesai</span>
-                <span>{bookProgress.jilid2Pct}%</span>
-              </div>
-              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-600 rounded-full transition-all duration-700"
-                  style={{ width: `${bookProgress.jilid2Pct}%` }}
-                />
-              </div>
-            </div>
+        <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
+          <div className="order-2">
+            <QuickActions />
+          </div>
+
+          <div className="order-3">
+            <SakuraStreakCard
+              streakDays={stats.streakDays}
+              history={streakHistory}
+              isFreezeToday={isRestDay}
+              dailyMission={dailyMission}
+              missionProgress={missionProgress}
+            />
+          </div>
+
+          <div className="order-4">
+            <AgendaCard userId={user?.id || ''} />
           </div>
         </div>
       </div>

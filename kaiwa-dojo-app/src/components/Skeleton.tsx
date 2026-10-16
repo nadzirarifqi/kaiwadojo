@@ -78,33 +78,23 @@ export function ScheduleCardSkeleton({ count = 4 }: { count?: number }) {
 /* ── Dashboard Skeleton ── */
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-8 w-full p-3 sm:p-6 lg:p-8 animate-fade-in">
-      {/* Hero Banner Skeleton */}
-      <Skeleton className="h-44 sm:h-52 w-full rounded-3xl" />
+    <div className="w-full px-4 py-4 sm:p-6 lg:p-8 animate-fade-in">
+      {/* Hero */}
+      <Skeleton className="h-60 sm:h-56 lg:h-48 w-full rounded-2xl mb-4 sm:mb-6" />
 
-      {/* Stats Row Skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, idx) => (
-          <div key={idx} className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-            <Skeleton className="size-12 rounded-2xl shrink-0" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-3 w-16 rounded-md" />
-              <Skeleton className="h-6 w-24 rounded-lg" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Grid Skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Skeleton className="h-8 w-48 rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-3xl" />
-          <Skeleton className="h-48 w-full rounded-3xl" />
+      {/* Konten utama: kolom utama | kolom samping */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] gap-4 sm:gap-5 lg:gap-6">
+        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
+          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-2xl" />
         </div>
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-36 rounded-xl" />
-          <Skeleton className="h-80 w-full rounded-3xl" />
+        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
+          <div className="grid grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <Skeleton key={idx} className="h-[76px] lg:h-16 rounded-2xl" />
+            ))}
+          </div>
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </div>
       </div>
     </div>
