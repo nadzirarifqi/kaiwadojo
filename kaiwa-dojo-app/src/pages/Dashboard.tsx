@@ -37,6 +37,7 @@ import {
 import AnnouncementModal from '../components/AnnouncementModal'
 import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
 import JapanFactCard from '../components/JapanFactCard'
+import ModalPortal from '../components/ModalPortal'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -1051,8 +1052,9 @@ function SakuraEvolutionModal({ isOpen, onClose, currentStreak = 0 }: { isOpen: 
   const currentIdx = SAKURA_STAGES.reduce((acc, s, i) => (currentStreak >= s.min ? i : acc), 0)
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
+      className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -1117,6 +1119,7 @@ function SakuraEvolutionModal({ isOpen, onClose, currentStreak = 0 }: { isOpen: 
         </button>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -1384,8 +1387,9 @@ function AgendaCard({ userId }: { userId: string }) {
 
       {/* Detail agenda (bottom sheet di HP) */}
       {selectedScheduleItem && (
+        <ModalPortal>
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
+          className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[999] animate-fade-in"
           onClick={() => setSelectedScheduleItem(null)}
         >
           <div
@@ -1501,6 +1505,7 @@ function AgendaCard({ userId }: { userId: string }) {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </section>
   )

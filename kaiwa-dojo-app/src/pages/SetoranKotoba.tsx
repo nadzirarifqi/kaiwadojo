@@ -1203,7 +1203,7 @@ export default function SetoranKotobaPage() {
           aria-modal="true"
           aria-label={`Gambar ${previewItem.japanese}`}
           onClick={() => setPreviewItem(null)}
-          className="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"
+          className="modal-overlay fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"
         >
           <button
             type="button"
@@ -1244,7 +1244,7 @@ export default function SetoranKotobaPage() {
         const optionOff = 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-300'
 
         return (
-          <div className="fixed inset-0 z-[999] bg-slate-900/80 backdrop-blur-md sm:flex sm:items-center sm:justify-center sm:p-6 animate-fade-in">
+          <div className="modal-overlay fixed inset-0 z-[999] bg-slate-900/80 backdrop-blur-md sm:flex sm:items-center sm:justify-center sm:p-6 animate-fade-in">
             <div
               role="dialog"
               aria-modal="true"
@@ -1631,7 +1631,7 @@ export default function SetoranKotobaPage() {
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
-        <div ref={modalRef} className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in overscroll-contain">
+        <div ref={modalRef} className="modal-overlay fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in overscroll-contain">
           <div className="flex min-h-full items-start justify-center p-2.5 sm:p-6 pt-4 sm:pt-10 md:pt-12 pb-16 sm:pb-12">
             <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[92dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden">
             

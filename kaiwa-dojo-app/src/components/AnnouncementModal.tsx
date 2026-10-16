@@ -143,7 +143,7 @@ export default function AnnouncementModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="announcement-title"
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 select-none"
+      className="modal-overlay fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 select-none"
       onClick={onClose}
     >
       {/* ── Modern Notice Board Card (Papan Pengumuman Modern) ── */}

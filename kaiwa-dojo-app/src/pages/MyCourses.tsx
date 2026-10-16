@@ -14,6 +14,7 @@ import {
 } from '../lib/chapterService'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+import ModalPortal from '../components/ModalPortal'
 import { CourseCardSkeleton } from '../components/Skeleton'
 import { MOTIVATION_QUOTES, getDailyQuoteIndex } from '../data/motivationQuotes'
 import {
@@ -217,6 +218,19 @@ function SmartVideoPlayer({
     if (startedRef.current) setStatus('ready')
   }
 
+  // Layar penuh: API standar, dengan fallback iOS Safari (webkitEnterFullscreen pada elemen video)
+  function handleFullscreen() {
+    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null
+    if (!video) return
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    } else if (video.requestFullscreen) {
+      video.requestFullscreen().catch(() => video.webkitEnterFullscreen?.())
+    } else {
+      video.webkitEnterFullscreen?.()
+    }
+  }
+
   function handleManualPlay() {
     setNeedsTap(false)
     videoRef.current?.play().catch(() => setNeedsTap(true))
@@ -309,6 +323,21 @@ function SmartVideoPlayer({
             <div className="size-7 rounded-full border-[3px] border-white/25 border-t-white animate-spin" />
           </div>
         </div>
+      )}
+
+      {/* Tombol layar penuh yang jelas (tombol bawaan browser kecil dan sulit ditekan di HP) */}
+      {status === 'ready' && !needsTap && (
+        <button
+          type="button"
+          onClick={handleFullscreen}
+          aria-label="Layar penuh"
+          title="Layar penuh"
+          className="absolute top-2 right-2 z-10 size-10 rounded-xl bg-black/55 hover:bg-black/75 text-white border-none cursor-pointer flex items-center justify-center backdrop-blur-sm transition-colors"
+        >
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+          </svg>
+        </button>
       )}
 
       {/* Autoplay diblokir: tombol putar besar */}
@@ -416,6 +445,10 @@ export default function MyCourses() {
   // Active Lesson / Player state
   const [activeChapter, setActiveChapter] = useState<ChapterItem | null>(null)
   const [activeLesson, setActiveLesson]   = useState<LessonItem | null>(null)
+  // Sheet daftar materi di modal (HP/tablet) — otomatis tertutup saat berpindah materi
+  const [showPlaylistSheet, setShowPlaylistSheet] = useState(false)
+  const activeLessonId = activeLesson?.id
+  useEffect(() => { setShowPlaylistSheet(false) }, [activeLessonId])
 
   // Expanded bab accordions — all collapsed by default, user clicks to expand
   const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set())
@@ -880,6 +913,7 @@ export default function MyCourses() {
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isAlertOpen) {
+        setShowPlaylistSheet(false)
         setActiveLesson(null)
         setActiveChapter(null)
       }
@@ -1509,11 +1543,12 @@ export default function MyCourses() {
 
       {/* ── Modal Pemutar Materi ── */}
       {activeLesson && liveLesson && (
+        <ModalPortal>
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="lesson-player-title"
-          className="fixed inset-0 z-[998] flex items-stretch sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm sm:p-4 lg:p-6 animate-fade-in"
+          className="modal-overlay fixed inset-0 z-[998] flex items-stretch sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm sm:p-4 lg:p-6 animate-fade-in"
           onClick={closePlayer}
         >
           <div
@@ -1557,11 +1592,11 @@ export default function MyCourses() {
             {/* Body */}
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
               <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden lg:flex lg:flex-col">
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
 
                   {/* Stage */}
                   {liveLesson.content_type === 'kotoba' ? (
-                    <div className="shrink-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto p-4 sm:p-6 bg-amber-50/60 dark:bg-amber-950/20 flex items-center justify-center">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 bg-amber-50/60 dark:bg-amber-950/20 flex items-center justify-center">
                       <div className="w-full max-w-md text-center flex flex-col items-center gap-3 py-6">
                         <div className="size-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-serif font-bold text-2xl shadow-sm">語</div>
                         <div>
@@ -1588,12 +1623,12 @@ export default function MyCourses() {
                       </div>
                     </div>
                   ) : (
-                    <div className="relative shrink-0 lg:flex-1 lg:min-h-0 bg-slate-950 flex items-center justify-center sm:p-4 overflow-hidden">
+                    <div className="relative flex-1 min-h-0 bg-slate-950 flex items-center justify-center sm:p-4 overflow-hidden">
                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_65%)] pointer-events-none" />
 
                       {liveLesson.content_type === 'quiz' ? (
-                        <div className="relative w-full max-w-md text-center text-white flex flex-col items-center gap-3 px-5 py-10 sm:py-8">
-                          <div className="size-14 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
+                        <div className="relative w-full max-w-md max-h-full overflow-y-auto text-center text-white flex flex-col items-center gap-3 px-5 py-8">
+                          <div className="size-14 shrink-0 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
                             <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
@@ -1608,7 +1643,7 @@ export default function MyCourses() {
                           <p className="text-xs text-slate-500 mt-1">Rencana: 10 soal pilihan ganda · nilai lulus 80%</p>
                         </div>
                       ) : liveLesson.video_id ? (
-                        <div className="relative h-[min(64dvh,640px)] lg:h-full aspect-[9/16] max-w-full bg-black sm:rounded-2xl overflow-hidden sm:shadow-2xl sm:ring-1 sm:ring-white/10">
+                        <div className="relative h-full aspect-[9/16] max-w-full bg-black sm:rounded-2xl overflow-hidden sm:shadow-2xl sm:ring-1 sm:ring-white/10">
                           <SmartVideoPlayer
                             key={`${modalChapter?.bab_number || 1}_${activeLesson.id}`}
                             lesson={activeLesson}
@@ -1626,8 +1661,8 @@ export default function MyCourses() {
                           />
                         </div>
                       ) : (
-                        <div className="relative w-full max-w-md text-center text-white flex flex-col items-center gap-3 px-5 py-10 sm:py-8">
-                          <div className="size-14 rounded-2xl bg-white/10 text-slate-200 flex items-center justify-center">
+                        <div className="relative w-full max-w-md max-h-full overflow-y-auto text-center text-white flex flex-col items-center gap-3 px-5 py-8">
+                          <div className="size-14 shrink-0 rounded-2xl bg-white/10 text-slate-200 flex items-center justify-center">
                             <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
@@ -1645,8 +1680,8 @@ export default function MyCourses() {
                   )}
 
                   {/* Info materi */}
-                  <section className="shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 lg:border-b-0">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                  <section className="shrink-0 px-4 sm:px-6 py-2.5 lg:py-4">
+                    <div className="flex flex-wrap items-center gap-1.5 lg:mb-1.5">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                         liveLesson.content_type === 'quiz'
                           ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
@@ -1660,14 +1695,18 @@ export default function MyCourses() {
                           Selesai
                         </span>
                       ) : null}
+                      <span className="lg:hidden text-xs text-slate-500 dark:text-slate-400">
+                        {liveLesson.duration_minutes} menit
+                        {liveLesson.content_type === 'video' && !liveLesson.is_placeholder && <> · ditonton {liveLesson.replay_count || 0}×</>}
+                      </span>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">{liveLesson.title}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <h3 className="hidden lg:block text-lg font-bold text-slate-900 dark:text-white leading-snug">{liveLesson.title}</h3>
+                    <p className="hidden lg:block text-sm text-slate-500 dark:text-slate-400 mt-1">
                       {liveLesson.duration_minutes} menit
                       {liveLesson.content_type === 'video' && !liveLesson.is_placeholder && <> · ditonton {liveLesson.replay_count || 0}×</>}
                     </p>
                     {liveLesson.content_type === 'video' && liveLesson.video_id && !liveLesson.is_completed && (
-                      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3 py-2.5 flex items-start gap-2">
+                      <p className="hidden lg:flex mt-3 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3 py-2.5 items-start gap-2">
                         <svg className="size-4 shrink-0 mt-0.5 text-primary dark:text-primary-lighter" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1676,16 +1715,6 @@ export default function MyCourses() {
                     )}
                   </section>
 
-                  {/* Daftar materi — mobile/tablet */}
-                  <section className="lg:hidden px-4 sm:px-6 py-4">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Materi di bab ini</h4>
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">{modalCompletedCount}/{modalLessons.length} selesai</span>
-                    </div>
-                    <ul className="flex flex-col gap-1">
-                      {modalLessons.map(l => <li key={l.id}>{renderPlaylistItem(l)}</li>)}
-                    </ul>
-                  </section>
                 </div>
 
                 {/* Navigasi sebelumnya / berikutnya */}
@@ -1697,10 +1726,23 @@ export default function MyCourses() {
                     type="button"
                     disabled={!prevLesson}
                     onClick={() => prevLesson && modalChapter && openLesson(modalChapter, prevLesson)}
-                    className="h-11 px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900"
+                    aria-label="Materi sebelumnya"
+                    className="h-11 min-w-11 px-3 sm:px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900"
                   >
                     <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                    <span>Sebelumnya</span>
+                    <span className="hidden sm:inline">Sebelumnya</span>
+                  </button>
+
+                  {/* HP/tablet: daftar materi dibuka sebagai sheet, bukan ikut di-scroll di bawah video */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPlaylistSheet(true)}
+                    aria-label="Daftar materi di bab ini"
+                    className="lg:hidden h-11 px-3 rounded-xl text-sm font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" /></svg>
+                    <span>Materi</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{modalCompletedCount}/{modalLessons.length}</span>
                   </button>
 
                   <button
@@ -1738,8 +1780,45 @@ export default function MyCourses() {
                 </ul>
               </aside>
             </div>
+
+            {/* Sheet daftar materi — HP/tablet */}
+            {showPlaylistSheet && (
+              <div className="lg:hidden absolute inset-0 z-20 flex items-end bg-slate-950/50 animate-fade-in" onClick={() => setShowPlaylistSheet(false)}>
+                <div
+                  role="dialog"
+                  aria-label="Materi di bab ini"
+                  onClick={e => e.stopPropagation()}
+                  className="w-full max-h-[75%] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl animate-fade-in-up"
+                >
+                  <div className="shrink-0 px-4 sm:px-6 pt-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Materi di bab ini</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{modalCompletedCount} dari {modalLessons.length} selesai</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPlaylistSheet(false)}
+                        aria-label="Tutup daftar materi"
+                        className="size-10 shrink-0 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-none cursor-pointer"
+                      >
+                        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <div className="mt-2.5 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${modalChapterPct}%` }} />
+                    </div>
+                  </div>
+                  <ul className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-1">
+                    {modalLessons.map(l => <li key={l.id}>{renderPlaylistItem(l)}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Beautiful Custom Alert Modal */}

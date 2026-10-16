@@ -853,7 +853,7 @@ export default function ClassReservationPage() {
         const isOnline = targetSchedule.type === 'online'
         return (
           <div
-            className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
+            className="modal-overlay fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
             onClick={closeModal}
           >
             <div

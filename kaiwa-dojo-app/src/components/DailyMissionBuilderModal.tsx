@@ -1,3 +1,4 @@
+import ModalPortal from './ModalPortal'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -248,8 +249,9 @@ export default function DailyMissionBuilderModal({
   ].filter(Boolean) as string[]
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
+      className="modal-overlay fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
       onClick={() => { if (!isSaving) onClose() }}
     >
       <div
@@ -464,5 +466,6 @@ export default function DailyMissionBuilderModal({
         <CustomAlertModal {...alertConfig} />
       </div>
     </div>
+    </ModalPortal>
   )
 }

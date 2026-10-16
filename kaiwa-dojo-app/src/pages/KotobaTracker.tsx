@@ -817,7 +817,7 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
   }, [student.kotoba_list, filterTab, searchKotoba])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-xs animate-fade-in">
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-xs animate-fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Modal Header */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700">
@@ -1085,7 +1085,7 @@ function StudentKotobaDetailModal({ student, onClose }: StudentKotobaDetailModal
       {/* Full Image Preview Modal */}
       {activeImagePreview && (
         <div
-          className="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4 cursor-pointer"
+          className="modal-overlay fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4 cursor-pointer"
           onClick={() => setActiveImagePreview(null)}
         >
           <div className="relative max-w-2xl max-h-[85vh]">

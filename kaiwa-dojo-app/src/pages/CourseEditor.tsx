@@ -800,7 +800,7 @@ export default function CourseEditor() {
 
       {/* Bulk Group Modal */}
       {showBulkGroupModal && (
-        <div className="fixed inset-0 z-[650] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+        <div className="modal-overlay fixed inset-0 z-[650] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col gap-4 animate-scale-up">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>

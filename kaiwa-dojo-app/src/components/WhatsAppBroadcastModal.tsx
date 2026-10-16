@@ -1,3 +1,4 @@
+import ModalPortal from './ModalPortal'
 import { useState, useEffect } from 'react'
 import {
   sendWhatsAppBroadcast,
@@ -103,7 +104,8 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] overflow-y-auto animate-fade-in">
+    <ModalPortal>
+    <div className="modal-overlay fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] overflow-y-auto animate-fade-in">
       <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-8 sm:pt-12 pb-12">
         <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col border border-slate-200 dark:border-slate-800">
 
@@ -405,6 +407,7 @@ export default function WhatsAppBroadcastModal({ adminId, adminName, onClose }: 
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

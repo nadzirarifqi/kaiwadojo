@@ -1,3 +1,4 @@
+import ModalPortal from './ModalPortal'
 import { useState, useEffect, useId } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import {
@@ -141,8 +142,9 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto"
+      className="modal-overlay fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose()
       }}
@@ -414,5 +416,6 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         )}
       </div>
     </div>
+    </ModalPortal>
   )
 }

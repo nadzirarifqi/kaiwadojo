@@ -1111,7 +1111,7 @@ export default function RegisterPage() {
 
       {/* ── OTP MODAL (WHATSAPP) ── */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
+        <div className="modal-overlay fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col">
             
             {/* Modal Header */}

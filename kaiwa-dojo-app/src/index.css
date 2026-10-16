@@ -22,12 +22,12 @@
   --color-brand-bg:        #FFF9F9;   /* warm white tinted with red         */
 
   /* Custom animations */
-  --animate-fade-in-up: fadeInUp 0.5s ease both;
-  --animate-fade-in:    fadeIn 0.4s ease both;
+  --animate-fade-in-up: fadeInUp 0.5s ease backwards;
+  --animate-fade-in:    fadeIn 0.4s ease backwards;
   --animate-shimmer:    shimmer 1.5s infinite;
   --animate-flame:      flamePulse 2s ease-in-out infinite;
-  --animate-slide-fade: slideFade 0.4s ease both;
-  --animate-scale-up:   scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-slide-fade: slideFade 0.4s ease backwards;
+  --animate-scale-up:   scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes fadeInUp {
@@ -438,16 +438,21 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
   50% { transform: translateY(-6px); }
 }
 
+/*
+ * Catatan: animasi masuk memakai fill-mode "backwards" (bukan "both").
+ * Dengan "both", transform dari animasi tetap "aktif" setelah selesai, sehingga browser menjadikan elemen itu
+ * containing block untuk anak "position: fixed" — modal jadi menempel ke atas halaman, bukan ke layar.
+ */
 .animate-page-slide {
-  animation: pageSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: pageSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .animate-slide-right {
-  animation: slideInFromRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slideInFromRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .animate-slide-left {
-  animation: slideInFromLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slideInFromLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .animate-float {
@@ -455,7 +460,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.25s ease both;
+  animation: fadeIn 0.25s ease backwards;
 }
 
 /* Slide down reveal for collapsible panels */
@@ -465,7 +470,7 @@ html.dark ::-webkit-scrollbar-thumb { background: #334155; }
 }
 
 .animate-slide-down {
-  animation: slideDown 0.2s ease both;
+  animation: slideDown 0.2s ease backwards;
 }
 
 /* Card hover animation enhancement */
@@ -629,3 +634,13 @@ html.dark .hinomaru-glow {
   animation: ringAuraGlow 2.5s ease-in-out infinite;
 }
 
+
+/* ── Modal overlay ─────────────────────────────────────────
+ * Setiap overlay modal diberi class "modal-overlay":
+ * - halaman di belakang dikunci selama modal terbuka (tidak ikut ter-scroll)
+ * - scroll di dalam modal tidak "tembus" ke halaman di belakangnya
+ */
+html { scrollbar-gutter: stable; }
+html:has(.modal-overlay) { overflow: hidden; }
+.modal-overlay,
+.modal-overlay * { overscroll-behavior: contain; }

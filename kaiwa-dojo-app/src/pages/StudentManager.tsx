@@ -835,7 +835,7 @@ export default function StudentManager() {
       {/* Add Student Modal Portal */}
       {showAddModal &&
         createPortal(
-          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+          <div className="modal-overlay fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
             <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]">
               <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -1076,7 +1076,7 @@ export default function StudentManager() {
       {/* Edit Student Modal Portal */}
       {editingStudent &&
         createPortal(
-          <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+          <div className="modal-overlay fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in">
             <div className="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]">
               <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50 shrink-0">
                 <div className="flex items-center gap-2.5">
