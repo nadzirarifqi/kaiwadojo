@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, type SyntheticEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
@@ -112,6 +112,39 @@ function getVideoUrlCandidates(originalUrl: string | null, babNumber: number, it
   return candidates
 }
 
+function getLessonLabel(l: LessonItem): string {
+  if (l.content_type === 'quiz') return `Kuis ${l.lesson_number - 3}`
+  if (l.content_type === 'kotoba') return 'Kotoba'
+  return `Video ${l.lesson_number}`
+}
+
+/* URL video yang sudah terbukti bisa diputar — dipakai ulang agar video berikutnya langsung tampil tanpa mencoba ulang */
+const RESOLVED_VIDEO_CACHE_KEY = 'kaiwa_resolved_video_urls'
+const resolvedVideoUrls: Map<string, string> = (() => {
+  try {
+    const raw = sessionStorage.getItem(RESOLVED_VIDEO_CACHE_KEY)
+    return new Map<string, string>(raw ? JSON.parse(raw) : [])
+  } catch {
+    return new Map<string, string>()
+  }
+})()
+
+function rememberResolvedUrl(cacheKey: string, url: string) {
+  if (resolvedVideoUrls.get(cacheKey) === url) return
+  resolvedVideoUrls.set(cacheKey, url)
+  try { sessionStorage.setItem(RESOLVED_VIDEO_CACHE_KEY, JSON.stringify([...resolvedVideoUrls])) } catch { /* storage diblokir */ }
+}
+
+function normalizeVideoUrl(url: string): string {
+  try { return encodeURI(decodeURI(url)) } catch { return url }
+}
+
+type PlayerStatus = 'loading' | 'ready' | 'error'
+
+/**
+ * Pemutar video materi. Video disembunyikan di balik layar "memuat" sampai frame pertama siap,
+ * sehingga user tidak melihat kedipan player kosong / gagal saat mencari format file yang cocok.
+ */
 function SmartVideoPlayer({
   lesson,
   chapterBab,
@@ -123,105 +156,175 @@ function SmartVideoPlayer({
   onLoadedMetadata: (durationSecs: number) => void
   onEnded: () => void
 }) {
-  const candidates = useMemo(
-    () => getVideoUrlCandidates(lesson.video_id, chapterBab, lesson.lesson_number),
-    [lesson.video_id, chapterBab, lesson.lesson_number]
-  )
-  const [candidateIdx, setCandidateIdx] = useState<number>(0)
-  const [hasFailedAll, setHasFailedAll] = useState<boolean>(false)
+  const cacheKey = `${chapterBab}_${lesson.lesson_number}_${lesson.video_id || ''}`
+  const candidates = useMemo(() => {
+    // Buang duplikat (URL mentah vs ter-encode menghasilkan request yang sama)
+    const unique = Array.from(new Set(
+      getVideoUrlCandidates(lesson.video_id, chapterBab, lesson.lesson_number).map(normalizeVideoUrl)
+    ))
+    const cached = resolvedVideoUrls.get(cacheKey)
+    return cached ? [cached, ...unique.filter(u => u !== cached)] : unique
+  }, [lesson.video_id, chapterBab, lesson.lesson_number, cacheKey])
+
+  const [candidateIdx, setCandidateIdx] = useState(0)
+  const [status, setStatus] = useState<PlayerStatus>('loading')
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [needsTap, setNeedsTap] = useState(false)
+  const [isSlow, setIsSlow] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const startedRef = useRef(false)
 
-  // Reset index and error state whenever the target lesson changes
+  const currentUrl = candidates[candidateIdx] || ''
+
+  // Beri tahu user bila koneksi lambat, alih-alih spinner tanpa penjelasan
   useEffect(() => {
-    setCandidateIdx(0)
-    setHasFailedAll(false)
-  }, [lesson.id, lesson.video_id, lesson.lesson_number, chapterBab])
-
-  const currentUrl = candidates[candidateIdx] || lesson.video_id || ''
-
-  // Explicitly call load() on HTML5 video element when currentUrl changes
-  useEffect(() => {
-    if (videoRef.current && currentUrl) {
-      videoRef.current.load()
-    }
-  }, [currentUrl])
+    if (status !== 'loading') return
+    setIsSlow(false)
+    const t = window.setTimeout(() => setIsSlow(true), 8000)
+    return () => window.clearTimeout(t)
+  }, [status, candidateIdx])
 
   function handleError() {
+    if (startedRef.current) {
+      // Error di tengah pemutaran (mis. jaringan putus) — jangan berpindah file
+      setStatus('error')
+      return
+    }
     if (candidateIdx < candidates.length - 1) {
       setCandidateIdx(prev => prev + 1)
     } else {
-      setHasFailedAll(true)
+      setStatus('error')
     }
   }
 
-  if (hasFailedAll) {
+  // Metadata terbaca = file valid. Simpan URL-nya, lalu langsung coba putar (overlay tetap tampil sampai frame pertama siap)
+  function handleMetadata(e: SyntheticEvent<HTMLVideoElement>) {
+    const totalSecs = e.currentTarget.duration
+    if (totalSecs && !isNaN(totalSecs) && totalSecs > 0 && isFinite(totalSecs)) {
+      onLoadedMetadata(totalSecs)
+    }
+    if (startedRef.current) return
+    startedRef.current = true
+    rememberResolvedUrl(cacheKey, currentUrl)
+    const playPromise = e.currentTarget.play()
+    if (playPromise) {
+      // Autoplay diblokir browser (umum di iOS) → tampilkan video dengan tombol putar besar
+      playPromise.catch(() => { setStatus('ready'); setNeedsTap(true) })
+    }
+  }
+
+  function markReady() {
+    if (startedRef.current) setStatus('ready')
+  }
+
+  function handleManualPlay() {
+    setNeedsTap(false)
+    videoRef.current?.play().catch(() => setNeedsTap(true))
+  }
+
+  function handleRetry() {
+    startedRef.current = false
+    setStatus('loading')
+    setNeedsTap(false)
+    setCandidateIdx(0)
+    videoRef.current?.load()
+  }
+
+  if (status === 'error') {
     return (
-      <div className="w-full max-w-[340px] aspect-[9/16] rounded-2xl bg-slate-900 border-2 border-amber-500/50 p-5 text-white flex flex-col justify-center items-center text-center gap-3 overflow-y-auto">
-        <div className="size-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-3 p-5 bg-slate-950 text-white animate-fade-in">
+        <div className="size-12 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
           <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h4 className="text-sm sm:text-base font-bold text-white leading-snug">
-          Format Video Perlu Penyesuaian
-        </h4>
-        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-          Semua ekstensi (.mp4, .MP4, .mov) telah dicoba. Harap pastikan format HandBrake sesuai standar web browser:
-        </p>
-
-        <div className="w-full p-3 rounded-xl bg-black/60 border border-slate-800 text-xs sm:text-sm text-left flex flex-col gap-1 text-slate-300 font-mono">
-          <span className="font-bold text-amber-400 flex items-center gap-1.5">
-            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Format HandBrake Wajib:</span>
-          </span>
-          <span>1. Format Container: <strong>MP4</strong></span>
-          <span>2. Video Codec: <strong>H.264 (x264)</strong> — <em>Bukan H.265/HEVC</em></span>
-          <span>3. Audio Codec: <strong>AAC</strong></span>
-          <span>4. Web Option: Centang <strong>"Web Optimized"</strong></span>
-          <span>5. Nama File Server: <code className="text-emerald-400">Kaiwa Dojo - BAB {chapterBab} S{lesson.lesson_number}.mp4</code></span>
+        <div>
+          <h4 className="text-base font-bold leading-snug">Video belum bisa diputar</h4>
+          <p className="text-sm text-slate-400 leading-relaxed mt-1 max-w-[240px]">
+            Periksa koneksi internetmu, lalu coba lagi.
+          </p>
         </div>
-
         <button
           type="button"
-          onClick={() => {
-            setHasFailedAll(false)
-            setCandidateIdx(0)
-          }}
-          className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm border-none cursor-pointer hover:bg-primary-dark transition-all flex items-center gap-2"
+          onClick={handleRetry}
+          className="h-11 px-5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer transition-colors flex items-center gap-2"
         >
-          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>Coba Ulang Pemutaran</span>
+          Coba lagi
         </button>
+        <details className="w-full max-w-[260px] text-left text-xs text-slate-400">
+          <summary className="cursor-pointer text-center text-slate-500 hover:text-slate-300 py-1">Info teknis untuk pengajar</summary>
+          <ul className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 flex flex-col gap-1 font-mono leading-relaxed">
+            <li>Container: <strong className="text-slate-200">MP4</strong></li>
+            <li>Video: <strong className="text-slate-200">H.264</strong> (bukan HEVC)</li>
+            <li>Audio: <strong className="text-slate-200">AAC</strong>, centang "Web Optimized"</li>
+            <li className="break-all">File: <span className="text-emerald-400">Kaiwa Dojo - BAB {chapterBab} S{lesson.lesson_number}.mp4</span></li>
+          </ul>
+        </details>
       </div>
     )
   }
 
   return (
-    <video
-      ref={videoRef}
-      key={currentUrl}
-      src={currentUrl}
-      controls
-      autoPlay
-      controlsList="nodownload"
-      playsInline
-      preload="metadata"
-      className="w-full h-full object-contain bg-black"
-      onLoadedMetadata={e => {
-        const totalSecs = e.currentTarget.duration
-        if (totalSecs && !isNaN(totalSecs) && totalSecs > 0 && isFinite(totalSecs)) {
-          onLoadedMetadata(totalSecs)
-        }
-      }}
-      onEnded={onEnded}
-      onError={handleError}
-    >
-      Browser kamu tidak mendukung pemutaran langsung file video ini.
-    </video>
+    <>
+      <video
+        ref={videoRef}
+        src={currentUrl}
+        controls={status === 'ready'}
+        controlsList="nodownload"
+        playsInline
+        preload="auto"
+        className={`absolute inset-0 w-full h-full object-contain bg-black transition-opacity duration-300 ${status === 'ready' ? 'opacity-100' : 'opacity-0'}`}
+        onLoadedMetadata={handleMetadata}
+        onLoadedData={markReady}
+        onCanPlay={markReady}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => { markReady(); setIsBuffering(false); setNeedsTap(false) }}
+        onCanPlayThrough={() => setIsBuffering(false)}
+        onEnded={onEnded}
+        onError={handleError}
+      >
+        Browser kamu tidak mendukung pemutaran video ini.
+      </video>
+
+      {/* Layar memuat — menutupi proses pencarian file & buffering awal */}
+      {status === 'loading' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950 text-white select-none">
+          <div className="size-10 rounded-full border-[3px] border-white/15 border-t-primary-lighter animate-spin" />
+          <p className="text-sm font-semibold text-slate-300">Menyiapkan video…</p>
+          {isSlow && (
+            <p className="text-xs text-slate-500 max-w-[220px] text-center leading-relaxed animate-fade-in">
+              Koneksi sedang lambat. Video akan diputar begitu siap.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Buffering di tengah pemutaran */}
+      {status === 'ready' && isBuffering && !needsTap && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="size-12 rounded-full bg-black/50 flex items-center justify-center">
+            <div className="size-7 rounded-full border-[3px] border-white/25 border-t-white animate-spin" />
+          </div>
+        </div>
+      )}
+
+      {/* Autoplay diblokir: tombol putar besar */}
+      {status === 'ready' && needsTap && (
+        <button
+          type="button"
+          onClick={handleManualPlay}
+          aria-label="Putar video"
+          className="absolute inset-0 flex items-center justify-center bg-black/30 border-none cursor-pointer animate-fade-in"
+        >
+          <span className="size-16 rounded-full bg-white/95 text-primary shadow-xl flex items-center justify-center hover:scale-105 transition-transform">
+            <svg className="size-7 ml-1" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 001.52.85l11-6.86a1 1 0 000-1.7l-11-6.86A1 1 0 008 5.14z" /></svg>
+          </span>
+        </button>
+      )}
+    </>
   )
 }
 
@@ -313,8 +416,6 @@ export default function MyCourses() {
   // Active Lesson / Player state
   const [activeChapter, setActiveChapter] = useState<ChapterItem | null>(null)
   const [activeLesson, setActiveLesson]   = useState<LessonItem | null>(null)
-  // Mobile toggle for lesson list panel
-  const [showLessonList, setShowLessonList] = useState(false)
 
   // Expanded bab accordions — all collapsed by default, user clicks to expand
   const [expandedBabs, setExpandedBabs]   = useState<Set<number>>(new Set())
@@ -569,8 +670,11 @@ export default function MyCourses() {
   }
 
   // Handle URL search params for direct video navigation from Daily Missions (e.g. ?jilid=1&bab=1&item=1)
+  // Diproses sekali per link — tanpa ini, polling data tiap 6 detik membuka ulang modal yang sudah ditutup user
+  const handledDeepLinkRef = useRef<string | null>(null)
   useEffect(() => {
     if (chapters.length === 0) return
+    if (handledDeepLinkRef.current === searchParams.toString()) return
     const paramJilid = searchParams.get('jilid')
     const paramBab   = searchParams.get('bab')
     const paramItem  = searchParams.get('item') || searchParams.get('lesson')
@@ -586,6 +690,7 @@ export default function MyCourses() {
       const babNum = parseInt(paramBab, 10)
       const chap = chapters.find(c => c.bab_number === babNum)
       if (chap) {
+        handledDeepLinkRef.current = searchParams.toString()
         const isAccessible = isChapterAccessibleForUser(chap, profile, groups)
         if (!isAccessible && !isInstructor) {
           setAlertConfig({
@@ -618,13 +723,6 @@ export default function MyCourses() {
       }
     }
   }, [chapters, searchParams, profile, groups, isInstructor])
-
-  // Automatically scroll to top whenever a lesson/video modal opens
-  useEffect(() => {
-    if (activeLesson) {
-      window.scrollTo({ top: 0, behavior: 'instant' })
-    }
-  }, [activeLesson])
 
   async function handleToggleLessonComplete(lesson: LessonItem) {
     if (lesson.is_placeholder) return
@@ -762,22 +860,36 @@ export default function MyCourses() {
     }
   }
 
-  // Auto refresh state for smooth video player transitions
-  const [isVideoRefreshing, setIsVideoRefreshing] = useState(false)
-  const [videoKey, setVideoKey] = useState(0)
-
   function handleSwitchLesson(newLesson: LessonItem) {
-    if (newLesson.id === activeLesson?.id && !isVideoRefreshing) return
-
-    // Briefly unmount and refresh the video player to reload cleanly and smoothly
-    setIsVideoRefreshing(true)
+    if (newLesson.id === activeLesson?.id) return
+    // Player di-mount ulang lewat `key` per materi — tidak perlu jeda/spinner buatan yang membuat layar berkedip
     setActiveLesson(newLesson)
-    setVideoKey(prev => prev + 1)
-
-    setTimeout(() => {
-      setIsVideoRefreshing(false)
-    }, 150)
   }
+
+  function closePlayer() {
+    setActiveLesson(null)
+    setActiveChapter(null)
+  }
+
+  // Saat modal terbuka: kunci scroll halaman di belakang & tutup dengan tombol Escape
+  const isPlayerOpen = activeLesson !== null
+  const isAlertOpen = alertConfig.isOpen
+  useEffect(() => {
+    if (!isPlayerOpen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isAlertOpen) {
+        setActiveLesson(null)
+        setActiveChapter(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [isPlayerOpen, isAlertOpen])
 
   function toggleBabAccordion(babNum: number) {
     const chap = chapters.find(c => c.bab_number === babNum)
@@ -892,11 +1004,78 @@ export default function MyCourses() {
     : totalProgressPct < 100 ? 'Sedikit lagi menuju garis akhir Jilid 1!'
     : 'Luar biasa! Semua materi Jilid 1 sudah kamu selesaikan. おめでとう!'
 
-  const currentLessonIdx = activeChapter?.lessons.findIndex(l => l.id === activeLesson?.id) ?? -1
-  const prevLesson = currentLessonIdx > 0 && activeChapter ? activeChapter.lessons[currentLessonIdx - 1] : null
-  const nextLesson = currentLessonIdx >= 0 && activeChapter && currentLessonIdx < activeChapter.lessons.length - 1
-    ? activeChapter.lessons[currentLessonIdx + 1]
+  // Bab aktif selalu diambil dari data terbaru agar status selesai di daftar materi modal ikut ter-update
+  const modalChapter = activeChapter
+    ? chapters.find(c => c.bab_number === activeChapter.bab_number) ?? activeChapter
     : null
+  const modalLessons = modalChapter?.lessons ?? []
+  const liveMatch = activeLesson ? modalLessons.find(l => l.id === activeLesson.id) : undefined
+  const liveLesson = activeLesson && {
+    ...activeLesson,
+    is_completed: liveMatch?.is_completed ?? activeLesson.is_completed,
+    replay_count: Math.max(liveMatch?.replay_count ?? 0, activeLesson.replay_count ?? 0),
+  }
+  const modalCompletedCount = modalLessons.filter(l => l.is_completed).length
+  const modalChapterPct = modalLessons.length > 0 ? Math.round((modalCompletedCount / modalLessons.length) * 100) : 0
+
+  const currentLessonIdx = activeLesson ? modalLessons.findIndex(l => l.id === activeLesson.id) : -1
+  const prevLesson = currentLessonIdx > 0 ? modalLessons[currentLessonIdx - 1] : null
+  const nextLesson = currentLessonIdx >= 0 && currentLessonIdx < modalLessons.length - 1
+    ? modalLessons[currentLessonIdx + 1]
+    : null
+
+  function renderPlaylistItem(l: LessonItem) {
+    if (!modalChapter) return null
+    const { isQuiz, isQuizLocked, watchedCount } = getLessonState(modalChapter, l)
+    const isActive = activeLesson?.id === l.id
+    const meta = isQuizLocked
+      ? `Tonton ${3 - watchedCount} video lagi untuk membuka`
+      : l.is_placeholder ? 'Segera hadir' : `${l.duration_minutes} menit`
+
+    return (
+      <button
+        type="button"
+        onClick={() => openLesson(modalChapter, l)}
+        aria-current={isActive ? 'true' : undefined}
+        className={`w-full min-h-[60px] p-2.5 rounded-xl text-left flex items-center gap-3 border transition-colors cursor-pointer ${
+          isActive
+            ? 'bg-primary/5 dark:bg-primary/15 border-primary/30'
+            : 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/70'
+        }`}
+      >
+        <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${
+          l.is_completed ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
+          : isQuizLocked ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400'
+          : isActive ? 'bg-primary text-white'
+          : isQuiz ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300'
+          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+        }`}>
+          {l.is_completed ? (
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          ) : isQuizLocked ? (
+            <svg className="size-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          ) : isQuiz ? (
+            <svg className="size-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          ) : l.is_placeholder ? (
+            <svg className="size-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          ) : (
+            <svg className="size-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 001.52.85l11-6.86a1 1 0 000-1.7l-11-6.86A1 1 0 008 5.14z" /></svg>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block text-xs font-semibold ${isActive ? 'text-primary dark:text-primary-lighter' : 'text-slate-500 dark:text-slate-400'}`}>
+            {getLessonLabel(l)}{isActive ? ' · Sedang dibuka' : ''}
+          </span>
+          <span className={`block text-sm font-semibold leading-snug line-clamp-2 ${isQuizLocked ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}`}>
+            {l.title}
+          </span>
+          <span className={`block text-xs mt-0.5 ${isQuizLocked ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-slate-400'}`}>
+            {meta}
+          </span>
+        </span>
+      </button>
+    )
+  }
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
@@ -1328,512 +1507,236 @@ export default function MyCourses() {
         )
       )}
 
-      {/* ── Video Player & Placeholder Modal ── */}
-      {activeLesson && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-start justify-center p-2 sm:p-4 pt-2 sm:pt-4 md:pt-6 pb-6 animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[92dvh] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
-
-            {/* Modal Header */}
-            <div className="px-3.5 py-2 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
-              <div className="min-w-0 pr-2">
-                <span className="text-xs sm:text-sm text-primary-lighter font-bold uppercase tracking-wider block truncate">
-                  {activeChapter?.title || `Minna no Nihongo Jilid ${selectedJilid}`}
-                </span>
-                <h2 className="text-sm sm:text-base font-bold truncate leading-tight">{activeLesson.title}</h2>
+      {/* ── Modal Pemutar Materi ── */}
+      {activeLesson && liveLesson && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lesson-player-title"
+          className="fixed inset-0 z-[998] flex items-stretch sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm sm:p-4 lg:p-6 animate-fade-in"
+          onClick={closePlayer}
+        >
+          <div
+            className="relative w-full h-dvh sm:h-[min(92dvh,880px)] sm:max-w-6xl bg-white dark:bg-slate-900 sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-in-up"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <header className="shrink-0 flex items-center gap-3 px-3 sm:px-5 pt-[calc(0.625rem+env(safe-area-inset-top))] pb-2.5 sm:py-3.5 border-b border-slate-200 dark:border-slate-800">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-primary dark:text-primary-lighter truncate">
+                  {modalChapter?.title || `Minna no Nihongo Jilid ${selectedJilid}`}
+                </p>
+                <h2 id="lesson-player-title" className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate leading-snug">
+                  {liveLesson.title}
+                </h2>
               </div>
-              <button
-                onClick={() => { setActiveLesson(null); setActiveChapter(null) }}
-                className="size-7 sm:size-9 rounded-full bg-white/10 text-white hover:bg-white/20 border-none cursor-pointer text-sm sm:text-base flex items-center justify-center shrink-0"
-              >
-                ×
-              </button>
-            </div>
 
-            {/* Modal Body: Left Player | Right Lessons list */}
-            {/* On mobile: stack with toggle button. On lg+: side-by-side columns */}
-            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[1fr_320px] overflow-hidden">
-
-              {/* Left Column: Video Player / Kotoba View / Quiz View / Placeholder */}
-              <div className="flex flex-col overflow-y-auto p-1.5 sm:p-6 gap-1.5 sm:gap-4 flex-1">
-
-                {/* Mobile-only: Toggle button for lesson list */}
-                <div className="lg:hidden flex items-center justify-between shrink-0 py-0.5 px-1">
-                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium truncate">
-                    <svg className="size-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.328.477-4.5 1.253" />
-                    </svg>
-                    <span>{activeChapter?.lessons.length || 0} Materi di Bab Ini</span>
+              {modalChapter && (
+                <div className="hidden sm:flex items-center gap-2.5 shrink-0 mr-1">
+                  <div className="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${modalChapterPct}%` }} />
                   </div>
-                  <button
-                    onClick={() => setShowLessonList(prev => !prev)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold border-none cursor-pointer flex items-center gap-1.5 shrink-0"
-                  >
-                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-                    </svg>
-                    <span>Daftar Materi</span>
-                    <span className="text-xs sm:text-sm font-bold">{showLessonList ? '▲' : '▼'}</span>
-                  </button>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
+                    {modalCompletedCount}/{modalLessons.length} selesai
+                  </span>
                 </div>
+              )}
 
-                {/* Mobile-only: Collapsible lesson list (shows when toggled) */}
-                {showLessonList && (
-                  <div className="lg:hidden animate-slide-down bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 p-2 flex flex-col gap-1 shrink-0">
-                    <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm sm:text-base uppercase tracking-wider mb-0.5">
-                      Materi {activeChapter?.title || 'Bab Ini'}
-                    </h4>
-                    {activeChapter?.lessons.map(l => {
-                      const lIsQuiz = l.content_type === 'quiz'
-                      const babVids = activeChapter.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3)
-                      const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
-                      const lIsLocked = lIsQuiz && watchedVids < 3
-                      const quizNum = l.lesson_number - 3
-                      const contentLabel = lIsQuiz
-                        ? `Kuis ${quizNum}`
-                        : `Video ${l.lesson_number}`
-                      return (
+              <button
+                type="button"
+                onClick={closePlayer}
+                aria-label="Tutup pemutar"
+                className="size-10 shrink-0 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-colors"
+              >
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </header>
+
+            {/* Body */}
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+              <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden lg:flex lg:flex-col">
+
+                  {/* Stage */}
+                  {liveLesson.content_type === 'kotoba' ? (
+                    <div className="shrink-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto p-4 sm:p-6 bg-amber-50/60 dark:bg-amber-950/20 flex items-center justify-center">
+                      <div className="w-full max-w-md text-center flex flex-col items-center gap-3 py-6">
+                        <div className="size-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-serif font-bold text-2xl shadow-sm">語</div>
+                        <div>
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Setoran Kotoba</p>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug mt-0.5">Hafalkan kosakata bab ini</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mt-1.5">
+                            Kuasai kosakata dasar sebelum lanjut ke video tata bahasa, lalu tandai materi ini selesai.
+                          </p>
+                        </div>
                         <button
-                          key={l.id}
-                          onClick={() => {
-                            if (lIsLocked) {
-                              setAlertConfig({
-                                isOpen: true,
-                                title: 'Kuis Masih Terkunci',
-                                message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
-                                type: 'lock',
-                                buttonText: 'Siap, Nonton Dulu!',
-                                onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-                              })
-                              return
-                            }
-                            handleSwitchLesson(l)
-                            setShowLessonList(false)
-                          }}
-                          className={`p-2 rounded-xl text-left border transition-all flex items-center justify-between ${
-                            lIsLocked
-                              ? 'bg-slate-100 dark:bg-slate-700/40 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed opacity-70'
-                              : activeLesson?.id === l.id
-                                ? 'bg-white dark:bg-slate-900 border-primary shadow-xs text-primary cursor-pointer'
-                                : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white cursor-pointer'
+                          type="button"
+                          onClick={() => handleToggleLessonComplete(activeLesson)}
+                          className={`h-11 px-5 rounded-xl text-sm font-bold border-none cursor-pointer transition-colors flex items-center gap-2 ${
+                            liveLesson.is_completed
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                              : 'bg-amber-500 hover:bg-amber-600 text-white'
                           }`}
                         >
-                          <div className="min-w-0 flex-1 pr-2">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className={`text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-md ${
-                                lIsLocked ? 'bg-amber-500/20 text-amber-600' :
-                                lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-primary/10 text-primary'
-                              }`}>
-                                {lIsLocked ? `Kuis ${quizNum} (Terkunci)` : contentLabel}
-                              </span>
-                              {l.is_completed && (
-                                <svg className="size-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                            <div className="text-xs sm:text-sm font-bold truncate">{l.title}</div>
-                            <div className="text-xs sm:text-sm text-slate-400 mt-0.5 flex items-center gap-1">
-                              <span>{l.duration_minutes}m</span>
-                              {lIsLocked ? (
-                                <span className="text-amber-500 font-semibold">• Tonton {3 - watchedVids} video lagi</span>
-                              ) : l.is_placeholder ? (
-                                <span>• Segera Hadir</span>
-                              ) : null}
-                            </div>
-                          </div>
-                          {l.is_completed ? (
-                            <svg className="size-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : lIsLocked ? (
-                            <svg className="size-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                          ) : (
-                            <span className="size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold text-slate-600 shrink-0">
-                              &gt;
-                            </span>
+                          {liveLesson.is_completed && (
+                            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           )}
+                          {liveLesson.is_completed ? 'Sudah disetor' : 'Tandai selesai'}
                         </button>
-                      )
-                    })}
-                  </div>
-                )}
-                {activeLesson.content_type === 'kotoba' ? (
-                  /* Setoran Kotoba Interactive Frame */
-                  <div className="w-full rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-200 p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 shadow-sm shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="size-10 sm:size-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-sm sm:text-base font-bold shadow-md font-japanese">
-                          語
-                        </div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-bold text-amber-700 uppercase tracking-wider">Setoran Kotoba</span>
-                          <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-tight">
-                            Setoran Kosakata Bahasa Jepang — {activeChapter?.title}
-                          </h3>
-                        </div>
-                      </div>
-                      <span className="text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full flex items-center gap-1">
-                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Est. 10 Menit</span>
-                      </span>
-                    </div>
-
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      Hafalkan kosakata dasar bab ini sebelum melanjutkan ke video tata bahasa. Kamu dapat mencocokkan kata Jepang dan artinya!
-                    </p>
-
-                    {/* Sample Interactive Vocabulary Card */}
-                    <div className="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200/80 shadow-xs flex flex-col gap-2.5">
-                      <div className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1.5">
-                        Daftar Kosakata Bab {activeChapter?.bab_number}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {[
-                          { kana: 'わたし (watashi)', arti: 'Saya' },
-                          { kana: 'あなた (anata)', arti: 'Anda / Kamu' },
-                          { kana: 'あのひと (ano hito)', arti: 'Orang itu' },
-                          { kana: 'みなさん (minasan)', arti: 'Hadirin / Semua orang' },
-                          { kana: 'せんせい (sensei)', arti: 'Guru / Pengajar' },
-                          { kana: 'がくせい (gakusei)', arti: 'Siswa / Mahasiswa' },
-                          { kana: 'かいしゃいん (kaishain)', arti: 'Pegawai perusahaan' },
-                          { kana: 'エンジニア (enjinia)', arti: 'Insinyur / Engineer' },
-                        ].map((item, idx) => (
-                          <div key={idx} className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 flex justify-between items-center text-xs sm:text-sm">
-                            <span className="font-bold text-slate-800 text-xs sm:text-sm">{item.kana}</span>
-                            <span className="font-bold text-amber-700 bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-xs sm:text-sm">{item.arti}</span>
-                          </div>
-                        ))}
                       </div>
                     </div>
+                  ) : (
+                    <div className="relative shrink-0 lg:flex-1 lg:min-h-0 bg-slate-950 flex items-center justify-center sm:p-4 overflow-hidden">
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_65%)] pointer-events-none" />
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs sm:text-sm font-medium text-slate-500">
-                        {activeLesson.is_completed ? 'Status: Sudah Disetor' : 'Hafalkan lalu tandai selesai!'}
-                      </span>
-                      <button
-                        onClick={() => handleToggleLessonComplete(activeLesson)}
-                        className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-none cursor-pointer transition-all flex items-center gap-1.5 ${
-                          activeLesson.is_completed
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
-                        }`}
-                      >
-                        {activeLesson.is_completed ? (
-                          <>
-                            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      {liveLesson.content_type === 'quiz' ? (
+                        <div className="relative w-full max-w-md text-center text-white flex flex-col items-center gap-3 px-5 py-10 sm:py-8">
+                          <div className="size-14 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
+                            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
-                            <span>Setoran Selesai</span>
-                          </>
-                        ) : (
-                          <span>Tandai Selesai</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : activeLesson.content_type === 'quiz' ? (
-                  /* Kuis Evaluasi Bab Frame (Coming Soon State) */
-                  <div className="w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-800/60 p-4 sm:p-8 flex flex-col items-center justify-center text-center gap-3 sm:gap-4 shadow-xl shrink-0 min-h-[300px] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-indigo-500/10 blur-3xl pointer-events-none" />
-
-                    <div className="size-12 sm:size-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-lg relative z-10">
-                      <svg className="size-7 sm:size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-
-                    <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300 relative z-10">
-                      <span>Fitur Kuis Segera Hadir</span>
-                    </div>
-
-                    <div className="relative z-10 max-w-md">
-                      <h3 className="text-sm sm:text-base font-bold text-white mb-1">
-                        Kuis Evaluasi — {activeChapter?.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
-                        Soal kuis pilihan ganda untuk Bab ini sedang dalam tahap penyusunan & validasi oleh pengajar. Kamu bisa mempelajari video & setoran kotoba terlebih dahulu!
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs sm:text-sm text-indigo-200 max-w-md w-full relative z-10 flex flex-col gap-0.5 text-left">
-                      <span className="font-bold text-white flex items-center gap-1.5">
-                        <svg className="size-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Info Pengajar:</span>
-                      </span>
-                      <span>Target Kuis: 10 Soal Pilihan Ganda (Passing Grade 80%)</span>
-                    </div>
-                  </div>
-                ) : activeLesson.video_id ? (
-                  /* Real HTML5 Portrait Video Player */
-                  <div className="w-full bg-slate-950 sm:bg-gradient-to-b sm:from-slate-950 sm:via-slate-900 sm:to-slate-950 rounded-2xl sm:rounded-3xl p-1.5 sm:p-5 flex flex-col items-center justify-start sm:justify-center shadow-xl border border-slate-800 shrink-0 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
-
-                    <div className="hidden sm:flex items-center gap-1.5 mb-2 z-10 text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-                      <svg className="size-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <span>Format Video Mobile (Portrait 9:16)</span>
-                    </div>
-
-                    <div
-                      className="w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[340px] rounded-xl sm:rounded-2xl overflow-hidden bg-black shadow-2xl border sm:border-4 border-slate-800 relative z-10 group flex items-center justify-center"
-                      style={{ aspectRatio: '9/16', maxHeight: 'min(58vh, 540px)' }}
-                    >
-                      {isVideoRefreshing ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white gap-3 p-4 select-none animate-fade-in">
-                          <div className="size-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs sm:text-sm font-bold text-slate-300 animate-pulse">Memuat materi video...</span>
+                          </div>
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300">Segera hadir</span>
+                          <div>
+                            <h3 className="text-lg font-bold leading-snug">Kuis sedang disiapkan</h3>
+                            <p className="text-sm text-slate-400 leading-relaxed mt-1.5">
+                              Soal pilihan ganda untuk bab ini sedang disusun dan divalidasi pengajar. Sambil menunggu, ulangi video materinya agar makin paham.
+                            </p>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">Rencana: 10 soal pilihan ganda · nilai lulus 80%</p>
+                        </div>
+                      ) : liveLesson.video_id ? (
+                        <div className="relative h-[min(64dvh,640px)] lg:h-full aspect-[9/16] max-w-full bg-black sm:rounded-2xl overflow-hidden sm:shadow-2xl sm:ring-1 sm:ring-white/10">
+                          <SmartVideoPlayer
+                            key={`${modalChapter?.bab_number || 1}_${activeLesson.id}`}
+                            lesson={activeLesson}
+                            chapterBab={modalChapter?.bab_number || 1}
+                            onLoadedMetadata={totalSecs => {
+                              activeLesson.duration_text = `${Math.floor(totalSecs / 60)}.${String(Math.floor(totalSecs % 60)).padStart(2, '0')}`
+                              activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
+                            }}
+                            onEnded={() => {
+                              handleIncrementReplay(activeLesson)
+                              if (!activeLesson.is_completed) {
+                                handleToggleLessonComplete(activeLesson)
+                              }
+                            }}
+                          />
                         </div>
                       ) : (
-                        <SmartVideoPlayer
-                          key={`video_${videoKey}_${activeChapter?.bab_number || 1}_${activeLesson.id}_${activeLesson.lesson_number}`}
-                          lesson={activeLesson}
-                          chapterBab={activeChapter?.bab_number || 1}
-                          onLoadedMetadata={totalSecs => {
-                            const mins = Math.floor(totalSecs / 60)
-                            const secs = Math.floor(totalSecs % 60)
-                            const formatted = `${mins}.${String(secs).padStart(2, '0')}`
-                            if (activeLesson) {
-                              activeLesson.duration_text = formatted
-                              activeLesson.duration_minutes = Math.ceil(totalSecs / 60)
-                            }
-                          }}
-                          onEnded={() => {
-                            handleIncrementReplay(activeLesson)
-                            if (!activeLesson.is_completed) {
-                              handleToggleLessonComplete(activeLesson)
-                            }
-                          }}
-                        />
+                        <div className="relative w-full max-w-md text-center text-white flex flex-col items-center gap-3 px-5 py-10 sm:py-8">
+                          <div className="size-14 rounded-2xl bg-white/10 text-slate-200 flex items-center justify-center">
+                            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300">Segera hadir</span>
+                          <div>
+                            <h3 className="text-lg font-bold leading-snug">Video sedang disiapkan</h3>
+                            <p className="text-sm text-slate-400 leading-relaxed mt-1.5">
+                              Pengajar sedang merekam dan mengunggah video ini. Kamu bisa lanjut ke materi lain dulu.
+                            </p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  /* Elegant Placeholder Player Frame */
-                  <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center text-center p-6 text-white shadow-lg relative overflow-hidden shrink-0">
-                    <div className="size-16 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-3 border border-white/10">
-                      <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+                  )}
+
+                  {/* Info materi */}
+                  <section className="shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 lg:border-b-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                        liveLesson.content_type === 'quiz'
+                          ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                          : 'bg-primary/10 text-primary dark:text-primary-lighter'
+                      }`}>
+                        {getLessonLabel(liveLesson)}
+                      </span>
+                      {liveLesson.is_completed ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-1">
+                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          Selesai
+                        </span>
+                      ) : null}
                     </div>
-                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full mb-2 border border-amber-500/30">
-                      Video Sedang Disiapkan oleh Pengajar
-                    </span>
-                    <h3 className="text-sm sm:text-base font-bold max-w-md leading-snug mb-1">
-                      {activeLesson.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-sm leading-relaxed">
-                      Video materi ini sedang dalam tahap perekaman/upload oleh admin. Kamu tetap bisa mencatat judul bab dan lanjut ke video berikutnya!
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">{liveLesson.title}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      {liveLesson.duration_minutes} menit
+                      {liveLesson.content_type === 'video' && !liveLesson.is_placeholder && <> · ditonton {liveLesson.replay_count || 0}×</>}
                     </p>
-                  </div>
-                )}
-
-                {/* Lesson Details & Direct Navigation Controls */}
-                <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white leading-tight">
-                        {activeLesson.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    {liveLesson.content_type === 'video' && liveLesson.video_id && !liveLesson.is_completed && (
+                      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3 py-2.5 flex items-start gap-2">
+                        <svg className="size-4 shrink-0 mt-0.5 text-primary dark:text-primary-lighter" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>Estimasi Durasi: {activeLesson.duration_minutes} menit • Diulang {activeLesson.replay_count || 0} kali</span>
+                        <span>Tonton sampai akhir, materi akan otomatis ditandai selesai.</span>
                       </p>
-                    </div>
-
-                    {activeLesson.is_completed && (
-                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-bold flex items-center gap-1.5 self-start sm:self-center">
-                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Selesai</span>
-                      </span>
                     )}
-                  </div>
+                  </section>
 
-                  {/* Previous / Next Lesson Quick Navigation Buttons */}
-                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
-                    <button
-                      type="button"
-                      disabled={!prevLesson}
-                      onClick={() => prevLesson && handleSwitchLesson(prevLesson)}
-                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-1.5 group ${
-                        !prevLesson
-                          ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
-                          : 'cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary shadow-2xs'
-                      }`}
-                    >
-                      <span className="size-3.5 sm:size-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:-translate-x-0.5 transition-transform">
-                        &lt;
-                      </span>
-                      <span>Materi Sebelumnya</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!nextLesson}
-                      onClick={() => {
-                        if (!nextLesson) return
-                        const isQuiz = nextLesson.content_type === 'quiz'
-                        const babVids = activeChapter?.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3) || []
-                        const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
-                        if (isQuiz && watchedVids < 3) {
-                          setAlertConfig({
-                            isOpen: true,
-                            title: 'Kuis Masih Terkunci',
-                            message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter?.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
-                            type: 'lock',
-                            buttonText: 'Siap, Nonton Dulu!',
-                            onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-                          })
-                          return
-                        }
-                        handleSwitchLesson(nextLesson)
-                      }}
-                      className={`min-h-[28px] sm:min-h-[32px] px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center gap-1.5 group ${
-                        !nextLesson
-                          ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
-                          : 'cursor-pointer bg-primary text-white border-primary hover:bg-primary-dark shadow-xs'
-                      }`}
-                    >
-                      <span>Materi Selanjutnya</span>
-                      <span className="size-3.5 sm:size-4 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold group-hover:translate-x-0.5 transition-transform">
-                        &gt;
-                      </span>
-                    </button>
-                  </div>
+                  {/* Daftar materi — mobile/tablet */}
+                  <section className="lg:hidden px-4 sm:px-6 py-4">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Materi di bab ini</h4>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">{modalCompletedCount}/{modalLessons.length} selesai</span>
+                    </div>
+                    <ul className="flex flex-col gap-1">
+                      {modalLessons.map(l => <li key={l.id}>{renderPlaylistItem(l)}</li>)}
+                    </ul>
+                  </section>
                 </div>
 
+                {/* Navigasi sebelumnya / berikutnya */}
+                <nav
+                  aria-label="Navigasi materi"
+                  className="shrink-0 flex items-center gap-2 px-3 sm:px-6 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] sm:py-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                >
+                  <button
+                    type="button"
+                    disabled={!prevLesson}
+                    onClick={() => prevLesson && modalChapter && openLesson(modalChapter, prevLesson)}
+                    className="h-11 px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                    <span>Sebelumnya</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!nextLesson}
+                    onClick={() => nextLesson && modalChapter && openLesson(modalChapter, nextLesson)}
+                    className="flex-1 sm:flex-none sm:ml-auto h-11 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 border-none bg-primary hover:bg-primary-dark text-white cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary min-w-0"
+                  >
+                    {nextLesson && modalChapter && getLessonState(modalChapter, nextLesson).isQuizLocked && (
+                      <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    )}
+                    <span className="truncate">
+                      {nextLesson ? <>Berikutnya<span className="hidden sm:inline">: {getLessonLabel(nextLesson)}</span></> : 'Materi terakhir'}
+                    </span>
+                    <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </nav>
               </div>
 
-              {/* Right Column: Playlist of 5 Videos in active Chapter (desktop only) */}
-              <div className="hidden lg:flex bg-slate-50 border-l border-slate-200 p-4 overflow-y-auto flex-col gap-2">
-                <h4 className="font-bold text-slate-700 text-sm sm:text-base uppercase tracking-wider px-2 mb-1">
-                  Materi {activeChapter?.title || 'Bab Ini'}
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-400 px-2 mb-2 font-medium">
-                  {activeChapter?.lessons.filter(l => l.is_completed).length || 0} / {activeChapter?.lessons.length || 0} selesai
-                </p>
-                {activeChapter?.lessons.map(l => {
-                  const lIsQuiz = l.content_type === 'quiz'
-                  const babVids = activeChapter!.lessons.filter(v => v.content_type === 'video' || v.lesson_number <= 3)
-                  const watchedVids = babVids.filter(v => v.is_completed || (v.replay_count && v.replay_count > 0)).length
-                  const lIsLocked = lIsQuiz && watchedVids < 3
-                  const quizNum = l.lesson_number - 3
-                  const contentLabel = lIsQuiz
-                    ? `Kuis ${quizNum}`
-                    : `Video ${l.lesson_number}`
-                  const isActive = activeLesson?.id === l.id
-                  return (
-                    <button
-                      key={l.id}
-                      onClick={() => {
-                        if (lIsLocked) {
-                          setAlertConfig({
-                            isOpen: true,
-                            title: 'Kuis Masih Terkunci',
-                            message: `Kamu harus menonton seluruh 3 video materi pada "${activeChapter!.title}" terlebih dahulu sebelum dapat membuka Kuis Evaluasi ini!\n\n(Progress: ${watchedVids}/3 Video Selesai)`,
-                            type: 'lock',
-                            buttonText: 'Siap, Nonton Dulu!',
-                            onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-                          })
-                          return
-                        }
-                        handleSwitchLesson(l)
-                      }}
-                      className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
-                        lIsLocked
-                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-75'
-                          : isActive
-                            ? 'bg-white border-primary shadow-sm text-primary cursor-pointer'
-                            : 'bg-white/60 border-slate-200 text-slate-700 hover:bg-white hover:shadow-xs cursor-pointer'
-                      }`}
-                    >
-                      {/* Left: type icon */}
-                      <div className={`size-8 rounded-lg flex items-center justify-center text-xs sm:text-sm shrink-0 mt-0.5 ${
-                        lIsLocked ? 'bg-amber-100 text-amber-500' :
-                        isActive ? 'bg-primary/15 text-primary' :
-                        lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {lIsLocked ? (
-                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                        ) : lIsQuiz ? (
-                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        ) : l.is_placeholder ? (
-                          <span className="text-xs sm:text-sm font-bold">N/A</span>
-                        ) : isActive ? (
-                          <span className="size-2.5 border-y-transparent border-y-3 border-l-5 border-l-primary ml-0.5" />
-                        ) : (
-                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                      </div>
-
-                      {/* Right: text */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-md leading-none ${
-                            lIsLocked ? 'bg-amber-100 text-amber-600' :
-                            isActive ? 'bg-primary/10 text-primary' :
-                            lIsQuiz ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {lIsLocked ? `Kuis ${quizNum} (Terkunci)` : contentLabel}
-                          </span>
-                          {l.is_completed && !lIsLocked && (
-                            <span className="text-xs sm:text-sm text-emerald-600 font-bold flex items-center gap-0.5">
-                              <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span>Selesai</span>
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs sm:text-sm font-bold truncate leading-snug">{l.title}</div>
-                        <div className="text-xs sm:text-sm text-slate-400 mt-0.5 flex items-center gap-1">
-                          <span>{l.duration_minutes}m</span>
-                          {lIsLocked ? (
-                            <span className="text-amber-500 font-semibold">• Tonton {3 - watchedVids} video lagi</span>
-                          ) : l.is_placeholder ? (
-                            <span>• Segera Hadir</span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {/* Right badge */}
-                      {!lIsLocked && (
-                        l.is_completed ? (
-                          <svg className="size-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : l.is_placeholder ? (
-                          <span className="text-xs sm:text-sm text-slate-400 shrink-0">N/A</span>
-                        ) : isActive ? (
-                          <span className="size-2 rounded-full bg-primary shrink-0 mt-2"></span>
-                        ) : (
-                          <span className="size-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs sm:text-sm font-bold text-slate-500 shrink-0">
-                            &gt;
-                          </span>
-                        )
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+              {/* Daftar materi — desktop */}
+              <aside className="hidden lg:flex w-[340px] shrink-0 flex-col border-l border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900">
+                <div className="px-5 pt-5 pb-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Materi di bab ini</h4>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">{modalCompletedCount}/{modalLessons.length} selesai</span>
+                  </div>
+                  <div className="mt-2.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${modalChapterPct}%` }} />
+                  </div>
+                </div>
+                <ul className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 flex flex-col gap-1">
+                  {modalLessons.map(l => <li key={l.id}>{renderPlaylistItem(l)}</li>)}
+                </ul>
+              </aside>
             </div>
           </div>
         </div>
