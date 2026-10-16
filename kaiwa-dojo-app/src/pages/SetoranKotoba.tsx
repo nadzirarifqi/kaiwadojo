@@ -46,6 +46,46 @@ export function detectJapaneseScript(text: string) {
   }
 }
 
+/**
+ * Gambar kotoba yang selalu tampil utuh (object-contain) — tidak terpotong apa pun rasio fotonya.
+ * Sisa ruang diisi versi blur dari foto yang sama agar tetap terlihat rapi.
+ */
+function KotobaImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return (
+      <div className={`flex flex-col items-center justify-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 ${className}`}>
+        <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span className="text-[11px] font-medium">Gambar tidak dapat dimuat</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`relative overflow-hidden bg-slate-100 dark:bg-slate-800 ${className}`}>
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        className="absolute inset-0 size-full object-cover scale-110 blur-xl opacity-60 dark:opacity-40"
+      />
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className="relative size-full object-contain"
+      />
+    </div>
+  )
+}
+
 /* ── High-Performance Image Upload & Compressor Helpers ── */
 
 /**
@@ -158,6 +198,20 @@ export default function SetoranKotobaPage() {
   const [showAnswerKey, setShowAnswerKey]     = useState(false)
   const [testResults, setTestResults]         = useState<{ mastered: number; difficult: number }>({ mastered: 0, difficult: 0 })
   const [isTestFinished, setIsTestFinished]   = useState(false)
+
+  // Lightbox: lihat foto kotoba layar penuh
+  const [previewItem, setPreviewItem] = useState<UserKotoba | null>(null)
+  useEffect(() => {
+    if (!previewItem) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewItem(null) }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [previewItem])
 
   // Custom Alert Modal State
   const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
@@ -839,7 +893,7 @@ export default function SetoranKotobaPage() {
           </div>
           <div>
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{totalCount}</div>
-            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_total', 'Total Kosakata')}</div>
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{t('sk_stat_total', 'Total Kosakata')}</div>
           </div>
         </div>
 
@@ -851,7 +905,7 @@ export default function SetoranKotobaPage() {
           </div>
           <div>
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">{masteredCount}</div>
-            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_mastered', 'Dikuasai')}</div>
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{t('sk_stat_mastered', 'Dikuasai')}</div>
           </div>
         </div>
 
@@ -865,59 +919,60 @@ export default function SetoranKotobaPage() {
             <div className="text-base sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
               {totalCount > 0 ? `${Math.round((masteredCount / totalCount) * 100)}%` : '0%'}
             </div>
-            <div className="text-[0.62rem] sm:text-xs text-slate-400 font-medium">{t('sk_stat_memorization', 'Tingkat Hafal')}</div>
+            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{t('sk_stat_memorization', 'Tingkat Hafal')}</div>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-        {/* Filter Pills */}
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl w-full sm:w-auto overflow-x-auto gap-1">
-          <button
-            onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
-              filterMode === 'all'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
-            }`}
-          >
-            {t('sk_filter_all', 'Semua')} ({totalCount})
-          </button>
-          <button
-            onClick={() => setFilterMode('unmastered')}
-            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
-              filterMode === 'unmastered'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-amber-500'
-            }`}
-          >
-            {t('sk_filter_unmastered', 'Masih Dipelajari')} ({totalCount - masteredCount})
-          </button>
-          <button
-            onClick={() => setFilterMode('mastered')}
-            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer border-none shrink-0 ${
-              filterMode === 'mastered'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500'
-            }`}
-          >
-            {t('sk_filter_mastered', 'Sudah Dikuasai')} ({masteredCount})
-          </button>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-4 sm:mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Filter Pills — 3 kolom rata di HP */}
+        <div role="tablist" className="grid grid-cols-3 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full md:w-auto gap-1">
+          {([
+            { key: 'all', label: t('sk_filter_all', 'Semua'), count: totalCount, active: 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm' },
+            { key: 'unmastered', label: t('sk_filter_unmastered_short', 'Dipelajari'), count: totalCount - masteredCount, active: 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm' },
+            { key: 'mastered', label: t('sk_filter_mastered_short', 'Dikuasai'), count: masteredCount, active: 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' },
+          ] as const).map(f => (
+            <button
+              key={f.key}
+              role="tab"
+              aria-selected={filterMode === f.key}
+              onClick={() => setFilterMode(f.key)}
+              className={`min-h-10 px-2 md:px-4 rounded-lg text-[13px] sm:text-sm font-semibold transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                filterMode === f.key ? f.active : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <span className="truncate">{f.label}</span>
+              <span className="text-[11px] font-bold leading-none px-1.5 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700/70">{f.count}</span>
+            </button>
+          ))}
         </div>
 
         {/* Search input */}
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full md:w-80">
           <input
-            type="text"
+            type="search"
+            enterKeyHint="search"
             placeholder={t('sk_search_placeholder', 'Cari kanji, romaji, atau arti...')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium"
+            className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 transition-all [&::-webkit-search-cancel-button]:hidden"
           />
-          <svg className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="size-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Hapus pencarian"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 size-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 border-none bg-transparent cursor-pointer"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -934,144 +989,184 @@ export default function SetoranKotobaPage() {
             <div className="size-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center font-serif font-black text-2xl">
               語
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">Belum Ada Catatan Kosakata</h3>
-            <p className="text-xs text-slate-400 max-w-sm">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              {searchTerm || filterMode !== 'all' ? 'Kosakata Tidak Ditemukan' : 'Belum Ada Catatan Kosakata'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
               {searchTerm
                 ? 'Tidak ada kosakata yang cocok dengan pencarianmu.'
-                : 'Kamu belum menambah kosakata baru. Klik tombol di bawah untuk mencatat kata Jepang pertamamu!'}
+                : filterMode !== 'all'
+                  ? 'Belum ada kosakata di kategori ini.'
+                  : 'Kamu belum menambah kosakata baru. Klik tombol di bawah untuk mencatat kata Jepang pertamamu!'}
             </p>
-            <button
-              onClick={handleOpenCreateModal}
-              className="group mt-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-2xl border-none cursor-pointer transition-all shadow-md active:scale-95 flex items-center gap-2"
-            >
-              <span>Tambah Kosakata Pertama</span>
-              <span className="size-4.5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                &gt;
-              </span>
-            </button>
+            {searchTerm || filterMode !== 'all' ? (
+              <button
+                onClick={() => { setSearchTerm(''); setFilterMode('all') }}
+                className="mt-1 h-11 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl border-none cursor-pointer transition-colors"
+              >
+                Tampilkan Semua Kosakata
+              </button>
+            ) : (
+              <button
+                onClick={handleOpenCreateModal}
+                className="mt-1 h-11 px-5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl border-none cursor-pointer transition-all shadow-md active:scale-95"
+              >
+                Tambah Kosakata Pertama
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {filteredList.map(item => (
-            <div
+            <article
               key={item.id}
-              className={`p-4 rounded-3xl bg-white dark:bg-slate-900 border transition-all shadow-sm flex flex-col justify-between gap-4 group ${
+              className={`group flex flex-col rounded-2xl bg-white dark:bg-slate-900 border overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 ${
                 item.is_mastered
-                  ? 'border-emerald-200 dark:border-emerald-950/60 bg-emerald-50/30 dark:bg-emerald-950/10'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-500/60'
+                  ? 'border-emerald-300 dark:border-emerald-800/70'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-400/70'
               }`}
             >
-              {/* Image Preview */}
-              {item.image_url && (
-                <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
-                  <img
-                    src={item.image_url}
-                    alt={item.romaji}
-                    loading="lazy"
-                    decoding="async"
-                    className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={e => {
-                      ;(e.target as HTMLElement).style.display = 'none'
-                    }}
-                  />
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                    <button
-                      onClick={() => handleToggleMastered(item)}
-                      className={`px-2.5 py-1 rounded-xl text-[0.65rem] font-bold backdrop-blur-md cursor-pointer border-none transition-all flex items-center gap-1 ${
-                        item.is_mastered
-                          ? 'bg-emerald-500/90 text-white shadow-xs'
-                          : 'bg-slate-900/60 text-white hover:bg-emerald-500'
-                      }`}
-                    >
-                      {item.is_mastered ? (
-                        <>
-                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Dikuasai</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="size-1.5 rounded-full bg-white/70" />
-                          <span>Tandai Dikuasai</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Media: foto utuh (tap untuk layar penuh) atau placeholder tambah gambar */}
+              <div className="relative">
+                {item.image_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewItem(item)}
+                    aria-label={`Lihat gambar ${item.japanese}`}
+                    className="block w-full p-0 border-none bg-transparent cursor-zoom-in"
+                  >
+                    <KotobaImage
+                      key={item.image_url}
+                      src={item.image_url}
+                      alt={`${item.japanese} (${item.romaji})`}
+                      className="w-full aspect-square sm:aspect-[4/3]"
+                    />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(item)}
+                    className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden border-none cursor-pointer bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-slate-900 flex items-center justify-center"
+                  >
+                    <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-serif font-black text-[5.5rem] sm:text-[6.5rem] leading-none text-amber-500/15 select-none">
+                      {Array.from(item.japanese.trim())[0] || '語'}
+                    </span>
+                    <span className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-xs opacity-90 group-hover:opacity-100">
+                      <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Gambar
+                    </span>
+                  </button>
+                )}
 
-              {/* Japanese & Romaji Header */}
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                    <div>
-                    <h3 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white leading-tight">
-                      {item.japanese}
-                    </h3>
-                    <div className="text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                      {item.romaji}
-                    </div>
-                  </div>
-
-                  {!item.image_url && (
-                    <button
-                      onClick={() => handleToggleMastered(item)}
-                      className={`px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer border-none transition-all shrink-0 flex items-center gap-1 ${
-                        item.is_mastered
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700'
-                      }`}
-                    >
-                      {item.is_mastered ? (
-                        <>
-                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Dikuasai</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
-                          <span>Tandai Dikuasai</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Meaning */}
-                <div className="mt-2.5 pt-2.5 sm:mt-3 sm:pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="text-[10px] sm:text-xs text-slate-400 font-semibold mb-0.5">{t('sk_meaning_label', 'Makna / Arti:')}</div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug">
-                    {item.meaning}
-                  </div>
-                </div>
+                {item.is_mastered && (
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold shadow-sm pointer-events-none">
+                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Hafal
+                  </span>
+                )}
+                {item.id.startsWith('kotoba-') && (
+                  <span title="Menunggu tersimpan ke server" className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/70 text-white text-[11px] font-semibold pointer-events-none">
+                    <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Sinkron
+                  </span>
+                )}
               </div>
 
-              {/* Action Buttons Footer */}
-              <div className="flex items-center justify-end gap-1.5 sm:gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              {/* Text */}
+              <div className="flex-1 p-3 sm:p-4 pb-2 sm:pb-2 min-w-0">
+                <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white leading-tight break-words">
+                  {item.japanese}
+                </h3>
+                <p className="text-[13px] sm:text-sm font-semibold text-amber-600 dark:text-amber-400 mt-0.5 break-words">
+                  {item.romaji}
+                </p>
+                <p className="text-[13px] sm:text-sm text-slate-600 dark:text-slate-300 mt-1.5 leading-snug line-clamp-2" title={item.meaning}>
+                  {item.meaning}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1.5 p-3 sm:p-4 pt-1 sm:pt-1">
+                <button
+                  onClick={() => handleToggleMastered(item)}
+                  aria-pressed={item.is_mastered}
+                  className={`flex-1 min-w-0 h-10 px-2 rounded-xl text-[13px] font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
+                    item.is_mastered
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-none'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:text-emerald-600'
+                  }`}
+                >
+                  <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={item.is_mastered ? 3 : 2}>
+                    {item.is_mastered
+                      ? <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      : <circle cx="12" cy="12" r="8" />}
+                  </svg>
+                  <span className="truncate">
+                    <span className="sm:hidden">Hafal</span>
+                    <span className="hidden sm:inline">{item.is_mastered ? 'Sudah Hafal' : 'Tandai Hafal'}</span>
+                  </span>
+                </button>
                 <button
                   onClick={() => handleOpenEditModal(item)}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none cursor-pointer transition-all flex items-center gap-1 sm:gap-1.5 min-h-[26px] sm:min-h-[30px]"
+                  aria-label={`Edit ${item.japanese}`}
+                  title="Edit"
+                  className="size-10 shrink-0 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer transition-colors"
                 >
-                  <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                  <span>Edit</span>
                 </button>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 border-none cursor-pointer transition-all flex items-center gap-1 sm:gap-1.5 min-h-[26px] sm:min-h-[30px]"
+                  aria-label={`Hapus ${item.japanese}`}
+                  title="Hapus"
+                  className="size-10 shrink-0 rounded-xl flex items-center justify-center text-red-500 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 border-none cursor-pointer transition-colors"
                 >
-                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  <span>Hapus</span>
                 </button>
               </div>
-            </div>
+            </article>
           ))}
+        </div>
+      )}
+
+      {/* Lightbox: foto kotoba layar penuh */}
+      {previewItem?.image_url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Gambar ${previewItem.japanese}`}
+          onClick={() => setPreviewItem(null)}
+          className="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewItem(null)}
+            aria-label="Tutup"
+            className="absolute top-[calc(0.75rem+env(safe-area-inset-top))] right-3 size-11 rounded-full bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer flex items-center justify-center"
+          >
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={previewItem.image_url}
+            alt={`${previewItem.japanese} (${previewItem.romaji})`}
+            onClick={e => e.stopPropagation()}
+            className="max-w-full max-h-[72dvh] object-contain rounded-xl shadow-2xl"
+          />
+          <div onClick={e => e.stopPropagation()} className="mt-4 text-center text-white max-w-md">
+            <p className="text-2xl font-black">{previewItem.japanese}</p>
+            <p className="text-sm font-semibold text-amber-300">{previewItem.romaji}</p>
+            <p className="text-sm text-white/80 mt-1">{previewItem.meaning}</p>
+          </div>
         </div>
       )}
 
@@ -1162,9 +1257,12 @@ export default function SetoranKotobaPage() {
                       <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
                         Tebak Huruf Jepang dari Gambar / Makna Berikut:
                       </span>
-                      <div className="h-40 w-full rounded-xl overflow-hidden bg-slate-200 mx-auto max-w-xs">
-                        <img src={activeTestItem.image_url} alt="Prompt" className="size-full object-cover" />
-                      </div>
+                      <KotobaImage
+                        key={activeTestItem.image_url}
+                        src={activeTestItem.image_url}
+                        alt="Gambar soal"
+                        className="w-full max-w-xs mx-auto aspect-[4/3] rounded-xl"
+                      />
                       <div className="text-sm font-bold text-slate-700 dark:text-slate-200">
                         Makna: {activeTestItem.meaning}
                       </div>
@@ -1417,8 +1515,8 @@ export default function SetoranKotobaPage() {
                   />
 
                   {formData.image_url && (
-                    <div className="mt-2 relative w-full h-24 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
-                      <img src={formData.image_url} alt="Preview" className="size-full object-cover" />
+                    <div className="mt-2 relative w-full rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                      <KotobaImage key={formData.image_url} src={formData.image_url} alt="Preview" className="w-full aspect-[4/3]" />
                       <button
                         type="button"
                         onClick={() => {
