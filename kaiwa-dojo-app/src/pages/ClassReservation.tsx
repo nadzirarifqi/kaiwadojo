@@ -18,8 +18,7 @@ import {
   formatTimeShort,
   RESERVATION_UPDATE_EVENT,
   matchScheduleId,
-  getScheduleDatesList,
-  areDatesOverlapping,
+  getScheduleLockStatus,
   isScheduleAccessibleForUser,
   isSchedulePast,
 } from '../lib/scheduleService'
@@ -201,71 +200,9 @@ export default function ClassReservationPage() {
     return reservations.find(r => matchScheduleId(schId, r.schedule_id) && r.user_id === userId)
   }
 
-  // Check locking constraint for user
+  // Aturan kunci reservasi (shared dengan halaman Rencana Belajar)
   function checkLockStatus(sch: ClassSchedule): { isLocked: boolean; reason?: string } {
-    if (getUserReservation(sch.id)) return { isLocked: false }
-
-    // -1. Expired / Past Date Check
-    if (isSchedulePast(sch)) {
-      return { isLocked: true, reason: 'Jadwal Sudah Lewat' }
-    }
-
-    // 0. Group restriction check
-    if (!isScheduleAccessibleForUser(sch, profile, groups)) {
-      return { isLocked: true, reason: 'Khusus Grup Tertentu' }
-    }
-
-    const enrolled = getEnrolledCount(sch.id)
-    if (enrolled >= sch.max_quota) {
-      return { isLocked: true, reason: 'Kuota Penuh' }
-    }
-
-    // 1. Same-Day Date Conflict check (Online vs Offline or same date)
-    const targetDates = getScheduleDatesList(sch)
-    const userReservations = reservations.filter(r => r.user_id === userId)
-    for (const r of userReservations) {
-      const existingSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
-      if (!existingSch) continue
-
-      const existingDates = getScheduleDatesList(existingSch)
-      if (areDatesOverlapping(targetDates, existingDates)) {
-        if (sch.type === 'online' && existingSch.type === 'offline') {
-          return { isLocked: true, reason: 'Ada Kelas Offline di Hari Ini' }
-        }
-        if (sch.type === 'offline' && existingSch.type === 'online') {
-          return { isLocked: true, reason: 'Ada Kelas Online di Hari Ini' }
-        }
-        if (sch.type === existingSch.type) {
-          return { isLocked: true, reason: 'Sudah Reservasi Hari Ini' }
-        }
-      }
-    }
-
-    // 2. Weekly online limit (1 per week)
-    if (sch.type === 'online') {
-      const hasOtherOnlineInWeek = reservations.some(r => {
-        if (r.user_id !== userId) return false
-        const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
-        return targetSch && targetSch.type === 'online' && targetSch.week_range_id === sch.week_range_id
-      })
-      if (hasOtherOnlineInWeek) {
-        return { isLocked: true, reason: 'Sudah Reservasi Minggu Ini' }
-      }
-    }
-
-    // 3. Monthly offline limit (1 per month)
-    if (sch.type === 'offline') {
-      const hasOtherOfflineInMonth = reservations.some(r => {
-        if (r.user_id !== userId) return false
-        const targetSch = schedules.find(s => matchScheduleId(s.id, r.schedule_id))
-        return targetSch && targetSch.type === 'offline' && targetSch.month_range_id === sch.month_range_id
-      })
-      if (hasOtherOfflineInMonth) {
-        return { isLocked: true, reason: 'Sudah Reservasi Bulan Ini' }
-      }
-    }
-
-    return { isLocked: false }
+    return getScheduleLockStatus(sch, { userId, schedules, reservations, profile, groups })
   }
 
   async function handleConfirmAction() {

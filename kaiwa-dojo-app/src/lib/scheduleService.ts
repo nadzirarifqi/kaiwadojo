@@ -1407,3 +1407,61 @@ export function calculateDateScheduleStatus(
   }
 }
 
+
+/**
+ * Status kunci reservasi satu jadwal untuk user tertentu.
+ * Satu sumber aturan untuk semua halaman (Reservasi Kelas, Rencana Belajar):
+ * lewat → grup → kuota → bentrok hari yang sama → 1 online/minggu → 1 offline/bulan.
+ */
+export function getScheduleLockStatus(
+  sch: ClassSchedule,
+  ctx: {
+    userId: string
+    schedules: ClassSchedule[]
+    reservations: ClassReservation[]
+    profile?: Parameters<typeof isScheduleAccessibleForUser>[1]
+    groups?: Parameters<typeof isScheduleAccessibleForUser>[2]
+  }
+): { isLocked: boolean; reason?: string } {
+  const { userId, schedules, reservations, profile, groups } = ctx
+  const isMine = (r: ClassReservation) => r.user_id === userId
+  if (reservations.some(r => isMine(r) && matchScheduleId(sch.id, r.schedule_id))) {
+    return { isLocked: false }
+  }
+
+  if (isSchedulePast(sch)) return { isLocked: true, reason: 'Jadwal Sudah Lewat' }
+
+  if (!isScheduleAccessibleForUser(sch, profile, groups || [])) {
+    return { isLocked: true, reason: 'Khusus Grup Tertentu' }
+  }
+
+  const enrolled = reservations.filter(r => matchScheduleId(sch.id, r.schedule_id)).length
+  if (enrolled >= sch.max_quota) return { isLocked: true, reason: 'Kuota Penuh' }
+
+  const myBookedSchedules = reservations
+    .filter(isMine)
+    .map(r => schedules.find(s => matchScheduleId(s.id, r.schedule_id)))
+    .filter((s): s is ClassSchedule => Boolean(s))
+
+  const targetDates = getScheduleDatesList(sch)
+  for (const existing of myBookedSchedules) {
+    if (!areDatesOverlapping(targetDates, getScheduleDatesList(existing))) continue
+    if (sch.type === 'online' && existing.type === 'offline') return { isLocked: true, reason: 'Ada Kelas Offline di Hari Ini' }
+    if (sch.type === 'offline' && existing.type === 'online') return { isLocked: true, reason: 'Ada Kelas Online di Hari Ini' }
+    return { isLocked: true, reason: 'Sudah Reservasi Hari Ini' }
+  }
+
+  if (sch.type === 'online') {
+    const weekId = sch.week_range_id || getWeekRangeId(sch.date)
+    if (myBookedSchedules.some(s => s.type === 'online' && (s.week_range_id || getWeekRangeId(s.date)) === weekId)) {
+      return { isLocked: true, reason: 'Sudah Reservasi Minggu Ini' }
+    }
+  } else {
+    const monthId = sch.month_range_id || getMonthRangeId(sch.date)
+    if (myBookedSchedules.some(s => s.type === 'offline' && (s.month_range_id || getMonthRangeId(s.date)) === monthId)) {
+      return { isLocked: true, reason: 'Sudah Reservasi Bulan Ini' }
+    }
+  }
+
+  return { isLocked: false }
+}

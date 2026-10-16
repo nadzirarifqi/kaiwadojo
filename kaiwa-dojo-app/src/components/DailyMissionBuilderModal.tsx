@@ -5,6 +5,7 @@ import {
   type DailyMissionData,
   type SelectedVideoItem,
   getTodayDateString,
+  isNoPlanMission,
 } from '../lib/dailyMission'
 import CustomAlertModal, { type AlertModalConfig } from './CustomAlertModal'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
@@ -21,6 +22,77 @@ export interface DailyMissionBuilderModalProps {
   currentMission: DailyMissionData | null
   onSave: (data: Omit<DailyMissionData, 'date'>, dateStr: string) => Promise<void> | void
   onClose: () => void
+  /** Tanggal yang sudah memiliki rencana — untuk peringatan saat user memindah tanggal */
+  plannedDates?: Set<string>
+}
+
+const MAX_QUIZ = 50
+const MAX_KOTOBA = 100
+
+function formatLongDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  return new Date(y, m - 1, d).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function Stepper({
+  label,
+  unit,
+  value,
+  max,
+  onChange,
+}: {
+  label: string
+  unit: string
+  value: number
+  max: number
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-bold text-slate-800 dark:text-white">{label}</span>
+        <span className="text-xs text-slate-400">Maks. {max}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(0, value - 1))}
+          disabled={value <= 0}
+          aria-label={`Kurangi ${label}`}
+          className="size-11 shrink-0 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xl font-bold cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+        >
+          −
+        </button>
+        <div className="relative flex-1 min-w-0">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={value === 0 ? '' : value}
+            placeholder="0"
+            aria-label={label}
+            onChange={e => {
+              const clean = e.target.value.replace(/\D/g, '')
+              const n = clean === '' ? 0 : parseInt(clean, 10)
+              onChange(Number.isNaN(n) ? 0 : Math.max(0, Math.min(max, n)))
+            }}
+            className="w-full h-11 pl-3 pr-14 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center text-base font-bold text-slate-900 dark:text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">{unit}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          aria-label={`Tambah ${label}`}
+          className="size-11 shrink-0 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xl font-bold cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function DailyMissionBuilderModal({
@@ -28,12 +100,14 @@ export default function DailyMissionBuilderModal({
   currentMission,
   onSave,
   onClose,
+  plannedDates,
 }: DailyMissionBuilderModalProps) {
   const { profile } = useAuth()
   const { t } = useLanguage()
   const isStudent = profile?.role === 'pelajar' || !profile?.role
+  const todayStr = getTodayDateString()
 
-  const [missionDate, setMissionDate] = useState<string>(targetDate)
+  const [missionDate, setMissionDate] = useState<string>(targetDate < todayStr ? todayStr : targetDate)
   const [chapterSettingsMap, setChapterSettingsMap] = useState<{ [key: number]: ChapterSetting }>({})
   const [groups, setGroups] = useState<KaiwaGroup[]>([])
   const [isSaving, setIsSaving] = useState<boolean>(false)
@@ -64,35 +138,44 @@ export default function DailyMissionBuilderModal({
     return b <= 2
   })
 
-  const [selectedBab, setSelectedBab] = useState<number>(() => {
-    const initBab = currentMission?.selectedVideos?.[0]?.bab || 1
-    return availableBabs.includes(initBab) ? initBab : (availableBabs[0] || 1)
-  })
-
-  const [noVideoPlan, setNoVideoPlan] = useState<boolean>(
-    currentMission ? currentMission.targetReplayCount === 0 : false
-  )
-  const [selectedVideos, setSelectedVideos] = useState<SelectedVideoItem[]>(
-    currentMission?.selectedVideos || []
-  )
-  const [targetQuiz, setTargetQuiz] = useState<number>(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
-  const [targetKotoba, setTargetKotoba] = useState<number>(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
+  const [selectedBab, setSelectedBab] = useState<number>(() => currentMission?.selectedVideos?.[0]?.bab || 1)
+  const [dayType, setDayType] = useState<'study' | 'rest'>(isNoPlanMission(currentMission) ? 'rest' : 'study')
+  const [selectedVideos, setSelectedVideos] = useState<SelectedVideoItem[]>(currentMission?.selectedVideos || [])
+  const [targetQuiz, setTargetQuiz] = useState<number>(currentMission?.targetQuizCount ?? 0)
+  const [targetKotoba, setTargetKotoba] = useState<number>(currentMission?.targetKotobaCount ?? 0)
 
   // Sinkronisasi state internal saat props berubah
   useEffect(() => {
-    setMissionDate(targetDate)
+    setMissionDate(targetDate < todayStr ? todayStr : targetDate)
     const initBab = currentMission?.selectedVideos?.[0]?.bab
-    if (initBab && availableBabs.includes(initBab)) {
-      setSelectedBab(initBab)
-    }
+    if (initBab) setSelectedBab(initBab)
     setSelectedVideos(currentMission?.selectedVideos || [])
-    setTargetQuiz(currentMission ? (currentMission.targetQuizCount ?? 0) : 0)
-    setTargetKotoba(currentMission ? (currentMission.targetKotobaCount ?? 0) : 0)
-    setNoVideoPlan(currentMission ? currentMission.targetReplayCount === 0 : false)
+    setTargetQuiz(currentMission?.targetQuizCount ?? 0)
+    setTargetKotoba(currentMission?.targetKotobaCount ?? 0)
+    setDayType(isNoPlanMission(currentMission) ? 'rest' : 'study')
   }, [targetDate, currentMission])
 
-  const currentJilid: 1 | 2 = (selectedBab <= 25 ? 1 : 2) as 1 | 2
+  // Pastikan bab terpilih termasuk yang boleh diakses (setelah pengaturan bab termuat)
+  const availableBabsKey = availableBabs.join(',')
+  useEffect(() => {
+    if (availableBabs.length > 0 && !availableBabs.includes(selectedBab)) {
+      setSelectedBab(availableBabs[0])
+    }
+  }, [availableBabsKey])
 
+  // Tutup dengan Escape & kunci scroll halaman
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !isSaving) onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [isSaving, onClose])
+
+  const currentJilid: 1 | 2 = (selectedBab <= 25 ? 1 : 2) as 1 | 2
   const currentBabVideos: SelectedVideoItem[] = [1, 2, 3].map(vNum => ({
     id: `bab_${selectedBab}_video_${vNum}`,
     title: `Bab ${selectedBab} - Part ${vNum}`,
@@ -101,14 +184,17 @@ export default function DailyMissionBuilderModal({
     videoNum: vNum,
   }))
 
-  const totalReplayTarget = noVideoPlan ? 0 : selectedVideos.length * 3
+  const isRest = dayType === 'rest'
+  const finalVideos = isRest ? [] : selectedVideos
+  const finalQuiz = isRest ? 0 : targetQuiz
+  const finalKotoba = isRest ? 0 : targetKotoba
+  const totalReplayTarget = finalVideos.length * 3
+  const hasAnyTarget = finalVideos.length > 0 || finalQuiz > 0 || finalKotoba > 0
+  const canSave = isRest || hasAnyTarget
+  const willOverwrite = missionDate !== targetDate && Boolean(plannedDates?.has(missionDate))
 
   function toggleVideoSelection(vItem: SelectedVideoItem) {
-    setSelectedVideos(prev => {
-      const exists = prev.some(v => v.id === vItem.id)
-      if (exists) return prev.filter(v => v.id !== vItem.id)
-      return [...prev, vItem]
-    })
+    setSelectedVideos(prev => prev.some(v => v.id === vItem.id) ? prev.filter(v => v.id !== vItem.id) : [...prev, vItem])
   }
 
   const [alertConfig, setAlertConfig] = useState<AlertModalConfig>({
@@ -122,35 +208,22 @@ export default function DailyMissionBuilderModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (isSaving) return
-
-    const finalVideos = noVideoPlan ? [] : selectedVideos
-    if (!noVideoPlan && finalVideos.length === 0 && targetQuiz === 0 && targetKotoba === 0) {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Target Belum Dipilih',
-        message: 'Silakan pilih minimal 1 video materi, atau tentukan target kuis/kotoba, atau centang opsi "Tidak Ada Rencana".',
-        type: 'warning',
-        buttonText: 'Mengerti',
-        onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
-      })
-      return
-    }
+    if (isSaving || !canSave) return
 
     setIsSaving(true)
     try {
       await onSave({
         selectedVideos: finalVideos,
         targetReplayCount: totalReplayTarget,
-        targetQuizCount: targetQuiz,
-        targetKotobaCount: targetKotoba,
+        targetQuizCount: finalQuiz,
+        targetKotobaCount: finalKotoba,
         baseline: currentMission?.baseline,
       }, missionDate)
     } catch (err: any) {
       console.error('Failed to save mission:', err)
       setAlertConfig({
         isOpen: true,
-        title: 'Gagal Menyimpan Misi',
+        title: 'Gagal Menyimpan Rencana',
         message: err?.message || 'Terjadi kesalahan saat menyimpan data ke database. Silakan coba lagi.',
         type: 'warning',
         buttonText: 'Mengerti',
@@ -161,324 +234,230 @@ export default function DailyMissionBuilderModal({
     }
   }
 
-  // Pisahkan bab untuk optgroup yang rapi
   const jilid1Babs = availableBabs.filter(b => b <= 25)
   const jilid2Babs = availableBabs.filter(b => b >= 26)
+  const babLabel = (b: number) => {
+    const titleText = chapterSettingsMap[b]?.title || (b <= 25 ? DEFAULT_JILID_1[b] : DEFAULT_JILID_2[b])?.title || `Bab ${b}`
+    return `Bab ${b}: ${titleText.replace(/^Bab\s+\d+:\s*/i, '')}`
+  }
+
+  const summaryParts = [
+    finalVideos.length > 0 && `${finalVideos.length} video (${totalReplayTarget}x putar)`,
+    finalQuiz > 0 && `${finalQuiz} kuis`,
+    finalKotoba > 0 && `${finalKotoba} kotoba`,
+  ].filter(Boolean) as string[]
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[999] flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
+      onClick={() => { if (!isSaving) onClose() }}
     >
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
-        
-        {/* Header Modal */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-gradient-to-r from-primary to-primary-dark text-white flex items-center justify-between shrink-0">
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-white">
-              {currentMission ? 'Edit Misi Harian' : 'Susun Misi Harian'}
-            </h3>
-            <p className="text-xs text-white/80">Pilih materi dan target belajarmu</p>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mission-builder-title"
+        onClick={e => e.stopPropagation()}
+        className="w-full sm:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92dvh] overflow-hidden animate-fade-in-up"
+      >
+        {/* Header */}
+        <div className="shrink-0 px-5 pt-3 sm:pt-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="sm:hidden mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-primary dark:text-red-400">
+                {currentMission ? 'Edit Rencana Belajar' : 'Susun Rencana Belajar'}
+              </p>
+              <h3 id="mission-builder-title" className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                {formatLongDate(missionDate)}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              aria-label="Tutup"
+              className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer flex items-center justify-center transition-colors disabled:opacity-50"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="size-8 rounded-full bg-white/20 hover:bg-white/30 text-white border-none cursor-pointer flex items-center justify-center transition-colors"
-            title="Tutup"
-          >
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
-        {/* Form Body - Smooth Natural Scrolling */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto flex-1 touch-pan-y">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5 overscroll-contain">
 
-            {/* Pemilihan Tanggal - Bersih & Rapi tanpa Card Besar */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
-              <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
-                Pilih Tanggal:
-              </span>
+            {/* Tanggal */}
+            <section>
+              <label htmlFor="mission-date" className="block text-sm font-bold text-slate-800 dark:text-white mb-2">Tanggal</label>
               <input
+                id="mission-date"
                 type="date"
                 value={missionDate}
-                min={getTodayDateString()}
-                onChange={e => setMissionDate(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white outline-none focus:border-primary cursor-pointer shrink-0 min-h-[36px]"
+                min={todayStr}
+                onChange={e => e.target.value && setMissionDate(e.target.value)}
+                className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm font-semibold text-slate-800 dark:text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 cursor-pointer"
               />
-            </div>
+              {willOverwrite && (
+                <p className="mt-2 text-[13px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl px-3 py-2">
+                  Tanggal ini sudah punya rencana. Menyimpan akan menggantinya.
+                </p>
+              )}
+            </section>
 
-            {/* Bagian 1: Target Video Materi */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
-                  {t('lp_step1_video', 'Pilih Video Materi')}
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 select-none">
-                  <input
-                    type="checkbox"
-                    checked={noVideoPlan}
-                    onChange={e => {
-                      setNoVideoPlan(e.target.checked)
-                      if (e.target.checked) setSelectedVideos([])
-                    }}
-                    className="size-4 accent-primary cursor-pointer rounded"
-                  />
-                  <span>Tidak Ada Rencana</span>
-                </label>
-              </div>
-
-              {noVideoPlan ? (
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                  <span>Hari ini tidak ada target video (Cap Biru jika kuis & kotoba 0).</span>
+            {/* Jenis hari */}
+            <section>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">Jenis hari</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'study', title: 'Hari Belajar', desc: 'Atur target video, kuis & kotoba' },
+                  { key: 'rest', title: 'Hari Istirahat', desc: 'Tanpa target · Cap Biru' },
+                ] as const).map(opt => (
                   <button
+                    key={opt.key}
                     type="button"
-                    onClick={() => setNoVideoPlan(false)}
-                    className="text-xs sm:text-sm text-primary hover:underline font-bold bg-transparent border-none cursor-pointer"
+                    onClick={() => setDayType(opt.key)}
+                    aria-pressed={dayType === opt.key}
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                      dayType === opt.key
+                        ? 'border-primary bg-primary/5 dark:bg-primary/15 ring-2 ring-primary/15'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
                   >
-                    Tambah Video
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">{opt.title}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{opt.desc}</span>
                   </button>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {/* Dropdown Bab Langsung tanpa Form Pilih Jilid */}
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">
-                      Pilih Bab
-                    </label>
-                    <select
-                      value={selectedBab}
-                      onChange={e => setSelectedBab(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white outline-none focus:border-primary min-h-[40px] cursor-pointer"
-                    >
-                      {jilid1Babs.length > 0 && (
-                        <optgroup label="Jilid 1 (Bab 1 - 25)">
-                          {jilid1Babs.map(b => {
-                            const setting = chapterSettingsMap[b]
-                            const def = DEFAULT_JILID_1[b]
-                            const titleText = setting?.title || def?.title || `Bab ${b}`
-                            const cleanTitle = titleText.replace(/^Bab\s+\d+:\s*/i, '')
-                            return (
-                              <option key={b} value={b}>
-                                Bab {b}: {cleanTitle}
-                              </option>
-                            )
-                          })}
-                        </optgroup>
-                      )}
-                      {jilid2Babs.length > 0 && (
-                        <optgroup label="Jilid 2 (Bab 26 - 50)">
-                          {jilid2Babs.map(b => {
-                            const setting = chapterSettingsMap[b]
-                            const def = DEFAULT_JILID_2[b]
-                            const titleText = setting?.title || def?.title || `Bab ${b}`
-                            const cleanTitle = titleText.replace(/^Bab\s+\d+:\s*/i, '')
-                            return (
-                              <option key={b} value={b}>
-                                Bab {b}: {cleanTitle}
-                              </option>
-                            )
-                          })}
-                        </optgroup>
-                      )}
-                    </select>
-                  </div>
+                ))}
+              </div>
+            </section>
 
-                  {/* Pilihan Video di Bab Terpilih */}
-                  <div className="flex flex-col gap-1.5">
+            {isRest ? (
+              <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center gap-3">
+                <img src="/tidakada.png" alt="" className="size-12 object-contain shrink-0 -rotate-6" />
+                <p className="text-sm text-sky-900 dark:text-sky-200 leading-relaxed">
+                  Istirahat terencana tetap dihitung disiplin. Tanggal ini akan mendapat <strong>Cap Biru</strong>.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Video materi */}
+                <section className="flex flex-col gap-2.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">{t('lp_step1_video', 'Video materi')}</h4>
+                    <span className="text-xs text-slate-400">Opsional · tiap video 3x putar</span>
+                  </div>
+                  <select
+                    value={selectedBab}
+                    onChange={e => setSelectedBab(Number(e.target.value))}
+                    aria-label="Pilih bab"
+                    className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm font-semibold text-slate-800 dark:text-white outline-none focus:border-primary cursor-pointer"
+                  >
+                    {jilid1Babs.length > 0 && (
+                      <optgroup label="Jilid 1 (Bab 1 - 25)">
+                        {jilid1Babs.map(b => <option key={b} value={b}>{babLabel(b)}</option>)}
+                      </optgroup>
+                    )}
+                    {jilid2Babs.length > 0 && (
+                      <optgroup label="Jilid 2 (Bab 26 - 50)">
+                        {jilid2Babs.map(b => <option key={b} value={b}>{babLabel(b)}</option>)}
+                      </optgroup>
+                    )}
+                  </select>
+
+                  <div className="grid grid-cols-3 gap-2">
                     {currentBabVideos.map(vItem => {
                       const isSelected = selectedVideos.some(v => v.id === vItem.id)
                       return (
-                        <div
+                        <button
                           key={vItem.id}
+                          type="button"
                           onClick={() => toggleVideoSelection(vItem)}
-                          className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between select-none active:scale-[0.99] ${
+                          aria-pressed={isSelected}
+                          className={`h-14 rounded-xl border flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all active:scale-[0.98] ${
                             isSelected
-                              ? 'bg-primary/10 border-primary dark:bg-primary/20 text-primary dark:text-red-300 font-bold'
-                              : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-primary/50'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className={`size-5 rounded-md flex items-center justify-center shrink-0 text-xs ${
-                              isSelected ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                            }`}>
-                              {isSelected ? '✓' : ''}
-                            </span>
-                            <span className="text-xs sm:text-sm truncate">Bab {selectedBab} - Part {vItem.videoNum}</span>
-                          </div>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300 shrink-0">
-                            3x Putar
+                          <span className="text-sm font-bold flex items-center gap-1">
+                            {isSelected && (
+                              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            Part {vItem.videoNum}
                           </span>
-                        </div>
+                          <span className={`text-[11px] ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>Bab {selectedBab}</span>
+                        </button>
                       )
                     })}
                   </div>
 
-                  {/* Ringkasan Video Terpilih */}
                   {selectedVideos.length > 0 && (
-                    <div className="p-2.5 sm:p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-semibold text-amber-900 dark:text-amber-200">
-                        <span>{selectedVideos.length} Video Terpilih ({totalReplayTarget}x Target Putar)</span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedVideos([])}
-                          className="text-xs text-red-600 dark:text-red-400 hover:underline bg-transparent border-none cursor-pointer"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
-                        {selectedVideos.map(v => (
-                          <span
-                            key={v.id}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/60 text-xs text-slate-700 dark:text-slate-300"
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {selectedVideos.map(v => (
+                        <span key={v.id} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-300 text-xs font-semibold">
+                          Bab {v.bab} · Part {v.videoNum}
+                          <button
+                            type="button"
+                            onClick={() => toggleVideoSelection(v)}
+                            aria-label={`Hapus Bab ${v.bab} Part ${v.videoNum}`}
+                            className="size-5 rounded-full flex items-center justify-center hover:bg-primary hover:text-white border-none bg-transparent text-current cursor-pointer"
                           >
-                            <span>Bab {v.bab} - Part {v.videoNum}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleVideoSelection(v)
-                              }}
-                              className="size-3.5 rounded-full hover:bg-red-500 hover:text-white text-slate-400 flex items-center justify-center border-none cursor-pointer"
-                              title="Hapus"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVideos([])}
+                        className="text-xs font-semibold text-slate-500 hover:text-red-600 bg-transparent border-none cursor-pointer px-2 py-1"
+                      >
+                        Hapus semua
+                      </button>
                     </div>
                   )}
-                </div>
-              )}
-            </div>
+                </section>
 
-            {/* Bagian 2 & 3: Target Kuis & Setoran Kotoba (Tanpa Tombol Preset Angka) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
-              
-              {/* Stepper Target Kuis */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
-                    2. Target Kuis
-                  </label>
-                  <span className="text-xs text-slate-400">Maks. 50</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTargetQuiz(q => Math.max(0, q - 1))}
-                    className="size-9 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center shrink-0 transition-colors active:scale-95 text-base"
-                    title="Kurangi"
-                  >
-                    −
-                  </button>
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={targetQuiz === 0 ? '' : targetQuiz}
-                      placeholder="0"
-                      onChange={e => {
-                        const clean = e.target.value.replace(/\D/g, '')
-                        const val = clean === '' ? 0 : parseInt(clean, 10)
-                        if (isNaN(val)) setTargetQuiz(0)
-                        else setTargetQuiz(Math.max(0, Math.min(50, val)))
-                      }}
-                      className="w-full text-center px-3 py-1.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs sm:text-sm font-bold outline-none focus:border-primary min-h-[36px]"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none select-none">
-                      Kuis
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTargetQuiz(q => Math.min(50, q + 1))}
-                    className="size-9 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center shrink-0 transition-colors active:scale-95 text-base"
-                    title="Tambah"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="text-xs text-slate-400">
-                  {targetQuiz === 0 ? '0 Kuis (Tidak Ada Target)' : `Target: ${targetQuiz} Kuis`}
-                </div>
-              </div>
-
-              {/* Stepper Target Setoran Kotoba */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
-                    3. Target Kotoba
-                  </label>
-                  <span className="text-xs text-slate-400">Maks. 100</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTargetKotoba(k => Math.max(0, k - 1))}
-                    className="size-9 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center shrink-0 transition-colors active:scale-95 text-base"
-                    title="Kurangi"
-                  >
-                    −
-                  </button>
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={targetKotoba === 0 ? '' : targetKotoba}
-                      placeholder="0"
-                      onChange={e => {
-                        const clean = e.target.value.replace(/\D/g, '')
-                        const val = clean === '' ? 0 : parseInt(clean, 10)
-                        if (isNaN(val)) setTargetKotoba(0)
-                        else setTargetKotoba(Math.max(0, Math.min(100, val)))
-                      }}
-                      className="w-full text-center px-3 py-1.5 pr-14 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs sm:text-sm font-bold outline-none focus:border-primary min-h-[36px]"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none select-none">
-                      Kotoba
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTargetKotoba(k => Math.min(100, k + 1))}
-                    className="size-9 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center shrink-0 transition-colors active:scale-95 text-base"
-                    title="Tambah"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="text-xs text-slate-400">
-                  {targetKotoba === 0 ? '0 Kotoba (Tidak Ada Target)' : `Target: ${targetKotoba} Kotoba`}
-                </div>
-              </div>
-
-            </div>
-
+                {/* Kuis & kotoba */}
+                <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Stepper label="Target kuis" unit="kuis" value={targetQuiz} max={MAX_QUIZ} onChange={setTargetQuiz} />
+                  <Stepper label="Target kotoba" unit="kata" value={targetKotoba} max={MAX_KOTOBA} onChange={setTargetKotoba} />
+                </section>
+              </>
+            )}
           </div>
 
-          {/* Footer - Tombol Simpan Rapi & Minimalis */}
-          <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl border-none cursor-pointer text-xs sm:text-sm shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center active:scale-[0.98]"
-            >
-              {isSaving ? 'Menyimpan...' : 'Simpan'}
-            </button>
+          {/* Footer */}
+          <div className="shrink-0 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2.5">
+            <p className={`text-[13px] ${canSave ? 'text-slate-600 dark:text-slate-300' : 'text-amber-700 dark:text-amber-300'}`}>
+              {isRest
+                ? 'Hari istirahat — tanpa target.'
+                : hasAnyTarget
+                  ? <>Target: <strong className="text-slate-900 dark:text-white">{summaryParts.join(' · ')}</strong></>
+                  : 'Pilih minimal satu target: video, kuis, atau kotoba.'}
+            </p>
+            <div className="grid grid-cols-[auto_1fr] gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="h-12 px-5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-bold border-none cursor-pointer transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving || !canSave}
+                className="h-12 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer shadow-sm shadow-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSaving && <span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {isSaving ? 'Menyimpan...' : currentMission ? 'Simpan Perubahan' : 'Simpan Rencana'}
+              </button>
+            </div>
           </div>
         </form>
 
