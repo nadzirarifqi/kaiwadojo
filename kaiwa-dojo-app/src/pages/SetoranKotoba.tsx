@@ -21,7 +21,21 @@ export interface UserKotoba {
   created_at?: string
 }
 
-type QuestionMode = 'prompt_image_meaning' | 'prompt_japanese_romaji' | 'prompt_japanese_meaning'
+// Sisi depan flashcard: huruf Jepang (tebak arti & cara baca) atau arti (tebak huruf Jepang)
+type CardFront = 'japanese' | 'meaning'
+type TestDirection = CardFront | 'mixed'
+type TestPhase = 'setup' | 'playing' | 'finished'
+
+const TEST_COUNT_PRESETS = [5, 10, 20, 30]
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const copy = [...arr]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
 
 export function detectJapaneseScript(text: string) {
   const clean = text.trim()
@@ -191,13 +205,15 @@ export default function SetoranKotobaPage() {
 
   // Flashcard Test Mode State
   const [isTestActive, setIsTestActive]       = useState(false)
-  const [testItems, setTestItems]             = useState<UserKotoba[]>([])
+  const [testPhase, setTestPhase]             = useState<TestPhase>('setup')
+  const [testSource, setTestSource]           = useState<'all' | 'unmastered'>('all')
+  const [testCount, setTestCount]             = useState(10)
+  const [testDirection, setTestDirection]     = useState<TestDirection>('mixed')
+  const [testItems, setTestItems]             = useState<{ item: UserKotoba; front: CardFront }[]>([])
   const [currentTestIndex, setCurrentTestIndex] = useState(0)
-  const [questionMode, setQuestionMode]       = useState<QuestionMode>('prompt_japanese_meaning')
-  const [userAnswerInput, setUserAnswerInput] = useState('')
-  const [showAnswerKey, setShowAnswerKey]     = useState(false)
-  const [testResults, setTestResults]         = useState<{ mastered: number; difficult: number }>({ mastered: 0, difficult: 0 })
-  const [isTestFinished, setIsTestFinished]   = useState(false)
+  const [isCardFlipped, setIsCardFlipped]     = useState(false)
+  const [testAnswers, setTestAnswers]         = useState<{ item: UserKotoba; mastered: boolean }[]>([])
+  const answeredIndexRef = useRef(-1)
 
   // Lightbox: lihat foto kotoba layar penuh
   const [previewItem, setPreviewItem] = useState<UserKotoba | null>(null)
@@ -718,61 +734,104 @@ export default function SetoranKotobaPage() {
       return
     }
 
-    // Shuffle kotoba list for the test session
-    const shuffled = [...kotobaList].sort(() => Math.random() - 0.5)
-    setTestItems(shuffled)
-    setCurrentTestIndex(0)
-    setTestResults({ mastered: 0, difficult: 0 })
-    setIsTestFinished(false)
+    // Buka layar pengaturan: default sumber "masih dipelajari" jika ada, jumlah 10 kartu
+    const unmastered = kotobaList.filter(k => !k.is_mastered).length
+    const source = unmastered > 0 ? 'unmastered' : 'all'
+    const poolSize = source === 'unmastered' ? unmastered : kotobaList.length
+    setTestSource(source)
+    setTestCount(Math.min(10, poolSize))
+    setTestPhase('setup')
     setIsTestActive(true)
-
-    setupQuestionMode(shuffled[0])
   }
 
-  function setupQuestionMode(item: UserKotoba) {
-    setUserAnswerInput('')
-    setShowAnswerKey(false)
-
-    // Randomize question mode based on item features
-    const modes: QuestionMode[] = ['prompt_japanese_meaning', 'prompt_japanese_romaji']
-    if (item.image_url) {
-      modes.push('prompt_image_meaning')
-    }
-    const chosenMode = modes[Math.floor(Math.random() * modes.length)]
-    setQuestionMode(chosenMode)
+  function getTestPool(source: 'all' | 'unmastered') {
+    return source === 'unmastered' ? kotobaList.filter(k => !k.is_mastered) : kotobaList
   }
 
-  async function handleSelfAssessment(isMasteredChoice: boolean) {
-    const currentItem = testItems[currentTestIndex]
-    if (!currentItem) return
+  function changeTestSource(source: 'all' | 'unmastered') {
+    setTestSource(source)
+    const poolSize = getTestPool(source).length
+    setTestCount(prev => Math.max(1, Math.min(prev || 10, poolSize)))
+  }
 
-    // Update is_mastered status in DB & Local
-    const updated = kotobaList.map(k => k.id === currentItem.id ? { ...k, is_mastered: isMasteredChoice } : k)
-    saveToLocal(updated)
+  function beginTestSession(items: UserKotoba[]) {
+    if (items.length === 0) return
+    const deck = shuffleArray(items).map(item => ({
+      item,
+      front: (testDirection === 'mixed'
+        ? (Math.random() < 0.5 ? 'japanese' : 'meaning')
+        : testDirection) as CardFront,
+    }))
+    answeredIndexRef.current = -1
+    setTestItems(deck)
+    setCurrentTestIndex(0)
+    setIsCardFlipped(false)
+    setTestAnswers([])
+    setTestPhase('playing')
+  }
 
-    if (user) {
-      await supabase
+  function handleBeginTest() {
+    const pool = getTestPool(testSource)
+    const count = Math.max(1, Math.min(testCount, pool.length))
+    beginTestSession(shuffleArray(pool).slice(0, count))
+  }
+
+  function handleSelfAssessment(isMasteredChoice: boolean) {
+    const current = testItems[currentTestIndex]
+    if (!current || !isCardFlipped) return
+    // Cegah double-tap menilai kartu yang sama dua kali (dan melompati kartu berikutnya)
+    if (answeredIndexRef.current === currentTestIndex) return
+    answeredIndexRef.current = currentTestIndex
+    const currentItem = current.item
+
+    // Simpan status hafalan (lokal langsung, DB di latar belakang agar kartu berikut tampil instan)
+    saveToLocal(kotobaList.map(k => k.id === currentItem.id ? { ...k, is_mastered: isMasteredChoice } : k))
+    if (user && !currentItem.id.startsWith('kotoba-')) {
+      supabase
         .from('user_kotoba_submissions')
         .update({ is_mastered: isMasteredChoice })
         .eq('id', currentItem.id)
+        .then(({ error }) => { if (error) console.warn('Update mastered (test) note:', error) })
     }
 
-    // Update test session score
-    if (isMasteredChoice) {
-      setTestResults(prev => ({ ...prev, mastered: prev.mastered + 1 }))
-    } else {
-      setTestResults(prev => ({ ...prev, difficult: prev.difficult + 1 }))
-    }
+    setTestAnswers(prev => [...prev, { item: currentItem, mastered: isMasteredChoice }])
 
-    // Move to next question or finish test
     if (currentTestIndex + 1 < testItems.length) {
-      const nextIndex = currentTestIndex + 1
-      setCurrentTestIndex(nextIndex)
-      setupQuestionMode(testItems[nextIndex])
+      setIsCardFlipped(false)
+      setCurrentTestIndex(currentTestIndex + 1)
     } else {
-      setIsTestFinished(true)
+      setTestPhase('finished')
     }
   }
+
+  function closeTest() {
+    setIsTestActive(false)
+    setIsCardFlipped(false)
+  }
+
+  // Keyboard (desktop): Spasi/Enter = balik kartu, ← = masih sulit, → = sudah hafal, Esc = tutup
+  useEffect(() => {
+    if (!isTestActive) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { closeTest(); return }
+      if (testPhase !== 'playing') return
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault()
+        setIsCardFlipped(f => !f)
+      } else if (isCardFlipped && e.key === 'ArrowLeft') {
+        handleSelfAssessment(false)
+      } else if (isCardFlipped && e.key === 'ArrowRight') {
+        handleSelfAssessment(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [isTestActive, testPhase, isCardFlipped, currentTestIndex, testItems, kotobaList, user])
 
   // Filter & Search
   const filteredList = kotobaList.filter(item => {
@@ -1171,219 +1230,404 @@ export default function SetoranKotobaPage() {
       )}
 
       {/* Flashcard Test Modal Screen */}
-      {isTestActive && (
-        <div className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/80 backdrop-blur-md animate-fade-in">
-          <div className="flex min-h-full items-start justify-center p-3 sm:p-6 pt-8 sm:pt-12 md:pt-14 lg:pt-16 pb-12">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up max-h-[90dvh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span>Tes Evaluasi Hafalan</span>
-                </span>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mt-0.5">
-                  {isTestFinished
-                    ? 'Hasil Evaluasi Hafalan'
-                    : `Soal ${currentTestIndex + 1} dari ${testItems.length}`}
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsTestActive(false)}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 border-none cursor-pointer flex items-center justify-center font-bold"
-              >
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      {isTestActive && (() => {
+        const pool = getTestPool(testSource)
+        const poolSize = pool.length
+        const unmasteredPoolSize = kotobaList.filter(k => !k.is_mastered).length
+        const effectiveCount = Math.max(1, Math.min(testCount, poolSize))
+        const masteredAnswers = testAnswers.filter(a => a.mastered)
+        const difficultAnswers = testAnswers.filter(a => !a.mastered)
+        const card = activeTestItem
+        const scorePct = testAnswers.length ? Math.round((masteredAnswers.length / testAnswers.length) * 100) : 0
+        const optionBase = 'rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+        const optionOn = 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-2 ring-amber-500/20'
+        const optionOff = 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-300'
 
-            {/* Test Content */}
-            {isTestFinished ? (
-              <div className="space-y-6 text-center">
-                <div className="size-16 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
-                  <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-xl font-black text-slate-800 dark:text-white">Latihan Selesai!</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
-                    Status hafalan kosakata telah diperbarui di catatan belajarmu.
+        return (
+          <div className="fixed inset-0 z-[999] bg-slate-900/80 backdrop-blur-md sm:flex sm:items-center sm:justify-center sm:p-6 animate-fade-in">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="flashcard-title"
+              className="w-full h-full sm:h-auto sm:max-h-[92dvh] sm:max-w-lg bg-white dark:bg-slate-900 sm:rounded-3xl shadow-2xl sm:border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-scale-up"
+            >
+              {/* Header */}
+              <div className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 pt-[calc(0.875rem+env(safe-area-inset-top))] sm:pt-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Flashcard Kotoba
                   </p>
+                  <h3 id="flashcard-title" className="text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">
+                    {testPhase === 'setup'
+                      ? 'Atur Sesi Latihan'
+                      : testPhase === 'playing'
+                        ? `Kartu ${currentTestIndex + 1} dari ${testItems.length}`
+                        : 'Hasil Latihan'}
+                  </h3>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
-                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-900 text-center">
-                    <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
-                      {testResults.mastered}
-                    </div>
-                    <div className="text-[0.68rem] text-emerald-800 dark:text-emerald-300 font-bold">Sudah Dikuasai</div>
-                  </div>
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-900 text-center">
-                    <div className="text-2xl font-black text-amber-700 dark:text-amber-400">
-                      {testResults.difficult}
-                    </div>
-                    <div className="text-[0.68rem] text-amber-800 dark:text-amber-300 font-bold">Masih Sulit</div>
-                  </div>
-                </div>
-
                 <button
-                  onClick={() => setIsTestActive(false)}
-                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs sm:text-sm rounded-2xl border-none cursor-pointer shadow-md transition-all flex items-center justify-center gap-2 group"
+                  onClick={closeTest}
+                  aria-label="Tutup"
+                  className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer flex items-center justify-center transition-colors"
                 >
-                  <span>Tutup & Kembali ke Jurnal</span>
-                  <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
-                    &gt;
-                  </span>
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-            ) : activeTestItem ? (
-              <div className="space-y-5">
-                {/* Progress bar */}
-                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+
+              {testPhase === 'playing' && (
+                <div className="shrink-0 h-1 bg-slate-100 dark:bg-slate-800">
                   <div
-                    className="h-full bg-amber-500 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentTestIndex + 1) / testItems.length) * 100}%` }}
+                    className="h-full bg-amber-500 transition-all duration-300"
+                    style={{ width: `${(currentTestIndex / Math.max(1, testItems.length)) * 100}%` }}
                   />
                 </div>
+              )}
 
-                {/* Prompt Card */}
-                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-center space-y-3">
-                  {questionMode === 'prompt_image_meaning' && activeTestItem.image_url ? (
-                    <div className="space-y-2">
-                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
-                        Tebak Huruf Jepang dari Gambar / Makna Berikut:
-                      </span>
-                      <KotobaImage
-                        key={activeTestItem.image_url}
-                        src={activeTestItem.image_url}
-                        alt="Gambar soal"
-                        className="w-full max-w-xs mx-auto aspect-[4/3] rounded-xl"
-                      />
-                      <div className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                        Makna: {activeTestItem.meaning}
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6">
+                {/* ── SETUP ── */}
+                {testPhase === 'setup' && (
+                  <div className="flex flex-col gap-6">
+                    {/* Jumlah kartu */}
+                    <section>
+                      <div className="flex items-baseline justify-between gap-2 mb-2.5">
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-white">Jumlah kartu</h4>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">dari {poolSize} kosakata</span>
                       </div>
-                    </div>
-                  ) : questionMode === 'prompt_japanese_romaji' ? (
-                    <div className="space-y-2">
-                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
-                        Tebak Cara Baca (Romaji) kata ini:
-                      </span>
-                      <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white pt-2">
-                        {activeTestItem.japanese}
+                      <div className="flex flex-wrap gap-2">
+                        {TEST_COUNT_PRESETS.filter(p => p < poolSize).map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setTestCount(p)}
+                            className={`h-11 min-w-14 px-4 text-sm font-bold ${optionBase} ${testCount === p ? optionOn : optionOff} text-slate-800 dark:text-slate-100 text-center`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setTestCount(poolSize)}
+                          disabled={poolSize === 0}
+                          className={`h-11 px-4 text-sm font-bold ${optionBase} ${testCount >= poolSize && poolSize > 0 ? optionOn : optionOff} text-slate-800 dark:text-slate-100 text-center`}
+                        >
+                          Semua ({poolSize})
+                        </button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <span className="text-[0.68rem] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
-                        Tebak Makna / Arti kata ini:
-                      </span>
-                      <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white pt-2">
-                        {activeTestItem.japanese}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Input area */}
-                  <div className="pt-2">
-                    <input
-                      type="text"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      enterKeyHint="go"
-                      placeholder="Ketik tebakan jawabanmu di sini..."
-                      value={userAnswerInput}
-                      onChange={e => setUserAnswerInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          setShowAnswerKey(true)
-                        }
-                      }}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-base sm:text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all text-center min-h-[46px] touch-manipulation"
-                    />
-                  </div>
+                      {/* Stepper untuk jumlah custom */}
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="Kurangi jumlah kartu"
+                          onClick={() => setTestCount(Math.max(1, effectiveCount - 1))}
+                          disabled={effectiveCount <= 1}
+                          className="size-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xl font-bold border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={poolSize}
+                          value={poolSize === 0 ? 0 : effectiveCount}
+                          onChange={e => {
+                            const n = parseInt(e.target.value, 10)
+                            if (!Number.isNaN(n)) setTestCount(Math.max(1, Math.min(n, poolSize)))
+                          }}
+                          aria-label="Jumlah kartu"
+                          className="w-20 h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center text-base font-bold text-slate-900 dark:text-white outline-none focus:border-amber-500"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Tambah jumlah kartu"
+                          onClick={() => setTestCount(Math.min(poolSize, effectiveCount + 1))}
+                          disabled={effectiveCount >= poolSize}
+                          className="size-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xl font-bold border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          +
+                        </button>
+                        <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">kartu</span>
+                      </div>
+                    </section>
 
-                  {!showAnswerKey && (
+                    {/* Sumber kata */}
+                    <section>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2.5">Kosakata yang diuji</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { key: 'unmastered', title: 'Masih dipelajari', count: unmasteredPoolSize },
+                          { key: 'all', title: 'Semua kosakata', count: kotobaList.length },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => changeTestSource(opt.key)}
+                            disabled={opt.count === 0}
+                            className={`p-3 ${optionBase} ${testSource === opt.key ? optionOn : optionOff}`}
+                          >
+                            <span className="block text-sm font-bold text-slate-800 dark:text-slate-100">{opt.title}</span>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{opt.count} kata</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    {/* Sisi depan kartu */}
+                    <section>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2.5">Sisi depan kartu</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { key: 'mixed', title: 'Acak', desc: 'Campuran' },
+                          { key: 'japanese', title: 'Jepang', desc: 'Tebak arti' },
+                          { key: 'meaning', title: 'Arti', desc: 'Tebak kata' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => setTestDirection(opt.key)}
+                            className={`p-3 text-center ${optionBase} ${testDirection === opt.key ? optionOn : optionOff}`}
+                          >
+                            <span className="block text-sm font-bold text-slate-800 dark:text-slate-100">{opt.title}</span>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3">
+                      Ingat jawabannya dalam hati, ketuk kartu untuk membalik, lalu nilai sendiri. Status hafalan tersimpan otomatis ke jurnalmu.
+                    </p>
+
                     <button
                       type="button"
-                      onClick={() => setShowAnswerKey(true)}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-extrabold rounded-xl border-none cursor-pointer transition-all touch-manipulation min-h-[42px] flex items-center justify-center gap-2 mx-auto"
+                      onClick={handleBeginTest}
+                      disabled={poolSize === 0}
+                      className="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-base font-bold border-none cursor-pointer shadow-md shadow-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <svg className="size-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <span>Periksa Kunci Jawaban</span>
+                      Mulai {poolSize === 0 ? '' : `${effectiveCount} Kartu`}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                {/* Answer Key Display & Self Assessment */}
-                {showAnswerKey && (
-                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 space-y-3 animate-fade-in">
-                    <div className="text-xs font-extrabold text-amber-800 dark:text-amber-300 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
-                        <span>Kunci Jawaban:</span>
-                      </span>
-                      {userAnswerInput && (
-                        <span className="text-[0.68rem] font-normal text-slate-500">
-                          Jawabanmu: "{userAnswerInput}"
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white dark:bg-slate-900 p-3 rounded-xl border border-amber-100 dark:border-amber-950">
-                      <div>
-                        <div className="text-[0.65rem] text-slate-400 font-semibold">Huruf Jepang</div>
-                        <div className="font-extrabold text-slate-800 dark:text-white">{activeTestItem.japanese}</div>
-                      </div>
-                      <div>
-                        <div className="text-[0.65rem] text-slate-400 font-semibold">Romaji</div>
-                        <div className="font-extrabold text-amber-600 dark:text-amber-400">{activeTestItem.romaji}</div>
-                      </div>
-                      <div>
-                        <div className="text-[0.65rem] text-slate-400 font-semibold">Makna / Arti</div>
-                        <div className="font-extrabold text-slate-800 dark:text-slate-100">{activeTestItem.meaning}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-center font-bold text-slate-700 dark:text-slate-200 pt-1">
-                      Bagaimana tingkat kemudahan soal ini untukmu?
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <button
-                        onClick={() => handleSelfAssessment(false)}
-                        className="py-3 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 min-h-[46px] touch-manipulation active:scale-95"
+                {/* ── PLAYING: flashcard ── */}
+                {testPhase === 'playing' && card && (
+                  <div className="flex flex-col gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsCardFlipped(f => !f)}
+                      aria-label={isCardFlipped ? 'Kartu terbuka — ketuk untuk melihat sisi depan' : 'Ketuk untuk membalik kartu'}
+                      className="block w-full p-0 border-none bg-transparent cursor-pointer select-none"
+                      style={{ perspective: '1200px' }}
+                    >
+                      <div
+                        key={currentTestIndex}
+                        className="relative w-full h-[min(58dvh,440px)] min-h-[300px] transition-transform duration-500 ease-out"
+                        style={{ transformStyle: 'preserve-3d', transform: isCardFlipped ? 'rotateY(180deg)' : 'none' }}
                       >
-                        <span className="size-2 rounded-full bg-white animate-pulse" />
-                        <span>Masih Sulit</span>
+                        {/* Front */}
+                        <div
+                          className="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-950/50 dark:via-slate-900 dark:to-slate-900 border-2 border-amber-200 dark:border-amber-900/60 shadow-lg flex flex-col items-center p-5 overflow-hidden"
+                          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                        >
+                          <span className="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-3 py-1 rounded-full">
+                            {card.front === 'japanese' ? 'Apa arti & cara bacanya?' : 'Apa bahasa Jepangnya?'}
+                          </span>
+                          <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-4 text-center">
+                            {card.front === 'meaning' && card.item.image_url && (
+                              <KotobaImage
+                                key={card.item.image_url}
+                                src={card.item.image_url}
+                                alt="Petunjuk gambar"
+                                className="w-full max-w-[16rem] aspect-[4/3] rounded-2xl shrink min-h-0"
+                              />
+                            )}
+                            {card.front === 'japanese' ? (
+                              <p className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white leading-tight break-words max-w-full">
+                                {card.item.japanese}
+                              </p>
+                            ) : (
+                              <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug break-words max-w-full">
+                                {card.item.meaning}
+                              </p>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-xs text-slate-400 flex items-center gap-1.5">
+                            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Ketuk untuk membalik
+                          </span>
+                        </div>
+
+                        {/* Back */}
+                        <div
+                          className="absolute inset-0 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 shadow-lg flex flex-col items-center p-5 overflow-y-auto"
+                          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                        >
+                          <span className="shrink-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-3 py-1 rounded-full">
+                            Jawaban
+                          </span>
+                          <div className="flex-1 w-full flex flex-col items-center justify-center gap-3 text-center py-3">
+                            {card.front === 'japanese' && card.item.image_url && (
+                              <KotobaImage
+                                key={card.item.image_url}
+                                src={card.item.image_url}
+                                alt={card.item.japanese}
+                                className="w-full max-w-[14rem] aspect-[4/3] rounded-2xl shrink-0"
+                              />
+                            )}
+                            <p className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white leading-tight break-words max-w-full">
+                              {card.item.japanese}
+                            </p>
+                            <p className="text-lg font-semibold text-amber-600 dark:text-amber-400 break-words max-w-full">
+                              {card.item.romaji}
+                            </p>
+                            <div className="w-12 h-px bg-slate-200 dark:bg-slate-700" />
+                            <p className="text-lg sm:text-xl font-bold text-slate-700 dark:text-slate-200 leading-snug break-words max-w-full">
+                              {card.item.meaning}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+
+                    {isCardFlipped ? (
+                      <div className="grid grid-cols-2 gap-3 animate-fade-in">
+                        <button
+                          type="button"
+                          onClick={() => handleSelfAssessment(false)}
+                          className="h-12 rounded-xl bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 text-[15px] font-bold cursor-pointer transition-colors active:scale-[0.98]"
+                        >
+                          Masih Sulit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSelfAssessment(true)}
+                          className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[15px] font-bold border-none cursor-pointer transition-colors shadow-md shadow-emerald-600/20 active:scale-[0.98] flex items-center justify-center gap-1.5"
+                        >
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Sudah Hafal
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsCardFlipped(true)}
+                        className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[15px] font-bold border-none cursor-pointer transition-colors shadow-md shadow-amber-500/20 active:scale-[0.98]"
+                      >
+                        Lihat Jawaban
+                      </button>
+                    )}
+
+                    <div className="flex items-center justify-center gap-4 text-sm">
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span className="size-2 rounded-full bg-emerald-500" /> {masteredAnswers.length} hafal
+                      </span>
+                      <span className="flex items-center gap-1.5 text-red-500 dark:text-red-400 font-semibold">
+                        <span className="size-2 rounded-full bg-red-500" /> {difficultAnswers.length} sulit
+                      </span>
+                    </div>
+                    <p className="hidden sm:block text-center text-xs text-slate-400">
+                      Spasi: balik kartu · ←: masih sulit · →: sudah hafal
+                    </p>
+                  </div>
+                )}
+
+                {/* ── FINISHED ── */}
+                {testPhase === 'finished' && (
+                  <div className="flex flex-col gap-5">
+                    <div className="flex flex-col items-center text-center gap-3">
+                      <div className="relative size-32">
+                        <svg className="size-full -rotate-90" viewBox="0 0 120 120">
+                          <circle cx="60" cy="60" r="52" fill="none" strokeWidth="10" className="stroke-slate-100 dark:stroke-slate-800" />
+                          <circle
+                            cx="60" cy="60" r="52" fill="none" strokeWidth="10" strokeLinecap="round"
+                            className={scorePct >= 80 ? 'stroke-emerald-500' : scorePct >= 50 ? 'stroke-amber-500' : 'stroke-red-500'}
+                            strokeDasharray={2 * Math.PI * 52}
+                            strokeDashoffset={2 * Math.PI * 52 * (1 - scorePct / 100)}
+                            style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-3xl font-black text-slate-900 dark:text-white">{scorePct}%</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">hafal</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-slate-900 dark:text-white">
+                          {scorePct >= 80 ? 'Luar biasa!' : scorePct >= 50 ? 'Bagus, terus latihan!' : 'Ayo ulangi lagi!'}
+                        </h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          {masteredAnswers.length} dari {testAnswers.length} kartu sudah kamu hafal. Status hafalan sudah diperbarui.
+                        </p>
+                      </div>
+                    </div>
+
+                    {difficultAnswers.length > 0 && (
+                      <section>
+                        <h5 className="text-sm font-bold text-slate-800 dark:text-white mb-2">Perlu diulang ({difficultAnswers.length})</h5>
+                        <ul className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                          {difficultAnswers.map(({ item }) => (
+                            <li key={item.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                              <div className="min-w-0">
+                                <p className="text-base font-bold text-slate-900 dark:text-white truncate">{item.japanese}</p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 truncate">{item.romaji}</p>
+                              </div>
+                              <p className="text-sm text-slate-600 dark:text-slate-300 text-right line-clamp-2 max-w-[50%]">{item.meaning}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      {difficultAnswers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => beginTestSession(difficultAnswers.map(a => a.item))}
+                          className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[15px] font-bold border-none cursor-pointer shadow-md shadow-amber-500/20 transition-colors"
+                        >
+                          Ulangi yang Sulit ({difficultAnswers.length})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const size = getTestPool(testSource).length
+                          setTestCount(c => Math.max(1, Math.min(c, size)))
+                          setTestPhase('setup')
+                        }}
+                        className={`h-12 rounded-xl text-[15px] font-bold cursor-pointer transition-colors ${
+                          difficultAnswers.length > 0
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border-none'
+                            : 'bg-amber-500 hover:bg-amber-600 text-white border-none shadow-md shadow-amber-500/20'
+                        }`}
+                      >
+                        Latihan Lagi
                       </button>
                       <button
-                        onClick={() => handleSelfAssessment(true)}
-                        className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 min-h-[46px] touch-manipulation active:scale-95"
+                        type="button"
+                        onClick={closeTest}
+                        className="h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-sm font-semibold border-none cursor-pointer"
                       >
-                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Sudah Dikuasai</span>
+                        Kembali ke Jurnal
                       </button>
                     </div>
                   </div>
                 )}
               </div>
-            ) : null}
+            </div>
           </div>
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Modal Form Setor Kotoba */}
       {isModalOpen && (
