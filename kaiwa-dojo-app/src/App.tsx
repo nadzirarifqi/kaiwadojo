@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outle
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { ConfirmProvider, useConfirmedSignOut } from './contexts/ConfirmContext'
 import Sidebar, { Avatar, BrandMark } from './components/Sidebar'
 import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
@@ -88,6 +89,7 @@ function AppNavbar({
   const navigate = useNavigate()
   const location = useLocation()
   const { profile, signOut } = useAuth()
+  const handleSignOut = useConfirmedSignOut(() => signOut())
   const [isDark, setIsDark] = useState(() =>
     typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false
   )
@@ -226,7 +228,7 @@ function AppNavbar({
                 Pengaturan
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
-              <button type="button" role="menuitem" onClick={() => signOut()} className={`${menuItem} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40`}>
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); handleSignOut() }} className={`${menuItem} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40`}>
                 <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 Keluar
               </button>
@@ -354,6 +356,7 @@ export function AppRoutes() {
       <LanguageProvider>
         <AuthProvider>
           <ToastProvider>
+          <ConfirmProvider>
             <BrowserRouter>
             <PageTransition>
               <Suspense fallback={<LoadingScreen fullScreen={true} />}>
@@ -395,6 +398,7 @@ export function AppRoutes() {
             </PageTransition>
             <FloatingWidgets />
           </BrowserRouter>
+          </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>
       </LanguageProvider>

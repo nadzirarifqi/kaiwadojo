@@ -15,8 +15,10 @@ import {
   FEEDBACK_UPDATE_EVENT,
 } from '../lib/feedbackService'
 import LoadingScreen from '../components/LoadingScreen'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 export default function FeedbackManager() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -169,7 +171,7 @@ export default function FeedbackManager() {
   }
 
   async function handleDelete(id: string, titleOrSender: string) {
-    if (!confirm(`Hapus masukan dari "${titleOrSender}"? Tindakan ini tidak dapat dibatalkan.`)) return
+    if (!(await confirm({ title: 'Hapus masukan ini?', message: `Masukan dari "${titleOrSender}" akan dihapus permanen dan tidak bisa dikembalikan.`, confirmLabel: 'Ya, hapus', icon: 'trash' }))) return
     const res = await deleteFeedback(id)
     if (res.success) {
       setFeedbacks(prev => prev.filter(f => f.id !== id))

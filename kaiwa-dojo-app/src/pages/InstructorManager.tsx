@@ -9,8 +9,10 @@ import {
   deleteInstructorAccount
 } from '../lib/instructorService'
 import { calculateUserPresence } from '../lib/presenceUtils'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 export default function InstructorManager() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -130,7 +132,7 @@ export default function InstructorManager() {
   }
 
   async function handleDelete(inst: InstructorAccount) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus akun pemateri "${inst.full_name}" (@${inst.username})? Tindakan ini tidak dapat dibatalkan.`)) return
+    if (!(await confirm({ title: 'Hapus akun pemateri?', message: `Akun "${inst.full_name}" (@${inst.username}) akan dihapus permanen dan tidak bisa dikembalikan.`, confirmLabel: 'Ya, hapus akun', icon: 'trash' }))) return
 
     setSaving(true)
     await deleteInstructorAccount(inst.id)

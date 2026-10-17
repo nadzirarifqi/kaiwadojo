@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/ToastContext'
 import { ProfileSkeleton } from '../components/Skeleton'
+import ModalPortal from '../components/ModalPortal'
 import { normalizeGroup } from '../lib/studentService'
 import { getDailyMission, isNoPlanMission } from '../lib/dailyMission'
 import { sanitizeInput } from '../lib/securityUtils'
@@ -476,12 +477,76 @@ export default function ProfilePage() {
 
   const formattedJoinDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'Agustus 2024'
+    : '-'
+
+  const roleLabel = profile?.role === 'admin' ? 'Admin' : profile?.role === 'pemateri' ? 'Pengajar' : 'Pelajar'
+  const streakDays = profile?.streak_days || 0
+  const unlockedBadges = badges.filter(b => b.unlocked).length
+
+  // Ada perubahan yang belum disimpan?
+  const isDirty = Boolean(profile) && (
+    fullName !== (profile?.full_name || '') ||
+    institution !== (profile?.institution || '') ||
+    domisili !== (profile?.domisili || '') ||
+    kelurahan !== (profile?.kelurahan || '') ||
+    kecamatan !== (profile?.kecamatan || '') ||
+    kabupaten !== (profile?.kabupaten || '') ||
+    bio !== (profile?.bio || '') ||
+    avatarUrl !== (profile?.avatar_url || '')
+  )
+
+  function handleResetForm() {
+    setFullName(profile?.full_name || '')
+    setInstitution(profile?.institution || '')
+    setDomisili(profile?.domisili || '')
+    setKelurahan(profile?.kelurahan || '')
+    setKecamatan(profile?.kecamatan || '')
+    setKabupaten(profile?.kabupaten || '')
+    setBio(profile?.bio || '')
+    setAvatarUrl(profile?.avatar_url || '')
+    setSelectedFile(null)
+    setPreviewUrl(null)
+  }
+
+  async function handleCopyReferral() {
+    if (!profile?.referral_code) return
+    try {
+      await navigator.clipboard.writeText(profile.referral_code)
+      showToast('success', 'Kode referral disalin.')
+    } catch {
+      showToast('error', 'Gagal menyalin kode referral.')
+    }
+  }
+
+  function badgeProgressPct(progress?: string): number {
+    const m = progress?.match(/(\d+)\s*\/\s*(\d+)/)
+    if (!m) return 0
+    return Math.min(100, Math.round((Number(m[1]) / Math.max(1, Number(m[2]))) * 100))
+  }
+
+  const CARD = 'bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm'
+  const inputClass =
+    'w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-base sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors'
+  const labelClass = 'block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5'
+
+  const tabs = [
+    { id: 'overview' as const, label: 'Profil' },
+    { id: 'achievements' as const, label: 'Pencapaian', count: `${unlockedBadges}/${badges.length}` },
+    { id: 'courses' as const, label: 'Kursus', count: String(stats.enrolledCoursesCount) },
+  ]
+  const currentTab = activeTab === 'stats' ? 'achievements' : activeTab
+
+  const activityStats = [
+    { label: 'Materi selesai', value: stats.completedLessons, unit: 'materi', tone: 'bg-primary/10 text-primary dark:text-primary-lighter', d: 'M5 13l4 4L19 7' },
+    { label: 'Waktu menonton', value: stats.totalWatchDurationMinutes, unit: 'menit', tone: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400', d: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { label: 'Putar ulang', value: stats.totalReplays, unit: 'kali', tone: 'bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400', d: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+    { label: 'Kuis lulus', value: `${stats.quizPassed}/${stats.quizAttempts}`, unit: stats.quizAttempts > 0 ? `rata-rata ${stats.averageQuizScore}%` : 'belum ada kuis', tone: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400', d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+  ]
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-page-slide">
+    <main className="flex-1 px-4 py-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full min-w-0 animate-page-slide">
 
-      {/* Hidden File Input for Image Upload */}
+      {/* Input file tersembunyi untuk unggah foto */}
       <input
         type="file"
         ref={fileInputRef}
@@ -490,872 +555,453 @@ export default function ProfilePage() {
         className="hidden"
       />
 
-      {/* ── MODAL UPLOAD / PILIH AVATAR ─────────────────────── */}
+      {/* ── Sheet ganti foto profil ── */}
       {isAvatarModalOpen && (
-        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-up">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div>
-                <h3 className="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                  <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>Ganti Foto Profil</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Unggah foto sendiri atau pilih rekomendasi avatar Dojo</p>
+        <ModalPortal>
+          <div
+            className="modal-overlay fixed inset-0 z-[999] flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsAvatarModalOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="avatar-sheet-title"
+              onClick={e => e.stopPropagation()}
+              className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl px-5 pt-3 sm:pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5 max-h-[90dvh] overflow-y-auto animate-fade-in-up"
+            >
+              <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 id="avatar-sheet-title" className="text-lg font-bold text-slate-900 dark:text-white">Ganti foto profil</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Unggah fotomu atau pilih avatar dojo.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(false)}
+                  aria-label="Tutup"
+                  className="size-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer flex items-center justify-center"
+                >
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAvatarModalOpen(false)}
-                className="size-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-extrabold flex items-center justify-center border-none cursor-pointer text-base"
-              >
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
 
-            {/* OPSI 1: Unggah Foto Komputer/HP */}
-            <div className="space-y-2">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Opsi 1: Unggah dari Komputer / HP
-              </label>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full p-5 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group"
+                className="mt-4 w-full p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-3 text-left cursor-pointer bg-transparent"
               >
-                <div className="size-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </div>
-                <span className="text-sm font-extrabold text-primary dark:text-red-400">Pilih File Foto Profil</span>
-                <span className="text-xs text-slate-400">Mendukung format JPG, PNG, atau WebP (Maks 5MB)</span>
+                <span className="size-11 shrink-0 rounded-xl bg-primary/10 text-primary dark:text-primary-lighter flex items-center justify-center">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-slate-900 dark:text-white">Unggah dari perangkat</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">JPG, PNG, atau WebP · maks. 5 MB</span>
+                </span>
               </button>
-            </div>
 
-            {/* OPSI 2: Rekomendasi Avatar Dojo */}
-            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Opsi 2: Rekomendasi Avatar Dojo
-              </label>
-
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                {AVATAR_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedFile(null)
-                      setPreviewUrl(null)
-                      setAvatarUrl(preset.url)
-                      setIsAvatarModalOpen(false)
-                      showToast('success', `Avatar ${preset.label} dipilih!`)
-                    }}
-                    className={`p-2.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
-                      avatarUrl === preset.url
-                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <img src={preset.url} alt={preset.label} className="size-12 rounded-xl object-cover" />
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-full">{preset.label}</span>
-                  </button>
-                ))}
+              <p className="mt-5 mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Avatar dojo</p>
+              <div className="grid grid-cols-3 gap-2.5">
+                {AVATAR_PRESETS.map(preset => {
+                  const selected = avatarUrl === preset.url
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null)
+                        setPreviewUrl(null)
+                        setAvatarUrl(preset.url)
+                        setIsAvatarModalOpen(false)
+                      }}
+                      aria-pressed={selected}
+                      className={`p-2 rounded-2xl border-2 flex flex-col items-center gap-1.5 cursor-pointer transition-colors ${
+                        selected ? 'border-primary bg-primary/5' : 'border-transparent bg-slate-50 dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <img src={preset.url} alt="" className="size-14 rounded-xl object-cover" />
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{preset.label}</span>
+                    </button>
+                  )
+                })}
               </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsAvatarModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer border-none"
-              >
-                Tutup
-              </button>
+              <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">Foto baru tersimpan setelah kamu menekan <strong>Simpan perubahan</strong>.</p>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {isLoadingData ? (
         <ProfileSkeleton />
       ) : (
         <>
-          {/* ── HERO BANNER & PROFILE HEADER ──────────────────────── */}
-      <section className="relative rounded-3xl bg-gradient-to-r from-primary-dark via-primary to-primary-light text-white p-6 sm:p-8 md:p-10 shadow-lg overflow-hidden mb-8 border border-red-950/20">
-        {/* Japanese Decorative Overlay pattern */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 size-80 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-10 size-60 rounded-full bg-orange-500/10 blur-xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-          {/* Avatar Container */}
-          <div className="relative group shrink-0">
-            <div className="size-28 sm:size-32 rounded-3xl bg-white/10 backdrop-blur-md border-4 border-white/20 p-1 shadow-2xl overflow-hidden flex items-center justify-center">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={fullName || 'Avatar'}
-                  className="size-full object-cover rounded-2xl"
-                  onError={() => setAvatarUrl('')}
-                />
-              ) : (
-                <div className="size-full rounded-2xl bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-3xl font-black text-white">
-                  {userInitials}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAvatarModalOpen(true)}
-              className="absolute -bottom-2 -right-2 bg-white text-primary text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:bg-slate-100 hover:scale-105 transition-all border border-slate-200 cursor-pointer flex items-center gap-1.5"
-            >
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Ganti Foto</span>
-            </button>
-          </div>
+          {/* ── Header profil ── */}
+          <header className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark rounded-2xl p-5 sm:p-6 lg:p-7 mb-4 sm:mb-6 text-white shadow-md animate-fade-in">
+            <div className="absolute -top-16 -right-16 size-60 bg-white/10 rounded-full pointer-events-none" />
+            <span aria-hidden="true" className="absolute -bottom-12 right-6 font-serif font-black text-[10rem] leading-none text-white/[0.06] select-none pointer-events-none">人</span>
 
-          {/* User Text Information */}
-          <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 mb-2">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
-                {profile?.full_name || 'Pengguna kaiwadojo'}
-              </h1>
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-sm flex items-center gap-1.5">
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5" />
-                </svg>
-                <span>Pelajar Kaiwa</span>
-              </span>
-            </div>
-
-            <p className="text-red-100/90 text-sm font-medium mb-3">
-              @{profile?.username || 'username'} • <span className="opacity-80">{user?.email}</span>
-            </p>
-
-            {profile?.bio && (
-              <p className="text-white/90 text-sm sm:text-base font-normal max-w-2xl leading-relaxed italic bg-black/10 backdrop-blur-xs p-3 rounded-2xl border border-white/10 mb-4">
-                "{profile.bio}"
-              </p>
-            )}
-
-            {/* Quick Stats Badges Bar */}
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 pt-1">
-              <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
-                isFreezeToday
-                  ? 'bg-sky-500/20 backdrop-blur-md border-sky-400/40 text-sky-200 shadow-xs'
-                  : 'bg-rose-500/20 backdrop-blur-md border-rose-300/30 text-rose-100 shadow-xs'
-              }`}>
-                <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
-                  {isFreezeToday ? (
-                    <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-5 lg:gap-8 items-center">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 text-center sm:text-left min-w-0">
+                {/* Avatar + tombol kamera */}
+                <div className="relative shrink-0">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={fullName || 'Foto profil'} className="size-24 sm:size-28 rounded-3xl object-cover border-4 border-white/25 bg-white/10" />
                   ) : (
-                    <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
+                    <div className="size-24 sm:size-28 rounded-3xl border-4 border-white/25 bg-white/15 flex items-center justify-center text-3xl font-bold">
+                      {userInitials}
+                    </div>
                   )}
-                </svg>
-                <span>{profile?.streak_days || 0} Hari Sakura {isFreezeToday ? '(Freeze)' : ''}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
-                <svg className="size-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>{stats.enrolledCoursesCount} Kursus Terdaftar</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-bold">
-                <svg className="size-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Bergabung {formattedJoinDate}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── NAVIGATION TABS ─────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 mb-8 overflow-x-auto pb-1 no-scrollbar">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
-            activeTab === 'overview'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
-          }`}
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span>{t('pf_tab_overview', 'Ringkasan & Edit Profil')}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('courses')}
-          className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
-            activeTab === 'courses'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
-          }`}
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span>{t('pf_tab_courses', 'Kursus Saya')} ({stats.enrolledCoursesCount})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('achievements')}
-          className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
-            activeTab === 'achievements'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
-          }`}
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
-          <span>{t('pf_tab_achievements', 'Pencapaian & Lencana')}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('stats')}
-          className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer border-b-2 ${
-            activeTab === 'stats'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800'
-          }`}
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span>{t('pf_tab_stats', 'Statistik & Aktivitas')}</span>
-        </button>
-      </div>
-
-      {/* ── TAB CONTENT 1: OVERVIEW & EDIT ───────────────────── */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Edit Form */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-              <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span>Edit Data Profil</span>
-            </h2>
-
-            <form onSubmit={handleSaveProfile} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    {t('pf_input_fullname', 'Nama Lengkap')}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={t('pf_input_fullname_ph', 'Masukkan nama lengkap...')}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                  />
-                </div>
-
-                {/* Username (Read Only) */}
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    {t('pf_input_username', 'Nama Pengguna (Username)')}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
-                    <input
-                      type="text"
-                      disabled
-                      value={username}
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-semibold cursor-not-allowed"
-                    />
-                  </div>
-                  <p className="text-[0.7rem] text-slate-400 mt-1">Username bersifat permanen dan tidak dapat diubah.</p>
-                </div>
-              </div>
-
-              {/* Email (Read Only) */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Alamat Email (Auth System)
-                </label>
-                <input
-                  type="email"
-                  disabled
-                  value={user?.email || ''}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-semibold cursor-not-allowed"
-                />
-                <p className="text-xs text-slate-400 mt-1">Email dikelola langsung oleh sistem otentikasi Supabase.</p>
-              </div>
-
-              {/* Asal Lembaga / Perguruan Tinggi */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Asal Lembaga / Perguruan Tinggi
-                </label>
-                <input
-                  type="text"
-                  value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
-                  placeholder="Contoh: Nama Group | Institusi"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                />
-              </div>
-
-              {/* Kode Referral (Read Only) */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Kode Referral
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  value={profile?.referral_code || '-'}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-sm font-mono font-semibold cursor-not-allowed"
-                />
-                <p className="text-[0.7rem] text-slate-400 mt-1">Kode referral diisi saat pendaftaran dan tidak dapat diubah.</p>
-              </div>
-
-              {/* Alamat Domisili */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                  <svg className="size-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>Alamat Domisili</span>
-                </label>
-                <input
-                  type="text"
-                  value={domisili}
-                  onChange={(e) => setDomisili(e.target.value)}
-                  placeholder="Jl. / RT / RW / No. Rumah"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                />
-              </div>
-
-              {/* Grid: Kelurahan, Kecamatan, Kabupaten/Kota */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Kelurahan / Desa
-                  </label>
-                  <input
-                    type="text"
-                    value={kelurahan}
-                    onChange={(e) => setKelurahan(e.target.value)}
-                    placeholder="Contoh: Sukamaju"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Kecamatan
-                  </label>
-                  <input
-                    type="text"
-                    value={kecamatan}
-                    onChange={(e) => setKecamatan(e.target.value)}
-                    placeholder="Contoh: Cilodong"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Kabupaten / Kota
-                  </label>
-                  <input
-                    type="text"
-                    value={kabupaten}
-                    onChange={(e) => setKabupaten(e.target.value)}
-                    placeholder="Contoh: Kota Depok"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-semibold focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  {t('pf_input_bio', 'Biografi Singkat / Bio')}
-                </label>
-                <textarea
-                  rows={4}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder={t('pf_input_bio_ph', 'Tulis sepatah kata tentang motivasi belajar bahasa Jepangmu...')}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm font-medium focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-8 py-3.5 rounded-2xl bg-primary text-white font-extrabold text-sm hover:bg-primary-dark transition-all shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer flex items-center gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Menyimpan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Simpan Perubahan</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Side Info Cards */}
-          <div className="space-y-6">
-            {/* Account Quick Status */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h3 className="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <svg className="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span>Informasi Status Akun</span>
-              </h3>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">User ID</span>
-                  <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md font-bold truncate max-w-[140px]">
-                    {user?.id}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Asal Lembaga / PT</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]">
-                    {profile?.institution || '-'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Kode Referral</span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]">
-                    {profile?.referral_code || '-'}
-                  </span>
-                </div>
-
-                {(profile?.kabupaten || profile?.kecamatan || profile?.domisili) && (
-                  <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400 font-semibold">Domisili / Wilayah</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200 text-xs truncate max-w-[140px]" title={[profile?.domisili, profile?.kelurahan, profile?.kecamatan, profile?.kabupaten].filter(Boolean).join(', ')}>
-                      {profile?.kabupaten || profile?.kecamatan || profile?.domisili}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktif Terakhir</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-200 text-xs">
-                    {profile?.last_active_at ? new Date(profile.last_active_at).toLocaleString('id-ID') : 'Hari ini'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center py-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Streak Sakura</span>
-                  <span className={`font-extrabold flex items-center gap-1.5 ${isFreezeToday ? 'text-sky-500' : 'text-rose-500'}`}>
-                    <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
-                      {isFreezeToday ? (
-                        <path d="M12 2v20m-10-10h20m-17-7l14 14m0-14L5 19" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-                      ) : (
-                        <path d="M12 3c-1.5 2-2 4-1 6 2-1 4-1 5 1 1-2 3-2 5-1-1-2-2-4-4-5-2 1-4 1-5-1zm-4 6c-2 1-4 1-5-1 1 2 2 4 4 5 2-1 4-1 5 1-1-2-1-4-2-5-1 0-2 0-2 0zm10 7c2-1 4-1 5 1-1-2-2-4-4-5-2 1-4 1-5-1 1 2 1 4 2 5 1 0 2 0 2 0zm-8 4c1 2 2 4 4 5 2-1 4-1 5 1 1-2 2-4 1-6-2 1-4 1-5-1-1 0-2 0-2 1z" />
-                      )}
-                    </svg>
-                    <span>{profile?.streak_days || 0} Hari {isFreezeToday ? '(Salju)' : 'Mekar'}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Action Navigation */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="font-extrabold text-base flex items-center gap-2">
-                <svg className="size-4.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Akses Cepat kaiwadojo</span>
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Kelola jadwal belajar harian Anda atau lanjutkan kelas yang sedang Anda tempuh.
-              </p>
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={() => navigate('/my-courses')}
-                  className="group w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
-                >
-                  <span className="flex items-center gap-2">
-                    <svg className="size-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span>Buka Kursus Saya</span>
-                  </span>
-                  <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                    &gt;
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate('/learning-plan')}
-                  className="group w-full text-left px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all flex justify-between items-center cursor-pointer border border-white/10"
-                >
-                  <span className="flex items-center gap-2">
-                    <svg className="size-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                    <span>Rencana Belajar Harian</span>
-                  </span>
-                  <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-[0.6rem] font-black group-hover:translate-x-0.5 transition-transform">
-                    &gt;
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB CONTENT 2: COURSES ──────────────────────────── */}
-      {activeTab === 'courses' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div>
-              <h2 className="text-lg font-extrabold text-slate-800 dark:text-white">Daftar Kursus Terdaftar</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total {enrollments.length} kursus bahasa Jepang dalam progress Anda</p>
-            </div>
-
-            {/* Filter Buttons */}
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
-              <button
-                onClick={() => setCourseFilter('all')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'all' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Semua ({enrollments.length})
-              </button>
-              <button
-                onClick={() => setCourseFilter('in_progress')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'in_progress' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Sedang Belajar ({enrollments.filter(e => !e.completed_at && e.progress_pct < 100).length})
-              </button>
-              <button
-                onClick={() => setCourseFilter('completed')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  courseFilter === 'completed' ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Selesai ({enrollments.filter(e => e.completed_at || e.progress_pct >= 100).length})
-              </button>
-            </div>
-          </div>
-
-          {isLoadingData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(n => (
-                <div key={n} className="h-64 rounded-3xl skeleton" />
-              ))}
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 space-y-3">
-              <div className="size-16 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
-                <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Belum Ada Kursus Ditemukan</h3>
-              <p className="text-sm max-w-md mx-auto">
-                Anda belum terdaftar pada kategori kursus ini. Cari kursus menarik di Katalog untuk memulai petualangan Anda!
-              </p>
-              <button
-                onClick={() => navigate('/my-courses')}
-                className="mt-2 px-6 py-2.5 bg-primary text-white font-extrabold text-xs rounded-xl hover:bg-primary-dark transition-all cursor-pointer"
-              >
-                Jelajahi Kursus Sekarang
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((item) => {
-                const course = item.course
-                const isCompleted = item.completed_at || item.progress_pct >= 100
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
+                  <button
+                    type="button"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    aria-label="Ganti foto profil"
+                    title="Ganti foto profil"
+                    className="absolute -bottom-1.5 -right-1.5 size-10 rounded-xl bg-white text-primary shadow-md border-none cursor-pointer flex items-center justify-center hover:bg-white/90"
                   >
-                    <div className="h-40 bg-slate-100 dark:bg-slate-800 relative overflow-hidden">
-                      {course?.thumbnail_url ? (
-                        <img src={course.thumbnail_url} alt={course.title} className="size-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      ) : (
-                        <div className="size-full bg-gradient-to-br from-slate-800 to-primary-dark flex items-center justify-center text-white/30">
-                          <svg className="size-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </div>
-                      )}
-                      <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[0.68rem] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                        {course?.level || 'Pemula'}
-                      </span>
-                      {isCompleted && (
-                        <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[0.68rem] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                          <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Selesai</span>
-                        </span>
-                      )}
+                    <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight break-words">{profile?.full_name || 'Pengguna'}</h1>
+                  <p className="text-sm text-white/80 mt-0.5 truncate">@{profile?.username || 'username'}</p>
+                  <div className="mt-2.5 flex flex-wrap justify-center sm:justify-start gap-1.5">
+                    <span className="text-xs font-semibold bg-white/15 border border-white/20 px-2.5 py-1 rounded-full">{roleLabel}</span>
+                    {profile?.group_name && (
+                      <span className="text-xs font-semibold bg-white/15 border border-white/20 px-2.5 py-1 rounded-full">Grup {profile.group_name}</span>
+                    )}
+                    <span className="text-xs font-semibold bg-white/15 border border-white/20 px-2.5 py-1 rounded-full">Sejak {formattedJoinDate}</span>
+                  </div>
+                  {profile?.bio && (
+                    <p className="mt-3 text-sm text-white/90 leading-relaxed max-w-xl line-clamp-3">“{profile.bio}”</p>
+                  )}
+                </div>
+              </div>
+
+              <dl className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-[22rem]">
+                {[
+                  { label: isFreezeToday ? 'Streak (libur)' : 'Hari beruntun', value: streakDays },
+                  { label: 'Materi selesai', value: stats.completedLessons },
+                  { label: 'Lencana', value: `${unlockedBadges}/${badges.length}` },
+                ].map(s => (
+                  <div key={s.label} className="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5 sm:py-3">
+                    <dt className="text-[11px] sm:text-xs text-white/75 leading-tight">{s.label}</dt>
+                    <dd className="text-xl sm:text-2xl font-black tabular-nums leading-tight mt-0.5">{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </header>
+
+          {/* ── Tab ── */}
+          <div role="tablist" aria-label="Bagian profil" className="flex gap-1 p-1 mb-4 sm:mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800/70 w-full sm:w-fit">
+            {tabs.map(tab => {
+              const active = currentTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 sm:flex-none h-10 px-4 rounded-xl text-sm font-semibold border-none cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
+                    active ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                  {tab.count !== undefined && (
+                    <span className={`text-xs tabular-nums ${active ? 'text-primary dark:text-primary-lighter' : 'text-slate-400'}`}>{tab.count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ── Tab: Profil ── */}
+          {currentTab === 'overview' && (
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem] gap-4 sm:gap-6 items-start">
+              <form id="profile-form" onSubmit={handleSaveProfile} className="flex flex-col gap-4 sm:gap-6">
+                {/* Informasi pribadi */}
+                <section className={`${CARD} p-4 sm:p-6`}>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">Informasi pribadi</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Ditampilkan di profil dan dilihat oleh pengajar.</p>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label htmlFor="pf-name" className={labelClass}>{t('pf_input_fullname', 'Nama lengkap')}</label>
+                      <input id="pf-name" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required maxLength={100} placeholder={t('pf_input_fullname_ph', 'Masukkan nama lengkap...')} className={inputClass} />
                     </div>
-
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
-                        <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-primary dark:text-red-400">
-                          {course?.category || 'Bahasa Jepang'}
-                        </span>
-                        <h3 className="font-extrabold text-slate-800 dark:text-white text-base line-clamp-2 mt-1">
-                          {course?.title || 'Kursus Bahasa Jepang'}
-                        </h3>
+                    <div>
+                      <div className="flex items-baseline justify-between mb-1.5">
+                        <label htmlFor="pf-bio" className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('pf_input_bio', 'Bio')}</label>
+                        <span className="text-xs text-slate-400 tabular-nums">{bio.length}/500</span>
                       </div>
-
-                      <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex justify-between items-center text-xs font-bold">
-                          <span className="text-slate-500 dark:text-slate-400">Kemajuan Belajar</span>
-                          <span className="text-primary dark:text-red-400">{Math.round(item.progress_pct)}%</span>
-                        </div>
-                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isCompleted ? 'bg-emerald-500' : 'bg-primary'
-                            }`}
-                            style={{ width: `${Math.min(100, item.progress_pct)}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => navigate('/my-courses')}
-                        className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary dark:hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 font-extrabold text-xs transition-all cursor-pointer text-center"
-                      >
-                        {isCompleted ? 'Tinjau Materi' : 'Lanjutkan Belajar'}
-                      </button>
+                      <textarea id="pf-bio" value={bio} onChange={e => setBio(e.target.value)} maxLength={500} rows={3} placeholder={t('pf_input_bio_ph', 'Tulis sepatah kata tentang motivasi belajar bahasa Jepangmu...')} className={`${inputClass} resize-y`} />
                     </div>
                   </div>
-                )
-              })}
+                </section>
+
+                {/* Instansi & domisili */}
+                <section className={`${CARD} p-4 sm:p-6`}>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">Instansi & domisili</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Instansi dipakai untuk menentukan grup kelasmu.</p>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label htmlFor="pf-inst" className={labelClass}>Asal lembaga / kampus</label>
+                      <input id="pf-inst" type="text" value={institution} onChange={e => setInstitution(e.target.value)} maxLength={150} placeholder="Contoh: Universitas Indonesia" className={inputClass} />
+                    </div>
+                    <div>
+                      <label htmlFor="pf-addr" className={labelClass}>Alamat domisili</label>
+                      <input id="pf-addr" type="text" value={domisili} onChange={e => setDomisili(e.target.value)} maxLength={255} placeholder="Jl. / RT / RW / No. rumah" className={inputClass} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="pf-kel" className={labelClass}>Kelurahan / desa</label>
+                        <input id="pf-kel" type="text" value={kelurahan} onChange={e => setKelurahan(e.target.value)} maxLength={100} placeholder="Sukamaju" className={inputClass} />
+                      </div>
+                      <div>
+                        <label htmlFor="pf-kec" className={labelClass}>Kecamatan</label>
+                        <input id="pf-kec" type="text" value={kecamatan} onChange={e => setKecamatan(e.target.value)} maxLength={100} placeholder="Cilodong" className={inputClass} />
+                      </div>
+                      <div>
+                        <label htmlFor="pf-kab" className={labelClass}>Kabupaten / kota</label>
+                        <input id="pf-kab" type="text" value={kabupaten} onChange={e => setKabupaten(e.target.value)} maxLength={100} placeholder="Kota Depok" className={inputClass} />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Bar simpan — muncul saat ada perubahan */}
+                <div
+                  className={`sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-6 z-20 transition-all duration-200 ${
+                    isDirty ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+                  }`}
+                  aria-hidden={!isDirty}
+                >
+                  <div className="rounded-2xl bg-slate-900 dark:bg-slate-800 text-white shadow-xl p-2.5 pl-4 flex items-center gap-2">
+                    <span className="flex-1 min-w-0 text-sm font-medium truncate">Ada perubahan yang belum disimpan</span>
+                    <button
+                      type="button"
+                      onClick={handleResetForm}
+                      disabled={isSaving}
+                      className="h-10 px-3 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 bg-transparent border-none cursor-pointer"
+                    >
+                      Batalkan
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving || !isDirty}
+                      className="h-10 px-4 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold border-none cursor-pointer flex items-center gap-2 disabled:opacity-60"
+                    >
+                      {isSaving && <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+                      {isSaving ? 'Menyimpan…' : 'Simpan perubahan'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Info akun */}
+              <aside className="flex flex-col gap-4 sm:gap-6">
+                <section className={`${CARD} p-4 sm:p-5`}>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white mb-3">Akun</h2>
+                  <dl className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {[
+                      { label: 'Username', value: `@${profile?.username || '-'}` },
+                      { label: 'Email', value: user?.email || profile?.email || '-' },
+                      { label: 'Peran', value: roleLabel },
+                      { label: 'Bergabung', value: formattedJoinDate },
+                    ].map(row => (
+                      <div key={row.label} className="py-2.5 flex items-center justify-between gap-3">
+                        <dt className="text-slate-500 dark:text-slate-400 shrink-0">{row.label}</dt>
+                        <dd className="font-semibold text-slate-900 dark:text-white truncate text-right">{row.value}</dd>
+                      </div>
+                    ))}
+                    <div className="py-2.5 flex items-center justify-between gap-3">
+                      <dt className="text-slate-500 dark:text-slate-400 shrink-0">Kode referral</dt>
+                      <dd className="flex items-center gap-1 min-w-0">
+                        <span className="font-mono font-semibold text-slate-900 dark:text-white truncate">{profile?.referral_code || '-'}</span>
+                        {profile?.referral_code && (
+                          <button
+                            type="button"
+                            onClick={handleCopyReferral}
+                            aria-label="Salin kode referral"
+                            title="Salin"
+                            className="size-8 shrink-0 rounded-lg bg-transparent border-none cursor-pointer text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center"
+                          >
+                            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="mt-2 text-xs text-slate-400 leading-relaxed">Username, email, dan kode referral tidak dapat diubah dari sini. Hubungi admin bila perlu.</p>
+                </section>
+
+                <section className={`${CARD} p-4 sm:p-5`}>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white mb-1">Pengaturan lain</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Bahasa, tema, kata sandi, dan akun.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/settings')}
+                    className="w-full h-11 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold border-none cursor-pointer transition-colors"
+                  >
+                    Buka Pengaturan
+                  </button>
+                </section>
+              </aside>
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── TAB CONTENT 3: ACHIEVEMENTS & BADGES ─────────────── */}
-      {activeTab === 'achievements' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Lencana & Pencapaian Dojo</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Selesaikan tantangan untuk membuka semua lencana bahasa Jepang Anda</p>
-            </div>
+          {/* ── Tab: Pencapaian (aktivitas + lencana) ── */}
+          {currentTab === 'achievements' && (
+            <div className="flex flex-col gap-4 sm:gap-6">
+              <section aria-label="Aktivitas belajar" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {activityStats.map(s => (
+                  <div key={s.label} className={`${CARD} p-4`}>
+                    <span className={`size-10 rounded-xl flex items-center justify-center ${s.tone}`}>
+                      <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d={s.d} /></svg>
+                    </span>
+                    <p className="mt-3 text-2xl font-black tabular-nums text-slate-900 dark:text-white leading-none">{s.value}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">{s.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{s.unit}</p>
+                  </div>
+                ))}
+              </section>
 
-            <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-950/40 px-4 py-2.5 rounded-2xl border border-orange-200 dark:border-orange-800">
-              <svg className="size-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              <div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Terbuka</div>
-                <div className="text-sm font-extrabold text-orange-600 dark:text-orange-400">
-                  {badges.filter(b => b.unlocked).length} dari {badges.length} Lencana
+              <section className={`${CARD} p-4 sm:p-6`}>
+                <div className="flex items-end justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white">Lencana</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Selesaikan tantangan untuk membuka semua lencana.</p>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white shrink-0">{unlockedBadges}/{badges.length}</span>
                 </div>
-              </div>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {badges.map(badge => {
+                    const pct = badge.unlocked ? 100 : badgeProgressPct(badge.progress)
+                    return (
+                      <li
+                        key={badge.id}
+                        className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                          badge.unlocked
+                            ? 'border-amber-200 dark:border-amber-900/70 bg-amber-50/50 dark:bg-amber-950/20'
+                            : 'border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <span className={`size-12 shrink-0 rounded-2xl flex items-center justify-center ${
+                          badge.unlocked ? 'bg-white dark:bg-slate-900 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 grayscale opacity-60'
+                        }`}>
+                          {badge.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className={`text-sm font-semibold truncate ${badge.unlocked ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}>{badge.title}</p>
+                            {badge.unlocked && (
+                              <svg className="size-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">{badge.description}</p>
+                          {!badge.unlocked && badge.progress && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                              </span>
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 tabular-nums shrink-0">{badge.progress}</span>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
             </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {badges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`rounded-3xl p-5 border transition-all flex flex-col justify-between relative overflow-hidden ${
-                  badge.unlocked
-                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md'
-                    : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-60'
-                }`}
-              >
+          {/* ── Tab: Kursus ── */}
+          {currentTab === 'courses' && (
+            <section className={`${CARD} p-4 sm:p-6`}>
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`size-12 rounded-2xl flex items-center justify-center ${
-                      badge.unlocked ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shadow-xs' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 grayscale'
-                    }`}>
-                      {badge.icon}
-                    </span>
-                    {badge.unlocked ? (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Terbuka</span>
-                      </span>
-                    ) : (
-                      <span className="text-[0.65rem] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span>Terkunci</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="font-extrabold text-slate-800 dark:text-white text-base mb-1">{badge.title}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-3">
-                    {badge.description}
-                  </p>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">Kursus terdaftar</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{enrollments.length} kursus dalam perjalanan belajarmu</p>
                 </div>
-
-                {badge.progress && (
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-bold text-slate-400">
-                    <span>Progress:</span>
-                    <span className={badge.unlocked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}>
-                      {badge.progress}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB CONTENT 4: STATS & ANALYTICS ────────────────── */}
-      {activeTab === 'stats' && (
-        <div className="space-y-8">
-          {/* Key Stat Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-red-100 dark:bg-red-950/60 text-primary dark:text-red-400 flex items-center justify-center shrink-0 font-bold">
-                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Durasi</div>
-                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.totalWatchDurationMinutes} <span className="text-xs text-slate-400 font-semibold">Menit</span></div>
-                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Dari lesson_progress</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 font-bold">
-                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Replays</div>
-                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.totalReplays} <span className="text-xs text-slate-400 font-semibold">Kali</span></div>
-                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Pengulangan materi</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold">
-                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <circle cx="12" cy="12" r="9" />
-                  <circle cx="12" cy="12" r="5" />
-                  <circle cx="12" cy="12" r="2" fill="currentColor" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Kuis Lulus</div>
-                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.quizPassed}/{stats.quizAttempts}</div>
-                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Rata-rata skor: {stats.averageQuizScore}%</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-              <div className="size-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold">
-                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Tamat Kursus</div>
-                <div className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{stats.completedCoursesCount}/{stats.enrolledCoursesCount}</div>
-                <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium">Dari enrollments</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Summary Box */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-              <svg className="size-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              <span>Ringkasan Aktivitas Belajar</span>
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
-                <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">Aktivitas Kuis & Tes (quiz_attempts)</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Percobaan Kuis:</span>
-                    <span className="text-slate-800 dark:text-white font-bold">{stats.quizAttempts} Kali</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Kuis Berhasil Lulus:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{stats.quizPassed} Kuis</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Rata-rata Skor Kuis:</span>
-                    <span className="text-primary dark:text-red-400 font-bold">{stats.averageQuizScore}%</span>
-                  </div>
+                <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/70">
+                  {([
+                    ['all', `Semua`],
+                    ['in_progress', 'Berjalan'],
+                    ['completed', 'Selesai'],
+                  ] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setCourseFilter(key)}
+                      aria-pressed={courseFilter === key}
+                      className={`h-9 px-3 rounded-lg text-sm font-semibold border-none cursor-pointer transition-colors ${
+                        courseFilter === key ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
-                <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">Pelajaran & Video (lesson_progress)</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Pelajaran Selesai:</span>
-                    <span className="text-slate-800 dark:text-white font-bold">{stats.completedLessons} Bab</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Total Menit Menonton:</span>
-                    <span className="text-slate-800 dark:text-white font-bold">{stats.totalWatchDurationMinutes} Menit</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-500 dark:text-slate-400">Total Putar Ulang (Replays):</span>
-                    <span className="text-orange-600 font-bold">{stats.totalReplays} Kali</span>
-                  </div>
+              {filteredCourses.length === 0 ? (
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-6 text-center">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada kursus di kategori ini</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Progres kursus akan muncul setelah kamu mulai belajar.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/my-courses')}
+                    className="mt-3 h-10 px-4 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold border-none cursor-pointer"
+                  >
+                    Buka Kursus Saya
+                  </button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              ) : (
+                <ul className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredCourses.map(item => {
+                    const course = item.course
+                    const isCompleted = Boolean(item.completed_at) || item.progress_pct >= 100
+                    const pct = Math.min(100, Math.round(item.progress_pct))
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/my-courses')}
+                          className="w-full py-3 flex items-center gap-3 sm:gap-4 text-left bg-transparent border-none cursor-pointer group"
+                        >
+                          <span className="size-14 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white">
+                            {course?.thumbnail_url ? (
+                              <img src={course.thumbnail_url} alt="" className="size-full object-cover" />
+                            ) : (
+                              <svg className="size-6 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">{course?.title || 'Kursus Bahasa Jepang'}</span>
+                              {isCompleted && <span className="shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Selesai</span>}
+                            </span>
+                            <span className="block text-xs text-slate-500 dark:text-slate-400">{course?.level || 'Pemula'}{course?.category ? ` · ${course.category}` : ''}</span>
+                            <span className="mt-2 flex items-center gap-2">
+                              <span className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                <span className={`block h-full rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
+                              </span>
+                              <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300 w-9 text-right">{pct}%</span>
+                            </span>
+                          </span>
+                          <svg className="size-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
         </>
       )}
     </main>

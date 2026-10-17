@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { prefetchRoute } from '../utils/routePrefetch'
 import KaiwaLogo from './KaiwaLogo'
+import { useConfirmedSignOut } from '../contexts/ConfirmContext'
 
 interface SidebarProps {
   isOpen: boolean
@@ -65,6 +66,7 @@ function useIsDesktop() {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { profile, signOut } = useAuth()
+  const handleSignOut = useConfirmedSignOut(() => signOut())
   const { t } = useLanguage()
   const isDesktop = useIsDesktop()
   // Desktop saat ditutup → "rail" ikon saja (72px); mobile saat ditutup → tersembunyi
@@ -243,7 +245,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
               <button
                 type="button"
-                onClick={() => signOut()}
+                onClick={handleSignOut}
                 title={t('nav_keluar', 'Keluar')}
                 aria-label={t('nav_keluar', 'Keluar')}
                 className="size-10 shrink-0 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400 transition-colors"

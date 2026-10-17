@@ -13,6 +13,7 @@ import { fetchAnnouncements, type Announcement, ANNOUNCEMENT_UPDATE_EVENT } from
 
 import LoadingScreen from '../components/LoadingScreen'
 import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 const ADMIN_CACHE_KEY = 'kaiwa_admin_dashboard_cache_v2'
 
@@ -37,6 +38,7 @@ function getInitialCache(): AdminCacheData | null {
 }
 
 export default function AdminDashboard() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -96,7 +98,7 @@ export default function AdminDashboard() {
   }
 
   async function handleDeleteGroup(id: string, name: string) {
-    if (!confirm(`Hapus grup "${name}"? Siswa di grup ini akan dialihkan ke Siswa Umum.`)) return
+    if (!(await confirm({ title: `Hapus grup "${name}"?`, message: 'Siswa di grup ini akan dialihkan ke Siswa Umum.', confirmLabel: 'Ya, hapus', icon: 'trash' }))) return
     setGroupLoading(true)
     const res = await deleteGroup(id, name)
     if (res.success) {

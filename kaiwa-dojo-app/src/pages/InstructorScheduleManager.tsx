@@ -20,6 +20,7 @@ import {
 import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { parseTargetGroups } from '../lib/chapterService'
 import { ScheduleCardSkeleton } from '../components/Skeleton'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 interface ScheduleSlotItem {
   id: string
@@ -30,6 +31,7 @@ interface ScheduleSlotItem {
 }
 
 export default function InstructorScheduleManagerPage() {
+  const confirm = useConfirm()
   const { profile } = useAuth()
   const instructorId = profile?.id || 'inst-1'
   const instructorName = profile?.full_name || 'Tanaka Sensei'
@@ -287,7 +289,7 @@ export default function InstructorScheduleManagerPage() {
   }
 
   async function handleDelete(schId: string, title: string) {
-    if (confirm(`Apakah Anda yakin ingin menghapus jadwal "${title}"?`)) {
+    if (await confirm({ title: 'Hapus jadwal kelas?', message: `Jadwal "${title}" akan dihapus. Reservasi pelajar pada jadwal ini ikut tidak berlaku.`, confirmLabel: 'Ya, hapus', icon: 'trash' })) {
       try {
         await deleteSchedule(schId)
         showToast('Jadwal kelas berhasil dihapus dari database!')

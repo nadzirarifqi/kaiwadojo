@@ -17,8 +17,10 @@ import { calculateUserPresence } from '../lib/presenceUtils'
 import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
 import { fetchKotobaCountsByUser } from '../lib/kotobaService'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 export default function StudentManager() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -164,7 +166,7 @@ export default function StudentManager() {
   }
 
   async function handleReject(std: StudentAccount) {
-    if (!confirm(`Apakah Anda yakin ingin menolak/menonaktifkan akun "${std.full_name}"?`)) return
+    if (!(await confirm({ title: 'Tolak / nonaktifkan akun?', message: `Akun "${std.full_name}" tidak akan bisa masuk sampai disetujui kembali.`, confirmLabel: 'Ya, nonaktifkan', icon: 'warning' }))) return
     setSaving(true)
 
     // 1. Update React state secara instan
@@ -278,7 +280,7 @@ export default function StudentManager() {
   }
 
   async function handleDelete(std: StudentAccount) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus akun pelajar "${std.full_name}" (@${std.username}) secara permanen?`)) return
+    if (!(await confirm({ title: 'Hapus akun pelajar?', message: `Akun "${std.full_name}" (@${std.username}) beserta datanya akan dihapus permanen dan tidak bisa dikembalikan.`, confirmLabel: 'Ya, hapus akun', icon: 'trash' }))) return
 
     setSaving(true)
 

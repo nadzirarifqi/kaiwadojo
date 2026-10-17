@@ -14,8 +14,10 @@ import {
 } from '../lib/groupService'
 import { fetchStudents, type StudentAccount } from '../lib/studentService'
 import LoadingScreen from '../components/LoadingScreen'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 export default function GroupManagerPage() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
 
   const [groups, setGroups] = useState<KaiwaGroup[]>([])
@@ -131,11 +133,15 @@ export default function GroupManagerPage() {
 
   async function handleDelete(grp: KaiwaGroup) {
     const studentCount = students.filter(s => (s.group_name || '').toLowerCase() === grp.name.toLowerCase()).length
-    const confirmMsg = studentCount > 0
-      ? `Grup "${grp.name}" saat ini memiliki ${studentCount} siswa terdaftar.\n\nJika dihapus, seluruh siswa tersebut akan otomatis diubah menjadi "Siswa Biasa (Tanpa Grup)" dan jadwal khusus grup ini akan terbuka untuk umum.\n\nLanjutkan penghapusan?`
-      : `Hapus grup "${grp.name}"?`
-
-    if (!confirm(confirmMsg)) return
+    const ok = await confirm({
+      title: `Hapus grup "${grp.name}"?`,
+      message: studentCount > 0
+        ? `Grup ini memiliki ${studentCount} siswa. Jika dihapus, mereka otomatis menjadi Siswa Biasa (tanpa grup) dan jadwal khusus grup ini terbuka untuk umum.`
+        : 'Grup ini belum memiliki siswa.',
+      confirmLabel: 'Ya, hapus',
+      icon: 'trash',
+    })
+    if (!ok) return
 
     setSaving(true)
     const res = await deleteGroup(grp.id, grp.name)
@@ -149,13 +155,14 @@ export default function GroupManagerPage() {
   }
 
   async function handleRunSync() {
-    if (
-      !confirm(
-        'Sinkronisasi Semua Siswa?\n\nSistem akan mengevaluasi ulang teks instansi setiap siswa terhadap kata kunci grup yang aktif. Siswa yang tidak cocok dengan kata kunci grup manapun akan otomatis diset sebagai Siswa Biasa.'
-      )
-    ) {
-      return
-    }
+    const ok = await confirm({
+      title: 'Sinkronisasi semua siswa?',
+      message: 'Sistem akan mencocokkan ulang instansi setiap siswa dengan kata kunci grup yang aktif. Siswa yang tidak cocok dengan grup mana pun otomatis menjadi Siswa Biasa.',
+      confirmLabel: 'Ya, sinkronkan',
+      tone: 'primary',
+      icon: 'warning',
+    })
+    if (!ok) return
 
     setSyncing(true)
     const res = await syncAllStudentsWithGroups()

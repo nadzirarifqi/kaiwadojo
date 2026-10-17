@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/ToastContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import { validateKotobaInput } from '../lib/kotobaValidation'
+import { useConfirm } from '../contexts/ConfirmContext'
 import {
   fetchDailyMission,
   getDailyMission,
@@ -179,6 +180,7 @@ export default function SetoranKotobaPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
   const { toast } = useToast()
+  const confirm = useConfirm()
   const effectiveUserId = user?.id || profile?.id || null
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
@@ -712,7 +714,20 @@ export default function SetoranKotobaPage() {
   async function handleDeleteItem(id: string) {
     const targetItem = kotobaList.find(k => k.id === id)
     const wordLabel = targetItem?.japanese ? `"${targetItem.japanese}"` : 'kosakata ini'
-    if (!confirm(`Apakah kamu yakin ingin menghapus ${wordLabel} dari catatan setoran kotoba?`)) return
+    const ok = await confirm({
+      title: 'Hapus kosakata ini?',
+      message: (
+        <>
+          <span className="block font-serif text-2xl font-bold text-slate-900 dark:text-white">{targetItem?.japanese}</span>
+          {targetItem && <span className="block text-sm text-slate-500 dark:text-slate-400 mt-0.5">{targetItem.romaji} · {targetItem.meaning}</span>}
+          <span className="block mt-3">Kosakata akan dihapus dari jurnal setoranmu dan tidak bisa dikembalikan.</span>
+        </>
+      ),
+      confirmLabel: 'Ya, hapus',
+      tone: 'danger',
+      icon: 'trash',
+    })
+    if (!ok) return
 
     const updated = kotobaList.filter(k => k.id !== id)
     saveToLocal(updated)
