@@ -1,205 +1,144 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import FeedbackModal from './FeedbackModal'
 import { AppConfig } from '../config/appConfig'
 
-/**
- * Helper to detect if any modal, dialog, or high z-index overlay is open in the DOM
- */
+/** Ada modal lain yang sedang terbuka? (semua overlay modal memakai class "modal-overlay") */
 function isAnyModalInDOM(): boolean {
   if (typeof document === 'undefined') return false
-
-  // 1. Check for standard modal dialogs or explicit modal ARIA elements
-  const dialogs = document.querySelectorAll('[role="dialog"], [aria-modal="true"]')
-  for (const el of Array.from(dialogs)) {
-    if (el.closest('#floating-action-widgets')) continue
-    const htmlEl = el as HTMLElement
-    if (htmlEl.offsetWidth > 0 || htmlEl.offsetHeight > 0 || htmlEl.getClientRects().length > 0) {
-      const style = window.getComputedStyle(htmlEl)
-      if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
-        return true
-      }
-    }
-  }
-
-  // 2. Check for high z-index modal backdrops / full-screen overlays (z >= 50 or arbitrary tailwind z-[...])
-  const highZCandidates = document.querySelectorAll(
-    '[class*="z-[999"], [class*="z-[99999"], [class*="z-[500"], [class*="z-[600"], [class*="z-[650"]'
+  return Array.from(document.querySelectorAll('.modal-overlay, [aria-modal="true"]')).some(
+    el => !el.closest('#floating-action-widgets'),
   )
-  for (const el of Array.from(highZCandidates)) {
-    if (el.closest('#floating-action-widgets')) continue
-    const htmlEl = el as HTMLElement
-    const cls = htmlEl.className || ''
-    if (typeof cls === 'string' && cls.includes('fixed') && (cls.includes('inset-0') || cls.includes('top-0'))) {
-      const style = window.getComputedStyle(htmlEl)
-      if (
-        style.pointerEvents !== 'none' &&
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        style.opacity !== '0'
-      ) {
-        return true
-      }
-    }
-  }
-
-  return false
 }
 
+const WA_ICON_PATH =
+  'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z'
+
+/**
+ * Tombol bantuan melayang (kanan bawah). Satu tombol membuka menu kecil berisi:
+ * chat admin via WhatsApp dan kirim masukan. Disembunyikan otomatis saat ada modal lain terbuka.
+ */
 export default function WhatsAppWidget() {
   const location = useLocation()
-  const [isWaOpen, setIsWaOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
   const [isDomModalOpen, setIsDomModalOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
-  // Observe DOM changes to detect any modal opening or closing
   useEffect(() => {
-    const checkModal = () => {
-      setIsDomModalOpen(isAnyModalInDOM())
-    }
-
-    // Initial check
+    const checkModal = () => setIsDomModalOpen(isAnyModalInDOM())
     checkModal()
+    const observer = new MutationObserver(checkModal)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
 
-    // MutationObserver to react immediately to modals mounting or unmounting
-    const observer = new MutationObserver(() => {
-      checkModal()
-    })
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style', 'role', 'aria-modal'],
-    })
-
-    return () => {
-      observer.disconnect()
+  // Tutup menu saat pindah halaman, klik di luar, atau menekan Escape
+  useEffect(() => { setIsMenuOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!isMenuOpen) return
+    const onPointer = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setIsMenuOpen(false)
     }
-  }, [location.pathname])
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMenuOpen(false) }
+    document.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [isMenuOpen])
 
-  // Hide feedback button specifically on landing page, login, and registration pages
+  // Masukan tidak ditampilkan di landing, login, dan registrasi
   const normalizedPath = location.pathname.toLowerCase().replace(/\/+$/, '') || '/'
   const isAuthOrLandingPage = ['/', '/login', '/register', '/admin'].includes(normalizedPath)
 
-  const adminWaNumber = AppConfig.contacts.getAdminWaFormatted()
-  const defaultMessage = encodeURIComponent('Halo Admin kaiwadojo, saya ingin bertanya mengenai aplikasi...')
-  const waUrl = `https://wa.me/${adminWaNumber}?text=${defaultMessage}`
+  const waUrl = `https://wa.me/${AppConfig.contacts.getAdminWaFormatted()}?text=${encodeURIComponent('Halo Admin kaiwadojo, saya ingin bertanya mengenai aplikasi...')}`
 
   function handleOpenWhatsApp() {
     window.open(waUrl, '_blank', 'noopener,noreferrer')
-    setIsWaOpen(false)
+    setIsMenuOpen(false)
   }
 
-  const shouldHideWidgets = isDomModalOpen || isWaOpen || isFeedbackOpen
+  function handleOpenFeedback() {
+    setIsMenuOpen(false)
+    setIsFeedbackOpen(true)
+  }
+
+  const isHidden = isDomModalOpen || isFeedbackOpen
+
+  const menuItem =
+    'w-full flex items-center gap-3 p-2.5 rounded-xl text-left bg-transparent border-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors'
 
   return (
     <>
-      {/* Floating Action Buttons Group (Bottom Right) */}
       <div
         id="floating-action-widgets"
-        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-2.5 sm:gap-3 transition-all duration-300 ${
-          shouldHideWidgets
-            ? 'opacity-0 pointer-events-none translate-y-6 scale-90'
-            : 'opacity-100 pointer-events-auto translate-y-0 scale-100'
+        ref={rootRef}
+        className={`fixed right-4 sm:right-6 bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:bottom-6 z-50 flex flex-col items-end gap-3 transition-all duration-200 ${
+          isHidden ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100'
         }`}
       >
-        
-        {/* 1. Floating Feedback & Saran Trigger Button (Hidden on Landing, Login, Register) */}
-        {!isAuthOrLandingPage && (
-          <div className="flex items-center gap-2 group">
-            <span className="hidden md:inline-block px-3 py-1.5 rounded-xl bg-slate-900/90 dark:bg-slate-800/90 text-white text-xs font-bold shadow-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap border border-slate-700/50">
-              Kirim Masukan & Saran
-            </span>
+        {/* Menu bantuan */}
+        {isMenuOpen && (
+          <div
+            role="menu"
+            aria-label="Bantuan"
+            className="w-[min(18rem,calc(100vw-2rem))] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-fade-in-up origin-bottom-right"
+          >
+            <p className="px-2.5 pt-1.5 pb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Butuh bantuan?</p>
 
-            <button
-              type="button"
-              onClick={() => setIsFeedbackOpen(true)}
-              aria-label="Kirim Masukan & Saran untuk Website kaiwadojo"
-              className="relative size-12 sm:size-13 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border-none overflow-visible"
-            >
-              <svg className="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
+            <button type="button" role="menuitem" onClick={handleOpenWhatsApp} className={menuItem}>
+              <span className="size-10 shrink-0 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
+                <svg className="size-5 fill-current" viewBox="0 0 24 24"><path d={WA_ICON_PATH} /></svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-slate-900 dark:text-white">Chat Admin</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">Jadwal, pendaftaran, atau akun</span>
+              </span>
+              <svg className="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
             </button>
+
+            {!isAuthOrLandingPage && (
+              <button type="button" role="menuitem" onClick={handleOpenFeedback} className={menuItem}>
+                <span className="size-10 shrink-0 rounded-xl bg-amber-500 text-white flex items-center justify-center">
+                  <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-slate-900 dark:text-white">Kirim Masukan</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">Saran fitur, bug, atau materi</span>
+                </span>
+              </button>
+            )}
           </div>
         )}
 
-        {/* 2. Floating WhatsApp Trigger Button */}
-        <div className="flex items-center gap-2 group">
-          <span className="hidden md:inline-block px-3 py-1.5 rounded-xl bg-slate-900/90 dark:bg-slate-800/90 text-white text-xs font-bold shadow-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap border border-slate-700/50">
-            Hubungi Admin WhatsApp
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setIsWaOpen(true)}
-            aria-label="Hubungi Admin kaiwadojo via WhatsApp"
-            className="relative size-12 sm:size-13 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center border-none overflow-visible"
-          >
-            {/* Ambient Pulse Ring */}
-            <span className="absolute -inset-1 rounded-full bg-emerald-500/25 animate-pulse [animation-duration:3.5s] pointer-events-none" />
-
-            {/* Online Status Dot */}
-            <span className="absolute top-0 right-0 size-3 rounded-full bg-emerald-400 border-2 border-white dark:border-slate-900" />
-
-            {/* WhatsApp SVG Icon */}
-            <svg className="size-6 fill-current relative z-10" viewBox="0 0 24 24">
-              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
-            </svg>
-          </button>
-        </div>
-
+        {/* Tombol utama */}
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen(v => !v)}
+          aria-expanded={isMenuOpen}
+          aria-haspopup="menu"
+          aria-label={isMenuOpen ? 'Tutup menu bantuan' : 'Buka menu bantuan'}
+          className={`h-12 rounded-full shadow-lg hover:shadow-xl border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-95 ${
+            isMenuOpen
+              ? 'w-12 bg-slate-800 dark:bg-slate-700 text-white'
+              : 'w-12 sm:w-auto sm:px-4 bg-emerald-500 hover:bg-emerald-600 text-white'
+          }`}
+        >
+          {isMenuOpen ? (
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          ) : (
+            <>
+              <svg className="size-6 fill-current shrink-0" viewBox="0 0 24 24"><path d={WA_ICON_PATH} /></svg>
+              <span className="hidden sm:inline text-sm font-bold">Bantuan</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Feedback Modal */}
       {!isAuthOrLandingPage && (
-        <FeedbackModal
-          isOpen={isFeedbackOpen}
-          onClose={() => setIsFeedbackOpen(false)}
-        />
-      )}
-
-      {/* WhatsApp Confirmation Modal */}
-      {isWaOpen && (
-        <div className="modal-overlay fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up text-center relative overflow-hidden">
-            
-            <div className="size-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
-              <svg className="size-7 fill-current" viewBox="0 0 24 24">
-                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.536 1.776.814 2.791.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.767-5.766zm3.376 8.21c-.141.396-.704.723-1.077.781-.354.055-.788.083-2.316-.549-1.954-.809-3.21-2.799-3.308-2.929-.098-.13-1.229-1.636-1.229-3.12 0-1.484.776-2.213 1.053-2.518.277-.306.604-.383.805-.383.201 0 .402.002.578.01.186.009.434-.07.679.519.255.612.868 2.119.943 2.273.076.153.126.333.025.534-.1.2-.15.326-.299.499-.148.174-.313.388-.447.521-.148.147-.303.307-.13.606.173.299.769 1.269 1.651 2.054 1.135 1.01 2.091 1.323 2.39 1.472.298.149.472.13.647-.07.175-.2.753-.878.955-1.179.201-.301.402-.251.678-.151.276.1.175.776.85 1.151.675.375.141.574.226.772.085.198-.056.704-.381 1.077z" />
-              </svg>
-            </div>
-
-            <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white mb-2">
-              Hubungi Admin WhatsApp
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6 font-medium">
-              Hubungi Tim Admin kaiwadojo untuk informasi jadwal, pendaftaran, atau bantuan akun.
-            </p>
-
-            <div className="flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={handleOpenWhatsApp}
-                className="group w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl border-none cursor-pointer transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <span>Buka Chat WhatsApp</span>
-                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[0.65rem] font-black group-hover:translate-x-0.5 transition-transform">
-                  &gt;
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsWaOpen(false)}
-                className="w-full py-2.5 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
-              >
-                Batal
-              </button>
-            </div>
-          </div>
-        </div>
+        <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
       )}
     </>
   )

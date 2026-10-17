@@ -1147,7 +1147,15 @@ const QUICK_ACTIONS = [
   },
 ]
 
-function QuickActions() {
+function QuickActions({
+  announcement,
+  unreadCount,
+  onOpenAnnouncements,
+}: {
+  announcement?: { title: string } | null
+  unreadCount: number
+  onOpenAnnouncements: () => void
+}) {
   const navigate = useNavigate()
   return (
     <nav aria-label="Akses cepat" className="grid grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3">
@@ -1165,6 +1173,30 @@ function QuickActions() {
           </span>
         </button>
       ))}
+
+      {/* Pengumuman — ringkas, satu baris */}
+      {announcement && (
+        <button
+          type="button"
+          onClick={onOpenAnnouncements}
+          className={`col-span-4 lg:col-span-2 h-11 px-3 rounded-xl border flex items-center gap-2.5 text-left cursor-pointer transition-colors group ${
+            unreadCount > 0
+              ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 hover:border-rose-300 dark:hover:border-rose-800'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}
+        >
+          <svg className={`size-[18px] shrink-0 ${unreadCount > 0 ? 'text-primary dark:text-primary-lighter' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+          </svg>
+          {unreadCount > 0 && (
+            <span className="shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-white leading-none">{unreadCount} baru</span>
+          )}
+          <span className="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200 truncate">
+            <span className="font-semibold">Pengumuman:</span> {announcement.title}
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-slate-400 group-hover:text-primary transition-colors" />
+        </button>
+      )}
     </nav>
   )
 }
@@ -1828,8 +1860,7 @@ export default function Dashboard() {
     { label: 'Jilid 1', value: `${bookProgress.jilid1Pct}%` },
   ]
 
-  const hasUnread = unreadAnnouncements.length > 0
-  const bannerAnnouncement = hasUnread ? unreadAnnouncements[0] : announcements[0]
+  const bannerAnnouncement = unreadAnnouncements[0] ?? announcements[0] ?? null
 
   return (
     <main className="flex-1 px-4 py-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
@@ -1895,37 +1926,8 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Pengumuman ── */}
-      {bannerAnnouncement && (
-        <button
-          type="button"
-          onClick={() => setShowAnnouncementModal(true)}
-          className={`w-full mb-4 sm:mb-6 p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 text-left cursor-pointer transition-colors group ${
-            hasUnread
-              ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 hover:border-rose-300'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-          }`}
-        >
-          <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${hasUnread ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-            </svg>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pengumuman</span>
-              {hasUnread && (
-                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-white leading-none">{unreadAnnouncements.length} baru</span>
-              )}
-            </span>
-            <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{bannerAnnouncement.title}</span>
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-slate-400 group-hover:text-primary transition-colors" />
-        </button>
-      )}
-
       {/* ── Konten utama ──
-          HP: satu kolom, urutan diatur dengan `order` sesuai prioritas (misi → akses cepat → streak → agenda → fakta → progres).
+          HP: satu kolom, urutan diatur dengan `order` sesuai prioritas (misi → akses cepat & pengumuman → streak → fakta → agenda → progres).
           Desktop: dua kolom (utama | samping). */}
       <div className="flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] lg:gap-6 lg:items-start">
         <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
@@ -1939,7 +1941,7 @@ export default function Dashboard() {
           </div>
 
           <div className="order-5">
-            <JapanFactCard userId={profile?.id || user?.id} />
+            <AgendaCard userId={user?.id || ''} />
           </div>
 
           {/* Progres buku */}
@@ -1989,7 +1991,11 @@ export default function Dashboard() {
 
         <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
           <div className="order-2">
-            <QuickActions />
+            <QuickActions
+              announcement={bannerAnnouncement}
+              unreadCount={unreadAnnouncements.length}
+              onOpenAnnouncements={() => setShowAnnouncementModal(true)}
+            />
           </div>
 
           <div className="order-3">
@@ -2003,7 +2009,7 @@ export default function Dashboard() {
           </div>
 
           <div className="order-4">
-            <AgendaCard userId={user?.id || ''} />
+            <JapanFactCard userId={profile?.id || user?.id} />
           </div>
         </div>
       </div>

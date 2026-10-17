@@ -1,14 +1,13 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ToastProvider } from './contexts/ToastContext'
-import Sidebar from './components/Sidebar'
+import Sidebar, { Avatar, BrandMark } from './components/Sidebar'
 import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
-import KaiwaLogo from './components/KaiwaLogo'
 import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
@@ -75,11 +74,9 @@ function DashboardRoute() {
 }
 
 
-/* ── Universal App Navbar (YouTube-Style Layout) ───
-   Tampil di Desktop & Mobile:
-   • Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Wordmark kaiwadojo
-   • Klik logo / wordmark → kembali ke Dashboard (/dashboard)
-   • Pojok kanan: Badge Role + Switch Dark/Light Mode + Foto/Avatar Profil
+/* ── Navbar aplikasi ───────────────────────────────
+   Kiri : tombol menu (buka/tutup sidebar) + logo → Beranda
+   Kanan: ganti tema + menu akun (profil, pengaturan, keluar)
    ─────────────────────────────────────────────── */
 function AppNavbar({
   onToggleSidebar,
@@ -89,141 +86,153 @@ function AppNavbar({
   sidebarOpen: boolean
 }) {
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const location = useLocation()
+  const { profile, signOut } = useAuth()
   const [isDark, setIsDark] = useState(() =>
-    typeof document !== 'undefined'
-      ? document.documentElement.classList.contains('dark')
-      : false
+    typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false
   )
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (typeof document === 'undefined') return
     const updateTheme = () => setIsDark(document.documentElement.classList.contains('dark'))
     updateTheme()
-
     const observer = new MutationObserver(updateTheme)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
     return () => observer.disconnect()
   }, [])
+
+  // Menu akun: tutup saat pindah halaman, klik di luar, atau Escape
+  useEffect(() => { setMenuOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!menuOpen) return
+    const onPointer = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
 
   function toggleTheme() {
     const root = document.documentElement
     const nextDark = !root.classList.contains('dark')
-    if (nextDark) {
-      root.classList.add('dark')
-      localStorage.setItem('kaiwa_theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('kaiwa_theme', 'light')
-    }
+    root.classList.toggle('dark', nextDark)
+    localStorage.setItem('kaiwa_theme', nextDark ? 'dark' : 'light')
     setIsDark(nextDark)
   }
 
-  const roleLabel =
-    profile?.role === 'admin'
-      ? 'Admin'
-      : profile?.role === 'pemateri'
-      ? 'Admin Pengajar'
-      : 'Pelajar'
-
+  const roleLabel = profile?.role === 'admin' ? 'Admin' : profile?.role === 'pemateri' ? 'Pengajar' : 'Pelajar'
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : 'KD'
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || 'Akun'
+
+  const iconBtn =
+    'size-10 shrink-0 flex items-center justify-center rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer transition-colors'
+  const menuItem =
+    'w-full flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-medium text-left bg-transparent border-none cursor-pointer transition-colors'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-3 sm:px-5 lg:px-6 shadow-xs safe-left safe-right transition-colors">
-      {/* Pojok kiri atas: Tombol Garis Tiga (Hamburger) + Logo & Tulisan kaiwadojo */}
-      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-        {/* Tombol Menu Garis Tiga (Desktop & Mobile) */}
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 px-2 sm:px-4 safe-left safe-right">
+      <div className="flex items-center gap-1 min-w-0">
         <button
           type="button"
           onClick={onToggleSidebar}
-          aria-label={sidebarOpen ? 'Tutup navigasi' : 'Buka navigasi'}
-          title={sidebarOpen ? 'Tutup navigasi' : 'Buka navigasi'}
-          className="size-8 sm:size-9 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer shrink-0"
+          aria-label={sidebarOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+          aria-expanded={sidebarOpen}
+          title={sidebarOpen ? 'Ciutkan menu' : 'Buka menu'}
+          className={iconBtn}
         >
-          <svg className="size-4.5 sm:size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
 
-        {/* Logo & Tulisan kaiwadojo - Klik untuk balik ke dashboard */}
         <button
           type="button"
-          onClick={() => {
-            navigate('/dashboard')
-            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-              onToggleSidebar()
-            }
-          }}
-          aria-label="Kembali ke Dashboard kaiwadojo"
-          title="Kembali ke Dashboard"
-          className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-0.5 sm:py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 active:scale-[0.98] transition-all cursor-pointer border-none bg-transparent group text-left shrink-0"
+          onClick={() => navigate('/dashboard')}
+          aria-label="Ke Beranda kaiwadojo"
+          className="h-10 px-2 rounded-xl flex items-center bg-transparent border-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <div className="size-7 sm:size-7.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-xs group-hover:scale-105 transition-transform">
-            <KaiwaLogo className="size-5 sm:size-5.5 object-contain" />
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-extrabold text-primary dark:text-red-400 text-xs sm:text-sm tracking-tight leading-none group-hover:text-primary-dark dark:group-hover:text-red-300 transition-colors">
-              kaiwadojo
-            </span>
-            <span className="text-[9px] px-1 py-0.2 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp font-bold">
-              会話
-            </span>
-          </div>
+          <BrandMark />
         </button>
       </div>
 
-      {/* Pojok kanan atas: Role Badge + Theme Switch + Profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pr-1 sm:pr-2">
-        {/* Role badge */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-          <span>{roleLabel}</span>
-        </div>
-
-        {/* Toggle Dark/Light Mode */}
+      <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
           onClick={toggleTheme}
-          title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-          aria-label="Ganti tema tampilan"
-          className="size-8 sm:size-8.5 flex items-center justify-center rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border-none bg-transparent cursor-pointer"
+          title={isDark ? 'Mode terang' : 'Mode gelap'}
+          aria-label={isDark ? 'Beralih ke mode terang' : 'Beralih ke mode gelap'}
+          className={iconBtn}
         >
           {isDark ? (
-            <svg className="size-4 text-amber-400 fill-current" viewBox="0 0 24 24">
-              <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            <svg className="size-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           ) : (
-            <svg className="size-4 text-slate-600 hover:text-amber-500 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           )}
         </button>
 
-        {/* Profile Avatar button */}
-        <button
-          type="button"
-          onClick={() => navigate('/profile')}
-          title={profile?.full_name ? `Profil: ${profile.full_name}` : 'Lihat Profil'}
-          aria-label="Lihat Profil"
-          className="size-7.5 sm:size-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all cursor-pointer p-0 shrink-0 mr-1 sm:mr-1.5"
-        >
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.full_name || 'Avatar'}
-              className="size-full object-cover rounded-full"
-            />
-          ) : (
-            <div className="size-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
-              {initials}
+        {/* Menu akun */}
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="Menu akun"
+            className={`h-10 pl-1 pr-1 sm:pr-2.5 rounded-xl flex items-center gap-2 border-none cursor-pointer transition-colors ${
+              menuOpen ? 'bg-slate-100 dark:bg-slate-800' : 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Avatar url={profile?.avatar_url} name={profile?.full_name} initials={initials} size="size-8" />
+            <span className="hidden sm:block text-left leading-tight max-w-[9rem]">
+              <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{firstName}</span>
+              <span className="block text-[11px] text-slate-500 dark:text-slate-400">{roleLabel}</span>
+            </span>
+            <svg className={`hidden sm:block size-4 text-slate-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-2 animate-fade-in-up"
+            >
+              <div className="flex items-center gap-3 px-2 py-2.5">
+                <Avatar url={profile?.avatar_url} name={profile?.full_name} initials={initials} size="size-10" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile?.full_name || 'Pengguna'}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile?.email || roleLabel}</p>
+                </div>
+              </div>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+              <button type="button" role="menuitem" onClick={() => navigate('/profile')} className={`${menuItem} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800`}>
+                <svg className="size-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                Profil saya
+              </button>
+              <button type="button" role="menuitem" onClick={() => navigate('/settings')} className={`${menuItem} text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800`}>
+                <svg className="size-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Pengaturan
+              </button>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+              <button type="button" role="menuitem" onClick={() => signOut()} className={`${menuItem} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40`}>
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                Keluar
+              </button>
             </div>
           )}
-        </button>
+        </div>
       </div>
     </header>
   )
@@ -282,14 +291,14 @@ function AppShell({ children }: { children?: React.ReactNode }) {
           pt-14             → pas di bawah topbar 56px (baik mobile maupun desktop)
           min-w-0           → mencegah flex child melar melebihi wrapper
           overflow-x-clip   → menghentikan scroll horizontal tanpa merusak position: sticky
-          lg:ml-[260px]     → bergeser saat sidebar desktop buka/tutup seperti YouTube
+          lg:ml-[260px]     → sidebar penuh; lg:ml-[72px] saat diciutkan jadi rail ikon
           ────────────────────────────────────── */}
       <div
         className={`
           flex-1 flex flex-col min-h-screen min-w-0 overflow-x-clip
           pt-14
           transition-[margin-left] duration-300 ease-in-out
-          ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-0'}
+          ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-[72px]'}
         `}
       >
         <Suspense fallback={<LoadingScreen fullScreen={false} message="Memuat halaman..." />}>
