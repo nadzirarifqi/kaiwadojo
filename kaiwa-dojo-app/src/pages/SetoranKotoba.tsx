@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/ToastContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
+import { validateKotobaInput } from '../lib/kotobaValidation'
 import {
   fetchDailyMission,
   getDailyMission,
@@ -196,6 +197,14 @@ export default function SetoranKotobaPage() {
     image_url: '',
   })
   const [saving, setSaving]           = useState(false)
+  // Validasi isian form: pesan tampil setelah kolom disentuh atau saat mencoba menyimpan
+  const [showFormErrors, setShowFormErrors] = useState(false)
+  const [touchedFields, setTouchedFields]   = useState<Partial<Record<'japanese' | 'romaji' | 'meaning', boolean>>>({})
+  const formValidation = validateKotobaInput(formData)
+  const fieldError = (field: 'japanese' | 'romaji' | 'meaning') =>
+    (showFormErrors || touchedFields[field]) ? formValidation.errors[field] : undefined
+  const markTouched = (field: 'japanese' | 'romaji' | 'meaning') =>
+    setTouchedFields(prev => (prev[field] ? prev : { ...prev, [field]: true }))
 
   // Ref untuk scroll-to-modal saat form dibuka & sinkronisasi realtime
   const modalRef = useRef<HTMLDivElement>(null)
@@ -440,6 +449,8 @@ export default function SetoranKotobaPage() {
   function handleOpenCreateModal() {
     setEditingItem(null)
     setSelectedFile(null)
+    setShowFormErrors(false)
+    setTouchedFields({})
     uploadPromiseRef.current = null
     setFormData({
       japanese: '',
@@ -453,6 +464,8 @@ export default function SetoranKotobaPage() {
 
   async function handleOpenEditModal(item: UserKotoba) {
     setSelectedFile(null)
+    setShowFormErrors(false)
+    setTouchedFields({})
     uploadPromiseRef.current = null
 
     // Jika image_url tidak ada di state (tidak ter-cache), fetch dari DB dulu
@@ -488,21 +501,30 @@ export default function SetoranKotobaPage() {
 
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.japanese.trim() || !formData.romaji.trim() || !formData.meaning.trim()) {
+    // Validasi ketat: huruf Jepang, cara baca, dan arti harus sesuai ketentuan (tidak asal isi)
+    const validation = validateKotobaInput(formData)
+    if (!validation.isValid) {
+      setShowFormErrors(true)
+      const messages = [
+        validation.errors.japanese && `• Huruf Jepang: ${validation.errors.japanese}`,
+        validation.errors.romaji && `• Cara baca: ${validation.errors.romaji}`,
+        validation.errors.meaning && `• Arti: ${validation.errors.meaning}`,
+      ].filter(Boolean).join('\n')
       setAlertConfig({
         isOpen: true,
-        title: 'Formulir Belum Lengkap',
-        message: 'Mohon lengkapi Huruf Jepang, Romaji, dan Makna/Arti dari kosakata yang disetorkan.',
+        title: 'Periksa Kembali Isianmu',
+        message: messages,
         type: 'warning',
-        buttonText: 'Lengkapi Data',
+        buttonText: 'Perbaiki',
         onClose: () => setAlertConfig(prev => ({ ...prev, isOpen: false })),
       })
       return
     }
+    const clean = validation.cleaned
 
     // ── Duplicate Check (CREATE only) ──
     if (!editingItem) {
-      const inputJapanese = formData.japanese.trim().toLowerCase()
+      const inputJapanese = clean.japanese.toLowerCase()
       const duplicate = kotobaList.find(
         k => k.japanese.trim().toLowerCase() === inputJapanese
       )
@@ -543,9 +565,9 @@ export default function SetoranKotobaPage() {
         item.id === editingItem.id
           ? {
               ...item,
-              japanese: formData.japanese.trim(),
-              romaji: formData.romaji.trim(),
-              meaning: formData.meaning.trim(),
+              japanese: clean.japanese,
+              romaji: clean.romaji,
+              meaning: clean.meaning,
               image_url: processedImageUrl,
             }
           : item
@@ -553,14 +575,14 @@ export default function SetoranKotobaPage() {
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
-      toast.success(`Kosakata "${formData.japanese.trim()}" berhasil diperbarui!`, 'Setoran Kotoba')
+      toast.success(`Kosakata "${clean.japanese}" berhasil diperbarui!`, 'Setoran Kotoba')
 
       // Fire-and-forget DB update — UI is already responsive
       const imageChanged = processedImageUrl !== (editingItem.image_url || '')
       const updatePayload: Record<string, unknown> = {
-        japanese: formData.japanese.trim(),
-        romaji: formData.romaji.trim(),
-        meaning: formData.meaning.trim(),
+        japanese: clean.japanese,
+        romaji: clean.romaji,
+        meaning: clean.meaning,
       }
       if (imageChanged) {
         updatePayload.image_url = processedImageUrl || null
@@ -577,9 +599,9 @@ export default function SetoranKotobaPage() {
       const newItem: UserKotoba = {
         id: tempId,
         user_id: targetUid,
-        japanese: formData.japanese.trim(),
-        romaji: formData.romaji.trim(),
-        meaning: formData.meaning.trim(),
+        japanese: clean.japanese,
+        romaji: clean.romaji,
+        meaning: clean.meaning,
         image_url: processedImageUrl,
         is_mastered: false,
         created_at: new Date().toISOString(),
@@ -590,7 +612,7 @@ export default function SetoranKotobaPage() {
       saveToLocal(updated)
       setIsModalOpen(false)
       setSaving(false)
-      toast.success(`Kosakata "${formData.japanese.trim()}" berhasil disetor! 📚`, 'Setoran Berhasil')
+      toast.success(`Kosakata "${clean.japanese}" berhasil disetor! 📚`, 'Setoran Berhasil')
 
       // DB insert + mission sync run in background (non-blocking)
       if (targetUid && targetUid !== 'guest' && targetUid !== 'active_user') {
@@ -600,9 +622,9 @@ export default function SetoranKotobaPage() {
               .from('user_kotoba_submissions')
               .insert({
                 user_id: targetUid,
-                japanese: formData.japanese.trim(),
-                romaji: formData.romaji.trim(),
-                meaning: formData.meaning.trim(),
+                japanese: clean.japanese,
+                romaji: clean.romaji,
+                meaning: clean.meaning,
                 image_url: processedImageUrl || null,
                 is_mastered: false,
               })
@@ -1664,87 +1686,127 @@ export default function SetoranKotobaPage() {
             <form onSubmit={handleSubmitForm} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 overscroll-contain">
                 {/* Field 1: Kanji / Katakana / Hiragana */}
-                <div>
-                  <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
-                    </label>
-                    {formData.japanese.trim() && (
-                      <span className={`text-[0.62rem] sm:text-[0.65rem] font-bold px-2 py-0.5 rounded-full border transition-all flex items-center gap-1 ${
-                        detectJapaneseScript(formData.japanese).isValid
-                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200'
-                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200'
-                      }`}>
-                        {detectJapaneseScript(formData.japanese).isValid ? (
-                          <>
-                            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>{detectJapaneseScript(formData.japanese).detectedSummary}</span>
-                          </>
-                        ) : (
-                          <span>Wajib huruf Jepang</span>
+                {(() => {
+                  const err = fieldError('japanese')
+                  const script = detectJapaneseScript(formData.japanese)
+                  const ok = formData.japanese.trim() && !formValidation.errors.japanese
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                        <label htmlFor="kotoba-japanese" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                          1. {t('sk_input_japanese', 'Huruf Jepang (Kanji / Katakana / Hiragana)')} <span className="text-red-500">*</span>
+                        </label>
+                        {ok && (
+                          <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full border bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900 flex items-center gap-1">
+                            <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span>{script.detectedSummary}</span>
+                          </span>
                         )}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    enterKeyHint="next"
-                    placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
-                    value={formData.japanese}
-                    onChange={e => setFormData({ ...formData, japanese: e.target.value })}
-                    className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium min-h-[44px] ${
-                      formData.japanese.trim()
-                        ? detectJapaneseScript(formData.japanese).isValid
-                          ? 'border-emerald-400 focus:border-emerald-500'
-                          : 'border-amber-400 focus:border-amber-500'
-                        : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
-                    }`}
-                  />
-                  <p className="text-[0.62rem] sm:text-[0.68rem] text-slate-400 font-medium mt-1">
-                    Sistem otomatis memverifikasi karakter Hiragana (あ), Katakana (ア), atau Kanji (日).
-                  </p>
-                </div>
+                      </div>
+                      <input
+                        id="kotoba-japanese"
+                        type="text"
+                        required
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        enterKeyHint="next"
+                        lang="ja"
+                        maxLength={30}
+                        aria-invalid={Boolean(err)}
+                        aria-describedby="kotoba-japanese-hint"
+                        placeholder={t('sk_input_japanese_ph', 'Contoh: 食べる atau たべる atau ラーメン')}
+                        value={formData.japanese}
+                        onChange={e => setFormData({ ...formData, japanese: e.target.value })}
+                        onBlur={() => markTouched('japanese')}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium min-h-[44px] ${
+                          err ? 'border-red-400 focus:border-red-500' : ok ? 'border-emerald-400 focus:border-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                        }`}
+                      />
+                      <p id="kotoba-japanese-hint" className={`text-xs mt-1 ${err ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-400'}`}>
+                        {err || 'Hanya hiragana (あ), katakana (ア), atau kanji (日). Tanpa huruf latin.'}
+                      </p>
+                    </div>
+                  )
+                })()}
 
                 {/* Field 2: Romaji */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    2. {t('sk_input_romaji', 'Cara Baca (Romaji)')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    enterKeyHint="next"
-                    placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
-                    value={formData.romaji}
-                    onChange={e => setFormData({ ...formData, romaji: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium min-h-[44px]"
-                  />
-                </div>
+                {(() => {
+                  const err = fieldError('romaji')
+                  const suggestion = formValidation.suggestedRomaji
+                  const showSuggestion = suggestion && (!formData.romaji.trim() || formValidation.errors.romaji)
+                  return (
+                    <div>
+                      <label htmlFor="kotoba-romaji" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        2. {t('sk_input_romaji', 'Cara Baca (Romaji)')} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="kotoba-romaji"
+                        type="text"
+                        required
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        enterKeyHint="next"
+                        maxLength={60}
+                        aria-invalid={Boolean(err)}
+                        aria-describedby="kotoba-romaji-hint"
+                        placeholder={t('sk_input_romaji_ph', 'Contoh: taberu atau raamen')}
+                        value={formData.romaji}
+                        onChange={e => setFormData({ ...formData, romaji: e.target.value })}
+                        onBlur={() => markTouched('romaji')}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium min-h-[44px] ${
+                          err ? 'border-red-400 focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                        }`}
+                      />
+                      <div id="kotoba-romaji-hint" className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        {err ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">{err}</p>
+                        ) : (
+                          <p className="text-xs text-slate-400">Tulis cara baca dengan huruf latin. Bacaan dicocokkan dengan tulisan kananya.</p>
+                        )}
+                        {showSuggestion && (
+                          <button
+                            type="button"
+                            onClick={() => { setFormData({ ...formData, romaji: suggestion! }); markTouched('romaji') }}
+                            className="h-8 px-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs font-semibold cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/70"
+                          >
+                            Pakai “{suggestion}”
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Field 3: Meaning */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    3. {t('sk_input_meaning', 'Makna / Terjemahan')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    enterKeyHint="done"
-                    placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
-                    value={formData.meaning}
-                    onChange={e => setFormData({ ...formData, meaning: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none focus:border-amber-500 transition-all font-medium min-h-[44px]"
-                  />
-                </div>
+                {(() => {
+                  const err = fieldError('meaning')
+                  return (
+                    <div>
+                      <label htmlFor="kotoba-meaning" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        3. {t('sk_input_meaning', 'Makna / Terjemahan')} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="kotoba-meaning"
+                        type="text"
+                        required
+                        enterKeyHint="done"
+                        maxLength={100}
+                        aria-invalid={Boolean(err)}
+                        aria-describedby="kotoba-meaning-hint"
+                        placeholder={t('sk_input_meaning_ph', 'Contoh: Makan (Kata Kerja)')}
+                        value={formData.meaning}
+                        onChange={e => setFormData({ ...formData, meaning: e.target.value })}
+                        onBlur={() => markTouched('meaning')}
+                        className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-800 dark:text-white outline-none transition-all font-medium min-h-[44px] ${
+                          err ? 'border-red-400 focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                        }`}
+                      />
+                      {err && <p id="kotoba-meaning-hint" className="text-xs mt-1 text-red-600 dark:text-red-400 font-medium">{err}</p>}
+                    </div>
+                  )
+                })()}
 
                 {/* Field 4: Image File Upload (Optional) */}
                 <div>

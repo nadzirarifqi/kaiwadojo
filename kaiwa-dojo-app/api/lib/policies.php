@@ -86,6 +86,7 @@ class Policies {
                 if (($row['user_id'] ?? '') !== $userId) {
                     throw new Exception("Forbidden: Tidak dapat menyetor kotoba untuk akun lain");
                 }
+                self::validateKotobaFields($row, true);
                 break;
 
             case 'lesson_progress':
@@ -146,6 +147,10 @@ class Policies {
         }
 
         switch ($table) {
+            case 'user_kotoba_submissions':
+                self::validateKotobaFields($updates, false);
+                break;
+
             case 'profiles':
                 // Port dari postgres trigger: protect_profile_privileges
                 // Non-admin dilarang mengubah role atau status mereka sendiri!
@@ -197,6 +202,43 @@ class Policies {
                     throw new Exception("Forbidden: Akses hapus jadwal ditolak");
                 }
                 break;
+        }
+    }
+
+    /**
+     * Validasi dasar isian Setoran Kotoba (lapisan kedua setelah validasi di aplikasi):
+     * huruf Jepang hanya kana/kanji, cara baca hanya huruf latin, arti berupa kata.
+     * $requireAll = true saat INSERT; saat UPDATE hanya kolom yang dikirim yang diperiksa.
+     */
+    private static function validateKotobaFields(array &$data, bool $requireAll): void {
+        if ($requireAll || array_key_exists('japanese', $data)) {
+            $jp = trim((string)($data['japanese'] ?? ''));
+            if (class_exists('Normalizer')) {
+                $jp = Normalizer::normalize($jp, Normalizer::FORM_KC) ?: $jp;
+            }
+            $jp = preg_replace('/\s+/u', ' ', $jp);
+            $hasJapanese = preg_match('/[\p{Hiragana}\p{Katakana}\p{Han}]/u', $jp);
+            $onlyAllowed = preg_match('/^[\p{Hiragana}\p{Katakana}\p{Han}ー々〆〜・、。「」~!?0-9 ]+$/u', $jp);
+            if ($jp === '' || !$hasJapanese || !$onlyAllowed || mb_strlen($jp) > 30) {
+                throw new Exception("Huruf Jepang tidak valid: hanya boleh hiragana, katakana, atau kanji (maks. 30 karakter).");
+            }
+            $data['japanese'] = $jp;
+        }
+
+        if ($requireAll || array_key_exists('romaji', $data)) {
+            $romaji = trim(preg_replace('/\s+/u', ' ', (string)($data['romaji'] ?? '')));
+            if ($romaji === '' || !preg_match("/^[a-zA-ZāīūēōâîûêôĀĪŪĒŌ\s'’\-.]+$/u", $romaji) || !preg_match('/[aiueoāīūēōâîûêô]/iu', $romaji) || mb_strlen($romaji) > 60) {
+                throw new Exception("Cara baca tidak valid: tulis dengan huruf latin (romaji).");
+            }
+            $data['romaji'] = $romaji;
+        }
+
+        if ($requireAll || array_key_exists('meaning', $data)) {
+            $meaning = trim(preg_replace('/\s+/u', ' ', (string)($data['meaning'] ?? '')));
+            if ($meaning === '' || !preg_match('/\p{Latin}{2,}/u', $meaning) || mb_strlen($meaning) > 100) {
+                throw new Exception("Arti tidak valid: tulis arti kosakata dengan huruf latin (maks. 100 karakter).");
+            }
+            $data['meaning'] = $meaning;
         }
     }
 }
