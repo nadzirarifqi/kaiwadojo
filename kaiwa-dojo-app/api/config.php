@@ -44,7 +44,7 @@ if (!defined('ADMIN_WA_NUMBER')) define('ADMIN_WA_NUMBER', '087875018001');
 
 // ── Integrasi website pendaftaran langganan (bangunnegeri) ──
 // Isi nilai sebenarnya di config.local.php (JANGAN di file ini, karena file ini masuk git).
-if (!defined('SUBSCRIPTION_API_KEY')) define('SUBSCRIPTION_API_KEY', '');   // kosong = endpoint integrasi nonaktif
+if (!defined('SUBSCRIPTION_API_KEY')) define('SUBSCRIPTION_API_KEY', 'kaiwa_bn_database_integration_x531'); // kosong = endpoint integrasi nonaktif
 if (!defined('REQUIRE_SUBSCRIPTION')) define('REQUIRE_SUBSCRIPTION', false); // true = daftar wajib pakai kode langganan
 // ── CORS & Environment ──
 function handle_cors() {
@@ -52,7 +52,7 @@ function handle_cors() {
     header("Access-Control-Allow-Origin: $origin");
     header("Access-Control-Allow-Credentials: true");
     header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, x-app-version");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, x-app-version,  X-Api-Key");
     
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);
