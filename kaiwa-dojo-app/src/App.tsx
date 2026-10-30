@@ -9,6 +9,7 @@ import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
+import SubscriptionBlockedScreen from './components/SubscriptionBlockedScreen'
 import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
@@ -313,7 +314,7 @@ function AppShell({ children }: { children?: React.ReactNode }) {
 
 /* ── Protected Route ────────────────────────────── */
 function ProtectedRoute({ children }: { children?: React.ReactNode }) {
-  const { session, profile, loading, signOut } = useAuth()
+  const { session, profile, loading, signOut, refreshProfile } = useAuth()
 
   if (loading) {
     return <LoadingScreen message="Memeriksa Keamanan Sesi..." fullScreen={true} />
@@ -333,6 +334,24 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
       : 'Akun Anda masih dalam proses verifikasi Admin.'
     signOut(reasonMsg)
     return null  // signOut() performs window.location.replace('/') — no need to render Navigate
+  }
+
+  // Gating pembayaran: Akun pelajar wajib memiliki status langganan 'paid' dan belum expired
+  if (profile.role === 'pelajar') {
+    const isPaymentExpired = profile.subscription_ends_at
+      ? new Date(profile.subscription_ends_at.replace(' ', 'T')).getTime() < Date.now()
+      : false
+    const isUnpaid = !profile.payment_status || profile.payment_status !== 'paid' || isPaymentExpired
+
+    if (isUnpaid) {
+      return (
+        <SubscriptionBlockedScreen
+          profile={profile}
+          isExpired={isPaymentExpired || profile.payment_status === 'expired'}
+          onRefresh={refreshProfile}
+        />
+      )
+    }
   }
 
   return <>{children || <Outlet />}</>

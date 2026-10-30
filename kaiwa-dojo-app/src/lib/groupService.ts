@@ -375,7 +375,7 @@ export async function syncAllStudentsWithGroups(): Promise<{
     const groups = await fetchGroups(true)
     const { data: students, error } = await supabase
       .from('profiles')
-      .select('id, full_name, institution, group_name')
+      .select('id, full_name, institution, group_name, plan_code')
       .eq('role', 'pelajar')
 
     if (error || !students) {
@@ -387,6 +387,8 @@ export async function syncAllStudentsWithGroups(): Promise<{
     let updated = 0
 
     for (const std of students) {
+      // Grup pelajar berlangganan ditentukan paketnya, bukan instansi → jangan diubah
+      if ((std as any).plan_code) continue
       const resolved = matchGroupFromInstitution(std.institution, groups)
       const targetGroupName = resolved || null
 

@@ -53,8 +53,54 @@ class Policies {
      * Memeriksa apakah user berhak melakukan SELECT pada tabel
      */
     public static function canSelect(string $table, ?array $user): bool {
-        // Semua tabel publik di Kaiwa Dojo dapat dibaca oleh client terautentikasi / publik
+        $role = $user['role'] ?? 'guest';
+        // Data langganan berisi email & nomor HP pelanggan → hanya admin/pemateri
+        if ($table === 'subscriptions' && $role !== 'admin' && $role !== 'pemateri') {
+            throw new Exception("Forbidden: Data langganan hanya dapat dilihat admin");
+        }
+        // Tabel lain di Kaiwa Dojo dapat dibaca oleh client terautentikasi / publik
         return true;
+    }
+
+    /** Tabel yang hanya boleh ditulis admin (lewat query API) */
+    private const ADMIN_WRITE_ONLY = ['subscriptions', 'subscription_plans'];
+
+    /**
+     * Kolom profil yang dikelola server/admin. Pelajar tidak boleh mengubahnya sendiri:
+     * status persetujuan, peran, paket langganan, level akses, kode referral, dan grup
+     * (grup menentukan akses materi & kelas, jadi dihitung server dari paket / instansi).
+     */
+    private static function sanitizeStudentProfileWrite(array &$data, ?array $user, bool $isInsert): void {
+        $userId = $user['id'] ?? null;
+        $targetId = $data['id'] ?? $userId;
+        $existing = null;
+        if ($targetId) {
+            $stmt = DB::get()->prepare("SELECT id, plan_code FROM profiles WHERE id = ? LIMIT 1");
+            $stmt->execute([$targetId]);
+            $existing = $stmt->fetch() ?: null;
+        }
+
+        unset(
+            $data['access_level'],
+            $data['plan_code'],
+            $data['group_name'],
+            $data['payment_status'],
+            $data['subscription_ends_at']
+        );
+
+        if ($existing) {
+            // Baris sudah ada (upsert / update) → jangan sentuh kolom yang dikelola admin
+            unset($data['role'], $data['status'], $data['referral_code']);
+        } elseif ($isInsert) {
+            $data['role'] = 'pelajar';
+            $data['status'] = 'pending';
+        }
+
+        // Grup ikut instansi hanya untuk pelajar tanpa paket langganan
+        if (empty($existing['plan_code']) && array_key_exists('institution', $data)) {
+            require_once __DIR__ . '/subscriptions.php';
+            $data['group_name'] = Subscriptions::resolveGroupFromInstitution(DB::get(), $data['institution']);
+        }
     }
 
     /**
@@ -68,15 +114,18 @@ class Policies {
             return; // Admin bebas
         }
 
+        if (in_array($table, self::ADMIN_WRITE_ONLY, true)) {
+            throw new Exception("Forbidden: Hanya admin yang dapat mengubah $table");
+        }
+
         switch ($table) {
             case 'profiles':
-                // Registration allows insert, but forces role='pelajar' and status='pending' unless admin
-                if ($role !== 'admin') {
-                    $row['role'] = 'pelajar';
-                    if (!isset($row['status'])) {
-                        $row['status'] = 'pending';
-                    }
+                if ($role === 'pemateri') {
+                    // Pemateri boleh membuat akun pelajar, tetapi tidak boleh membuat admin
+                    if (($row['role'] ?? 'pelajar') === 'admin') $row['role'] = 'pelajar';
+                    break;
                 }
+                self::sanitizeStudentProfileWrite($row, $user, true);
                 break;
 
             case 'user_kotoba_submissions':
@@ -146,6 +195,10 @@ class Policies {
             return; // Admin bebas
         }
 
+        if (in_array($table, self::ADMIN_WRITE_ONLY, true)) {
+            throw new Exception("Forbidden: Hanya admin yang dapat mengubah $table");
+        }
+
         switch ($table) {
             case 'user_kotoba_submissions':
                 self::validateKotobaFields($updates, false);
@@ -153,12 +206,10 @@ class Policies {
 
             case 'profiles':
                 // Port dari postgres trigger: protect_profile_privileges
-                // Non-admin dilarang mengubah role atau status mereka sendiri!
-                if ($role !== 'admin') {
-                    unset($updates['role']);
-                    unset($updates['status']);
-                    // Kode referral hanya diisi saat pendaftaran
-                    unset($updates['referral_code']);
+                // Non-admin dilarang mengubah role, status, kode referral, paket, dan level akses
+                unset($updates['role'], $updates['status'], $updates['referral_code'], $updates['plan_code'], $updates['access_level']);
+                if ($role !== 'pemateri') {
+                    self::sanitizeStudentProfileWrite($updates, $user, false);
                 }
                 break;
 
@@ -195,6 +246,8 @@ class Policies {
             case 'kaiwa_groups':
             case 'broadcast_logs':
             case 'feedback_suggestions':
+            case 'subscriptions':
+            case 'subscription_plans':
                 throw new Exception("Forbidden: Hanya admin yang dapat menghapus $table");
 
             case 'class_schedules':

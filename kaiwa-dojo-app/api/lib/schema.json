@@ -1005,6 +1005,24 @@
           "type": "datetime",
           "nullable": true,
           "default": "now"
+        },
+        "plan_code": {
+          "type": "text",
+          "nullable": true
+        },
+        "payment_status": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "unpaid"
+        },
+        "subscription_ends_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "access_level": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "full"
         }
       }
     },
@@ -1187,6 +1205,139 @@
         "created_at": {
           "type": "datetime",
           "nullable": true,
+          "default": "now"
+        }
+      }
+    },
+    "subscription_plans": {
+      "pk": [
+        "code"
+      ],
+      "unique": [],
+      "columns": {
+        "code": {
+          "type": "text",
+          "nullable": false
+        },
+        "name": {
+          "type": "text",
+          "nullable": false
+        },
+        "description": {
+          "type": "text",
+          "nullable": true
+        },
+        "group_name": {
+          "type": "text",
+          "nullable": true
+        },
+        "duration_days": {
+          "type": "int",
+          "nullable": true
+        },
+        "price": {
+          "type": "decimal",
+          "nullable": true,
+          "default_value": 0
+        },
+        "is_active": {
+          "type": "bool",
+          "nullable": false,
+          "default_value": true
+        },
+        "sort_order": {
+          "type": "int",
+          "nullable": false,
+          "default_value": 0
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        }
+      }
+    },
+    "subscriptions": {
+      "pk": [
+        "id"
+      ],
+      "unique": [
+        [
+          "external_id"
+        ],
+        [
+          "referral_code"
+        ]
+      ],
+      "columns": {
+        "id": {
+          "type": "uuid",
+          "nullable": false,
+          "default": "uuid"
+        },
+        "external_id": {
+          "type": "text",
+          "nullable": false
+        },
+        "referral_code": {
+          "type": "text",
+          "nullable": false
+        },
+        "email": {
+          "type": "text",
+          "nullable": false
+        },
+        "full_name": {
+          "type": "text",
+          "nullable": true
+        },
+        "phone_number": {
+          "type": "text",
+          "nullable": true
+        },
+        "plan_code": {
+          "type": "text",
+          "nullable": false
+        },
+        "payment_status": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "pending"
+        },
+        "starts_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "ends_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "user_id": {
+          "type": "text",
+          "nullable": true
+        },
+        "registered_at": {
+          "type": "datetime",
+          "nullable": true
+        },
+        "source": {
+          "type": "text",
+          "nullable": false,
+          "default_value": "bangunnegeri"
+        },
+        "created_at": {
+          "type": "datetime",
+          "nullable": false,
+          "default": "now"
+        },
+        "updated_at": {
+          "type": "datetime",
+          "nullable": false,
           "default": "now"
         }
       }

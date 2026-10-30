@@ -42,6 +42,10 @@ if (!defined('RESEND_API_KEY')) define('RESEND_API_KEY', 're_LmrWY7Zx_CBbpo6jtbL
 if (!defined('FONNTE_TOKEN'))   define('FONNTE_TOKEN', 'zhrUJEgA6bNS8EH3P2bb');
 if (!defined('ADMIN_WA_NUMBER')) define('ADMIN_WA_NUMBER', '087875018001');
 
+// ── Integrasi website pendaftaran langganan (bangunnegeri) ──
+// Isi nilai sebenarnya di config.local.php (JANGAN di file ini, karena file ini masuk git).
+if (!defined('SUBSCRIPTION_API_KEY')) define('SUBSCRIPTION_API_KEY', '');   // kosong = endpoint integrasi nonaktif
+if (!defined('REQUIRE_SUBSCRIPTION')) define('REQUIRE_SUBSCRIPTION', false); // true = daftar wajib pakai kode langganan
 // ── CORS & Environment ──
 function handle_cors() {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';

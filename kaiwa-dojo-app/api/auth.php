@@ -7,6 +7,7 @@ handle_cors();
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/jwt.php';
 require_once __DIR__ . '/lib/auth_guard.php';
+require_once __DIR__ . '/lib/subscriptions.php';
 
 header('Content-Type: application/json');
 
@@ -109,6 +110,16 @@ function issueTokenForUser(PDO $db, string $userId): void {
         }
     }
 
+    // Cek kedaluwarsa langganan otomatis untuk pelajar
+    if (($profile['role'] ?? '') === 'pelajar' && ($profile['payment_status'] ?? '') === 'paid') {
+        if (!empty($profile['subscription_ends_at']) && strtotime($profile['subscription_ends_at']) < time()) {
+            try {
+                $db->prepare("UPDATE profiles SET payment_status = 'expired', updated_at = CURRENT_TIMESTAMP(3) WHERE id = ?")->execute([$userId]);
+                $profile['payment_status'] = 'expired';
+            } catch (Exception $e) {}
+        }
+    }
+
     $now = time();
     $exp = $now + JWT_EXPIRY_SECONDS;
     $payload = [
@@ -135,16 +146,20 @@ function issueTokenForUser(PDO $db, string $userId): void {
         'email'            => $profile['email'] ?? $profile['auth_email'],
         'role'             => $profile['role'],
         'user_metadata'    => [
-            'full_name'    => $profile['full_name'],
-            'username'     => $profile['username'],
-            'phone_number' => $profile['phone_number'],
-            'institution'  => $profile['institution'] ?? null,
-            'referral_code' => $profile['referral_code'] ?? null,
-            'domisili'     => $profile['domisili'] ?? null,
-            'kelurahan'    => $profile['kelurahan'] ?? null,
-            'kecamatan'    => $profile['kecamatan'] ?? null,
-            'kabupaten'    => $profile['kabupaten'] ?? null,
-            'status'       => $profile['status']
+            'full_name'            => $profile['full_name'],
+            'username'             => $profile['username'],
+            'phone_number'         => $profile['phone_number'],
+            'institution'          => $profile['institution'] ?? null,
+            'referral_code'        => $profile['referral_code'] ?? null,
+            'plan_code'            => $profile['plan_code'] ?? null,
+            'payment_status'       => $profile['payment_status'] ?? 'unpaid',
+            'subscription_ends_at' => $profile['subscription_ends_at'] ?? null,
+            'access_level'         => $profile['access_level'] ?? 'full',
+            'domisili'             => $profile['domisili'] ?? null,
+            'kelurahan'            => $profile['kelurahan'] ?? null,
+            'kecamatan'            => $profile['kecamatan'] ?? null,
+            'kabupaten'            => $profile['kabupaten'] ?? null,
+            'status'               => $profile['status']
         ]
     ];
 
@@ -178,7 +193,8 @@ function handleSignUp(PDO $db, array $input): void {
     $kelurahan = trim($meta['kelurahan'] ?? '');
     $kecamatan = trim($meta['kecamatan'] ?? '');
     $kabupaten = trim($meta['kabupaten'] ?? '');
-    $status = $meta['status'] ?? 'pending';
+    // Status akun TIDAK diambil dari browser: akun baru selalu menunggu persetujuan admin
+    $status = 'pending';
 
     if (!$email || !$password) {
         http_response_code(400);
@@ -200,11 +216,32 @@ function handleSignUp(PDO $db, array $input): void {
         return;
     }
 
+    // Kode referral langganan (website pendaftaran bangunnegeri)
+    if (Subscriptions::isRequired() && $referralCode === '') {
+        http_response_code(400);
+        echo json_encode(['data' => null, 'error' => ['message' => 'Kode referral dari pendaftaran langganan wajib diisi']]);
+        return;
+    }
+
     $userId = DB::generateUuid();
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
     $db->beginTransaction();
     try {
+        // 0. Validasi & kunci baris langganan agar satu kode tidak bisa dipakai dua akun
+        $subscription = null;
+        if ($referralCode !== '') {
+            $check = Subscriptions::checkUsable($db, $email, $referralCode, true);
+            if ($check['ok']) {
+                $subscription = $check['subscription'];
+            } elseif (Subscriptions::isRequired()) {
+                $db->rollBack();
+                http_response_code(400);
+                echo json_encode(['data' => null, 'error' => ['message' => $check['reason']]]);
+                return;
+            }
+        }
+
         // 1. Simpan ke users
         $stmtUser = $db->prepare("
             INSERT INTO users (id, email, password_hash, raw_user_meta_data, email_confirmed_at, created_at, updated_at)
@@ -217,28 +254,8 @@ function handleSignUp(PDO $db, array $input): void {
             json_encode($meta, JSON_UNESCAPED_UNICODE)
         ]);
 
-        // 2. Resolve Group Name dari keywords kaiwa_groups
-        $matchedGroup = null;
-        if ($institution) {
-            $stmtGroups = $db->query("SELECT name, keywords FROM kaiwa_groups");
-            $groups = $stmtGroups->fetchAll();
-            $rawInstLower = strtolower($institution);
-            foreach ($groups as $g) {
-                if (strpos($rawInstLower, strtolower(trim($g['name']))) !== false) {
-                    $matchedGroup = $g['name'];
-                    break;
-                }
-                if (!empty($g['keywords'])) {
-                    $keywords = array_map('trim', explode(',', $g['keywords']));
-                    foreach ($keywords as $kw) {
-                        if ($kw && strpos($rawInstLower, strtolower($kw)) !== false) {
-                            $matchedGroup = $g['name'];
-                            break 2;
-                        }
-                    }
-                }
-            }
-        }
+        // 2. Grup dari instansi (akan diganti grup paket bila mendaftar dengan kode langganan)
+        $matchedGroup = Subscriptions::resolveGroupFromInstitution($db, $institution);
 
         // 3. Simpan ke profiles
         $stmtProf = $db->prepare("
@@ -260,6 +277,11 @@ function handleSignUp(PDO $db, array $input): void {
             $kecamatan ?: null,
             $kabupaten ?: null
         ]);
+
+        // 4. Tautkan langganan → paket menentukan grup/akses
+        if ($subscription) {
+            Subscriptions::linkToUser($db, $subscription, $userId);
+        }
 
         $db->commit();
     } catch (Exception $e) {

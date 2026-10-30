@@ -21,3 +21,8 @@ define('JWT_EXPIRY_SECONDS', 86400 * 7); // Masa berlaku token (7 hari)
 define('RESEND_API_KEY', 're_LmrWY7Zx_CBbpo6jtbLaMZxNepNozHxjE'); // Email approval via Resend
 define('FONNTE_TOKEN',   'zhrUJEgA6bNS8EH3P2bb');                  // WhatsApp Gateway via Fonnte
 define('ADMIN_WA_NUMBER', '087875018001');                          // Nomor WhatsApp Admin
+
+// ── 4. Integrasi website pendaftaran langganan (bangunnegeri.inaconnext.it.com) ──
+// Taruh di config.local.php. Buat kunci acak panjang, mis.: php -r "echo bin2hex(random_bytes(32));"
+define('SUBSCRIPTION_API_KEY', 'GANTI_DENGAN_KUNCI_ACAK_64_KARAKTER'); // sama persis dengan yang dipakai server bangunnegeri
+define('REQUIRE_SUBSCRIPTION', false); // ubah ke true setelah bangunnegeri sudah mengirim data langganan

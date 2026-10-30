@@ -5,6 +5,7 @@ import { createStudentAccount } from '../../lib/studentService'
 import { sendWhatsAppOtp, validateWhatsAppNumber, getAdminWhatsAppUrl } from '../../lib/whatsappService'
 import { sanitizeInput, sanitizeUsername, sanitizePhoneNumber, isValidEmail, SecurityRateLimiter } from '../../lib/securityUtils'
 import KaiwaLogo from '../../components/KaiwaLogo'
+import { fetchRegistrationConfig, verifyReferralCode } from '../../lib/subscriptionService'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -51,6 +52,13 @@ export default function RegisterPage() {
   const [institution, setInstitution] = useState('')
 
   const [referralCode, setReferralCode] = useState('')
+  // Kode referral dari pendaftaran langganan (website bangunnegeri) — wajib bila server mengaktifkan REQUIRE_SUBSCRIPTION
+  const [referralRequired, setReferralRequired] = useState(false)
+  const [referralError, setReferralError] = useState<string | null>(null)
+  const [referralPlan, setReferralPlan] = useState<string | null>(null)
+  useEffect(() => {
+    fetchRegistrationConfig().then(cfg => setReferralRequired(cfg.required))
+  }, [])
   const [domisili, setDomisili] = useState('')
   const [kabupaten, setKabupaten] = useState('')
   const [email, setEmail] = useState('')
@@ -281,6 +289,27 @@ export default function RegisterPage() {
       setError('Password minimal 8 karakter.')
       setLoading(false)
       return
+    }
+
+    // Kode referral langganan + email harus cocok dengan data pendaftaran langganan
+    setReferralError(null)
+    const cleanReferral = referralCode.trim().toUpperCase()
+    if (referralRequired && !cleanReferral) {
+      setReferralError('Masukkan kode referral yang kamu terima setelah berlangganan.')
+      setError('Kode referral wajib diisi.')
+      setLoading(false)
+      return
+    }
+    if (cleanReferral) {
+      const check = await verifyReferralCode(cleanEmail, cleanReferral)
+      if (check.valid) {
+        setReferralPlan(check.planName || null)
+      } else if (referralRequired) {
+        setReferralError(check.message || 'Kode referral tidak valid.')
+        setError(check.message || 'Kode referral tidak valid.')
+        setLoading(false)
+        return
+      }
     }
 
     const cleanPhone = sanitizePhoneNumber(phoneNumber)
@@ -815,33 +844,6 @@ export default function RegisterPage() {
                       />
                     </div>
                   </div>
-
-                  {/* Kode Referral */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-referral" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                      <span>Kode Referral</span>
-                      <span className="text-[0.68rem] text-slate-400">Opsional</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                      </div>
-                      <input
-                        id="reg-referral"
-                        type="text"
-                        autoCapitalize="characters"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        maxLength={32}
-                        placeholder="Contoh: KAIWA2026"
-                        value={referralCode}
-                        onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 {/* Step Action Button */}
@@ -1028,6 +1030,42 @@ export default function RegisterPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Kode Referral */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reg-referral" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>Kode Referral{referralRequired && <span className="text-red-500"> *</span>}</span>
+                    <span className="text-[0.68rem] text-slate-400">{referralRequired ? 'Wajib' : 'Opsional'}</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="reg-referral"
+                      type="text"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      maxLength={32}
+                      placeholder="Contoh: KD-7F3K9Q"
+                      value={referralCode}
+                      onChange={e => { setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '')); setReferralError(null); setReferralPlan(null) }}
+                      aria-invalid={Boolean(referralError)}
+                      aria-describedby="reg-referral-hint"
+                      required={referralRequired}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-slate-50 dark:bg-slate-950/70 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                    />
+                  </div>
+                  <p id="reg-referral-hint" className={`text-[0.7rem] ${referralError ? 'text-red-600 dark:text-red-400 font-semibold' : referralPlan ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                    {referralError
+                      || (referralPlan ? `Kode valid · Paket ${referralPlan}` : referralRequired
+                        ? 'Gunakan kode & email yang sama dengan saat berlangganan di bangunnegeri.'
+                        : 'Isi jika kamu punya kode referral.')}
+                  </p>
+                </div>
 
                 {/* Ringkasan Singkat Data */}
                 <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">

@@ -3,6 +3,31 @@ import { matchGroupFromInstitution } from './groupService'
 
 export type StudentStatus = 'approved' | 'pending' | 'rejected'
 
+export type AccessLevel = 'full' | 'view_only'
+
+export type PaymentStatus = 'paid' | 'unpaid' | 'pending' | 'expired'
+
+export interface SubscriptionPlanOption {
+  code: string
+  id: string
+  category: string
+  name: string
+  durationDays: number
+  price: number
+  priceFormatted: string
+}
+
+export const SUBSCRIPTION_PLANS: SubscriptionPlanOption[] = [
+  { code: 'minna1-mandiri-1bln', id: 'minna1-mandiri-1bln', category: 'Minna 1 Mandiri Online', name: 'Minna 1 Mandiri · 1 Bulan', durationDays: 30, price: 200000, priceFormatted: 'Rp 200.000' },
+  { code: 'minna1-mandiri-6bln', id: 'minna1-mandiri-6bln', category: 'Minna 1 Mandiri Online', name: 'Minna 1 Mandiri · 6 Bulan', durationDays: 180, price: 1000000, priceFormatted: 'Rp 1.000.000' },
+  { code: 'minna1-mandiri-1thn', id: 'minna1-mandiri-1thn', category: 'Minna 1 Mandiri Online', name: 'Minna 1 Mandiri · 1 Tahun', durationDays: 365, price: 1500000, priceFormatted: 'Rp 1.500.000' },
+  { code: 'minna1-kaiwa-1bln', id: 'minna1-kaiwa-1bln', category: 'Minna 1 Kaiwa Online', name: 'Minna 1 Kaiwa · 1 Bulan', durationDays: 30, price: 250000, priceFormatted: 'Rp 250.000' },
+  { code: 'minna1-kaiwa-6bln', id: 'minna1-kaiwa-6bln', category: 'Minna 1 Kaiwa Online', name: 'Minna 1 Kaiwa · 6 Bulan', durationDays: 180, price: 1400000, priceFormatted: 'Rp 1.400.000' },
+  { code: 'minna1-kaiwa-1thn', id: 'minna1-kaiwa-1thn', category: 'Minna 1 Kaiwa Online', name: 'Minna 1 Kaiwa · 1 Tahun', durationDays: 365, price: 1800000, priceFormatted: 'Rp 1.800.000' },
+  { code: 'minna12-mandiri-1thn', id: 'minna12-mandiri-1thn', category: 'Minna 1&2 Mandiri Online', name: 'Minna 1&2 Mandiri · 1 Tahun', durationDays: 365, price: 2500000, priceFormatted: 'Rp 2.500.000' },
+  { code: 'minna12-kaiwa-1thn', id: 'minna12-kaiwa-1thn', category: 'Minna 1&2 Kaiwa Online', name: 'Minna 1&2 Kaiwa · 1 Tahun', durationDays: 365, price: 3500000, priceFormatted: 'Rp 3.500.000' },
+]
+
 export interface StudentAccount {
   id: string
   full_name: string
@@ -12,6 +37,10 @@ export interface StudentAccount {
   institution?: string
   group_name?: string  // Matches admin registered group (e.g. 'VLI2608'), or empty for regular student
   referral_code?: string
+  plan_code?: string        // Paket langganan (dari website pendaftaran) — menentukan grup/akses
+  payment_status?: PaymentStatus // 'paid' | 'unpaid' | 'pending' | 'expired'
+  subscription_ends_at?: string | null // Tanggal kedaluwarsa masa langganan
+  access_level?: AccessLevel // 'full' atau 'view_only' (diatur manual admin saat langganan habis)
   domisili?: string
   kelurahan?: string
   kecamatan?: string
@@ -61,7 +90,7 @@ export async function fetchStudentsCount(): Promise<number> {
 // Kolom yang diambil untuk list pelajar — bio dihilangkan (tidak ditampilkan di tabel, hemat egress)
 const STUDENT_LIST_COLUMNS = [
   'id', 'full_name', 'username', 'email', 'phone_number',
-  'institution', 'group_name', 'referral_code', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
+  'institution', 'group_name', 'referral_code', 'plan_code', 'payment_status', 'subscription_ends_at', 'access_level', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
   'avatar_url', 'streak_days', 'status', 'last_active_at', 'created_at',
 ].join(', ')
 
@@ -88,6 +117,10 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         institution: p.institution,
         group_name: p.group_name ? p.group_name.trim() : undefined,
         referral_code: p.referral_code || undefined,
+        plan_code: p.plan_code || undefined,
+        payment_status: (p.payment_status as PaymentStatus) || 'unpaid',
+        subscription_ends_at: p.subscription_ends_at || null,
+        access_level: (p.access_level as AccessLevel) || 'full',
         domisili: p.domisili || undefined,
         kelurahan: p.kelurahan || undefined,
         kecamatan: p.kecamatan || undefined,
@@ -227,6 +260,91 @@ export async function approveStudentAccount(id: string): Promise<boolean> {
     console.warn('DB approveStudentAccount catch:', e)
     return false
   }
+}
+
+/**
+ * Ubah level akses pelajar: 'view_only' = hanya bisa melihat (mis. langganan habis), 'full' = akses penuh.
+ * Untuk sementara diubah manual oleh admin dari halaman Kelola Pelajar.
+ */
+export async function setStudentAccessLevel(id: string, level: AccessLevel): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('profiles').update({ access_level: level }).eq('id', id)
+    if (error) {
+      console.warn('DB setStudentAccessLevel error:', error.message)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.warn('DB setStudentAccessLevel catch:', e)
+    return false
+  }
+}
+
+/**
+ * Memperbarui status pembayaran, paket langganan, dan masa kedaluwarsa pelajar oleh Admin.
+ */
+export async function updateStudentPayment(
+  id: string,
+  paymentStatus: PaymentStatus,
+  planCode?: string | null,
+  subscriptionEndsAt?: string | null
+): Promise<boolean> {
+  try {
+    const payload: Record<string, any> = {
+      payment_status: paymentStatus,
+    }
+    if (planCode !== undefined) payload.plan_code = planCode || null
+    if (subscriptionEndsAt !== undefined) payload.subscription_ends_at = subscriptionEndsAt || null
+
+    const { error } = await supabase.from('profiles').update(payload).eq('id', id)
+    if (error) {
+      console.warn('DB updateStudentPayment error:', error.message)
+      return false
+    }
+
+    // Jika ada langganan di tabel subscriptions, update juga agar sinkron
+    try {
+      await supabase
+        .from('subscriptions')
+        .update({
+          payment_status: paymentStatus,
+          ends_at: subscriptionEndsAt || null,
+          ...(planCode ? { plan_code: planCode } : {})
+        })
+        .eq('user_id', id)
+    } catch {}
+
+    return true
+  } catch (e) {
+    console.warn('DB updateStudentPayment catch:', e)
+    return false
+  }
+}
+
+/** Ringkasan langganan per pelajar (hanya admin/pemateri yang boleh membaca tabel subscriptions) */
+export interface StudentSubscriptionInfo {
+  plan_code: string
+  payment_status: string
+  status?: string
+  ends_at: string | null
+}
+
+export async function fetchSubscriptionsByUser(): Promise<Map<string, StudentSubscriptionInfo>> {
+  const map = new Map<string, StudentSubscriptionInfo>()
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('user_id, plan_code, payment_status, ends_at')
+      .order('ends_at', { ascending: true })
+    if (error || !data) return map
+    // Jika satu pelajar punya beberapa langganan (perpanjangan), simpan yang berakhir paling akhir
+    data.forEach((s: any) => {
+      if (s.user_id) map.set(s.user_id, { plan_code: s.plan_code, payment_status: s.payment_status, ends_at: s.ends_at || null })
+    })
+  } catch (e) {
+    console.warn('DB fetchSubscriptionsByUser catch:', e)
+  }
+  return map
 }
 
 /**
