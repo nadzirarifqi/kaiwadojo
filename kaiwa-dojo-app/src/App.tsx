@@ -44,6 +44,7 @@ const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'))
 const InstructorManagerPage = lazyWithRetry(() => import('./pages/InstructorManager'))
 const StudentManagerPage = lazyWithRetry(() => import('./pages/StudentManager'))
 const GroupManagerPage = lazyWithRetry(() => import('./pages/GroupManager'))
+const ReferralManagerPage = lazyWithRetry(() => import('./pages/ReferralManager'))
 const FeedbackManagerPage = lazyWithRetry(() => import('./pages/FeedbackManager'))
 const MyCourses = lazyWithRetry(() => import('./pages/MyCourses'))
 const LoginPage = lazyWithRetry(() => import('./pages/auth/LoginPage'))
@@ -413,6 +414,7 @@ export function AppRoutes() {
                     <Route path="/kelola-pemateri" element={<InstructorManagerPage />} />
                     <Route path="/kelola-pelajar"  element={<StudentManagerPage />} />
                     <Route path="/kelola-grup"       element={<GroupManagerPage />} />
+                    <Route path="/referral-peserta"  element={<ReferralManagerPage />} />
                     <Route path="/kelola-pengumuman" element={<AnnouncementManagerPage />} />
                     <Route path="/kelola-masukan"  element={<FeedbackManagerPage />} />
                     <Route path="/tracker-kotoba"  element={<KotobaTrackerPage />} />

@@ -20,6 +20,7 @@ const routeLoaders: Record<string, () => Promise<unknown>> = {
   '/kelola-pemateri': () => import('../pages/InstructorManager'),
   '/kelola-pelajar': () => import('../pages/StudentManager'),
   '/kelola-grup': () => import('../pages/GroupManager'),
+  '/referral-peserta': () => import('../pages/ReferralManager'),
   '/kelola-pengumuman': () => import('../pages/AnnouncementManager'),
   '/kelola-masukan': () => import('../pages/FeedbackManager'),
   '/tracker-kotoba': () => import('../pages/KotobaTracker'),
