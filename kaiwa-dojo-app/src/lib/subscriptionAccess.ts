@@ -5,6 +5,9 @@ export interface SubscriptionAccess {
   isLocked: boolean
   /** true = pernah berlangganan tapi masa aktifnya sudah habis */
   isExpired: boolean
+  /** true = admin menolak pembayaran (bukti tidak valid); alasannya di `rejectionReason` */
+  isRejected: boolean
+  rejectionReason: string | null
 }
 
 /**
@@ -13,12 +16,13 @@ export interface SubscriptionAccess {
  */
 export function getSubscriptionAccess(profile: Profile | null | undefined): SubscriptionAccess {
   if (!profile || profile.role !== 'pelajar') {
-    return { isLocked: false, isExpired: false }
+    return { isLocked: false, isExpired: false, isRejected: false, rejectionReason: null }
   }
   const isPastEnd = profile.subscription_ends_at
     ? new Date(profile.subscription_ends_at.replace(' ', 'T')).getTime() < Date.now()
     : false
   const isExpired = isPastEnd || profile.payment_status === 'expired'
   const isLocked = profile.payment_status !== 'paid' || isPastEnd
-  return { isLocked, isExpired }
+  const isRejected = profile.payment_status === 'rejected'
+  return { isLocked, isExpired, isRejected, rejectionReason: isRejected ? profile.payment_note || null : null }
 }

@@ -100,6 +100,7 @@ class Policies {
             $data['plan_code'],
             $data['group_name'],
             $data['payment_status'],
+            $data['payment_note'],
             $data['subscription_ends_at']
         );
 

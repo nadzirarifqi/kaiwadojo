@@ -44,6 +44,9 @@ function paymentInfo(std: StudentAccount): { label: string; cls: string } {
   if (std.payment_status === 'paid') {
     return { label: 'Lunas', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' }
   }
+  if (std.payment_status === 'rejected') {
+    return { label: 'Ditolak', cls: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300' }
+  }
   if (std.payment_status === 'pending') {
     return { label: 'Menunggu', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
   }

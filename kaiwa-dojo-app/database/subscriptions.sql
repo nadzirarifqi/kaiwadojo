@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `subscriptions` (
   `full_name` VARCHAR(255) NULL,
   `phone_number` VARCHAR(32) NULL,
   `plan_code` VARCHAR(64) NOT NULL,
-  `payment_status` VARCHAR(16) NOT NULL DEFAULT 'pending',  -- paid / pending / unpaid / cancelled / refunded / expired
+  `payment_status` VARCHAR(16) NOT NULL DEFAULT 'pending',  -- paid / pending / unpaid / rejected / cancelled / refunded / expired
   `starts_at` DATETIME NULL,
   `ends_at` DATETIME NULL,
   `user_id` CHAR(36) NULL,                     -- terisi setelah pelanggan mendaftar akun kaiwadojo
@@ -44,13 +44,15 @@ CREATE TABLE IF NOT EXISTS `subscriptions` (
 
 -- ── Kolom tambahan di profiles ──
 -- plan_code            : paket langganan aktif pelajar
--- payment_status       : status pembayaran ('paid', 'unpaid', 'pending', 'expired')
+-- payment_status       : status pembayaran ('paid', 'unpaid', 'pending', 'rejected', 'expired')
+-- payment_note         : alasan admin menolak pembayaran (bukti tidak valid, nominal salah, dll.)
 -- subscription_ends_at : tanggal kedaluwarsa masa aktif langganan
 -- access_level         : 'full' (akses penuh) / 'view_only' (langganan habis — diubah manual admin)
 ALTER TABLE `profiles` ADD COLUMN IF NOT EXISTS `plan_code` VARCHAR(64) NULL DEFAULT NULL;
 ALTER TABLE `profiles` ADD COLUMN IF NOT EXISTS `payment_status` VARCHAR(32) NOT NULL DEFAULT 'unpaid';
 ALTER TABLE `profiles` ADD COLUMN IF NOT EXISTS `subscription_ends_at` DATETIME NULL DEFAULT NULL;
 ALTER TABLE `profiles` ADD COLUMN IF NOT EXISTS `access_level` VARCHAR(16) NOT NULL DEFAULT 'full';
+ALTER TABLE `profiles` ADD COLUMN IF NOT EXISTS `payment_note` TEXT NULL DEFAULT NULL;
 
 -- ── 8 Paket Langganan Resmi (Minna 1 & Minna 1&2 Mandiri & Kaiwa Online) ──
 INSERT INTO `subscription_plans` (`code`, `name`, `description`, `group_name`, `duration_days`, `price`, `is_active`, `sort_order`) VALUES

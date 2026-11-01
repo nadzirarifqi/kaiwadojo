@@ -5,7 +5,7 @@ export type StudentStatus = 'approved' | 'pending' | 'rejected'
 
 export type AccessLevel = 'full' | 'view_only'
 
-export type PaymentStatus = 'paid' | 'unpaid' | 'pending' | 'expired'
+export type PaymentStatus = 'paid' | 'unpaid' | 'pending' | 'rejected' | 'expired'
 
 export interface SubscriptionPlanOption {
   code: string
@@ -38,7 +38,8 @@ export interface StudentAccount {
   group_name?: string  // Matches admin registered group (e.g. 'VLI2608'), or empty for regular student
   referral_code?: string
   plan_code?: string        // Paket langganan (dari website pendaftaran) — menentukan grup/akses
-  payment_status?: PaymentStatus // 'paid' | 'unpaid' | 'pending' | 'expired'
+  payment_status?: PaymentStatus // 'paid' | 'unpaid' | 'pending' | 'rejected' | 'expired'
+  payment_note?: string | null    // Alasan admin menolak pembayaran (status 'rejected')
   subscription_ends_at?: string | null // Tanggal kedaluwarsa masa langganan
   access_level?: AccessLevel // 'full' atau 'view_only' (diatur manual admin saat langganan habis)
   domisili?: string
@@ -90,7 +91,7 @@ export async function fetchStudentsCount(): Promise<number> {
 // Kolom yang diambil untuk list pelajar — bio dihilangkan (tidak ditampilkan di tabel, hemat egress)
 const STUDENT_LIST_COLUMNS = [
   'id', 'full_name', 'username', 'email', 'phone_number',
-  'institution', 'group_name', 'referral_code', 'plan_code', 'payment_status', 'subscription_ends_at', 'access_level', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
+  'institution', 'group_name', 'referral_code', 'plan_code', 'payment_status', 'payment_note', 'subscription_ends_at', 'access_level', 'domisili', 'kelurahan', 'kecamatan', 'kabupaten',
   'avatar_url', 'streak_days', 'status', 'last_active_at', 'created_at',
 ].join(', ')
 
@@ -119,6 +120,7 @@ export async function fetchStudents(): Promise<StudentAccount[]> {
         referral_code: p.referral_code || undefined,
         plan_code: p.plan_code || undefined,
         payment_status: (p.payment_status as PaymentStatus) || 'unpaid',
+        payment_note: p.payment_note || null,
         subscription_ends_at: p.subscription_ends_at || null,
         access_level: (p.access_level as AccessLevel) || 'full',
         domisili: p.domisili || undefined,
@@ -287,11 +289,14 @@ export async function updateStudentPayment(
   id: string,
   paymentStatus: PaymentStatus,
   planCode?: string | null,
-  subscriptionEndsAt?: string | null
+  subscriptionEndsAt?: string | null,
+  paymentNote?: string | null
 ): Promise<boolean> {
   try {
     const payload: Record<string, any> = {
       payment_status: paymentStatus,
+      // Alasan hanya disimpan saat pembayaran ditolak; status lain menghapusnya
+      payment_note: paymentStatus === 'rejected' ? (paymentNote || '').trim() || null : null,
     }
     if (planCode !== undefined) payload.plan_code = planCode || null
     if (subscriptionEndsAt !== undefined) payload.subscription_ends_at = subscriptionEndsAt || null

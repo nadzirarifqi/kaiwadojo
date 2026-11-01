@@ -153,6 +153,7 @@ function issueTokenForUser(PDO $db, string $userId): void {
             'referral_code'        => $profile['referral_code'] ?? null,
             'plan_code'            => $profile['plan_code'] ?? null,
             'payment_status'       => $profile['payment_status'] ?? 'unpaid',
+            'payment_note'         => $profile['payment_note'] ?? null,
             'subscription_ends_at' => $profile['subscription_ends_at'] ?? null,
             'access_level'         => $profile['access_level'] ?? 'full',
             'domisili'             => $profile['domisili'] ?? null,

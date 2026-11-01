@@ -11,7 +11,7 @@
 require_once __DIR__ . '/db.php';
 
 class Subscriptions {
-    public const PAYMENT_STATUSES = ['paid', 'pending', 'cancelled', 'refunded', 'expired'];
+    public const PAYMENT_STATUSES = ['paid', 'pending', 'rejected', 'cancelled', 'refunded', 'expired'];
     private const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // tanpa 0/O/1/I agar tidak tertukar
 
     /** Pendaftaran wajib memakai kode langganan? (atur di config.local.php) */

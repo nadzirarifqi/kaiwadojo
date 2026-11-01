@@ -1023,6 +1023,10 @@
           "type": "text",
           "nullable": false,
           "default_value": "full"
+        },
+        "payment_note": {
+          "type": "text",
+          "nullable": true
         }
       }
     },

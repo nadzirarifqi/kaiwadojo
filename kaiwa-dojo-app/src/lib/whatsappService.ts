@@ -110,6 +110,51 @@ export async function sendWhatsAppApprovalNotice({ phoneNumber, fullName, userna
 }
 
 /**
+ * Notifikasi WA ke pelajar bahwa bukti/pembayaran langganannya ditolak admin (tidak valid).
+ */
+export async function sendWhatsAppPaymentRejectedNotice({
+  phoneNumber,
+  fullName,
+  reason,
+}: {
+  phoneNumber: string
+  fullName: string
+  reason: string
+}): Promise<boolean> {
+  let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
+  if (formattedPhone.startsWith('0')) {
+    formattedPhone = '62' + formattedPhone.slice(1)
+  }
+  if (!formattedPhone || formattedPhone.length < 9) {
+    console.warn('Nomor WhatsApp tidak valid untuk notifikasi penolakan pembayaran:', phoneNumber)
+    return false
+  }
+
+  const messageText =
+    `⚠️ *PEMBAYARAN LANGGANAN KAIWADOJO DITOLAK*\n\n` +
+    `Halo *${fullName}*,\n\n` +
+    `Pembayaran langganan Anda *belum dapat kami verifikasi* dan ditolak oleh Admin.\n\n` +
+    `Alasan: *${reason}*\n\n` +
+    `Silakan lakukan pembayaran ulang atau kirim bukti pembayaran yang valid melalui https://bangunnegeri.inaconnext.it.com, ` +
+    `atau balas pesan ini jika ada pertanyaan. Terima kasih 🙏`
+
+  try {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=whatsapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: formattedPhone, message: messageText }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (data.status) return true
+    console.warn('WA API payment rejected note:', data.reason || data)
+    return false
+  } catch (err) {
+    console.error('Error sending WA payment rejected notice:', err)
+    return false
+  }
+}
+
+/**
  * Memeriksa apakah nomor telepon terdaftar & aktif di WhatsApp via Fonnte API /validate
  */
 export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isValid: boolean; message?: string }> {

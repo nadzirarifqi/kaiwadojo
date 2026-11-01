@@ -400,6 +400,7 @@ CREATE TABLE `profiles` (
   `kelurahan` TEXT NULL,
   `kecamatan` TEXT NULL,
   `kabupaten` TEXT NULL,
+  `payment_note` TEXT NULL,
   `current_session_id` TEXT NULL,
   `current_device_info` TEXT NULL,
   `last_session_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),

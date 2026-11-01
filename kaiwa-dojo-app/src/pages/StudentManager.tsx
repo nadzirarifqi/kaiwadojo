@@ -20,7 +20,7 @@ import {
 } from '../lib/studentService'
 import { fetchGroups, matchGroupFromInstitution, sortGroupsAlphabetically, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { calculateUserPresence } from '../lib/presenceUtils'
-import { sendWhatsAppApprovalNotice } from '../lib/whatsappService'
+import { sendWhatsAppApprovalNotice, sendWhatsAppPaymentRejectedNotice } from '../lib/whatsappService'
 import { supabase } from '../lib/supabaseClient'
 import { fetchKotobaCountsByUser } from '../lib/kotobaService'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -33,7 +33,7 @@ export default function StudentManager() {
   const [students, setStudents] = useState<StudentAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all')
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid' | 'expired'>('all')
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid' | 'rejected' | 'expired'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [groupFilter, setGroupFilter] = useState<string>('all')
 
@@ -48,6 +48,9 @@ export default function StudentManager() {
   const [paymentStatusInput, setPaymentStatusInput] = useState<PaymentStatus>('paid')
   const [planCodeInput, setPlanCodeInput] = useState<string>('minna1-mandiri-1bln')
   const [endsAtInput, setEndsAtInput] = useState<string>('')
+  const [paymentNoteInput, setPaymentNoteInput] = useState<string>('')
+  const [notifyRejectWa, setNotifyRejectWa] = useState(true)
+  const [paymentNoteError, setPaymentNoteError] = useState<string | null>(null)
 
   // Form Fields State
   const [fullName, setFullName] = useState('')
@@ -182,9 +185,12 @@ export default function StudentManager() {
     setGroupName(std.group_name || '')
   }
 
-  function openPaymentModal(std: StudentAccount) {
+  function openPaymentModal(std: StudentAccount, presetStatus?: PaymentStatus) {
     setPaymentModalStudent(std)
-    setPaymentStatusInput(std.payment_status || 'unpaid')
+    setPaymentStatusInput(presetStatus || std.payment_status || 'unpaid')
+    setPaymentNoteInput(std.payment_note || '')
+    setPaymentNoteError(null)
+    setNotifyRejectWa(true)
     setPlanCodeInput(std.plan_code || 'minna1-mandiri-1bln')
 
     if (std.subscription_ends_at) {
@@ -215,6 +221,14 @@ export default function StudentManager() {
   async function handleSavePayment(e: React.FormEvent) {
     e.preventDefault()
     if (!paymentModalStudent) return
+
+    const isRejecting = paymentStatusInput === 'rejected'
+    const note = paymentNoteInput.trim()
+    if (isRejecting && note.length < 5) {
+      setPaymentNoteError('Tuliskan alasan penolakan (minimal 5 karakter) agar pelajar tahu apa yang harus diperbaiki.')
+      return
+    }
+    setPaymentNoteError(null)
     setSaving(true)
 
     const endsAtFormatted = endsAtInput ? `${endsAtInput} 23:59:59` : null
@@ -222,8 +236,19 @@ export default function StudentManager() {
       paymentModalStudent.id,
       paymentStatusInput,
       planCodeInput,
-      endsAtFormatted
+      endsAtFormatted,
+      isRejecting ? note : null
     )
+
+    // Kabari pelajar via WhatsApp bila pembayarannya ditolak
+    let waSent = false
+    if (success && isRejecting && notifyRejectWa) {
+      waSent = await sendWhatsAppPaymentRejectedNotice({
+        phoneNumber: paymentModalStudent.phone_number || '',
+        fullName: paymentModalStudent.full_name,
+        reason: note,
+      })
+    }
 
     setSaving(false)
     if (success) {
@@ -233,13 +258,18 @@ export default function StudentManager() {
             ? {
                 ...s,
                 payment_status: paymentStatusInput,
+                payment_note: isRejecting ? note : null,
                 plan_code: planCodeInput,
                 subscription_ends_at: endsAtFormatted,
               }
             : s
         )
       )
-      showToastMsg(`Status pembayaran "${paymentModalStudent.full_name}" berhasil diperbarui.`)
+      showToastMsg(
+        isRejecting
+          ? `Pembayaran "${paymentModalStudent.full_name}" ditolak${notifyRejectWa ? (waSent ? ' & notifikasi WA terkirim.' : ' (notifikasi WA gagal terkirim).') : '.'}`
+          : `Status pembayaran "${paymentModalStudent.full_name}" berhasil diperbarui.`
+      )
       setPaymentModalStudent(null)
     } else {
       showToastMsg('Gagal memperbarui status pembayaran. Coba lagi.')
@@ -438,6 +468,7 @@ export default function StudentManager() {
     return s.payment_status === 'paid' && !isExpired
   }).length
   const unpaidCount = students.filter(s => s.payment_status === 'unpaid' || !s.payment_status || s.payment_status === 'pending').length
+  const rejectedPaymentCount = students.filter(s => s.payment_status === 'rejected').length
   const expiredCount = students.filter(s => {
     const endsAt = s.subscription_ends_at ? new Date(s.subscription_ends_at.replace(' ', 'T')) : null
     const isExpired = endsAt ? endsAt.getTime() < Date.now() : false
@@ -458,6 +489,7 @@ export default function StudentManager() {
 
           if (paymentFilter === 'paid' && !isPaid) return false
           if (paymentFilter === 'unpaid' && (std.payment_status !== 'unpaid' && std.payment_status !== 'pending')) return false
+          if (paymentFilter === 'rejected' && std.payment_status !== 'rejected') return false
           if (paymentFilter === 'expired' && (!isExpired && std.payment_status !== 'expired')) return false
         }
 
@@ -507,7 +539,23 @@ export default function StudentManager() {
           return rankA - rankB
         }
 
-        // Prioritas 3: Nama Grup (A-Z)
+        // Prioritas 3: Status Pembayaran (Belum bayar -> Menunggu -> Ditolak -> Kedaluwarsa -> Lunas)
+        const getPaymentRank = (std: StudentAccount): number => {
+          const endsAt = std.subscription_ends_at ? new Date(std.subscription_ends_at.replace(' ', 'T')) : null
+          const isExpired = endsAt ? endsAt.getTime() < Date.now() : false
+          if (std.payment_status === 'paid') return isExpired ? 4 : 5
+          if (std.payment_status === 'pending') return 2
+          if (std.payment_status === 'rejected') return 3
+          if (std.payment_status === 'expired') return 4
+          return 1 // unpaid / kosong
+        }
+        const payRankA = getPaymentRank(a)
+        const payRankB = getPaymentRank(b)
+        if (payRankA !== payRankB) {
+          return payRankA - payRankB
+        }
+
+        // Prioritas 4: Nama Grup (A-Z)
         const groupA = (a.group_name || '').trim()
         const groupB = (b.group_name || '').trim()
         const groupComp = groupA.localeCompare(groupB, undefined, { sensitivity: 'base', numeric: true })
@@ -515,7 +563,7 @@ export default function StudentManager() {
           return groupComp
         }
 
-        // Prioritas 4: Nama Siswa (A-Z)
+        // Prioritas 5: Nama Siswa (A-Z)
         const nameA = (a.full_name || a.username || '').trim()
         const nameB = (b.full_name || b.username || '').trim()
         return nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true })
@@ -675,6 +723,19 @@ export default function StudentManager() {
                 >
                   <span>Belum Bayar ({unpaidCount})</span>
                 </button>
+                {rejectedPaymentCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentFilter(prev => prev === 'rejected' ? 'all' : 'rejected')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold border-none cursor-pointer transition-all whitespace-nowrap flex items-center gap-1 ${
+                      paymentFilter === 'rejected'
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-orange-600'
+                    }`}
+                  >
+                    <span>Ditolak ({rejectedPaymentCount})</span>
+                  </button>
+                )}
                 {expiredCount > 0 && (
                   <button
                     type="button"
@@ -948,6 +1009,14 @@ export default function StudentManager() {
                                     <span className="size-1.5 rounded-full bg-amber-500" />
                                     <span>Menunggu</span>
                                   </span>
+                                ) : paymentStatus === 'rejected' ? (
+                                  <span
+                                    title={std.payment_note ? `Alasan: ${std.payment_note}` : 'Pembayaran ditolak'}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 text-[0.62rem] font-black uppercase cursor-help"
+                                  >
+                                    <span className="size-1.5 rounded-full bg-orange-500" />
+                                    <span>Ditolak</span>
+                                  </span>
                                 ) : paymentStatus === 'expired' ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[0.62rem] font-black uppercase">
                                     <span className="size-1.5 rounded-full bg-rose-500" />
@@ -960,6 +1029,12 @@ export default function StudentManager() {
                                   </span>
                                 )}
                               </div>
+
+                              {paymentStatus === 'rejected' && std.payment_note && (
+                                <span className="text-[0.62rem] font-semibold text-orange-600 dark:text-orange-400 line-clamp-2 max-w-[170px]" title={std.payment_note}>
+                                  {std.payment_note}
+                                </span>
+                              )}
 
                               {/* Plan Name */}
                               <div className="text-[0.68rem] font-extrabold text-slate-700 dark:text-slate-200 truncate max-w-[170px]" title={planObj?.name || planCode || 'Tanpa Paket'}>
@@ -1027,6 +1102,21 @@ export default function StudentManager() {
                           </svg>
                           <span>Bayar</span>
                         </button>
+
+                        {/* Tolak pembayaran yang menunggu konfirmasi (bukti tidak valid) */}
+                        {std.payment_status === 'pending' && (
+                          <button
+                            onClick={() => openPaymentModal(std, 'rejected')}
+                            disabled={saving}
+                            title="Tolak pembayaran (tidak valid)"
+                            className="px-2.5 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 text-orange-700 dark:text-orange-300 text-xs font-bold border border-orange-200 dark:border-orange-800/60 cursor-pointer transition-colors flex items-center gap-1"
+                          >
+                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>Tolak Bayar</span>
+                          </button>
+                        )}
 
                         {std.status === 'pending' ? (
                           <>
@@ -1619,10 +1709,11 @@ export default function StudentManager() {
                       { value: 'pending', label: 'Menunggu', desc: 'Dalam konfirmasi', bg: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300' },
                       { value: 'unpaid', label: 'Belum Bayar', desc: 'Akses terblokir', bg: 'border-slate-400 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300' },
                       { value: 'expired', label: 'Expired', desc: 'Masa aktif habis', bg: 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300' },
+                      { value: 'rejected', label: 'Ditolak (Tidak Valid)', desc: 'Bukti/nominal tidak sesuai — pelajar diminta bayar ulang', bg: 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300' },
                     ].map(st => (
                       <label
                         key={st.value}
-                        className={`flex items-start gap-2.5 p-3 rounded-2xl border-2 cursor-pointer transition-all ${
+                        className={`flex items-start gap-2.5 p-3 rounded-2xl border-2 cursor-pointer transition-all ${st.value === 'rejected' ? 'col-span-2 ' : ''}${
                           paymentStatusInput === st.value
                             ? st.bg + ' ring-2 ring-offset-1 ring-purple-500'
                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-75 hover:opacity-100'
@@ -1644,6 +1735,42 @@ export default function StudentManager() {
                     ))}
                   </div>
                 </div>
+
+                {/* Alasan penolakan */}
+                {paymentStatusInput === 'rejected' && (
+                  <div className="p-3.5 rounded-2xl border border-orange-200 dark:border-orange-900 bg-orange-50/60 dark:bg-orange-950/20">
+                    <label htmlFor="payment-note" className="text-xs font-black text-orange-800 dark:text-orange-200 block mb-1.5">
+                      Alasan Penolakan <span className="text-rose-600">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {['Bukti transfer tidak valid', 'Nominal tidak sesuai paket', 'Pembayaran tidak ditemukan', 'Data pembayar tidak cocok'].map(r => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => { setPaymentNoteInput(r); setPaymentNoteError(null) }}
+                          className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 hover:bg-orange-100 dark:hover:bg-orange-950/50 text-orange-700 dark:text-orange-300 text-[0.68rem] font-bold border border-orange-200 dark:border-orange-800 cursor-pointer transition-colors"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      id="payment-note"
+                      value={paymentNoteInput}
+                      onChange={e => { setPaymentNoteInput(e.target.value); setPaymentNoteError(null) }}
+                      rows={3}
+                      maxLength={300}
+                      placeholder="Contoh: Nominal transfer Rp 150.000 tidak sesuai harga paket Rp 200.000."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-orange-200 dark:border-orange-800 text-xs bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-orange-500 resize-none"
+                    />
+                    {paymentNoteError && <p className="text-[0.68rem] font-bold text-rose-600 dark:text-rose-400 mt-1">{paymentNoteError}</p>}
+                    <label className="mt-2 flex items-center gap-2 text-[0.7rem] font-semibold text-orange-800 dark:text-orange-200 cursor-pointer select-none">
+                      <input type="checkbox" checked={notifyRejectWa} onChange={e => setNotifyRejectWa(e.target.checked)} className="accent-orange-600" />
+                      Kirim notifikasi WhatsApp ke pelajar ({paymentModalStudent.phone_number || 'nomor tidak ada'})
+                    </label>
+                    <p className="text-[0.65rem] text-orange-700/80 dark:text-orange-300/80 mt-1">Alasan ini juga ditampilkan di dashboard pelajar.</p>
+                  </div>
+                )}
 
                 {/* Paket Langganan */}
                 <div>
@@ -1762,6 +1889,8 @@ export default function StudentManager() {
                   <p className="text-[0.68rem] opacity-90 leading-relaxed">
                     {paymentStatusInput === 'paid'
                       ? 'Pelajar dapat membuka seluruh fitur Kaiwa Dojo sampai batas tanggal berakhir.'
+                      : paymentStatusInput === 'rejected'
+                      ? 'Fitur berbayar tetap terkunci. Pelajar melihat status "Pembayaran ditolak" beserta alasannya dan diminta melakukan pembayaran ulang.'
                       : 'Pelajar akan diarahkan ke layar aktivasi langganan dan diarahkan untuk menyelesaikan pembayaran di Bangun Negeri.'}
                   </p>
                 </div>
@@ -1780,7 +1909,7 @@ export default function StudentManager() {
                     disabled={saving}
                     className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    <span>{saving ? 'Menyimpan...' : 'Simpan Pembayaran'}</span>
+                    <span>{saving ? 'Menyimpan...' : paymentStatusInput === 'rejected' ? 'Tolak Pembayaran' : 'Simpan Pembayaran'}</span>
                   </button>
                 </div>
               </form>
