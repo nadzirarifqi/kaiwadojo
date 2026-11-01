@@ -9,7 +9,7 @@ import LoadingScreen from './components/LoadingScreen'
 import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
-import SubscriptionBlockedScreen from './components/SubscriptionBlockedScreen'
+import { getSubscriptionAccess } from './lib/subscriptionAccess'
 import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
@@ -242,6 +242,29 @@ function AppNavbar({
 }
 
 
+/* ── Banner langganan: pengingat untuk pelajar yang belum bayar / langganan habis ── */
+function SubscriptionBanner() {
+  const { profile } = useAuth()
+  const { isLocked, isExpired } = getSubscriptionAccess(profile)
+  if (!isLocked) return null
+  return (
+    <div className="mx-3 sm:mx-6 mt-3 px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs sm:text-sm flex flex-wrap items-center justify-between gap-2">
+      <span>
+        {isExpired ? 'Masa langganan kamu sudah berakhir.' : 'Akun kamu belum berlangganan.'}{' '}
+        Video materi dan setoran kotoba terkunci sampai pembayaran dikonfirmasi.
+      </span>
+      <a
+        href="https://bangunnegeri.inaconnext.it.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold no-underline transition-colors"
+      >
+        Langganan Sekarang
+      </a>
+    </div>
+  )
+}
+
 /* ── App Shell ─────────────────────────────────────
    sidebarOpen mengendalikan:
    • Mobile  → drawer slide-in/out
@@ -304,6 +327,7 @@ function AppShell({ children }: { children?: React.ReactNode }) {
           ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-[72px]'}
         `}
       >
+        <SubscriptionBanner />
         <Suspense fallback={<LoadingScreen fullScreen={false} message="Memuat halaman..." />}>
           {children || <Outlet />}
         </Suspense>
@@ -314,7 +338,7 @@ function AppShell({ children }: { children?: React.ReactNode }) {
 
 /* ── Protected Route ────────────────────────────── */
 function ProtectedRoute({ children }: { children?: React.ReactNode }) {
-  const { session, profile, loading, signOut, refreshProfile } = useAuth()
+  const { session, profile, loading, signOut } = useAuth()
 
   if (loading) {
     return <LoadingScreen message="Memeriksa Keamanan Sesi..." fullScreen={true} />
@@ -336,24 +360,9 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
     return null  // signOut() performs window.location.replace('/') — no need to render Navigate
   }
 
-  // Gating pembayaran: Akun pelajar wajib memiliki status langganan 'paid' dan belum expired
-  if (profile.role === 'pelajar') {
-    const isPaymentExpired = profile.subscription_ends_at
-      ? new Date(profile.subscription_ends_at.replace(' ', 'T')).getTime() < Date.now()
-      : false
-    const isUnpaid = !profile.payment_status || profile.payment_status !== 'paid' || isPaymentExpired
-
-    if (isUnpaid) {
-      return (
-        <SubscriptionBlockedScreen
-          profile={profile}
-          isExpired={isPaymentExpired || profile.payment_status === 'expired'}
-          onRefresh={refreshProfile}
-        />
-      )
-    }
-  }
-
+  // Pembayaran TIDAK lagi memblokir dashboard: pelajar yang belum bayar tetap bisa masuk,
+  // tetapi fitur berbayar (video materi & tambah kotoba) dikunci di halamannya masing-masing
+  // (lihat lib/subscriptionAccess.ts & components/SubscriptionLock.tsx).
   return <>{children || <Outlet />}</>
 }
 

@@ -62,6 +62,21 @@ class Policies {
         return true;
     }
 
+    /**
+     * Pelajar dianggap berlangganan aktif jika payment_status = 'paid' dan belum melewati
+     * subscription_ends_at. Akun yang belum bayar tetap bisa masuk dashboard, tetapi fitur
+     * berbayar (video materi, setoran kotoba) dikunci.
+     */
+    public static function hasActiveSubscription(?string $userId): bool {
+        if (!$userId) return false;
+        $stmt = DB::get()->prepare("SELECT payment_status, subscription_ends_at FROM profiles WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $p = $stmt->fetch();
+        if (!$p || ($p['payment_status'] ?? '') !== 'paid') return false;
+        if (!empty($p['subscription_ends_at']) && strtotime($p['subscription_ends_at']) < time()) return false;
+        return true;
+    }
+
     /** Tabel yang hanya boleh ditulis admin (lewat query API) */
     private const ADMIN_WRITE_ONLY = ['subscriptions', 'subscription_plans'];
 
@@ -134,6 +149,9 @@ class Policies {
                 }
                 if (($row['user_id'] ?? '') !== $userId) {
                     throw new Exception("Forbidden: Tidak dapat menyetor kotoba untuk akun lain");
+                }
+                if ($role === 'pelajar' && !self::hasActiveSubscription($userId)) {
+                    throw new Exception("Forbidden: Fitur setoran kotoba memerlukan langganan aktif. Silakan lakukan pembayaran terlebih dahulu.");
                 }
                 self::validateKotobaFields($row, true);
                 break;

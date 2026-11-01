@@ -15,6 +15,8 @@ import {
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import ModalPortal from '../components/ModalPortal'
+import { SubscriptionLockCard } from '../components/SubscriptionLock'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 import { CourseCardSkeleton } from '../components/Skeleton'
 import { MOTIVATION_QUOTES, getDailyQuoteIndex } from '../data/motivationQuotes'
 import {
@@ -419,6 +421,8 @@ export default function MyCourses() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, profile } = useAuth()
+  // Pelajar belum bayar / langganan habis: boleh lihat daftar materi, tapi video dikunci
+  const isSubscriptionLocked = getSubscriptionAccess(profile).isLocked
   const { t } = useLanguage()
   const isInstructor = profile?.role === 'pemateri' || profile?.role === 'admin'
 
@@ -1641,6 +1645,10 @@ export default function MyCourses() {
                             </p>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">Rencana: 10 soal pilihan ganda · nilai lulus 80%</p>
+                        </div>
+                      ) : liveLesson.video_id && isSubscriptionLocked ? (
+                        <div className="relative w-full max-w-md max-h-full overflow-y-auto flex flex-col items-center">
+                          <SubscriptionLockCard feature="Video materi" />
                         </div>
                       ) : liveLesson.video_id ? (
                         <div className="relative h-full aspect-[9/16] max-w-full bg-black sm:rounded-2xl overflow-hidden sm:shadow-2xl sm:ring-1 sm:ring-white/10">

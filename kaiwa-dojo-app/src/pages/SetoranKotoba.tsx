@@ -6,6 +6,8 @@ import { useToast } from '../contexts/ToastContext'
 import CustomAlertModal, { type AlertModalConfig } from '../components/CustomAlertModal'
 import { validateKotobaInput } from '../lib/kotobaValidation'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { SubscriptionRequiredModal } from '../components/SubscriptionLock'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 import {
   fetchDailyMission,
   getDailyMission,
@@ -182,6 +184,9 @@ export default function SetoranKotobaPage() {
   const { toast } = useToast()
   const confirm = useConfirm()
   const effectiveUserId = user?.id || profile?.id || null
+  // Pelajar belum bayar / langganan habis: halaman tetap bisa dibuka, tapi tambah kotoba dikunci
+  const isSubscriptionLocked = getSubscriptionAccess(profile).isLocked
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [kotobaList, setKotobaList] = useState<UserKotoba[]>([])
   const [loading, setLoading]       = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -449,6 +454,10 @@ export default function SetoranKotobaPage() {
   }
 
   function handleOpenCreateModal() {
+    if (isSubscriptionLocked) {
+      setShowSubscriptionModal(true)
+      return
+    }
     setEditingItem(null)
     setSelectedFile(null)
     setShowFormErrors(false)
@@ -503,6 +512,11 @@ export default function SetoranKotobaPage() {
 
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault()
+    if (isSubscriptionLocked && !editingItem) {
+      setIsModalOpen(false)
+      setShowSubscriptionModal(true)
+      return
+    }
     // Validasi ketat: huruf Jepang, cara baca, dan arti harus sesuai ketentuan (tidak asal isi)
     const validation = validateKotobaInput(formData)
     if (!validation.isValid) {
@@ -1886,6 +1900,11 @@ export default function SetoranKotobaPage() {
       )}
       {/* Beautiful Custom Alert Modal */}
       <CustomAlertModal {...alertConfig} />
+      <SubscriptionRequiredModal
+        isOpen={showSubscriptionModal}
+        feature="Tambah kotoba"
+        onClose={() => setShowSubscriptionModal(false)}
+      />
     </main>
   )
 }
