@@ -366,15 +366,6 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   return <>{children || <Outlet />}</>
 }
 
-/* ── Halaman khusus pelanggan: pelajar belum berlangganan diarahkan ke dashboard ── */
-function SubscribedOnly({ children }: { children: React.ReactNode }) {
-  const { profile } = useAuth()
-  if (getSubscriptionAccess(profile).isLocked) {
-    return <Navigate to="/dashboard" replace />
-  }
-  return <>{children}</>
-}
-
 /* ── Floating Widgets (hidden for Admin) ────────── */
 function FloatingWidgets() {
   const { profile } = useAuth()
@@ -416,7 +407,7 @@ export function AppRoutes() {
                     <Route path="/my-courses"      element={<MyCourses />} />
                     <Route path="/learning-plan"   element={<LearningPlanPage />} />
                     <Route path="/kotoba"          element={<SetoranKotobaPage />} />
-                    <Route path="/reservasi-kelas" element={<SubscribedOnly><ClassReservationPage /></SubscribedOnly>} />
+                    <Route path="/reservasi-kelas" element={<ClassReservationPage />} />
                     <Route path="/kelola-jadwal"   element={<InstructorScheduleManagerPage />} />
                     <Route path="/kelola-kursus"   element={<CourseEditorPage />} />
                     <Route path="/kelola-pemateri" element={<InstructorManagerPage />} />

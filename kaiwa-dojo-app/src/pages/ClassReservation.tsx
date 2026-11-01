@@ -5,6 +5,8 @@ import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import { parseTargetGroups } from '../lib/chapterService'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
+import { SubscriptionLockCard } from '../components/SubscriptionLock'
 import {
   type ClassSchedule,
   type ClassReservation,
@@ -355,6 +357,31 @@ export default function ClassReservationPage() {
           </p>
         </div>
       </div>
+    )
+  }
+
+  // Pelajar belum berlangganan: halaman tetap bisa dibuka, tapi tidak ada jadwal yang ditampilkan
+  if (getSubscriptionAccess(profile).isLocked) {
+    return (
+      <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-w-0 flex flex-col gap-4 sm:gap-6 animate-page-slide">
+        <header className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark rounded-2xl p-4 sm:p-6 text-white shadow-md">
+          <div className="absolute -top-14 -right-14 size-56 bg-white/10 rounded-full pointer-events-none" />
+          <div className="relative z-10 max-w-2xl">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full mb-2">
+              Kelas Live kaiwadojo
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">
+              {t('cr_page_title', 'Reservasi Kelas')}
+            </h1>
+            <p className="text-sm text-white/85 mt-1 leading-relaxed">
+              Ikuti kelas live online & offline bersama pengajar setelah langgananmu aktif.
+            </p>
+          </div>
+        </header>
+        <section className="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm flex justify-center">
+          <SubscriptionLockCard feature="Reservasi kelas" />
+        </section>
+      </main>
     )
   }
 

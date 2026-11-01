@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 import { useLanguage } from '../contexts/LanguageContext'
 import { prefetchRoute } from '../utils/routePrefetch'
 import KaiwaLogo from './KaiwaLogo'
@@ -131,11 +130,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 { to: '/learning-plan', label: t('nav_rencana', 'Rencana Belajar'), icon: <Icon d={ICON.plan} /> },
               ],
             },
-            // Menu Reservasi Kelas hanya untuk pelajar yang sudah berlangganan
-            ...(getSubscriptionAccess(profile).isLocked ? [] : [{
+            {
               title: 'Kelas',
               items: [{ to: '/reservasi-kelas', label: t('nav_reservasi', 'Reservasi Kelas'), icon: <Icon d={ICON.calendar} /> }],
-            }]),
+            },
           ]
 
   function closeOnMobile() {
