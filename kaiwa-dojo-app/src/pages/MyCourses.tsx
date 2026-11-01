@@ -1648,7 +1648,7 @@ export default function MyCourses() {
                         </div>
                       ) : liveLesson.video_id && isSubscriptionLocked ? (
                         <div className="relative w-full max-w-md max-h-full overflow-y-auto flex flex-col items-center">
-                          <SubscriptionLockCard feature="Video materi" />
+                          <SubscriptionLockCard feature="Video materi" tone="dark" />
                         </div>
                       ) : liveLesson.video_id ? (
                         <div className="relative h-full aspect-[9/16] max-w-full bg-black sm:rounded-2xl overflow-hidden sm:shadow-2xl sm:ring-1 sm:ring-white/10">

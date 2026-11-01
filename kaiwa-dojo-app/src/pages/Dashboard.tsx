@@ -39,6 +39,7 @@ import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
 import JapanFactCard from '../components/JapanFactCard'
 import ModalPortal from '../components/ModalPortal'
 import { getSubscriptionAccess } from '../lib/subscriptionAccess'
+import { SubscriptionStatusCard, LockIcon } from '../components/SubscriptionLock'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -1132,12 +1133,12 @@ const QUICK_ACTIONS = [
     icon: <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   },
   {
-    to: '/kotoba', label: 'Setoran Kotoba', hint: 'Kosakata',
+    to: '/kotoba', label: 'Setoran Kotoba', hint: 'Kosakata', paid: true,
     tile: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',
     icon: <span className="font-serif font-bold text-lg leading-none">語</span>,
   },
   {
-    to: '/reservasi-kelas', label: 'Reservasi Kelas', hint: 'Live & offline',
+    to: '/reservasi-kelas', label: 'Reservasi Kelas', hint: 'Live & offline', paid: true,
     tile: 'bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400',
     icon: <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
   },
@@ -1158,22 +1159,36 @@ function QuickActions({
   onOpenAnnouncements: () => void
 }) {
   const navigate = useNavigate()
+  const { profile } = useAuth()
+  // Pelajar belum berlangganan: fitur berbayar tetap bisa dibuka, tapi ditandai gembok
+  const subscriptionLocked = getSubscriptionAccess(profile).isLocked
   return (
     <nav aria-label="Akses cepat" className="grid grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3">
-      {QUICK_ACTIONS.map(a => (
-        <button
-          key={a.to}
-          type="button"
-          onClick={() => navigate(a.to)}
-          className={`${CARD} shadow-none hover:shadow-sm p-2.5 sm:p-3 flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-3 text-center lg:text-left cursor-pointer transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 min-h-[76px] lg:min-h-0`}
-        >
-          <span className={`size-10 shrink-0 rounded-xl flex items-center justify-center ${a.tile}`}>{a.icon}</span>
-          <span className="min-w-0">
-            <span className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{a.label}</span>
-            <span className="hidden lg:block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{a.hint}</span>
-          </span>
-        </button>
-      ))}
+      {QUICK_ACTIONS.map(a => {
+        const locked = subscriptionLocked && a.paid
+        return (
+          <button
+            key={a.to}
+            type="button"
+            onClick={() => navigate(a.to)}
+            aria-label={locked ? `${a.label} (perlu langganan)` : undefined}
+            className={`${CARD} shadow-none hover:shadow-sm p-2.5 sm:p-3 flex flex-col lg:flex-row items-center lg:items-center gap-1.5 lg:gap-3 text-center lg:text-left cursor-pointer transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 min-h-[76px] lg:min-h-0`}
+          >
+            <span className={`relative size-10 shrink-0 rounded-xl flex items-center justify-center ${a.tile}`}>
+              {a.icon}
+              {locked && (
+                <span className="absolute -top-1 -right-1 size-[18px] rounded-full bg-slate-700 dark:bg-slate-600 text-white ring-2 ring-white dark:ring-slate-900 flex items-center justify-center">
+                  <LockIcon className="size-2.5" />
+                </span>
+              )}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{a.label}</span>
+              <span className="hidden lg:block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{locked ? 'Perlu langganan' : a.hint}</span>
+            </span>
+          </button>
+        )
+      })}
 
       {/* Pengumuman — ringkas, satu baris */}
       {announcement && (
@@ -1929,6 +1944,11 @@ export default function Dashboard() {
           </dl>
         </div>
       </header>
+
+      {/* ── Status langganan (hanya pelajar yang belum bayar / langganan habis) ── */}
+      {getSubscriptionAccess(profile).isLocked && (
+        <SubscriptionStatusCard className="mb-4 sm:mb-6 animate-fade-in" />
+      )}
 
       {/* ── Konten utama ──
           HP: satu kolom, urutan diatur dengan `order` sesuai prioritas (misi → akses cepat & pengumuman → streak → fakta → agenda → progres).

@@ -10,6 +10,7 @@ import PageTransition from './components/PageTransition'
 import WhatsAppWidget from './components/WhatsAppWidget'
 import ErrorBoundary from './components/ErrorBoundary'
 import { getSubscriptionAccess } from './lib/subscriptionAccess'
+import { SubscriptionNoticeBar } from './components/SubscriptionLock'
 import { prefetchCommonRoutes } from './utils/routePrefetch'
 
 /* ── Lazy Load with Auto-Recovery ──────────────────
@@ -244,24 +245,15 @@ function AppNavbar({
 
 
 /* ── Banner langganan: pengingat untuk pelajar yang belum bayar / langganan habis ── */
+// Dashboard menampilkan kartu status langganan yang lebih lengkap, jadi bar ini tidak dipakai di sana
 function SubscriptionBanner() {
   const { profile } = useAuth()
-  const { isLocked, isExpired } = getSubscriptionAccess(profile)
-  if (!isLocked) return null
+  const location = useLocation()
+  const { isLocked } = getSubscriptionAccess(profile)
+  if (!isLocked || location.pathname === '/dashboard') return null
   return (
-    <div className="mx-3 sm:mx-6 mt-3 px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs sm:text-sm flex flex-wrap items-center justify-between gap-2">
-      <span>
-        {isExpired ? 'Masa langganan kamu sudah berakhir.' : 'Akun kamu belum berlangganan.'}{' '}
-        Video materi, setoran kotoba, dan reservasi kelas terkunci sampai pembayaran dikonfirmasi.
-      </span>
-      <a
-        href="https://bangunnegeri.inaconnext.it.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold no-underline transition-colors"
-      >
-        Langganan Sekarang
-      </a>
+    <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 -mb-1 sm:-mb-3 lg:-mb-5">
+      <SubscriptionNoticeBar />
     </div>
   )
 }
