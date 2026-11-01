@@ -18,6 +18,7 @@ import {
 } from '../lib/dailyMission'
 
 import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 import { fetchGroups, type KaiwaGroup, GROUP_UPDATE_EVENT } from '../lib/groupService'
 import {
   type ClassSchedule,
@@ -489,9 +490,11 @@ export default function LearningPlanPage() {
     }
   }, [])
 
+  // Pelajar belum berlangganan: jadwal & reservasi kelas tidak ditampilkan sama sekali
+  const isSubscriptionLocked = getSubscriptionAccess(profile).isLocked
   const accessibleSchedules: ClassSchedule[] = useMemo(
-    () => schedules.filter(s => isScheduleAccessibleForUser(s, profile, groups)),
-    [schedules, profile, groups]
+    () => isSubscriptionLocked ? [] : schedules.filter(s => isScheduleAccessibleForUser(s, profile, groups)),
+    [schedules, profile, groups, isSubscriptionLocked]
   )
 
   /**
@@ -820,6 +823,7 @@ export default function LearningPlanPage() {
         </section>
 
         {/* Kelas live */}
+        {!isSubscriptionLocked && (
         <section className="flex flex-col gap-3">
           <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             {isPast ? 'Kelas yang diikuti' : 'Kelas live'}
@@ -875,6 +879,7 @@ export default function LearningPlanPage() {
             </button>
           )}
         </section>
+        )}
       </div>
     )
   }
@@ -899,9 +904,11 @@ export default function LearningPlanPage() {
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/15 px-2.5 py-1 rounded-full">
                 <img src="/lulus.png" alt="" className="size-4 object-contain" /> {passedThisMonth} hari lulus di {monthName}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/15 px-2.5 py-1 rounded-full">
-                <IconVideo className="size-3.5" /> {upcomingClasses} kelas mendatang
-              </span>
+              {!isSubscriptionLocked && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/15 px-2.5 py-1 rounded-full">
+                  <IconVideo className="size-3.5" /> {upcomingClasses} kelas mendatang
+                </span>
+              )}
             </div>
           </div>
 
@@ -1086,9 +1093,13 @@ export default function LearningPlanPage() {
                   <IconChevron dir="down" className="size-4 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 pt-3 pb-1 text-[13px] text-slate-600 dark:text-slate-300">
-                  <span className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-sky-500" /> Kelas online terdaftar</span>
-                  <span className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-emerald-500" /> Kelas offline terdaftar</span>
-                  <span className="flex items-center gap-2"><span className="size-2.5 rounded-full ring-1 ring-sky-400" /> Ada kelas yang bisa direservasi</span>
+                  {!isSubscriptionLocked && (
+                    <>
+                      <span className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-sky-500" /> Kelas online terdaftar</span>
+                      <span className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-emerald-500" /> Kelas offline terdaftar</span>
+                      <span className="flex items-center gap-2"><span className="size-2.5 rounded-full ring-1 ring-sky-400" /> Ada kelas yang bisa direservasi</span>
+                    </>
+                  )}
                   <span className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-primary" /> Ada rencana belajar</span>
                   <span className="flex items-center gap-2"><img src="/lulus.png" alt="" className="size-5 object-contain" /> {t('lp_stamp_passed', 'Lulus 100%')}</span>
                   <span className="flex items-center gap-2"><img src="/gagal.png" alt="" className="size-5 object-contain" /> {t('lp_stamp_incomplete', 'Belum tuntas')}</span>
@@ -1213,7 +1224,7 @@ export default function LearningPlanPage() {
       </div>
 
       {/* Class reservation sheet */}
-      {showClassSheet && selectedDateStr && (
+      {showClassSheet && selectedDateStr && !isSubscriptionLocked && (
         <DateClassSheet
           dateStr={selectedDateStr}
           daySchedules={getDaySchedules(selectedDateStr)}

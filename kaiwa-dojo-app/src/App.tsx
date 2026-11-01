@@ -251,7 +251,7 @@ function SubscriptionBanner() {
     <div className="mx-3 sm:mx-6 mt-3 px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs sm:text-sm flex flex-wrap items-center justify-between gap-2">
       <span>
         {isExpired ? 'Masa langganan kamu sudah berakhir.' : 'Akun kamu belum berlangganan.'}{' '}
-        Video materi dan setoran kotoba terkunci sampai pembayaran dikonfirmasi.
+        Video materi, setoran kotoba, dan reservasi kelas terkunci sampai pembayaran dikonfirmasi.
       </span>
       <a
         href="https://bangunnegeri.inaconnext.it.com"
@@ -366,6 +366,15 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   return <>{children || <Outlet />}</>
 }
 
+/* ── Halaman khusus pelanggan: pelajar belum berlangganan diarahkan ke dashboard ── */
+function SubscribedOnly({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth()
+  if (getSubscriptionAccess(profile).isLocked) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <>{children}</>
+}
+
 /* ── Floating Widgets (hidden for Admin) ────────── */
 function FloatingWidgets() {
   const { profile } = useAuth()
@@ -407,7 +416,7 @@ export function AppRoutes() {
                     <Route path="/my-courses"      element={<MyCourses />} />
                     <Route path="/learning-plan"   element={<LearningPlanPage />} />
                     <Route path="/kotoba"          element={<SetoranKotobaPage />} />
-                    <Route path="/reservasi-kelas" element={<ClassReservationPage />} />
+                    <Route path="/reservasi-kelas" element={<SubscribedOnly><ClassReservationPage /></SubscribedOnly>} />
                     <Route path="/kelola-jadwal"   element={<InstructorScheduleManagerPage />} />
                     <Route path="/kelola-kursus"   element={<CourseEditorPage />} />
                     <Route path="/kelola-pemateri" element={<InstructorManagerPage />} />

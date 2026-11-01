@@ -38,6 +38,7 @@ import AnnouncementModal from '../components/AnnouncementModal'
 import DailyMissionBuilderModal from '../components/DailyMissionBuilderModal'
 import JapanFactCard from '../components/JapanFactCard'
 import ModalPortal from '../components/ModalPortal'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 
 function formatIndonesianFullDate(dateStr: string): string {
   if (!dateStr) return ''
@@ -1157,9 +1158,13 @@ function QuickActions({
   onOpenAnnouncements: () => void
 }) {
   const navigate = useNavigate()
+  const { profile } = useAuth()
+  // Pelajar belum berlangganan: pintasan Reservasi Kelas disembunyikan
+  const classesLocked = getSubscriptionAccess(profile).isLocked
+  const actions = classesLocked ? QUICK_ACTIONS.filter(a => a.to !== '/reservasi-kelas') : QUICK_ACTIONS
   return (
-    <nav aria-label="Akses cepat" className="grid grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3">
-      {QUICK_ACTIONS.map(a => (
+    <nav aria-label="Akses cepat" className={`grid ${classesLocked ? 'grid-cols-3' : 'grid-cols-4'} lg:grid-cols-2 gap-2 sm:gap-3`}>
+      {actions.map(a => (
         <button
           key={a.to}
           type="button"
@@ -1229,6 +1234,9 @@ const AGENDA_LIMIT = 4
 
 function AgendaCard({ userId }: { userId: string }) {
   const navigate = useNavigate()
+  const { profile } = useAuth()
+  // Pelajar belum berlangganan: kelas/reservasi tidak ditampilkan di agenda
+  const classesLocked = getSubscriptionAccess(profile).isLocked
   const [userReservations, setUserReservations] = useState<any[]>([])
   const [userMissions, setUserMissions]         = useState<{ date: string; mission: DailyMissionData }[]>([])
   const [loading, setLoading]                   = useState(true)
@@ -1302,7 +1310,7 @@ function AgendaCard({ userId }: { userId: string }) {
 
   const timeline = [
     ...userMissions.map(m => ({ id: `mission-${m.date}`, type: 'mission' as const, date: m.date, mission: m.mission })),
-    ...userReservations.map(r => ({ id: `class-${r.id}`, type: 'class' as const, date: r.date || r.start_date || '', schedule: r })),
+    ...(classesLocked ? [] : userReservations).map(r => ({ id: `class-${r.id}`, type: 'class' as const, date: r.date || r.start_date || '', schedule: r })),
   ]
     .filter(item => item.date >= todayStr)
     .sort((a, b) => {
@@ -1341,15 +1349,19 @@ function AgendaCard({ userId }: { userId: string }) {
       ) : visible.length === 0 ? (
         <div className="mt-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 text-center">
           <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Belum ada agenda mendatang</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Ikut kelas live atau rencanakan misi untuk hari-hari berikutnya.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            {classesLocked ? 'Rencanakan misi untuk hari-hari berikutnya.' : 'Ikut kelas live atau rencanakan misi untuk hari-hari berikutnya.'}
+          </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/reservasi-kelas')}
-              className="h-10 px-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold border-none cursor-pointer transition-colors"
-            >
-              Pesan kelas
-            </button>
+            {!classesLocked && (
+              <button
+                type="button"
+                onClick={() => navigate('/reservasi-kelas')}
+                className="h-10 px-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold border-none cursor-pointer transition-colors"
+              >
+                Pesan kelas
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/learning-plan')}

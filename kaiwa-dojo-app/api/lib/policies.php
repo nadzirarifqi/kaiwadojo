@@ -174,6 +174,9 @@ class Policies {
                 if ($role !== 'admin' && ($row['user_id'] ?? '') !== $userId) {
                     throw new Exception("Forbidden: Tidak dapat membuat reservasi untuk akun lain");
                 }
+                if ($role === 'pelajar' && !self::hasActiveSubscription($userId)) {
+                    throw new Exception("Forbidden: Reservasi kelas memerlukan langganan aktif. Silakan lakukan pembayaran terlebih dahulu.");
+                }
                 break;
 
             case 'feedback_suggestions':
