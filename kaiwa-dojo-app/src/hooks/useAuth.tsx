@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { Session, User } from '../lib/supabaseClient'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, invalidateTableCache } from '../lib/supabaseClient'
+import { getSubscriptionAccess } from '../lib/subscriptionAccess'
 
 export type UserRole = 'pelajar' | 'pemateri' | 'admin'
 
@@ -109,6 +110,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null
   })
   const [loading, setLoading] = useState(true)
+
+  // Interval/listener di useEffect([]) dibuat sekali saat mount — kalau membaca state `session`/`profile`
+  // langsung, nilainya selalu null (stale closure) sehingga sinkronisasi berkala tidak pernah jalan.
+  // Simpan id user aktif & profil terakhir di ref agar selalu terbaru.
+  const activeUserIdRef = useRef<string | null>(null)
+  const lastProfileRef = useRef<Profile | null>(null)
+  useEffect(() => {
+    activeUserIdRef.current = session?.user?.id || profile?.id || null
+    lastProfileRef.current = profile
+  }, [session, profile])
+
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(() => {
     return localStorage.getItem('kaiwa_session_expired_reason')
   })
@@ -159,8 +171,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(userId: string, fresh = false) {
     if (!userId) return
+    // Lewati cache SELECT 15 detik agar perubahan dari admin (mis. pembayaran dikonfirmasi) langsung terbaca
+    if (fresh) invalidateTableCache('profiles')
     const { data, error } = await supabase
       .from('profiles')
       .select(PROFILE_SELECT_FIELDS)
@@ -172,6 +186,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut(prof.status === 'rejected' ? 'Akun Anda telah dinonaktifkan / ditolak oleh Admin.' : 'Akun Anda masih dalam proses verifikasi Admin.')
         return
       }
+
+      // Beri tahu pelajar saat akses terbuka tanpa perlu refresh (admin baru mengonfirmasi pembayaran)
+      const prev = lastProfileRef.current
+      if (
+        prof.role === 'pelajar' &&
+        prev?.id === prof.id &&
+        getSubscriptionAccess(prev).isLocked &&
+        !getSubscriptionAccess(prof).isLocked
+      ) {
+        window.dispatchEvent(
+          new CustomEvent('kaiwa-toast', {
+            detail: {
+              type: 'success',
+              title: 'Langganan aktif',
+              message: 'Pembayaran Anda sudah dikonfirmasi admin. Semua fitur kini terbuka.',
+            },
+          })
+        )
+      }
+      lastProfileRef.current = prof
 
       setProfile(prof)
       sessionStorage.setItem('kaiwa_session_active', 'true')
@@ -286,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
           () => {
-            fetchProfile(userId)
+            fetchProfile(userId, true)
           }
         )
         .subscribe()
@@ -389,9 +423,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const handleFocusSync = () => {
-      const activeUser = session?.user?.id || profile?.id
+      const activeUser = activeUserIdRef.current
       if (activeUser) {
-        fetchProfile(activeUser)
+        fetchProfile(activeUser, true)
       }
     }
     window.addEventListener('focus', handleFocusSync)
@@ -418,9 +452,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Fallback profile sync every 15 seconds to ensure role/group changes propagate
     const profileSyncInterval = setInterval(() => {
-      const activeUser = session?.user?.id || profile?.id
+      if (document.hidden) return
+      const activeUser = activeUserIdRef.current
       if (activeUser) {
-        fetchProfile(activeUser)
+        fetchProfile(activeUser, true)
       }
     }, 15000)
 
