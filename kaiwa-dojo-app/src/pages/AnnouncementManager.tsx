@@ -207,6 +207,8 @@ export default function AnnouncementManager() {
     if (res.success) {
       showToast(newStatus ? 'Pengumuman diaktifkan' : 'Pengumuman dinonaktifkan')
       await loadData()
+    } else {
+      showToast(`Gagal mengubah status: ${res.error}`)
     }
   }
 
@@ -217,6 +219,8 @@ export default function AnnouncementManager() {
     if (res.success) {
       showToast(newPin ? 'Pengumuman di-pin ke paling atas' : 'Pin dilepas')
       await loadData()
+    } else {
+      showToast(`Gagal mengubah pin: ${res.error}`)
     }
   }
 

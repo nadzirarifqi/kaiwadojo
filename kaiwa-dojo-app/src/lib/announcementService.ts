@@ -137,7 +137,7 @@ function getLocalAnnouncements(): Announcement[] {
     const raw = localStorage.getItem(LOCAL_ANNOUNCEMENTS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed)) return parsed
     }
   } catch {}
   return DEFAULT_SEED_ANNOUNCEMENTS
@@ -199,14 +199,11 @@ export async function fetchAnnouncements(options?: {
       return list
     }
 
-    if (data && data.length > 0) {
-      saveLocalAnnouncements(data)
-      return data as Announcement[]
-    }
-
-    // If DB returned 0 rows, check local cache or fallback
-    const local = getLocalAnnouncements()
-    return local
+    // Database bisa diakses → database adalah sumber kebenaran. Jangan campur dengan cache lokal /
+    // contoh bawaan: item yang tidak ada di database tidak bisa diedit admin & tidak terlihat user lain.
+    const list = (data || []) as Announcement[]
+    saveLocalAnnouncements(list)
+    return list
   } catch (err) {
     console.warn('fetchAnnouncements fallback exception:', err)
     return getLocalAnnouncements()
@@ -346,6 +343,35 @@ export async function markAllAnnouncementsAsRead(
 }
 
 /* ── Admin: Create Announcement ─────────────────────── */
+function errorMessage(error: any, fallback: string): string {
+  const msg = typeof error === 'string' ? error : error?.message
+  return msg ? `${fallback} (${msg})` : fallback
+}
+
+/** Insert ke database. Jika author_id tidak ada di tabel profiles (FK gagal), simpan tanpa author_id. */
+async function insertAnnouncementRow(
+  record: Partial<Announcement>
+): Promise<{ success: boolean; data?: Announcement; error?: string }> {
+  let { data, error } = await supabase.from('announcements').insert(record).select('*').single()
+
+  if (error && record.author_id && /foreign key|announcements_fk1/i.test(error.message || '')) {
+    ;({ data, error } = await supabase
+      .from('announcements')
+      .insert({ ...record, author_id: null })
+      .select('*')
+      .single())
+  }
+
+  if (error || !data) {
+    console.warn('createAnnouncement error:', error?.message)
+    return { success: false, error: errorMessage(error, 'Gagal menyimpan pengumuman ke server.') }
+  }
+
+  saveLocalAnnouncements([data as Announcement, ...getLocalAnnouncements().filter(a => a.id !== (data as Announcement).id)])
+  notifyUpdate()
+  return { success: true, data: data as Announcement }
+}
+
 export async function createAnnouncement(
   payload: CreateAnnouncementPayload
 ): Promise<{ success: boolean; data?: Announcement; error?: string }> {
@@ -373,38 +399,10 @@ export async function createAnnouncement(
   }
 
   try {
-    const { data, error } = await supabase
-      .from('announcements')
-      .insert(newRecord)
-      .select('*')
-      .single()
-
-    if (error) {
-      console.warn('Supabase createAnnouncement insert error, using local:', error.message)
-      const fallbackItem: Announcement = {
-        id: `ann-${Date.now()}`,
-        ...(newRecord as any),
-      }
-      const existing = getLocalAnnouncements()
-      saveLocalAnnouncements([fallbackItem, ...existing])
-      notifyUpdate()
-      return { success: true, data: fallbackItem }
-    }
-
-    const existing = getLocalAnnouncements()
-    saveLocalAnnouncements([data as Announcement, ...existing])
-    notifyUpdate()
-    return { success: true, data: data as Announcement }
+    return await insertAnnouncementRow(newRecord)
   } catch (err: any) {
     console.warn('createAnnouncement exception:', err)
-    const fallbackItem: Announcement = {
-      id: `ann-${Date.now()}`,
-      ...(newRecord as any),
-    }
-    const existing = getLocalAnnouncements()
-    saveLocalAnnouncements([fallbackItem, ...existing])
-    notifyUpdate()
-    return { success: true, data: fallbackItem }
+    return { success: false, error: errorMessage(err, 'Gagal menyimpan pengumuman ke server.') }
   }
 }
 
@@ -427,11 +425,16 @@ export async function updateAnnouncement(
     updates.target_group = payload.target_group ? sanitizeInput(payload.target_group).trim() : null
   if (payload.is_active !== undefined) updates.is_active = payload.is_active
   if (payload.is_pinned !== undefined) updates.is_pinned = payload.is_pinned
+  if (payload.author_name !== undefined && payload.author_name.trim())
+    updates.author_name = sanitizeInput(payload.author_name).trim()
   if (payload.action_url !== undefined)
     updates.action_url = payload.action_url ? sanitizeInput(payload.action_url).trim() : null
   if (payload.action_text !== undefined)
     updates.action_text = payload.action_text ? sanitizeInput(payload.action_text).trim() : null
   if (payload.expires_at !== undefined) updates.expires_at = payload.expires_at
+
+  if (updates.title === '') return { success: false, error: 'Judul pengumuman wajib diisi.' }
+  if (updates.content === '') return { success: false, error: 'Isi pengumuman wajib diisi.' }
 
   try {
     const { data, error } = await supabase
@@ -442,22 +445,34 @@ export async function updateAnnouncement(
       .single()
 
     if (error) {
-      console.warn('Supabase updateAnnouncement error:', error.message)
+      console.warn('updateAnnouncement error:', error.message)
+      return { success: false, error: errorMessage(error, 'Gagal memperbarui pengumuman di server.') }
     }
 
-    // Update local cache
-    const existing = getLocalAnnouncements()
-    const updatedList = existing.map(item => (item.id === id ? { ...item, ...updates } : item))
-    saveLocalAnnouncements(updatedList)
-    notifyUpdate()
+    if (!data) {
+      // Baris tidak ada di database (contoh bawaan / item yang dulu hanya tersimpan di browser).
+      // Simpan sebagai pengumuman baru agar benar-benar tersimpan & terlihat oleh user lain.
+      const local = getLocalAnnouncements().find(item => item.id === id)
+      if (!local) {
+        return { success: false, error: 'Pengumuman tidak ditemukan di database. Muat ulang halaman lalu coba lagi.' }
+      }
+      const { id: _oldId, is_read: _r, read_count: _c, ...rest } = { ...local, ...updates }
+      const created = await insertAnnouncementRow({ ...rest, created_at: new Date().toISOString() })
+      if (created.success) {
+        saveLocalAnnouncements(getLocalAnnouncements().filter(item => item.id !== id))
+        notifyUpdate()
+      }
+      return created
+    }
 
+    saveLocalAnnouncements(
+      getLocalAnnouncements().map(item => (item.id === id ? (data as Announcement) : item))
+    )
+    notifyUpdate()
     return { success: true, data: data as Announcement }
   } catch (err: any) {
-    const existing = getLocalAnnouncements()
-    const updatedList = existing.map(item => (item.id === id ? { ...item, ...updates } : item))
-    saveLocalAnnouncements(updatedList)
-    notifyUpdate()
-    return { success: true }
+    console.warn('updateAnnouncement exception:', err)
+    return { success: false, error: errorMessage(err, 'Gagal memperbarui pengumuman di server.') }
   }
 }
 
@@ -467,17 +482,17 @@ export async function deleteAnnouncement(id: string): Promise<{ success: boolean
 
   try {
     const { error } = await supabase.from('announcements').delete().eq('id', id)
-    if (error) console.warn('Supabase delete error:', error.message)
+    if (error) {
+      console.warn('deleteAnnouncement error:', error.message)
+      return { success: false, error: errorMessage(error, 'Gagal menghapus pengumuman di server.') }
+    }
 
-    const existing = getLocalAnnouncements()
-    saveLocalAnnouncements(existing.filter(item => item.id !== id))
+    saveLocalAnnouncements(getLocalAnnouncements().filter(item => item.id !== id))
     notifyUpdate()
     return { success: true }
   } catch (err: any) {
-    const existing = getLocalAnnouncements()
-    saveLocalAnnouncements(existing.filter(item => item.id !== id))
-    notifyUpdate()
-    return { success: true }
+    console.warn('deleteAnnouncement exception:', err)
+    return { success: false, error: errorMessage(err, 'Gagal menghapus pengumuman di server.') }
   }
 }
 
