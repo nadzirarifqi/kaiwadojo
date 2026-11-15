@@ -1,43 +1,75 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import {
   type InstructorAccount,
   fetchInstructors,
   createInstructorAccount,
   updateInstructorAccount,
-  deleteInstructorAccount
+  deleteInstructorAccount,
+  generateInstructorPassword,
 } from '../lib/instructorService'
 import { calculateUserPresence } from '../lib/presenceUtils'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useToast } from '../contexts/ToastContext'
+import ModalPortal from '../components/ModalPortal'
+import { AdminPage, PageHeader, StatGrid, Panel, EmptyState, AccessDenied, BTN_PRIMARY } from '../components/admin/AdminUI'
+
+type FormMode = { kind: 'create' } | { kind: 'edit'; inst: InstructorAccount }
+
+interface CreatedCredentials {
+  full_name: string
+  username: string
+  email: string
+  phone_number?: string
+  password: string
+  isReset: boolean
+}
+
+const EMPTY_FORM = {
+  fullName: '',
+  username: '',
+  email: '',
+  phone: '',
+  password: '',
+  bio: '',
+  expertise: 'Kaiwa, Bunpou',
+}
+
+const inputCls =
+  'w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition'
+const labelCls = 'text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1'
+
+function suggestUsername(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '')
+    .slice(0, 24)
+}
 
 export default function InstructorManager() {
   const confirm = useConfirm()
-  const navigate = useNavigate()
   const { profile } = useAuth()
+  const { toast } = useToast()
 
   const [instructors, setInstructors] = useState<InstructorAccount[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
-  // Add Modal State
-  const [showAddModal, setShowAddModal] = useState(false)
-
-  // Edit Modal State
-  const [editingInst, setEditingInst] = useState<InstructorAccount | null>(null)
-
-  // Form Fields State
-  const [fullName, setFullName] = useState('')
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [bio, setBio] = useState('')
-  const [expertise, setExpertise] = useState('Bunpou, Kaiwa')
-
+  const [formMode, setFormMode] = useState<FormMode | null>(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [usernameTouched, setUsernameTouched] = useState(false)
+  const [resetPassword, setResetPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
 
-  async function loadData() {
-    setLoading(true)
+  const [credentials, setCredentials] = useState<CreatedCredentials | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function loadData(showSpinner = true) {
+    if (showSpinner) setLoading(true)
     const data = await fetchInstructors()
     setInstructors(data)
     setLoading(false)
@@ -45,203 +77,231 @@ export default function InstructorManager() {
 
   useEffect(() => {
     loadData()
-
-    // Auto-refresh presence every 30 seconds
-    const refreshInterval = setInterval(() => {
-      fetchInstructors().then(data => setInstructors(data))
-    }, 30000)
-
+    // Perbarui status online setiap 30 detik
+    const refreshInterval = setInterval(() => loadData(false), 30000)
     return () => clearInterval(refreshInterval)
   }, [])
 
-  function showToastMsg(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  function openAddModal() {
-    setFullName('')
-    setUsername('')
-    setEmail('')
-    setPassword('')
-    setBio('')
-    setExpertise('Bunpou, Kaiwa')
-    setShowAddModal(true)
-  }
-
-  function openEditModal(inst: InstructorAccount) {
-    setEditingInst(inst)
-    setFullName(inst.full_name)
-    setUsername(inst.username)
-    setEmail(inst.email)
-    setBio(inst.bio || '')
-    setExpertise(inst.expertise.join(', '))
-  }
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!fullName.trim() || !username.trim() || !email.trim() || !password.trim()) {
-      alert('Mohon isi nama lengkap, username, email, dan password pengajar!')
-      return
-    }
-
-    if (password.length < 6) {
-      alert('Kata sandi / password pengajar minimal harus 6 karakter!')
-      return
-    }
-
-    setSaving(true)
-    const expArr = expertise.split(',').map(s => s.trim()).filter(Boolean)
-    const created = await createInstructorAccount({
-      full_name: fullName,
-      username,
-      email,
-      password,
-      bio,
-      expertise: expArr.length > 0 ? expArr : ['Kaiwa', 'Japanese'],
-    })
-
-    setSaving(false)
-    setShowAddModal(false)
-    showToastMsg(`Berhasil membuat akun Pemateri baru: ${created.full_name}! Password telah dikonfigurasi.`)
-    await loadData()
-  }
-
-  async function handleUpdate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editingInst) return
-    if (!fullName.trim() || !username.trim() || !email.trim()) {
-      alert('Mohon isi nama lengkap, username, dan email pengajar!')
-      return
-    }
-
-    setSaving(true)
-    const expArr = expertise.split(',').map(s => s.trim()).filter(Boolean)
-    await updateInstructorAccount(editingInst.id, {
-      full_name: fullName,
-      username,
-      email,
-      bio,
-      expertise: expArr.length > 0 ? expArr : ['Kaiwa', 'Japanese'],
-    })
-
-    setSaving(false)
-    setEditingInst(null)
-    showToastMsg(`Berhasil memperbarui data Pemateri: ${fullName}!`)
-    await loadData()
-  }
-
-  async function handleDelete(inst: InstructorAccount) {
-    if (!(await confirm({ title: 'Hapus akun pemateri?', message: `Akun "${inst.full_name}" (@${inst.username}) akan dihapus permanen dan tidak bisa dikembalikan.`, confirmLabel: 'Ya, hapus akun', icon: 'trash' }))) return
-
-    setSaving(true)
-    await deleteInstructorAccount(inst.id)
-    setSaving(false)
-    showToastMsg(`Berhasil menghapus akun pemateri "${inst.full_name}".`)
-    await loadData()
-  }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return instructors
+    return instructors.filter(i =>
+      [i.full_name, i.username, i.email, i.phone_number || '', ...i.expertise]
+        .some(v => v.toLowerCase().includes(q))
+    )
+  }, [instructors, search])
 
   const onlineCount = instructors.filter(i => calculateUserPresence(i.last_active_at).isOnline).length
 
-  // Security check: Only admin can access
-  if (profile?.role !== 'admin') {
-    return (
-      <main className="flex-1 p-6 flex flex-col items-center justify-center min-h-[70vh] text-center">
-        <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
-          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
-        <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
-          Halaman ini khusus diperuntukkan untuk Admin untuk mengelola akun Pemateri/Pengajar.
-        </p>
-        <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl border-none cursor-pointer">
-          Kembali ke Dashboard
-        </button>
-      </main>
-    )
+  function setField<K extends keyof typeof EMPTY_FORM>(key: K, value: string) {
+    setForm(f => ({ ...f, [key]: value }))
   }
 
+  function openCreate() {
+    setForm({ ...EMPTY_FORM, password: generateInstructorPassword() })
+    setUsernameTouched(false)
+    setResetPassword(true)
+    setShowPassword(true)
+    setFormError(null)
+    setFormMode({ kind: 'create' })
+  }
+
+  function openEdit(inst: InstructorAccount) {
+    setForm({
+      fullName: inst.full_name,
+      username: inst.username,
+      email: inst.email,
+      phone: inst.phone_number || '',
+      password: '',
+      bio: inst.bio || '',
+      expertise: inst.expertise.join(', '),
+    })
+    setUsernameTouched(true)
+    setResetPassword(false)
+    setShowPassword(false)
+    setFormError(null)
+    setFormMode({ kind: 'edit', inst })
+  }
+
+  function closeForm() {
+    if (saving) return
+    setFormMode(null)
+  }
+
+  function validate(): string | null {
+    if (!form.fullName.trim()) return 'Nama lengkap wajib diisi.'
+    if (!/^[a-z0-9._]{3,30}$/.test(form.username.trim().toLowerCase()))
+      return 'Username 3–30 karakter: huruf kecil, angka, titik, atau garis bawah.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'Format email tidak valid.'
+    if (resetPassword && form.password.length < 8) return 'Password minimal 8 karakter.'
+    return null
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!formMode) return
+    const err = validate()
+    if (err) {
+      setFormError(err)
+      return
+    }
+
+    setSaving(true)
+    setFormError(null)
+    const expArr = form.expertise.split(',').map(s => s.trim()).filter(Boolean)
+    const payload = {
+      full_name: form.fullName.trim(),
+      username: form.username.trim().toLowerCase(),
+      email: form.email.trim().toLowerCase(),
+      phone_number: form.phone.trim(),
+      bio: form.bio.trim(),
+      expertise: expArr,
+      password: resetPassword ? form.password : '',
+    }
+
+    try {
+      if (formMode.kind === 'create') {
+        const created = await createInstructorAccount(payload)
+        toast.success(`Akun pengajar ${created.full_name} berhasil dibuat.`)
+        setCredentials({ ...payload, password: form.password, isReset: false })
+      } else {
+        await updateInstructorAccount(formMode.inst.id, payload)
+        toast.success(`Data pengajar ${payload.full_name} diperbarui.`)
+        if (resetPassword) {
+          setCredentials({ ...payload, password: form.password, isReset: true })
+        }
+      }
+      setFormMode(null)
+      setCopied(false)
+      await loadData(false)
+    } catch (e: any) {
+      setFormError(e?.message || 'Terjadi kesalahan. Coba lagi.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(inst: InstructorAccount) {
+    const ok = await confirm({
+      title: 'Hapus akun pengajar?',
+      message: `Akun "${inst.full_name}" (@${inst.username}) beserta data login-nya akan dihapus permanen.`,
+      confirmLabel: 'Ya, hapus akun',
+      icon: 'trash',
+    })
+    if (!ok) return
+    try {
+      await deleteInstructorAccount(inst.id)
+      toast.success(`Akun pengajar "${inst.full_name}" dihapus.`)
+      await loadData(false)
+    } catch (e: any) {
+      toast.error(e?.message || 'Gagal menghapus akun.')
+    }
+  }
+
+  function credentialText(c: CreatedCredentials) {
+    const loginUrl = `${window.location.origin}/login`
+    return [
+      `Halo ${c.full_name}, berikut akun pengajar Kaiwa Dojo Anda:`,
+      ``,
+      `Login: ${loginUrl}`,
+      `Username: ${c.username}`,
+      `Email: ${c.email}`,
+      `Password: ${c.password}`,
+      ``,
+      `Silakan ganti password setelah login pertama melalui menu Pengaturan.`,
+    ].join('\n')
+  }
+
+  async function copyCredentials() {
+    if (!credentials) return
+    try {
+      await navigator.clipboard.writeText(credentialText(credentials))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Gagal menyalin. Salin manual dari kotak di atas.')
+    }
+  }
+
+  if (profile?.role !== 'admin') {
+    return <AccessDenied message="Halaman ini khusus Admin untuk mengelola akun pengajar." />
+  }
+
+  const isEdit = formMode?.kind === 'edit'
+
   return (
-    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-20 right-6 z-[600] bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-extrabold animate-bounce flex items-center gap-2">
-          <svg className="size-4 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
-          <span>{toast}</span>
-        </div>
-      )}
+    <AdminPage>
+      <PageHeader
+        eyebrow="Admin · Pengguna"
+        title="Akun Pengajar"
+        description="Buat, ubah, reset password, dan hapus akun pengajar. Pengajar tidak bisa mendaftar sendiri — akun hanya dibuat oleh admin."
+        actions={
+          <button type="button" onClick={openCreate} className={BTN_PRIMARY}>
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            Buat akun pengajar
+          </button>
+        }
+      />
 
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Menu Admin</span>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{onlineCount} Sensei Online</span>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black">
-              {instructors.length} Pemateri Terdaftar
-            </span>
+      <StatGrid
+        label="Ringkasan pengajar"
+        columns={3}
+        items={[
+          { label: 'Total pengajar', value: instructors.length },
+          { label: 'Sedang online', value: onlineCount, tone: 'success' },
+          { label: 'Belum ada no. WA', value: instructors.filter(i => !i.phone_number).length, tone: 'warning', hint: 'Lengkapi lewat Edit' },
+        ]}
+      />
+
+      <Panel
+        title="Daftar pengajar"
+        description={search ? `${filtered.length} dari ${instructors.length} pengajar` : undefined}
+        actions={
+          <div className="relative w-full sm:w-72">
+            <svg className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
+            </svg>
+            <input
+              type="search"
+              aria-label="Cari pengajar"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cari nama, username, email…"
+              className={`${inputCls} pl-9`}
+            />
           </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Manajemen Full Kontrol Akun Pemateri</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk melihat status aktivitas (online/offline), **menambah, mengedit, dan menghapus** akun Pemateri/Pengajar.
-          </p>
-        </div>
-
-        <button
-          onClick={openAddModal}
-          className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
-        >
-          <span>+ Tambah Akun Pemateri Baru</span>
-        </button>
-      </div>
-
-      {/* Instructors List Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-            <span>Daftar Pemateri / Pengajar Aktif</span>
-          </h3>
-          <span className="text-xs text-slate-400 font-bold">Total: {instructors.length} Sensei</span>
-        </div>
-
+        }
+      >
         {loading ? (
           <div className="py-12 flex justify-center items-center">
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : instructors.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm italic">
-            Belum ada akun pemateri yang terdaftar. Klik "+ Tambah Akun Pemateri Baru" di atas.
-          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title={instructors.length === 0 ? 'Belum ada akun pengajar' : 'Tidak ada pengajar yang cocok'}
+            description={instructors.length === 0 ? 'Buat akun pertama, lalu kirim kredensialnya ke pengajar.' : `Tidak ada hasil untuk "${search}".`}
+            action={instructors.length === 0 && (
+              <button type="button" onClick={openCreate} className={BTN_PRIMARY}>Buat akun pengajar</button>
+            )}
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-left border-collapse min-w-[760px]">
+              <caption className="sr-only">Daftar akun pengajar</caption>
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
-                  <th className="pb-3 px-2">Sensei / Pengajar</th>
-                  <th className="pb-3 px-2">Status Online</th>
-                  <th className="pb-3 px-2">Username & Email</th>
-                  <th className="pb-3 px-2">No. WhatsApp</th>
-                  <th className="pb-3 px-2">Bidang Keahlian</th>
-                  <th className="pb-3 px-2">Role Status</th>
-                  <th className="pb-3 px-2 text-right">Aksi Admin</th>
+                  <th scope="col" className="pb-3 px-2">Pengajar</th>
+                  <th scope="col" className="pb-3 px-2">Status</th>
+                  <th scope="col" className="pb-3 px-2">Login</th>
+                  <th scope="col" className="pb-3 px-2">WhatsApp</th>
+                  <th scope="col" className="pb-3 px-2">Keahlian</th>
+                  <th scope="col" className="pb-3 px-2 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
-                {instructors.map(inst => {
+                {filtered.map(inst => {
                   const presence = calculateUserPresence(inst.last_active_at)
                   return (
                     <tr key={inst.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
@@ -250,46 +310,39 @@ export default function InstructorManager() {
                           <div className="relative shrink-0">
                             <img
                               src={inst.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.username}`}
-                              alt={inst.full_name}
+                              alt=""
                               className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 object-cover"
                             />
                             <span
-                              title={presence.isOnline ? 'Online (Sedang Aktif)' : presence.relativeTime}
                               className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white dark:border-slate-900 ${
-                                presence.isOnline ? 'bg-emerald-500 shadow-sm animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
+                                presence.isOnline ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
                               }`}
                             />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="font-extrabold text-slate-800 dark:text-white">{inst.full_name}</div>
-                            <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1">{inst.bio || 'Pengajar kaiwadojo'}</div>
+                            <div className="text-[0.68rem] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[220px]">
+                              {inst.bio || '—'}
+                            </div>
                           </div>
                         </div>
                       </td>
-
-                      {/* Status Online Column */}
                       <td className="py-3 px-2">
                         {presence.isOnline ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black border border-emerald-300 dark:border-emerald-800 w-fit shadow-2xs">
-                              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>Online</span>
-                            </span>
-                            <span className="text-[0.62rem] text-emerald-600 dark:text-emerald-400 font-bold">Sedang aktif</span>
-                          </div>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-black">
+                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Online
+                          </span>
                         ) : (
                           <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-bold border border-slate-200 dark:border-slate-700 w-fit">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[0.65rem] font-bold w-fit">
                               <span className="size-1.5 rounded-full bg-slate-400" />
-                              <span>Offline</span>
+                              Offline
                             </span>
-                            <span className="text-[0.62rem] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
-                              {presence.relativeTime}
-                            </span>
+                            <span className="text-[0.62rem] text-slate-400 whitespace-nowrap">{presence.relativeTime}</span>
                           </div>
                         )}
                       </td>
-
                       <td className="py-3 px-2">
                         <div className="font-bold text-slate-700 dark:text-slate-200">@{inst.username}</div>
                         <div className="text-[0.68rem] text-slate-400">{inst.email}</div>
@@ -297,22 +350,20 @@ export default function InstructorManager() {
                       <td className="py-3 px-2">
                         {inst.phone_number ? (
                           <a
-                            href={`https://wa.me/${inst.phone_number.replace(/\D/g, '')}`}
+                            href={`https://wa.me/${inst.phone_number.replace(/\D/g, '').replace(/^0/, '62')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[0.68rem] font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                            className="text-emerald-700 dark:text-emerald-300 font-bold hover:underline"
                           >
-                            <svg className="size-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            <span>{inst.phone_number}</span>
+                            {inst.phone_number}
                           </a>
                         ) : (
-                          <span className="text-[0.65rem] text-slate-400 italic">— Tidak ada</span>
+                          <span className="text-[0.65rem] text-slate-400">—</span>
                         )}
                       </td>
                       <td className="py-3 px-2">
                         <div className="flex flex-wrap gap-1">
+                          {inst.expertise.length === 0 && <span className="text-[0.65rem] text-slate-400">—</span>}
                           {inst.expertise.map((exp, i) => (
                             <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[0.65rem] font-bold">
                               {exp}
@@ -320,30 +371,19 @@ export default function InstructorManager() {
                           ))}
                         </div>
                       </td>
-                      <td className="py-3 px-2">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[0.65rem] font-black uppercase">
-                          Pemateri
-                        </span>
-                      </td>
                       <td className="py-3 px-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => openEditModal(inst)}
-                            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
+                            onClick={() => openEdit(inst)}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer transition-colors"
                           >
-                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            <span>Edit</span>
+                            Edit
                           </button>
                           <button
                             onClick={() => handleDelete(inst)}
-                            className="px-2.5 py-1 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-300 text-xs font-bold border-none cursor-pointer transition-colors"
                           >
-                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span>Hapus</span>
+                            Hapus
                           </button>
                         </div>
                       </td>
@@ -354,201 +394,244 @@ export default function InstructorManager() {
             </table>
           </div>
         )}
-      </div>
+      </Panel>
 
-      {/* Add Instructor Modal */}
-      {showAddModal && (
-        <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
-            <div className="px-6 py-4 bg-gradient-to-r from-primary to-primary-light text-white flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
-                <h3 className="text-lg font-extrabold">Tambah Akun Pemateri</h3>
-              </div>
-              <button onClick={() => setShowAddModal(false)} className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
-            </div>
-
-            <form onSubmit={handleCreate} className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Nama Lengkap Pengajar *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="contoh: Sato Sensei"
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+      {/* Create / Edit Modal */}
+      {formMode && (
+        <ModalPortal>
+          <div
+            className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in"
+            onMouseDown={e => { if (e.target === e.currentTarget) closeForm() }}
+          >
+            <div className="bg-white dark:bg-slate-900 w-full max-w-lg max-h-[92vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
+              <div className={`px-6 py-4 text-white flex items-center justify-between shrink-0 ${isEdit ? 'bg-gradient-to-r from-slate-900 to-slate-800' : 'bg-gradient-to-r from-primary to-primary-light'}`}>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Username Login *</label>
+                  <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin</span>
+                  <h3 className="text-lg font-extrabold">{isEdit ? 'Edit Akun Pengajar' : 'Buat Akun Pengajar'}</h3>
+                </div>
+                <button type="button" onClick={closeForm} aria-label="Tutup" className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 overflow-y-auto">
+                {formError && (
+                  <div className="px-3.5 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-bold">
+                    {formError}
+                  </div>
+                )}
+
+                <div>
+                  <label className={labelCls}>Nama Lengkap *</label>
                   <input
                     type="text"
-                    required
-                    placeholder="contoh: satosensei"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    autoFocus
+                    placeholder="contoh: Sato Hiroshi"
+                    value={form.fullName}
+                    onChange={e => {
+                      const v = e.target.value
+                      setForm(f => ({ ...f, fullName: v, username: usernameTouched ? f.username : suggestUsername(v) }))
+                    }}
+                    className={inputCls}
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Username Login *</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      placeholder="satosensei"
+                      value={form.username}
+                      onChange={e => { setUsernameTouched(true); setField('username', e.target.value.toLowerCase().replace(/\s/g, '')) }}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Email *</label>
+                    <input
+                      type="email"
+                      autoComplete="off"
+                      placeholder="sato@kaiwadojo.com"
+                      value={form.email}
+                      onChange={e => setField('email', e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Email Pengajar *</label>
+                  <label className={labelCls}>No. WhatsApp</label>
                   <input
-                    type="email"
-                    required
-                    placeholder="sato@kaiwadojo.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    type="tel"
+                    placeholder="08xxxxxxxxxx"
+                    value={form.phone}
+                    onChange={e => setField('phone', e.target.value)}
+                    className={inputCls}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Password Akun Pemateri (Min. 6 Karakter) *</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="Password123!"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
+                {/* Password */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5 flex flex-col gap-2">
+                  {isEdit ? (
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={resetPassword}
+                        onChange={e => {
+                          setResetPassword(e.target.checked)
+                          if (e.target.checked && !form.password) {
+                            setField('password', generateInstructorPassword())
+                            setShowPassword(true)
+                          }
+                        }}
+                        className="accent-primary"
+                      />
+                      Reset password pengajar
+                    </label>
+                  ) : (
+                    <span className={labelCls + ' mb-0'}>Password Awal * <span className="font-medium text-slate-400">(min. 8 karakter)</span></span>
+                  )}
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bio / Deskripsi Pengajar</label>
-                <input
-                  type="text"
-                  placeholder="Spesialis Bunpou & Percakapan Alami N3"
-                  value={bio}
-                  onChange={e => setBio(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
+                  {resetPassword && (
+                    <>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={form.password}
+                            onChange={e => setField('password', e.target.value)}
+                            className={`${inputCls} font-mono pr-16`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(s => !s)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-[0.65rem] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent border-none cursor-pointer"
+                          >
+                            {showPassword ? 'Sembunyi' : 'Lihat'}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setField('password', generateInstructorPassword()); setShowPassword(true) }}
+                          className="px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border-none cursor-pointer whitespace-nowrap"
+                        >
+                          Buat acak
+                        </button>
+                      </div>
+                      <p className="text-[0.68rem] text-slate-500 dark:text-slate-400">
+                        {isEdit
+                          ? 'Pengajar akan otomatis keluar dari semua perangkat dan harus login dengan password baru.'
+                          : 'Kredensial akan ditampilkan setelah akun dibuat agar bisa dikirim ke pengajar.'}
+                      </p>
+                    </>
+                  )}
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bidang Keahlian (Pisahkan dengan koma)</label>
-                <input
-                  type="text"
-                  placeholder="Bunpou, Kaiwa, JLPT N3"
-                  value={expertise}
-                  onChange={e => setExpertise(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md"
-                >
-                  {saving ? 'Menyimpan...' : 'Simpan Pemateri'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Instructor Modal */}
-      {editingInst && (
-        <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-white/80">Admin Panel</span>
-                <h3 className="text-lg font-extrabold">Edit Akun Pemateri</h3>
-              </div>
-              <button onClick={() => setEditingInst(null)} className="size-8 rounded-full bg-white/20 text-white hover:bg-white/30 border-none cursor-pointer text-lg flex items-center justify-center">×</button>
-            </div>
-
-            <form onSubmit={handleUpdate} className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Nama Lengkap Pengajar *</label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Username *</label>
+                  <label className={labelCls}>Bio Singkat</label>
                   <input
                     type="text"
-                    required
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    placeholder="Spesialis Bunpou & Percakapan N3"
+                    value={form.bio}
+                    onChange={e => setField('bio', e.target.value)}
+                    className={inputCls}
                   />
                 </div>
+
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Email *</label>
+                  <label className={labelCls}>Bidang Keahlian <span className="font-medium text-slate-400">(pisahkan dengan koma)</span></label>
                   <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
+                    type="text"
+                    placeholder="Bunpou, Kaiwa, JLPT N3"
+                    value={form.expertise}
+                    onChange={e => setField('expertise', e.target.value)}
+                    className={inputCls}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bio / Deskripsi</label>
-                <input
-                  type="text"
-                  value={bio}
-                  onChange={e => setBio(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Bidang Keahlian (Pisahkan dengan koma)</label>
-                <input
-                  type="text"
-                  value={expertise}
-                  onChange={e => setExpertise(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingInst(null)}
-                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md"
-                >
-                  {saving ? 'Memperbarui...' : 'Simpan Perubahan'}
-                </button>
-              </div>
-            </form>
+                <div className="pt-1 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={closeForm}
+                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl border-none cursor-pointer text-xs"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-60 text-white font-extrabold rounded-xl border-none cursor-pointer text-xs shadow-md"
+                  >
+                    {saving ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Buat Akun'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
-    </main>
+
+      {/* Credentials Modal */}
+      {credentials && (
+        <ModalPortal>
+          <div className="modal-overlay fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-up border border-slate-200 dark:border-slate-800">
+              <div className="p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
+                      {credentials.isReset ? 'Password berhasil direset' : 'Akun pengajar dibuat'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Kirim kredensial ini ke {credentials.full_name}. Password tidak akan ditampilkan lagi.
+                    </p>
+                  </div>
+                </div>
+
+                <dl className="rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
+                  <dt className="text-slate-500 font-bold">Username</dt>
+                  <dd className="font-mono font-bold text-slate-800 dark:text-white break-all">{credentials.username}</dd>
+                  <dt className="text-slate-500 font-bold">Email</dt>
+                  <dd className="font-mono font-bold text-slate-800 dark:text-white break-all">{credentials.email}</dd>
+                  <dt className="text-slate-500 font-bold">Password</dt>
+                  <dd className="font-mono font-bold text-slate-800 dark:text-white break-all">{credentials.password}</dd>
+                </dl>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={copyCredentials}
+                    className="flex-1 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-extrabold rounded-xl border-none cursor-pointer text-xs"
+                  >
+                    {copied ? 'Tersalin ✓' : 'Salin pesan kredensial'}
+                  </button>
+                  {credentials.phone_number && (
+                    <a
+                      href={`https://wa.me/${credentials.phone_number.replace(/\D/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(credentialText(credentials))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs text-center no-underline"
+                    >
+                      Kirim via WhatsApp
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => setCredentials(null)}
+                  className="py-2 bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold border-none cursor-pointer text-xs"
+                >
+                  Selesai
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+    </AdminPage>
   )
 }

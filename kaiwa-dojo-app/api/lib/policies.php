@@ -137,8 +137,9 @@ class Policies {
         switch ($table) {
             case 'profiles':
                 if ($role === 'pemateri') {
-                    // Pemateri boleh membuat akun pelajar, tetapi tidak boleh membuat admin
-                    if (($row['role'] ?? 'pelajar') === 'admin') $row['role'] = 'pelajar';
+                    // Pemateri hanya boleh membuat akun pelajar. Akun pemateri/admin
+                    // hanya dibuat oleh admin (rpc admin_create_instructor) atau manual di DB.
+                    $row['role'] = 'pelajar';
                     break;
                 }
                 self::sanitizeStudentProfileWrite($row, $user, true);

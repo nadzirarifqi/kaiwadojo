@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   type Announcement,
@@ -18,10 +17,10 @@ import {
 } from '../lib/announcementService'
 import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup } from '../lib/groupService'
 import LoadingScreen from '../components/LoadingScreen'
+import { AdminPage, PageHeader, StatGrid, EmptyState, AccessDenied, CARD, BTN_PRIMARY } from '../components/admin/AdminUI'
 import AnnouncementModal from '../components/AnnouncementModal'
 
 export default function AnnouncementManager() {
-  const navigate = useNavigate()
   const { profile } = useAuth()
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
@@ -94,31 +93,8 @@ export default function AnnouncementManager() {
     }
   }, [])
 
-  // Security Check
   if (profile?.role !== 'admin') {
-    return (
-      <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center max-w-md p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl">
-          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
-            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">
-            Akses Khusus Administrator
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-            Halaman ini hanya dapat diakses oleh Admin kaiwadojo untuk mempublikasikan pengumuman resmi ke seluruh platform.
-          </p>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-bold border-none cursor-pointer hover:opacity-90 transition-all"
-          >
-            ← Kembali ke Beranda
-          </button>
-        </div>
-      </main>
-    )
+    return <AccessDenied message="Halaman ini khusus Admin untuk mempublikasikan pengumuman resmi." />
   }
 
   if (loading) {
@@ -273,7 +249,7 @@ export default function AnnouncementManager() {
   const totalReads = Object.values(readStats).reduce((acc, curr) => acc + curr, 0)
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <AdminPage>
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-2xl shadow-xl text-xs sm:text-sm font-bold flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-4">
@@ -284,189 +260,78 @@ export default function AnnouncementManager() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-4">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-red-500/15 via-primary/20 to-amber-500/20 text-primary dark:text-red-400 flex items-center justify-center shadow-xs border border-primary/20 shrink-0">
-            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+      <PageHeader
+        eyebrow="Admin · Konten"
+        title="Pengumuman"
+        description="Buat dan publikasikan pengumuman resmi yang muncul sebagai pop-up saat pengguna login."
+        actions={
+          <button type="button" onClick={handleOpenCreate} className={BTN_PRIMARY}>
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                Kelola Papan Pengumuman
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary dark:text-red-400 font-jp">
-                お知らせ管理
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Buat, edit, dan publikasikan pengumuman resmi yang langsung muncul di layar siswa saat pertama kali login.
-            </p>
-          </div>
-        </div>
+            Buat pengumuman
+          </button>
+        }
+      />
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-5 py-3 rounded-2xl bg-primary hover:bg-primary-dark active:scale-95 text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Buat Pengumuman Baru</span>
-        </button>
-      </div>
+      <StatGrid
+        label="Ringkasan pengumuman"
+        items={[
+          { label: 'Total pengumuman', value: totalCount },
+          { label: 'Sedang tayang', value: activeCount, tone: 'success' },
+          { label: 'Disematkan', value: pinnedCount, tone: 'warning' },
+          { label: 'Total dibaca', value: totalReads, tone: 'info', hint: 'kali dibuka pengguna' },
+        ]}
+      />
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Total Pengumuman
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white">
-              {totalCount}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Aktif / Tayang
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              {activeCount}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0">
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Di-Pin ke Atas
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
-              {pinnedCount}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Total Dibaca Siswa
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400">
-              {totalReads}x
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+      {/* Filter */}
+      <section aria-label="Filter pengumuman" className={`${CARD} p-3 sm:p-4`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Search Box */}
           <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
+            <svg className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             <input
-              type="text"
-              placeholder="Cari judul atau isi..."
+              type="search"
+              aria-label="Cari pengumuman"
+              placeholder="Cari judul atau isi…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50 transition-all"
+              className="w-full h-11 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
             />
           </div>
-
-          {/* Category Filter */}
-          <select
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50 transition-all"
-          >
-            <option value="all">Semua Kategori</option>
+          <select aria-label="Filter kategori" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="h-11 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="all">Semua kategori</option>
             {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key}>
-                {cfg.icon} {cfg.label}
-              </option>
+              <option key={key} value={key}>{cfg.icon} {cfg.label}</option>
             ))}
           </select>
-
-          {/* Audience Filter */}
-          <select
-            value={filterAudience}
-            onChange={e => setFilterAudience(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50 transition-all"
-          >
-            <option value="all">Semua Target Audiens</option>
+          <select aria-label="Filter target audiens" value={filterAudience} onChange={e => setFilterAudience(e.target.value)} className="h-11 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="all">Semua audiens</option>
             {Object.entries(AUDIENCE_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key}>
-                {cfg.icon} {cfg.label}
-              </option>
+              <option key={key} value={key}>{cfg.icon} {cfg.label}</option>
             ))}
           </select>
-
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary/50 transition-all"
-          >
-            <option value="all">Semua Status (Aktif & Nonaktif)</option>
-            <option value="active">Hanya Aktif / Tayang</option>
-            <option value="inactive">Hanya Nonaktif / Arsip</option>
+          <select aria-label="Filter status" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="h-11 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="all">Semua status</option>
+            <option value="active">Sedang tayang</option>
+            <option value="inactive">Nonaktif / arsip</option>
           </select>
         </div>
-      </div>
+      </section>
 
-      {/* Announcement Cards List */}
-      <div className="space-y-4">
+      {/* Daftar pengumuman */}
+      <section aria-labelledby="announcement-list-title" className="flex flex-col gap-3">
+        <h2 id="announcement-list-title" className="text-base font-bold text-slate-900 dark:text-white px-1">
+          Daftar pengumuman <span className="text-sm font-normal text-slate-500 dark:text-slate-400">· {filteredAnnouncements.length}</span>
+        </h2>
         {filteredAnnouncements.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 space-y-3">
-            <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
-              <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">
-              Belum ada pengumuman yang sesuai filter
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-              Silakan sesuaikan filter pencarian Anda atau buat pengumuman baru untuk diterbitkan ke peserta didik.
-            </p>
-            <button
-              onClick={handleOpenCreate}
-              className="mt-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold border-none cursor-pointer hover:opacity-90 transition-all"
-            >
-              + Buat Pengumuman Baru
-            </button>
+          <div className={CARD}>
+            <EmptyState
+              title="Tidak ada pengumuman yang cocok"
+              description="Sesuaikan filter, atau buat pengumuman baru untuk peserta."
+              action={<button type="button" onClick={handleOpenCreate} className={BTN_PRIMARY}>Buat pengumuman</button>}
+            />
           </div>
         ) : (
           filteredAnnouncements.map(ann => {
@@ -475,9 +340,9 @@ export default function AnnouncementManager() {
             const reads = readStats[ann.id] || 0
 
             return (
-              <div
+              <article
                 key={ann.id}
-                className={`p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border transition-all shadow-xs ${
+                className={`p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-2xl border transition-colors shadow-sm ${
                   ann.is_pinned
                     ? 'border-amber-400/60 dark:border-amber-500/40 ring-1 ring-amber-400/20'
                     : 'border-slate-200 dark:border-slate-800'
@@ -523,7 +388,7 @@ export default function AnnouncementManager() {
                         </span>
                       </div>
 
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
                         {ann.title}
                       </h3>
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
@@ -633,11 +498,11 @@ export default function AnnouncementManager() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             )
           })
         )}
-      </div>
+      </section>
 
       {/* ── CREATE / EDIT MODAL ───────────────────────── */}
       {isCreateModalOpen && (
@@ -908,6 +773,6 @@ export default function AnnouncementManager() {
           announcements={[previewItem]}
         />
       )}
-    </main>
+    </AdminPage>
   )
 }

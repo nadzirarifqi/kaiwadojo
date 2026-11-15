@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient'
 
+/**
+ * Akun pemateri/pengajar hanya bisa dibuat oleh admin (lewat halaman Kelola Pemateri)
+ * atau secara manual di database. Pendaftaran publik selalu menghasilkan akun pelajar.
+ */
 export interface InstructorAccount {
   id: string
   full_name: string
@@ -15,52 +19,40 @@ export interface InstructorAccount {
   created_at: string
 }
 
+export interface InstructorInput {
+  full_name: string
+  username: string
+  email: string
+  phone_number?: string
+  /** Wajib saat membuat akun; saat edit, kosongkan jika tidak ingin mengganti password. */
+  password?: string
+  bio?: string
+  expertise?: string[]
+}
+
 const LOCAL_INSTRUCTORS_KEY = 'kaiwa_instructor_accounts_v1'
 
-export const INITIAL_INSTRUCTORS: InstructorAccount[] = [
-  {
-    id: '00000000-0000-0000-0000-000000000001',
-    full_name: 'Tanaka Sensei',
-    username: 'tanakasensei',
-    email: 'tanaka@kaiwadojo.com',
-    role: 'pemateri',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tanaka',
-    bio: 'Pengajar kaiwadojo Spesialis Bunpou & Listening N4-N3',
-    expertise: ['Bunpou', 'Listening', 'N4'],
-    total_students: 120,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000002',
-    full_name: 'Kenji Sensei',
-    username: 'kenjisensei',
-    email: 'kenji@kaiwadojo.com',
-    role: 'pemateri',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kenji',
-    bio: 'Pengajar Percakapan Alami & JLPT Preparation',
-    expertise: ['Kaiwa', 'JLPT N3', 'Shadowing'],
-    total_students: 95,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000003',
-    full_name: 'Yuki Sensei',
-    username: 'yukisensei',
-    email: 'yuki@kaiwadojo.com',
-    role: 'pemateri',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Yuki',
-    bio: 'Pengajar Business Japanese & Keigo Practice',
-    expertise: ['Business Japanese', 'Keigo', 'Culture'],
-    total_students: 88,
-    created_at: new Date().toISOString(),
-  },
-]
-
-// Kolom untuk list pemateri — bio, current_session_id dll tidak perlu di list
 const INSTRUCTOR_LIST_COLUMNS = [
   'id', 'full_name', 'username', 'email', 'phone_number',
-  'avatar_url', 'last_active_at', 'created_at',
+  'avatar_url', 'bio', 'last_active_at', 'created_at',
 ].join(', ')
+
+function parseExpertise(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean)
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean)
+    } catch {
+      return raw.split(',').map(s => s.trim()).filter(Boolean)
+    }
+  }
+  return []
+}
+
+function errorMessage(res: any, fallback: string): string {
+  return res?.error?.message || (typeof res?.error === 'string' ? res.error : '') || fallback
+}
 
 export async function fetchInstructors(): Promise<InstructorAccount[]> {
   try {
@@ -69,166 +61,109 @@ export async function fetchInstructors(): Promise<InstructorAccount[]> {
       .select(INSTRUCTOR_LIST_COLUMNS)
       .eq('role', 'pemateri')
 
-    if (!error && profData && profData.length > 0) {
-      const instructors: InstructorAccount[] = profData.map((p: any) => ({
-        id: p.id,
-        full_name: p.full_name,
-        username: p.username,
-        email: p.email || `${p.username}@kaiwadojo.com`,
-        phone_number: p.phone_number || undefined,
-        role: 'pemateri',
-        avatar_url: p.avatar_url,
-        bio: p.bio,
-        expertise: ['Japanese', 'Kaiwa'],
-        total_students: 50,
-        last_active_at: p.last_active_at || null,
-        created_at: p.created_at || new Date().toISOString(),
-      }))
+    if (!error && Array.isArray(profData)) {
+      const expertiseById = new Map<string, { expertise: string[]; total_students: number }>()
+      try {
+        const { data: instData } = await supabase
+          .from('instructor_profiles')
+          .select('id, expertise, total_students')
+        ;(instData || []).forEach((row: any) => {
+          expertiseById.set(row.id, {
+            expertise: parseExpertise(row.expertise),
+            total_students: Number(row.total_students) || 0,
+          })
+        })
+      } catch {
+        // Detail keahlian opsional
+      }
 
-      localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(instructors))
+      const instructors: InstructorAccount[] = profData
+        .map((p: any) => {
+          const extra = expertiseById.get(p.id)
+          return {
+            id: p.id,
+            full_name: p.full_name,
+            username: p.username,
+            email: p.email || '',
+            phone_number: p.phone_number || undefined,
+            role: 'pemateri' as const,
+            avatar_url: p.avatar_url || undefined,
+            bio: p.bio || undefined,
+            expertise: extra?.expertise.length ? extra.expertise : [],
+            total_students: extra?.total_students ?? 0,
+            last_active_at: p.last_active_at || null,
+            created_at: p.created_at || new Date().toISOString(),
+          }
+        })
+        .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+
+      try { localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(instructors)) } catch {}
       return instructors
     }
   } catch (e) {
     console.warn('DB fetchInstructors note:', e)
   }
 
-  // Local fallback
-  const local = localStorage.getItem(LOCAL_INSTRUCTORS_KEY)
-  if (local) {
-    try {
-      return JSON.parse(local)
-    } catch {
-      // Fallback
-    }
-  }
-  return INITIAL_INSTRUCTORS
+  // Cache terakhir bila server tidak bisa dihubungi
+  try {
+    const local = localStorage.getItem(LOCAL_INSTRUCTORS_KEY)
+    if (local) return JSON.parse(local)
+  } catch {}
+  return []
 }
 
-export async function createInstructorAccount(data: {
-  full_name: string
-  username: string
-  email: string
-  password?: string
-  bio?: string
-  expertise?: string[]
-}): Promise<InstructorAccount> {
-  let createdId = `inst-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
-
-  // 1. If password is set by admin, register the instructor in Supabase Auth
-  if (data.password && data.password.length >= 6) {
-    try {
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email: data.email.toLowerCase().trim(),
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.full_name,
-            username: data.username.toLowerCase().trim(),
-            role: 'pemateri',
-          },
-        },
-      })
-      if (!authErr && authData.user) {
-        createdId = authData.user.id
-      } else if (authErr) {
-        console.warn('Supabase Auth signUp for instructor note:', authErr.message)
-      }
-    } catch (err) {
-      console.warn('Supabase Auth signUp catch:', err)
-    }
-  }
-
-  const newInst: InstructorAccount = {
-    id: createdId,
-    full_name: data.full_name,
+/** Admin membuat akun pemateri baru. Sesi admin tidak berubah. */
+export async function createInstructorAccount(data: InstructorInput): Promise<InstructorAccount> {
+  const res = await supabase.rpc('admin_create_instructor', {
+    ...data,
     username: data.username.toLowerCase().trim(),
     email: data.email.toLowerCase().trim(),
+  })
+  if (res?.error || !res?.data) {
+    throw new Error(errorMessage(res, 'Gagal membuat akun pemateri'))
+  }
+  const d = res.data
+  return {
+    id: d.id,
+    full_name: d.full_name,
+    username: d.username,
+    email: d.email,
+    phone_number: d.phone_number || undefined,
     role: 'pemateri',
-    avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.full_name)}`,
-    bio: data.bio || 'Pengajar kaiwadojo',
-    expertise: data.expertise || ['Kaiwa', 'Japanese'],
+    avatar_url: d.avatar_url,
+    bio: d.bio || undefined,
+    expertise: parseExpertise(d.expertise),
     total_students: 0,
+    last_active_at: null,
     created_at: new Date().toISOString(),
   }
-
-  const current = await fetchInstructors()
-  const updated = [newInst, ...current]
-  localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
-
-  try {
-    await supabase.from('profiles').upsert({
-      id: newInst.id,
-      full_name: newInst.full_name,
-      username: newInst.username,
-      email: newInst.email,
-      role: 'pemateri',
-      avatar_url: newInst.avatar_url,
-      bio: newInst.bio,
-    }, { onConflict: 'id' })
-
-    await supabase.from('instructor_profiles').upsert({
-      id: newInst.id,
-      expertise: newInst.expertise,
-      total_students: 0,
-      verified: true,
-    }, { onConflict: 'id' })
-  } catch (e) {
-    console.warn('DB createInstructorAccount note:', e)
-  }
-
-  return newInst
 }
 
-export async function updateInstructorAccount(
-  id: string,
-  data: {
-    full_name: string
-    username: string
-    email: string
-    bio?: string
-    expertise?: string[]
-  }
-): Promise<void> {
-  const current = await fetchInstructors()
-  const updated = current.map(inst => {
-    if (inst.id === id) {
-      return {
-        ...inst,
-        full_name: data.full_name,
-        username: data.username.toLowerCase().trim(),
-        email: data.email.toLowerCase().trim(),
-        bio: data.bio || inst.bio,
-        expertise: data.expertise || inst.expertise,
-      }
-    }
-    return inst
+/** Admin memperbarui akun pemateri. Isi `password` untuk mereset password. */
+export async function updateInstructorAccount(id: string, data: InstructorInput): Promise<void> {
+  const res = await supabase.rpc('admin_update_instructor', {
+    id,
+    ...data,
+    username: data.username.toLowerCase().trim(),
+    email: data.email.toLowerCase().trim(),
   })
-  localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
-
-  try {
-    await supabase
-      .from('profiles')
-      .update({
-        full_name: data.full_name,
-        username: data.username.toLowerCase().trim(),
-        email: data.email.toLowerCase().trim(),
-        bio: data.bio,
-      })
-      .eq('id', id)
-  } catch (e) {
-    console.warn('DB updateInstructorAccount note:', e)
+  if (res?.error) {
+    throw new Error(errorMessage(res, 'Gagal memperbarui akun pemateri'))
   }
 }
 
+/** Menghapus akun pemateri beserta kredensial login-nya. */
 export async function deleteInstructorAccount(id: string): Promise<void> {
-  const current = await fetchInstructors()
-  const updated = current.filter(inst => inst.id !== id)
-  localStorage.setItem(LOCAL_INSTRUCTORS_KEY, JSON.stringify(updated))
-
-  try {
-    await supabase.from('instructor_profiles').delete().eq('id', id)
-    await supabase.from('profiles').delete().eq('id', id)
-  } catch (e) {
-    console.warn('DB deleteInstructorAccount note:', e)
+  const res = await supabase.rpc('delete_auth_user', { user_id: id })
+  if (res?.error) {
+    throw new Error(errorMessage(res, 'Gagal menghapus akun pemateri'))
   }
+}
+
+/** Password acak yang mudah dibacakan (tanpa karakter ambigu seperti 0/O, 1/l). */
+export function generateInstructorPassword(length = 10): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  const bytes = new Uint32Array(length)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, b => chars[b % chars.length]).join('')
 }

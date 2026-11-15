@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
 import {
@@ -15,11 +14,11 @@ import {
   FEEDBACK_UPDATE_EVENT,
 } from '../lib/feedbackService'
 import LoadingScreen from '../components/LoadingScreen'
+import { AdminPage, PageHeader, StatGrid, EmptyState, AccessDenied, Badge, CARD, BTN_SECONDARY } from '../components/admin/AdminUI'
 import { useConfirm } from '../contexts/ConfirmContext'
 
 export default function FeedbackManager() {
   const confirm = useConfirm()
-  const navigate = useNavigate()
   const { profile } = useAuth()
 
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
@@ -72,31 +71,8 @@ export default function FeedbackManager() {
     }
   }, [])
 
-  // Security Access Check
   if (profile?.role !== 'admin') {
-    return (
-      <main className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center max-w-md p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl">
-          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
-            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">
-            Akses Khusus Admin
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-            Halaman ini hanya dapat diakses oleh Administrator untuk mengelola masukan, saran, dan evaluasi pengguna platform.
-          </p>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-bold border-none cursor-pointer hover:opacity-90 transition-all"
-          >
-            ← Kembali ke Beranda
-          </button>
-        </div>
-      </main>
-    )
+    return <AccessDenied message="Halaman ini khusus Admin untuk mengelola masukan, saran, dan evaluasi pengguna." />
   }
 
   if (loading) {
@@ -192,7 +168,7 @@ export default function FeedbackManager() {
   }
 
   return (
-    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide text-slate-800 dark:text-slate-100">
+    <AdminPage>
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-6 right-6 z-50 px-4 py-3 bg-slate-900/90 text-white rounded-2xl shadow-xl backdrop-blur-md border border-slate-700/60 text-xs sm:text-sm font-bold animate-fade-in flex items-center gap-2">
@@ -203,249 +179,112 @@ export default function FeedbackManager() {
         </div>
       )}
 
-      {/* Header Banner */}
-      <div
-        className="mb-6 rounded-3xl p-5 sm:p-7 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-700/50 bg-cover bg-center text-white"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15,23,42,0.95), rgba(180,83,9,0.85)), url('/japan-background(4).jpg')",
-        }}
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-              <svg className="size-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              <span className="font-jp font-bold mr-1">ご意見・ご提案</span>
-              <span>Panel Masukan & Saran</span>
-            </span>
-            {unreadCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black">
-                ● {unreadCount} Masukan Baru
-              </span>
-            )}
-          </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Kelola Masukan & Saran Pengguna</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed font-medium">
-            Tinjau saran fitur, laporan bug/kendala teknis, serta evaluasi kepuasan dari para pelajar, pengajar, maupun pengunjung website.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Admin · Aktivitas"
+        title="Masukan & Saran"
+        description="Tinjau saran fitur, laporan kendala, dan penilaian kepuasan dari pelajar, pengajar, dan pengunjung."
+        meta={unreadCount > 0 ? <Badge tone="info">{unreadCount} masukan baru</Badge> : undefined}
+        actions={
+          <button type="button" onClick={loadData} className={BTN_SECONDARY}>
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Muat ulang
+          </button>
+        }
+      />
 
-        <button
-          onClick={loadData}
-          className="self-start md:self-auto px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 cursor-pointer backdrop-blur-sm transition-all flex items-center gap-2"
-        >
-          <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>Segarkan Data</span>
-        </button>
-      </div>
+      <StatGrid
+        label="Ringkasan masukan"
+        columns={5}
+        items={[
+          { label: 'Total masukan', value: totalCount },
+          { label: 'Belum dibaca', value: unreadCount, tone: 'info', hint: unreadCount > 0 ? 'Perlu ditinjau' : undefined, onClick: () => setSelectedStatus('unread') },
+          { label: 'Diproses', value: inProgressCount, tone: 'warning', onClick: () => setSelectedStatus('in_progress') },
+          { label: 'Selesai', value: resolvedCount, tone: 'success', onClick: () => setSelectedStatus('resolved') },
+          { label: 'Rata-rata rating', value: <>{avgRating}<span className="text-sm font-semibold text-slate-400"> / 5</span></>, tone: 'warning' },
+        ]}
+      />
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        {/* Total */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-slate-400">Total Masukan</span>
-            <span className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </span>
-          </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{totalCount}</span>
-            <span className="text-[0.68rem] text-slate-400 ml-1">pesan</span>
-          </div>
-        </div>
-
-        {/* Unread */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-blue-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-blue-500">Belum Dibaca</span>
-            <span className="size-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{unreadCount}</span>
-            {unreadCount > 0 && (
-              <span className="text-[0.65rem] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold">
-                Perlu Review
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* In Progress */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-amber-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-amber-500">Sedang Diproses</span>
-            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </span>
-          </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{inProgressCount}</span>
-            <span className="text-[0.68rem] text-slate-400 ml-1">tahap proses</span>
-          </div>
-        </div>
-
-        {/* Resolved */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-emerald-500">Selesai / Diterapkan</span>
-            <span className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </span>
-          </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{resolvedCount}</span>
-            <span className="text-[0.68rem] text-slate-400 ml-1">terselesaikan</span>
-          </div>
-        </div>
-
-        {/* Rating */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-slate-400">Kepuasan Rata-rata</span>
-            <span className="size-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <svg className="size-4 fill-current" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{avgRating}</span>
-            <span className="text-xs text-amber-500 font-bold">/ 5.0 Rata-rata</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter & Search Bar Controls */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm mb-6 space-y-4">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          {/* Search Box */}
+      {/* Filter */}
+      <section aria-label="Filter masukan" className={`${CARD} p-3 sm:p-4 flex flex-col gap-3`}>
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
           <div className="relative flex-1">
-            <svg className="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
-              type="text"
+              type="search"
+              aria-label="Cari masukan"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari masukan berdasarkan kata kunci, judul, nama, atau email..."
-              className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+              placeholder="Cari kata kunci, judul, nama, atau email…"
+              className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold border-none bg-transparent cursor-pointer"
-              >
-                ✕
-              </button>
-            )}
           </div>
-
-          {/* Quick Filter Selectors */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Category Filter */}
             <select
+              aria-label="Filter kategori"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
             >
-              <option value="all">Semua Kategori</option>
+              <option value="all">Semua kategori</option>
               {(Object.keys(CATEGORY_META) as FeedbackCategory[]).map((cat) => (
-                <option key={cat} value={cat}>
-                  {CATEGORY_META[cat].label}
-                </option>
+                <option key={cat} value={cat}>{CATEGORY_META[cat].label}</option>
               ))}
             </select>
-
-            {/* Rating Filter */}
             <select
+              aria-label="Filter rating"
               value={selectedRating}
               onChange={(e) => setSelectedRating(e.target.value)}
-              className="px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
             >
-              <option value="all">Semua Rating</option>
-              <option value="5">Bintang 5 (Sempurna)</option>
-              <option value="4">Bintang 4 (Sangat Baik)</option>
-              <option value="3">Bintang 3 (Cukup)</option>
-              <option value="low">Bintang 1 - 2 (Perlu Evaluasi)</option>
+              <option value="all">Semua rating</option>
+              <option value="5">★ 5</option>
+              <option value="4">★ 4</option>
+              <option value="3">★ 3</option>
+              <option value="low">★ 1–2 (perlu evaluasi)</option>
             </select>
           </div>
         </div>
 
-        {/* Status Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <span className="text-[0.7rem] font-extrabold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
-            Status:
-          </span>
-          <button
-            type="button"
-            onClick={() => setSelectedStatus('all')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all border shrink-0 cursor-pointer ${
-              selectedStatus === 'all'
-                ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-200'
-            }`}
-          >
-            Semua ({feedbacks.length})
-          </button>
-          {(Object.keys(STATUS_META) as FeedbackStatus[]).map((st) => {
-            const count = feedbacks.filter(f => f.status === st).length
-            const isSelected = selectedStatus === st
+        <div role="group" aria-label="Filter status" className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+          {([['all', 'Semua', feedbacks.length], ...(Object.keys(STATUS_META) as FeedbackStatus[]).map(st => [st, STATUS_META[st].label, feedbacks.filter(f => f.status === st).length])] as [string, string, number][]).map(([key, label, count]) => {
+            const active = selectedStatus === key
             return (
               <button
-                key={st}
+                key={key}
                 type="button"
-                onClick={() => setSelectedStatus(st)}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all border shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-200'
+                aria-pressed={active}
+                onClick={() => setSelectedStatus(key)}
+                className={`h-9 px-3 rounded-lg text-sm font-semibold shrink-0 cursor-pointer border transition-colors ${
+                  active
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent'
+                    : 'bg-transparent text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <span className="size-2 rounded-full bg-current opacity-80" />
-                <span>{STATUS_META[st].label}</span>
-                <span className="text-[0.65rem] px-1.5 py-0.2 rounded-full bg-black/10 dark:bg-white/20">
-                  {count}
-                </span>
+                {label} <span className="tabular-nums opacity-60">{count}</span>
               </button>
             )
           })}
         </div>
-      </div>
+      </section>
 
-      {/* Feedback List Table / Cards */}
+      {/* Daftar masukan */}
+      <section aria-labelledby="feedback-list-title" className="flex flex-col gap-3">
+        <h2 id="feedback-list-title" className="text-base font-bold text-slate-900 dark:text-white px-1">
+          Daftar masukan <span className="text-sm font-normal text-slate-500 dark:text-slate-400">· {filteredFeedbacks.length}</span>
+        </h2>
       {filteredFeedbacks.length === 0 ? (
-        <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800">
-          <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-          </div>
-          <h3 className="text-base font-bold text-slate-700 dark:text-slate-200">
-            Tidak ada masukan yang cocok dengan filter
-          </h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Coba ubah kata kunci pencarian atau ubah filter status dan kategori di atas.
-          </p>
+        <div className={CARD}>
+          <EmptyState
+            title="Tidak ada masukan yang cocok"
+            description="Ubah kata kunci pencarian atau filter status dan kategori."
+          />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5">
+        <div className="flex flex-col gap-3">
           {filteredFeedbacks.map((item) => {
             const catMeta = CATEGORY_META[item.category] || CATEGORY_META.saran_fitur
             const statMeta = STATUS_META[item.status] || STATUS_META.unread
@@ -458,12 +297,12 @@ export default function FeedbackManager() {
             })
 
             return (
-              <div
+              <article
                 key={item.id}
-                className={`p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border transition-all hover:shadow-md ${
+                className={`p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border shadow-sm transition-colors ${
                   item.status === 'unread'
-                    ? 'border-blue-300 dark:border-blue-800/80 ring-2 ring-blue-500/10'
-                    : 'border-slate-200/80 dark:border-slate-800'
+                    ? 'border-sky-300 dark:border-sky-800/80'
+                    : 'border-slate-200 dark:border-slate-800'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
@@ -498,7 +337,7 @@ export default function FeedbackManager() {
                       <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>{formattedDate}</span>
+                      <time dateTime={item.created_at}>{formattedDate}</time>
                     </span>
                   </div>
 
@@ -506,6 +345,7 @@ export default function FeedbackManager() {
                   <div className="flex items-center gap-2 shrink-0">
                     <select
                       value={item.status}
+                      aria-label="Ubah status"
                       onChange={(e) => handleStatusChange(item.id, e.target.value as FeedbackStatus)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${statMeta.badgeClass}`}
                     >
@@ -530,11 +370,9 @@ export default function FeedbackManager() {
                 </div>
 
                 {/* Title if present */}
-                {item.title && (
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mb-1.5">
-                    {item.title}
-                  </h3>
-                )}
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                  {item.title || `Masukan dari ${item.name}`}
+                </h3>
 
                 {/* Message Body */}
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-line mb-3">
@@ -592,6 +430,7 @@ export default function FeedbackManager() {
                       onClick={() => handleDelete(item.id, item.title || item.name)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-none bg-transparent cursor-pointer transition-all"
                       title="Hapus masukan ini"
+                      aria-label="Hapus masukan ini"
                     >
                       <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -599,11 +438,12 @@ export default function FeedbackManager() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             )
           })}
         </div>
       )}
+      </section>
 
       {/* ── DETAIL & NOTES MODAL ───────────────────────────────────────────── */}
       {activeFeedback && (
@@ -785,6 +625,6 @@ export default function FeedbackManager() {
           </div>
         </div>
       )}
-    </main>
+    </AdminPage>
   )
 }

@@ -24,6 +24,7 @@ import { sendWhatsAppApprovalNotice, sendWhatsAppPaymentRejectedNotice } from '.
 import { supabase } from '../lib/supabaseClient'
 import { fetchKotobaCountsByUser } from '../lib/kotobaService'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { AdminPage, PageHeader, StatGrid, AccessDenied, CARD, BTN_PRIMARY, BTN_SECONDARY } from '../components/admin/AdminUI'
 
 export default function StudentManager() {
   const confirm = useConfirm()
@@ -439,24 +440,8 @@ export default function StudentManager() {
     await loadData()
   }
 
-  // Security check: Only admin can access
   if (profile?.role !== 'admin') {
-    return (
-      <main className="flex-1 p-6 flex flex-col items-center justify-center min-h-[70vh] text-center">
-        <div className="size-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
-          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-extrabold text-slate-800 dark:text-white">Akses Terbatas Khusus Admin</h2>
-        <p className="text-xs text-slate-500 max-w-md mt-1 mb-4">
-          Halaman ini khusus diperuntukkan untuk Admin untuk mengelola akun Pelajar/Siswa.
-        </p>
-        <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl border-none cursor-pointer">
-          Kembali ke Dashboard
-        </button>
-      </main>
-    )
+    return <AccessDenied message="Halaman ini khusus Admin untuk mengelola akun pelajar." />
   }
 
   const pendingCount = students.filter(s => s.status === 'pending').length
@@ -571,7 +556,7 @@ export default function StudentManager() {
   })()
 
   return (
-    <main className="flex-1 p-3 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide">
+    <AdminPage>
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-20 right-6 z-[600] bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-extrabold animate-bounce flex items-center gap-2">
@@ -582,70 +567,41 @@ export default function StudentManager() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-700/50">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-red-300 border border-primary/30 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      <PageHeader
+        eyebrow="Admin · Pengguna"
+        title="Akun Pelajar"
+        description="Verifikasi akun, pantau aktivitas, dan atur status pembayaran serta masa aktif langganan pelajar."
+        actions={
+          <>
+            <button type="button" onClick={() => navigate('/kelola-grup')} className={BTN_SECONDARY}>Grup & label</button>
+            <button type="button" onClick={openAddModal} className={BTN_PRIMARY}>
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
               </svg>
-              <span>Menu Admin</span>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{onlineCount} Sedang Online</span>
-            </span>
-            <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-black">
-              {approvedCount} Pelajar Terverifikasi
-            </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-600/30 text-emerald-200 border border-emerald-500/40 text-xs font-black flex items-center gap-1.5">
-              <span>✓ {paidCount} Langganan Lunas</span>
-            </span>
-            {unpaidCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-black">
-                {unpaidCount} Belum Bayar
-              </span>
-            )}
-            {pendingCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black animate-pulse flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-amber-400" />
-                <span>{pendingCount} Menunggu Verifikasi</span>
-              </span>
-            )}
-          </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            <span>Kelola & Verifikasi Akun Pelajar</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Halaman khusus Admin untuk melihat status aktivitas, verifikasi akun, dan **mengatur status pembayaran serta masa aktif langganan** pelajar.
-          </p>
-        </div>
+              Tambah pelajar
+            </button>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={() => navigate('/kelola-grup')}
-            className="px-4 py-3 bg-purple-600/90 hover:bg-purple-600 text-white text-xs sm:text-sm font-extrabold rounded-2xl border border-purple-400/40 cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
-          >
-            <span>Kelola Grup & Kata Kunci</span>
-          </button>
-          <button
-            onClick={openAddModal}
-            className="px-5 py-3 bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary text-white text-xs sm:text-sm font-extrabold rounded-2xl border-none cursor-pointer transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
-          >
-            <span>+ Tambah Akun Pelajar Baru</span>
-          </button>
-        </div>
-      </div>
+      <StatGrid
+        label="Ringkasan pelajar"
+        columns={5}
+        items={[
+          { label: 'Total pelajar', value: students.length, hint: `${onlineCount} sedang online` },
+          { label: 'Menunggu verifikasi', value: pendingCount, tone: 'warning', onClick: () => setStatusFilter('pending') },
+          { label: 'Terverifikasi', value: approvedCount, tone: 'success', onClick: () => setStatusFilter('approved') },
+          { label: 'Langganan lunas', value: paidCount, tone: 'info', onClick: () => setPaymentFilter('paid') },
+          { label: 'Belum bayar', value: unpaidCount, tone: 'danger', onClick: () => setPaymentFilter('unpaid') },
+        ]}
+      />
 
       {/* Students List Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+      <section aria-labelledby="student-list-title" className={`${CARD} p-4 sm:p-5 flex flex-col gap-4`}>
         <div className="flex flex-col gap-3.5 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <span>Daftar Akun Siswa / Pelajar</span>
-              </h3>
+              <h2 id="student-list-title" className="text-base font-bold text-slate-900 dark:text-white">Daftar pelajar</h2>
               {searchQuery.trim() || groupFilter !== 'all' || statusFilter !== 'all' || paymentFilter !== 'all' ? (
                 <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
                   Menampilkan {filteredStudents.length} dari {students.length} pelajar
@@ -763,7 +719,8 @@ export default function StudentManager() {
                 </svg>
               </span>
               <input
-                type="text"
+                type="search"
+                aria-label="Cari pelajar"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nama, @username, email, nomor WA, asal lembaga, grup..."
@@ -787,6 +744,7 @@ export default function StudentManager() {
             {availableGroups.length > 0 && (
               <div className="shrink-0 sm:w-56">
                 <select
+                  aria-label="Filter grup"
                   value={groupFilter}
                   onChange={(e) => setGroupFilter(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
@@ -871,18 +829,19 @@ export default function StudentManager() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
+              <caption className="sr-only">Daftar akun pelajar</caption>
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-[0.7rem] font-black uppercase text-slate-400 tracking-wider">
-                  <th className="pb-3 px-2">Nama Siswa</th>
-                  <th className="pb-3 px-2">Status Online</th>
-                  <th className="pb-3 px-2">Username & Email</th>
-                  <th className="pb-3 px-2">No. WhatsApp</th>
-                  <th className="pb-3 px-2">Asal Lembaga / PT</th>
-                  <th className="pb-3 px-2">Grup</th>
-                  <th className="pb-3 px-2">Paket & Pembayaran</th>
-                  <th className="pb-3 px-2">Setoran Kotoba</th>
-                  <th className="pb-3 px-2">Status Verifikasi</th>
-                  <th className="pb-3 px-2 text-right">Aksi & Pembayaran</th>
+                  <th scope="col" className="pb-3 px-2">Nama Siswa</th>
+                  <th scope="col" className="pb-3 px-2">Status Online</th>
+                  <th scope="col" className="pb-3 px-2">Username & Email</th>
+                  <th scope="col" className="pb-3 px-2">No. WhatsApp</th>
+                  <th scope="col" className="pb-3 px-2">Asal Lembaga / PT</th>
+                  <th scope="col" className="pb-3 px-2">Grup</th>
+                  <th scope="col" className="pb-3 px-2">Paket & Pembayaran</th>
+                  <th scope="col" className="pb-3 px-2">Setoran Kotoba</th>
+                  <th scope="col" className="pb-3 px-2">Status Verifikasi</th>
+                  <th scope="col" className="pb-3 px-2 text-right">Aksi & Pembayaran</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
@@ -1193,7 +1152,7 @@ export default function StudentManager() {
             </table>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Add Student Modal Portal */}
       {showAddModal &&
@@ -1917,6 +1876,6 @@ export default function StudentManager() {
           </div>,
           document.body
         )}
-    </main>
+    </AdminPage>
   )
 }

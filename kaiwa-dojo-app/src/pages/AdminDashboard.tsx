@@ -14,6 +14,7 @@ import { fetchAnnouncements, type Announcement, ANNOUNCEMENT_UPDATE_EVENT } from
 import LoadingScreen from '../components/LoadingScreen'
 import WhatsAppBroadcastModal from '../components/WhatsAppBroadcastModal'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { AdminPage, PageHeader, StatGrid, Badge, CARD, BTN_SECONDARY } from '../components/admin/AdminUI'
 
 const ADMIN_CACHE_KEY = 'kaiwa_admin_dashboard_cache_v2'
 
@@ -255,72 +256,26 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <main className="flex-1 p-3.5 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-page-slide space-y-6 bg-slate-50/60 dark:bg-slate-950/60">
+      <AdminPage>
 
-        {/* ── 1. EXECUTIVE COMMAND HEADER ───────────────────────────────── */}
-        <div className="rounded-2xl sm:rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl relative overflow-hidden">
-          {/* Subtle architectural background pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(#b91c1c_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
-          <div className="absolute -top-24 -right-24 size-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+        <PageHeader
+          eyebrow={<time dateTime={new Date().toISOString().slice(0, 10)}>{todayStr}</time>}
+          title="Pusat Kontrol Admin"
+          description={`Selamat datang, ${profile?.full_name || profile?.username || 'Admin'}. Pantau kurikulum, reservasi kelas, pelajar, dan operasional dojo.`}
+          actions={
+            <button type="button" onClick={() => loadData(false)} disabled={isRefreshing} className={BTN_SECONDARY}>
+              <svg className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              {isRefreshing ? 'Menyinkronkan…' : 'Muat ulang'}
+            </button>
+          }
+        />
 
-          <div className="p-4 sm:p-7 relative z-10 space-y-5">
-            {/* Top Status Bar: Identity, System Health, Refresh & Date */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 border-b border-slate-800/80">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl bg-white/10 text-white border border-white/15 text-[0.68rem] sm:text-xs font-bold flex items-center gap-1.5 shadow-xs">
-                  <svg className="size-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                  </svg>
-                  <span>Administrator Dojo</span>
-                  <span className="opacity-40">|</span>
-                  <span className="font-extrabold text-white">{profile?.full_name || profile?.username || 'Admin'}</span>
-                </span>
-
-                <span className="px-2.5 py-1 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[0.68rem] sm:text-xs font-bold flex items-center gap-1.5">
-                  <span className="size-1.5 sm:size-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                  <span>Sistem Aktif</span>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs text-slate-300">
-                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 text-[0.7rem] text-slate-300 font-medium border border-slate-700/60">
-                  <svg className="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span>{todayStr}</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => loadData(false)}
-                  disabled={isRefreshing}
-                  title="Sinkronkan data realtime"
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-[0.7rem] font-bold cursor-pointer transition-all flex items-center gap-1.5"
-                >
-                  <svg className={`size-3.5 ${isRefreshing ? 'animate-spin text-primary' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                  </svg>
-                  <span>{isRefreshing ? 'Sinkron...' : 'Segarkan'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Title & Short Description */}
-            <div className="max-w-2xl">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug">
-                Pusat Kontrol Administrator
-              </h1>
-              <p className="text-[0.75rem] sm:text-xs text-slate-300 mt-1 leading-relaxed font-normal">
-                Manajemen kurikulum pembelajaran, pantauan reservasi sesi live, verifikasi pelajar, dan kontrol operasional dojo.
-              </p>
-            </div>
-
-            {/* Quick Navigation Hub (Single Responsive Action Row) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-1">
-              {[
+        {/* Pintasan */}
+        <nav aria-label="Pintasan admin">
+          <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 list-none m-0 p-0">
+            {[
                 {
                   label: 'Broadcast WA',
                   onClick: () => setShowBroadcastModal(true),
@@ -404,182 +359,54 @@ export default function AdminDashboard() {
                     </svg>
                   ),
                 },
-              ].map(item => (
+            ].map(item => (
+              <li key={item.label}>
                 <button
-                  key={item.label}
                   type="button"
                   onClick={item.onClick}
-                  className={`relative flex flex-col items-center justify-center py-2 px-1.5 sm:py-2.5 sm:px-2 rounded-xl bg-slate-800/70 border border-slate-700/80 cursor-pointer transition-all active:scale-95 text-slate-200 group ${item.color}`}
+                  className={`${CARD} relative w-full h-full flex flex-col items-center justify-center gap-1.5 py-3 px-2 cursor-pointer text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-lighter hover:border-primary/40 transition-colors`}
                 >
                   {item.badge !== undefined && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[0.58rem] font-black flex items-center justify-center shadow-md ring-2 ring-slate-900 animate-pulse">
+                    <span className="absolute top-1.5 right-1.5 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[0.65rem] font-bold flex items-center justify-center" aria-label={`${item.badge} baru`}>
                       {item.badge}
                     </span>
                   )}
-                  <div className="mb-1 transition-transform group-hover:scale-110">
-                    {item.icon}
-                  </div>
-                  <span className="text-[0.65rem] sm:text-[0.7rem] font-bold text-center leading-tight line-clamp-1">
-                    {item.label}
-                  </span>
+                  <span aria-hidden="true">{item.icon}</span>
+                  <span className="text-xs font-semibold text-center leading-tight">{item.label}</span>
                 </button>
-              ))}
-            </div>
-          </div>
-        </div>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-        {/* ── 2. METRICS OVERVIEW (CLEAN KPI CARDS) ─────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {[
-            {
-              label: 'Total Sensei',
-              value: instructors.length,
-              unit: 'Guru',
-              sub: 'Pengajar Aktif',
-              iconColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800',
-              valueColor: 'text-emerald-700 dark:text-emerald-300',
-              onClick: () => navigate('/kelola-pemateri'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
-                </svg>
-              ),
-            },
-            {
-              label: 'Total Pelajar',
-              value: studentCount,
-              unit: 'Siswa',
-              sub: 'Akun Terdaftar',
-              iconColor: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 border-sky-200 dark:border-sky-800',
-              valueColor: 'text-sky-700 dark:text-sky-300',
-              onClick: () => navigate('/kelola-pelajar'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                </svg>
-              ),
-            },
-            {
-              label: 'Materi Bab',
-              value: publishedCount,
-              unit: '/ 50 Bab',
-              sub: 'Minna no Nihongo',
-              iconColor: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800',
-              valueColor: 'text-red-700 dark:text-red-300',
-              onClick: () => navigate('/kelola-kursus'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              ),
-            },
-            {
-              label: 'Jadwal Sesi',
-              value: schedules.length,
-              unit: 'Kelas',
-              sub: 'Online & Offline',
-              iconColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800',
-              valueColor: 'text-indigo-700 dark:text-indigo-300',
-              onClick: () => navigate('/kelola-jadwal'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.253M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-              ),
-            },
-            {
-              label: 'Setoran Kotoba',
-              value: kotobaSummary?.totalKotoba || 0,
-              unit: 'Kata',
-              sub: `${kotobaSummary?.masteredKotoba || 0} Dikuasai`,
-              iconColor: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800',
-              valueColor: 'text-amber-700 dark:text-amber-300',
-              onClick: () => navigate('/tracker-kotoba'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
-              ),
-            },
-            {
-              label: 'Masukan Siswa',
-              value: feedbacks.length,
-              unit: 'Pesan',
-              sub: unreadFeedbacks > 0 ? `${unreadFeedbacks} Perlu Ditinjau` : 'Semua Ditinjau',
-              iconColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800',
-              valueColor: unreadFeedbacks > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white',
-              onClick: () => navigate('/kelola-masukan'),
-              icon: (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v5.01z" />
-                </svg>
-              ),
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={item.onClick}
-              className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between gap-2.5 transition-all cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 group`}
-            >
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[0.65rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
-                  {item.label}
-                </span>
-                <div className={`size-7 sm:size-8 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${item.iconColor} transition-transform group-hover:scale-105`}>
-                  {item.icon}
-                </div>
-              </div>
+        <StatGrid
+          label="Ringkasan dojo"
+          columns={3}
+          items={[
+            { label: 'Pengajar', value: instructors.length, hint: 'akun aktif', tone: 'success', onClick: () => navigate('/kelola-pemateri') },
+            { label: 'Pelajar', value: studentCount, hint: 'akun terdaftar', tone: 'info', onClick: () => navigate('/kelola-pelajar') },
+            { label: 'Bab dipublikasikan', value: <>{publishedCount}<span className="text-sm font-semibold text-slate-400"> / 50</span></>, hint: 'Minna no Nihongo', tone: 'primary', onClick: () => navigate('/kelola-kursus') },
+            { label: 'Jadwal kelas', value: schedules.length, hint: 'online & offline', onClick: () => navigate('/kelola-jadwal') },
+            { label: 'Setoran kotoba', value: kotobaSummary?.totalKotoba || 0, hint: `${kotobaSummary?.masteredKotoba || 0} dikuasai`, tone: 'warning', onClick: () => navigate('/tracker-kotoba') },
+            { label: 'Masukan', value: feedbacks.length, hint: unreadFeedbacks > 0 ? `${unreadFeedbacks} perlu ditinjau` : 'semua sudah ditinjau', tone: unreadFeedbacks > 0 ? 'danger' : 'default', onClick: () => navigate('/kelola-masukan') },
+          ]}
+        />
 
-              <div>
-                <div className={`text-xl sm:text-2xl font-black ${item.valueColor} leading-tight`}>
-                  {item.value}
-                  <span className="text-[0.68rem] sm:text-xs font-semibold text-slate-400 ml-1">
-                    {item.unit}
-                  </span>
-                </div>
-                <span className="text-[0.65rem] sm:text-[0.68rem] font-medium text-slate-500 dark:text-slate-400 mt-0.5 block truncate">
-                  {item.sub}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── 3. ANNOUNCEMENT NOTICE BAR (IF ACTIVE) ───────────────────── */}
         {activeAnnouncements > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-rose-500/10 via-pink-500/5 to-amber-500/10 dark:from-rose-950/40 dark:via-pink-950/20 dark:to-amber-950/20 border border-rose-500/20 dark:border-rose-900/40 rounded-xl sm:rounded-2xl px-4 py-3 shadow-xs">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="size-8 sm:size-9 rounded-lg sm:rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                </svg>
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
-                    Papan Pengumuman Aktif
-                  </h3>
-                  <span className="text-[0.62rem] sm:text-[0.68rem] font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                    {activeAnnouncements} Siaran Berjalan
-                  </span>
-                </div>
-                <p className="text-[0.68rem] sm:text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate">
-                  {announcements[0]?.title || 'Pengumuman aktif akan muncul otomatis saat pelajar membuka dashboard.'}
-                </p>
-              </div>
+          <aside aria-label="Pengumuman aktif" className={`${CARD} flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3`}>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                Pengumuman aktif
+                <Badge tone="primary">{activeAnnouncements} tayang</Badge>
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                {announcements[0]?.title || 'Pengumuman aktif muncul otomatis saat pelajar membuka dashboard.'}
+              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={() => navigate('/kelola-pengumuman')}
-              className="px-3 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-[0.7rem] sm:text-xs font-bold border-none cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-end sm:self-auto"
-            >
-              <span>Kelola Pengumuman</span>
-              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+            <button type="button" onClick={() => navigate('/kelola-pengumuman')} className={BTN_SECONDARY}>
+              Kelola pengumuman
             </button>
-          </div>
+          </aside>
         )}
 
         {/* ── 4. TWO-COLUMN OPERATIONAL WORKSPACE ───────────────────── */}
@@ -914,12 +741,12 @@ export default function AdminDashboard() {
             <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 sm:p-5 space-y-3.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <svg className="size-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>Jadwal Kelas Terdekat</span>
-                  </h3>
+                  </h2>
                   <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 mt-0.5">
                     Monitoring sesi live & kapasitas kuota
                   </p>
@@ -1006,12 +833,12 @@ export default function AdminDashboard() {
             <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <svg className="size-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                     <span>Roster Sensei Aktif</span>
-                  </h3>
+                  </h2>
                   <p className="text-[0.65rem] sm:text-[0.68rem] text-slate-400 mt-0.5">
                     Daftar pengajar sesi kelas
                   </p>
@@ -1070,7 +897,7 @@ export default function AdminDashboard() {
 
         </div>
 
-      </main>
+      </AdminPage>
 
       {/* WhatsApp Broadcast Modal */}
       {showBroadcastModal && (

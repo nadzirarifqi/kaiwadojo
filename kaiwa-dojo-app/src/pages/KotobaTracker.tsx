@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   fetchAllStudentKotobaStats,
@@ -10,6 +9,7 @@ import {
 } from '../lib/kotobaService'
 import { fetchGroups, sortGroupsAlphabetically, type KaiwaGroup } from '../lib/groupService'
 import LoadingScreen from '../components/LoadingScreen'
+import { AdminPage, PageHeader, StatGrid, EmptyState, AccessDenied, CARD, BTN_PRIMARY, BTN_SECONDARY } from '../components/admin/AdminUI'
 
 /* ── Helper: Format Relative Time ── */
 function formatRelativeTime(dateStr?: string | null): string {
@@ -44,7 +44,6 @@ function formatFullDate(dateStr?: string | null): string {
 }
 
 export default function KotobaTrackerPage() {
-  const navigate = useNavigate()
   const { profile } = useAuth()
 
   // Verify role: Admin and Pemateri only
@@ -211,27 +210,7 @@ export default function KotobaTrackerPage() {
   }
 
   if (!isAuthorized) {
-    return (
-      <main className="flex-1 p-6 lg:p-8 flex items-center justify-center min-h-[70vh]">
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md text-center border border-slate-200 dark:border-slate-700 shadow-xl">
-          <div className="size-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
-            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Akses Terbatas</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-            Halaman ini khusus diperuntukkan untuk Admin dan Pemateri kaiwadojo.
-          </p>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full py-3 rounded-2xl bg-primary text-white font-bold text-sm shadow-md hover:bg-primary/90 transition-all cursor-pointer"
-          >
-            Kembali ke Dashboard
-          </button>
-        </div>
-      </main>
-    )
+    return <AccessDenied message="Halaman ini khusus Admin dan Pengajar." />
   }
 
   if (loading) {
@@ -239,259 +218,112 @@ export default function KotobaTrackerPage() {
   }
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-clip animate-fade-in bg-slate-50 dark:bg-slate-950">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-amber-900 via-slate-900 to-indigo-950 text-white rounded-2xl lg:rounded-[28px] p-5 sm:p-7 mb-7 shadow-xl relative overflow-hidden border border-amber-900/30">
-        <div className="absolute right-4 -bottom-6 text-[8rem] sm:text-[10rem] font-black text-amber-500/5 select-none pointer-events-none leading-none font-serif">
-          語
-        </div>
-        <div className="absolute -left-10 -top-10 size-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[0.65rem] font-black uppercase tracking-widest bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
-                Admin & Pemateri Tracker
-              </span>
-              <span className="text-[0.65rem] font-bold text-amber-200/80 bg-white/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Realtime Database
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl font-serif">語</span>
-              <span>Tracker Setoran Kotoba Pelajar</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1 max-w-2xl">
-              Pantau progres hafalan kosakata mandiri seluruh peserta, tingkat penguasaan, dan telusuri daftar kosakata detail per siswa.
-            </p>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => loadData(false)}
-              disabled={refreshing}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-              title="Refresh data"
-            >
-              <svg className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <AdminPage>
+      <PageHeader
+        eyebrow={profile?.role === 'admin' ? 'Admin · Aktivitas' : 'Mengajar'}
+        title="Tracker Setoran Kotoba"
+        description="Pantau progres hafalan kosakata seluruh pelajar, tingkat penguasaan, dan daftar kosakata per siswa."
+        actions={
+          <>
+            <button type="button" onClick={() => loadData(false)} disabled={refreshing} className={BTN_SECONDARY}>
+              <svg className={`size-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>{refreshing ? 'Memperbarui...' : 'Segarkan'}</span>
+              {refreshing ? 'Memperbarui…' : 'Muat ulang'}
             </button>
-            <button
-              onClick={handleExportCSV}
-              disabled={filteredStudents.length === 0}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-            >
-              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button type="button" onClick={handleExportCSV} disabled={filteredStudents.length === 0} className={BTN_PRIMARY}>
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              <span>Ekspor CSV</span>
+              Ekspor CSV
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Global Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-7">
-        {/* Metric 1: Total Kotoba Global */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Total Kosakata Disetor</span>
-            <div className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base font-black font-serif">
-              語
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">
-              {summary.totalKotoba.toLocaleString('id-ID')}
-            </div>
-            <p className="text-[0.7rem] text-slate-400 mt-1 font-medium">
-              Dari {summary.activeStudents} pelajar aktif menyetor
-            </p>
-          </div>
-        </div>
+      <StatGrid
+        label="Ringkasan setoran kotoba"
+        items={[
+          { label: 'Total kosakata', value: summary.totalKotoba.toLocaleString('id-ID'), hint: `dari ${summary.activeStudents} pelajar` },
+          { label: 'Sudah dikuasai', value: summary.masteredKotoba.toLocaleString('id-ID'), tone: 'success', hint: `${summary.globalMasteryRate}% dari total` },
+          { label: 'Belum dikuasai', value: summary.unmasteredKotoba.toLocaleString('id-ID'), tone: 'warning', hint: 'masih dalam latihan' },
+          {
+            label: 'Partisipasi',
+            value: <>{summary.activeStudents}<span className="text-sm font-semibold text-slate-400"> / {summary.totalStudents}</span></>,
+            tone: 'info',
+            hint: `${summary.totalStudents > 0 ? Math.round((summary.activeStudents / summary.totalStudents) * 100) : 0}% pelajar sudah menyetor`,
+          },
+        ]}
+      />
 
-        {/* Metric 2: Mastered Kotoba */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Sudah Dikuasai</span>
-            <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-black">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              {summary.masteredKotoba.toLocaleString('id-ID')}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md">
-                {summary.globalMasteryRate}% Dikuasai
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Metric 3: Unmastered Kotoba */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Belum Dikuasai</span>
-            <div className="size-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-black">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-              {summary.unmasteredKotoba.toLocaleString('id-ID')}
-            </div>
-            <p className="text-[0.7rem] text-slate-400 mt-1 font-medium">
-              Kosakata dalam proses latihan/hafalan
-            </p>
-          </div>
-        </div>
-
-        {/* Metric 4: Active Students Ratio */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Partisipasi Siswa</span>
-            <div className="size-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-black">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">
-              {summary.activeStudents} <span className="text-sm font-semibold text-slate-400">/ {summary.totalStudents}</span>
-            </div>
-            <p className="text-[0.7rem] text-slate-400 mt-1 font-medium">
-              {summary.totalStudents > 0 ? Math.round((summary.activeStudents / summary.totalStudents) * 100) : 0}% siswa memiliki setoran
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
-          {/* Search Box */}
+      {/* Filter */}
+      <section aria-label="Filter pelajar" className={`${CARD} p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3`}>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 flex-1">
           <div className="relative flex-1 min-w-[200px]">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Cari siswa, username, email, kata..."
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-            />
-            <svg className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1"
-              >
-                ✕
-              </button>
-            )}
+            <input
+              type="search"
+              aria-label="Cari pelajar atau kosakata"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Cari siswa, username, email, kata…"
+              className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-white placeholder-slate-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
           </div>
-
-          {/* Group Filter */}
-          <select
-            value={selectedGroup}
-            onChange={e => setSelectedGroup(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
-          >
-            <option value="all">Semua Grup ({groups.length})</option>
+          <select aria-label="Filter grup" value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)} className="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="all">Semua grup ({groups.length})</option>
             {groups.map(g => (
-              <option key={g.id} value={g.name}>
-                {g.name}
-              </option>
+              <option key={g.id} value={g.name}>{g.name}</option>
             ))}
-            <option value="__no_group__">Tanpa Grup (Siswa Biasa)</option>
+            <option value="__no_group__">Tanpa grup (Siswa Biasa)</option>
           </select>
-
-          {/* Mastery Level Filter */}
-          <select
-            value={masteryFilter}
-            onChange={e => setMasteryFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
-          >
-            <option value="all">Semua Status</option>
+          <select aria-label="Filter tingkat penguasaan" value={masteryFilter} onChange={e => setMasteryFilter(e.target.value as any)} className="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="all">Semua status</option>
             <option value="high">Tuntas (≥ 80%)</option>
-            <option value="progress">Sedang Belajar (1-79%)</option>
-            <option value="empty">Belum Ada Setoran (0)</option>
+            <option value="progress">Sedang belajar (1–79%)</option>
+            <option value="empty">Belum ada setoran</option>
           </select>
-
-          {/* Sort Filter */}
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 cursor-pointer"
-          >
-            <option value="total">Urutkan: Terbanyak Kotoba</option>
-            <option value="recent">Urutkan: Terakhir Setor</option>
-            <option value="percentage">Urutkan: % Tertinggi</option>
-            <option value="name">Urutkan: Nama (A-Z)</option>
+          <select aria-label="Urutkan" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <option value="total">Kotoba terbanyak</option>
+            <option value="recent">Terakhir setor</option>
+            <option value="percentage">% tertinggi</option>
+            <option value="name">Nama (A–Z)</option>
           </select>
         </div>
 
-        {/* View Switcher */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-end sm:self-auto shrink-0">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewMode === 'grid'
-                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-            <span>Kartu</span>
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewMode === 'table'
-                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            }`}
-          >
-            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            <span>Tabel</span>
-          </button>
+        <div role="group" aria-label="Tampilan" className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start lg:self-auto shrink-0">
+          {([['grid', 'Kartu'], ['table', 'Tabel']] as const).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={viewMode === mode}
+              onClick={() => setViewMode(mode)}
+              className={`h-9 px-3 rounded-lg text-sm font-semibold transition-colors cursor-pointer border-none ${
+                viewMode === mode
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* Result Count Header */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-          Menampilkan <strong className="text-slate-800 dark:text-white">{filteredStudents.length}</strong> pelajar
-        </span>
-      </div>
+      {/* Daftar pelajar */}
+      <section aria-labelledby="kotoba-list-title" className="flex flex-col gap-3">
+        <h2 id="kotoba-list-title" className="text-base font-bold text-slate-900 dark:text-white px-1">
+          Pelajar <span className="text-sm font-normal text-slate-500 dark:text-slate-400">· {filteredStudents.length}</span>
+        </h2>
 
-      {/* Empty State */}
       {filteredStudents.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col items-center gap-3">
-          <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
-            <svg className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Tidak ada pelajar yang cocok</h3>
-          <p className="text-xs text-slate-400 max-w-sm">
-            Coba ubah kata kunci pencarian atau sesuaikan filter grup / status penguasaan.
-          </p>
+        <div className={CARD}>
+          <EmptyState
+            title="Tidak ada pelajar yang cocok"
+            description="Ubah kata kunci pencarian atau sesuaikan filter grup / status penguasaan."
+          />
         </div>
       ) : viewMode === 'grid' ? (
         /* GRID VIEW CARDS */
@@ -748,6 +580,7 @@ export default function KotobaTrackerPage() {
           </div>
         </div>
       )}
+      </section>
 
       {/* DETAIL MODAL PER SISWA */}
       {selectedStudent && (
@@ -756,7 +589,7 @@ export default function KotobaTrackerPage() {
           onClose={() => setSelectedStudent(null)}
         />
       )}
-    </main>
+    </AdminPage>
   )
 }
 
