@@ -13,6 +13,9 @@ class JWT {
     }
 
     public static function encode(array $payload, string $secret = JWT_SECRET): string {
+        if (strlen($secret) < 16) {
+            throw new RuntimeException('JWT_SECRET belum dikonfigurasi di api/config.local.php');
+        }
         $header = ['typ' => 'JWT', 'alg' => 'HS256'];
         $segments = [
             self::base64UrlEncode(json_encode($header)),
@@ -25,6 +28,9 @@ class JWT {
     }
 
     public static function decode(string $jwt, string $secret = JWT_SECRET): ?array {
+        if (strlen($secret) < 16) {
+            return null; // tanpa kunci rahasia, tidak ada token yang dianggap sah
+        }
         $parts = explode('.', $jwt);
         if (count($parts) !== 3) {
             return null;

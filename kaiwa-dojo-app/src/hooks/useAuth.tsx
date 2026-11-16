@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { Session, User } from '../lib/supabaseClient'
 import { supabase, invalidateTableCache } from '../lib/supabaseClient'
 import { getSubscriptionAccess } from '../lib/subscriptionAccess'
+import { touchAttendance } from '../lib/attendanceService'
 
 export type UserRole = 'pelajar' | 'pemateri' | 'admin'
 
@@ -153,6 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .update({ last_active_at: new Date().toISOString() })
         .eq('id', userId)
     } catch {}
+    // Catat kehadiran harian (dibatasi 1x per 10 menit di dalam touchAttendance)
+    touchAttendance(userId)
   }
 
   // Update activity timestamp in local storage

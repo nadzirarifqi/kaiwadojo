@@ -8,18 +8,8 @@ import { supabase } from './supabaseClient'
 import { AppConfig } from '../config/appConfig'
 
 
-/**
- * Token Fonnte Terpusat (Single Source of Truth)
- */
-export const DEFAULT_FONNTE_TOKEN = 'zhrUJEgA6bNS8EH3P2bb'
-
-export function getFonnteToken(): string {
-  const envToken = import.meta.env.VITE_FONNTE_TOKEN
-  if (envToken && typeof envToken === 'string' && envToken.trim().length > 0) {
-    return envToken.trim()
-  }
-  return DEFAULT_FONNTE_TOKEN
-}
+// Token Fonnte hanya ada di server (api/config.local.php → FONNTE_TOKEN).
+// Semua pemanggilan Fonnte lewat api/notify.php.
 
 export interface SendWhatsAppOtpParams {
   phoneNumber: string
@@ -158,8 +148,6 @@ export async function sendWhatsAppPaymentRejectedNotice({
  * Memeriksa apakah nomor telepon terdaftar & aktif di WhatsApp via Fonnte API /validate
  */
 export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isValid: boolean; message?: string }> {
-  const fonnteToken = getFonnteToken()
-
   let formattedPhone = (phoneNumber || '').replace(/[^0-9]/g, '')
   if (formattedPhone.startsWith('0')) {
     formattedPhone = '62' + formattedPhone.slice(1)
@@ -170,25 +158,19 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ isV
   }
 
   try {
-    const formData = new FormData()
-    formData.append('target', formattedPhone)
-
-    const res = await fetch('https://api.fonnte.com/validate', {
+    const res = await fetch(`${AppConfig.api.baseUrl}/notify.php?action=validate_whatsapp`, {
       method: 'POST',
-      headers: {
-        'Authorization': fonnteToken,
-      },
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: formattedPhone }),
     })
 
-    const data = await res.json()
+    const json = await res.json()
 
-    if (data.status && data.registered && Array.isArray(data.registered) && data.registered.length > 0) {
-      return { isValid: true }
-    } else if (data.not_registered && Array.isArray(data.not_registered) && data.not_registered.length > 0) {
+    if (json?.data?.registered === false) {
       return { isValid: false, message: `Nomor (${phoneNumber}) tidak terdaftar di WhatsApp! Mohon gunakan nomor WhatsApp aktif.` }
     }
 
+    // Terdaftar, atau tidak bisa dicek (server/Fonnte bermasalah) → jangan blokir pendaftaran
     return { isValid: true }
   } catch (err) {
     console.error('Error validating WA number via Fonnte:', err)

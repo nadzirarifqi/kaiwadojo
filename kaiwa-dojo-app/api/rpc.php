@@ -6,6 +6,7 @@ handle_cors();
 
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/auth_guard.php';
+require_once __DIR__ . '/lib/attendance.php';
 
 header('Content-Type: application/json');
 
@@ -27,6 +28,17 @@ switch ($fn) {
         break;
     case 'admin_update_instructor':
         handleAdminUpdateInstructor($db, $args);
+        break;
+    case 'touch_attendance':
+        $u = AuthGuard::requireUser();
+        Attendance::record($db, $u['id'], false);
+        echo json_encode(['data' => true, 'error' => null]);
+        break;
+    case 'admin_compile_attendance':
+        handleAdminCompileAttendance($db, $args, false);
+        break;
+    case 'admin_push_attendance_sheet':
+        handleAdminCompileAttendance($db, $args, true);
         break;
     default:
         http_response_code(400);
@@ -343,4 +355,44 @@ function handleAdminUpdateInstructor(PDO $db, array $args): void {
     }
 
     echo json_encode(['data' => true, 'error' => null]);
+}
+
+/**
+ * Rekap kehadiran pelajar (berdasarkan login harian) dalam rentang tanggal.
+ * $push = true → hasilnya juga ditulis ke tab "Compile Absence" di Google Sheets.
+ */
+function handleAdminCompileAttendance(PDO $db, array $args, bool $push): void {
+    AuthGuard::requireAdmin();
+
+    [$start, $end, $err] = Attendance::parseRange((string)($args['start'] ?? ''), (string)($args['end'] ?? ''));
+    if ($err) {
+        http_response_code(400);
+        echo json_encode(['data' => null, 'error' => ['message' => $err]]);
+        return;
+    }
+    $group = isset($args['group']) && $args['group'] !== 'all' ? (string)$args['group'] : null;
+    $includeUnapproved = !empty($args['include_unapproved']);
+
+    $report = Attendance::compile($db, $start, $end, $group, $includeUnapproved);
+
+    if (!$push) {
+        echo json_encode(['data' => $report, 'error' => null], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    $groupLabel = $group === null ? 'Semua grup' : ($group === '__no_group__' ? 'Siswa Biasa (tanpa grup)' : $group);
+    $result = Attendance::pushToSheet(Attendance::toSheetPayload($report, $groupLabel));
+    if (!$result['ok']) {
+        http_response_code(502);
+        echo json_encode(['data' => null, 'error' => ['message' => $result['message']]]);
+        return;
+    }
+    echo json_encode([
+        'data' => [
+            'students'  => count($report['students']),
+            'days'      => $report['total_days'],
+            'sheet_url' => $result['sheet_url'] ?? (defined('ATTENDANCE_SHEET_URL') ? ATTENDANCE_SHEET_URL : null),
+        ],
+        'error' => null,
+    ]);
 }

@@ -40,8 +40,10 @@ export const AppConfig = {
     presenceHeartbeatIntervalMs: 60 * 1000,
     // Interval polling sinkronisasi realtime (12 detik)
     realtimePollIntervalMs: 12 * 1000,
-    // ID khusus akun master admin
+    // ID & username akun admin utama. Password-nya hanya diverifikasi di server
+    // (MASTER_ADMIN_PASSWORD_HASH di api/config.local.php) — jangan pernah taruh password di frontend.
     masterAdminId: '00000000-0000-0000-0000-000000000099',
+    masterAdminUsername: 'kaiwahiroshima',
   },
 
   // ── Kunci Penyimpanan Browser (Storage Keys) ──

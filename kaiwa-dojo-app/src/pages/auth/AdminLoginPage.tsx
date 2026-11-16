@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { AppConfig } from '../../config/appConfig'
 import { claimDeviceSession } from '../../lib/deviceUtils'
 import { SecurityRateLimiter, sanitizeUsername } from '../../lib/securityUtils'
 import KaiwaLogo from '../../components/KaiwaLogo'
@@ -20,7 +21,7 @@ export default function AdminLoginPage() {
   const [pinLockout, setPinLockout] = useState<number>(0)
 
   // Login Credentials State & Rate Limiting
-  const [username, setUsername] = useState('kaiwahiroshima')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -103,18 +104,19 @@ export default function AdminLoginPage() {
     const cleanUser = sanitizeUsername(username)
 
     // 1. Special Admin Hiroshima Credentials
-    if (cleanUser === 'kaiwahiroshima') {
-      if (password === 'inaconnextkaiwa6') {
-        const adminId = '00000000-0000-0000-0000-000000000099'
-        await supabase.auth.signInWithPassword({
-          email: 'kaiwahiroshima',
-          password: 'inaconnextkaiwa6',
-        })
+    // Password diverifikasi di server (api/auth.php); tidak ada password di kode frontend.
+    if (cleanUser === AppConfig.auth.masterAdminUsername) {
+      const { data: adminAuth, error: adminAuthError } = await supabase.auth.signInWithPassword({
+        email: cleanUser,
+        password,
+      })
+      if (!adminAuthError && adminAuth?.user?.role === 'admin') {
+        const adminId: string = adminAuth.user.id
 
         let adminProf = {
           id: adminId,
           full_name: 'Admin Hiroshima',
-          username: 'kaiwahiroshima',
+          username: AppConfig.auth.masterAdminUsername,
           email: 'admin@kaiwadojo.com',
           bio: '',
           avatar_url: null as string | null,
@@ -325,7 +327,7 @@ export default function AdminLoginPage() {
             </form>
           </div>
         ) : (
-          /* ── PHASE 2: ADMIN CREDENTIALS LOGIN (kaiwahiroshima / inaconnextkaiwa6) ── */
+          /* ── PHASE 2: ADMIN CREDENTIALS LOGIN ── */
           <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl animate-fade-in">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-2">

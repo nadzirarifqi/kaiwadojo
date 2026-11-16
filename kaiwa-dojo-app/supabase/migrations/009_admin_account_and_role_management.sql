@@ -20,7 +20,7 @@ VALUES (
     'authenticated',
     'authenticated',
     'admin@kaiwadojo.com',
-    crypt('inaconnextkaiwa6', gen_salt('bf')),
+    crypt('GANTI_PASSWORD_ADMIN', gen_salt('bf')), -- password asli dihapus dari repo; admin utama kini diatur via api/config.local.php
     NOW(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Super Admin Hiroshima","username":"kaiwahiroshima"}',

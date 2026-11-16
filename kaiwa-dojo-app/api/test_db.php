@@ -6,6 +6,15 @@ header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// Diagnostik hanya bisa dibuka dengan ?key=DIAGNOSTICS_KEY (isi di config.local.php; kosong = nonaktif)
+require_once __DIR__ . '/config.php';
+$diagKey = defined('DIAGNOSTICS_KEY') ? DIAGNOSTICS_KEY : '';
+if ($diagKey === '' || !hash_equals($diagKey, (string)($_GET['key'] ?? ''))) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Not found']);
+    exit;
+}
+
 $diag = [
     'status'       => 'unknown',
     'timestamp'    => date('Y-m-d H:i:s T'),
@@ -91,10 +100,10 @@ try {
 
     // Test QueryBuilder UPDATE
     $mockAdmin = [
-        'id' => '00000000-0000-0000-0000-000000000099',
+        'id' => '00000000-0000-0000-0000-000000000099', // MASTER_ADMIN_ID
         'role' => 'admin',
         'status' => 'approved',
-        'username' => 'kaiwahiroshima'
+        'username' => 'diagnostic'
     ];
     try {
         $res = QueryBuilder::execute([

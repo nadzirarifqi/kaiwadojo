@@ -5,7 +5,15 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/jwt.php';
 
 class AuthGuard {
+    /** ID akun admin utama (login via MASTER_ADMIN_USERNAME / MASTER_ADMIN_PASSWORD_HASH di config.local.php) */
+    public const MASTER_ADMIN_ID = '00000000-0000-0000-0000-000000000099';
+
     private static ?array $currentUser = null;
+
+    public static function isMasterAdminEnabled(): bool {
+        return defined('MASTER_ADMIN_USERNAME') && MASTER_ADMIN_USERNAME !== ''
+            && defined('MASTER_ADMIN_PASSWORD_HASH') && MASTER_ADMIN_PASSWORD_HASH !== '';
+    }
     private static bool $evaluated = false;
 
     public static function getUser(): ?array {
@@ -81,41 +89,35 @@ class AuthGuard {
         $stmt->execute([$userId, $userId]);
         $row = $stmt->fetch();
 
+        $isMasterAdmin = $userId === self::MASTER_ADMIN_ID && self::isMasterAdminEnabled();
+
         if (!$row) {
-            // Master admin hardcoded fallback
-            if ($userId === '00000000-0000-0000-0000-000000000099') {
+            // Admin utama boleh tidak punya baris di tabel users/profiles
+            if ($isMasterAdmin) {
                 self::$currentUser = [
                     'id'       => $userId,
                     'email'    => 'admin@kaiwadojo.com',
-                    'username' => 'kaiwahiroshima',
+                    'username' => MASTER_ADMIN_USERNAME,
                     'role'     => 'admin',
                     'status'   => 'approved',
-                    'profile'  => ['id' => $userId, 'role' => 'admin', 'status' => 'approved', 'username' => 'kaiwahiroshima']
+                    'profile'  => ['id' => $userId, 'role' => 'admin', 'status' => 'approved', 'username' => MASTER_ADMIN_USERNAME]
                 ];
                 return self::$currentUser;
             }
-
-            // Fallback from JWT payload directly if user was deleted or table desynced
-            $jwtRole = $payload['role'] ?? ($payload['user_metadata']['role'] ?? 'pelajar');
-            self::$currentUser = [
-                'id'       => $userId,
-                'email'    => $payload['email'] ?? '',
-                'username' => $payload['user_metadata']['username'] ?? 'User',
-                'role'     => $jwtRole,
-                'status'   => 'approved',
-                'profile'  => ['id' => $userId, 'role' => $jwtRole, 'status' => 'approved']
-            ];
-            return self::$currentUser;
+            // Akun sudah dihapus → token tidak berlaku lagi (role TIDAK diambil dari isi token)
+            return null;
         }
 
         $rawMeta = $row['raw_user_meta_data'] ?? null;
         $meta = is_string($rawMeta) ? (json_decode($rawMeta, true) ?: []) : (is_array($rawMeta) ? $rawMeta : []);
-        if ($userId === '00000000-0000-0000-0000-000000000099') {
+        if ($isMasterAdmin) {
             $role = 'admin';
             $status = 'approved';
         } else {
-            $role = $row['role'] ?? $meta['role'] ?? ($payload['role'] ?? 'pelajar');
-            $status = $row['status'] ?? $meta['status'] ?? 'approved';
+            // Role & status hanya dari tabel profiles (dikelola server/admin).
+            // raw_user_meta_data diisi pendaftar sendiri, jadi tidak boleh menentukan role.
+            $role = $row['role'] ?? 'pelajar';
+            $status = $row['status'] ?? 'approved';
         }
 
         self::$currentUser = [

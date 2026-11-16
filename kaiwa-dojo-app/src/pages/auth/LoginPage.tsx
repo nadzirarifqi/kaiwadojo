@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { AppConfig } from '../../config/appConfig'
 import { useAuth } from '../../hooks/useAuth'
 import { fetchStudents } from '../../lib/studentService'
 import { getAdminWhatsAppUrl } from '../../lib/whatsappService'
@@ -103,18 +104,19 @@ export default function LoginPage() {
     setLoading(true)
 
     // 1. Special Admin Login Credentials
-    if (inputClean === 'kaiwahiroshima') {
-      if (password === 'inaconnextkaiwa6') {
-        const adminId = '00000000-0000-0000-0000-000000000099'
-        await supabase.auth.signInWithPassword({
-          email: 'kaiwahiroshima',
-          password: 'inaconnextkaiwa6',
-        })
+    // Password diverifikasi di server (api/auth.php); tidak ada password di kode frontend.
+    if (inputClean === AppConfig.auth.masterAdminUsername) {
+      const { data: adminAuth, error: adminAuthError } = await supabase.auth.signInWithPassword({
+        email: inputClean,
+        password,
+      })
+      if (!adminAuthError && adminAuth?.user?.role === 'admin') {
+        const adminId: string = adminAuth.user.id
 
         let adminProf = {
           id: adminId,
           full_name: 'Admin Hiroshima',
-          username: 'kaiwahiroshima',
+          username: AppConfig.auth.masterAdminUsername,
           email: 'admin@kaiwadojo.com',
           bio: '',
           avatar_url: null as string | null,

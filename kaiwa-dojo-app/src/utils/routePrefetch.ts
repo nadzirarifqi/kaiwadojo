@@ -24,6 +24,7 @@ const routeLoaders: Record<string, () => Promise<unknown>> = {
   '/kelola-pengumuman': () => import('../pages/AnnouncementManager'),
   '/kelola-masukan': () => import('../pages/FeedbackManager'),
   '/tracker-kotoba': () => import('../pages/KotobaTracker'),
+  '/rekap-kehadiran': () => import('../pages/AttendanceReport'),
   '/profile': () => import('../pages/Profile'),
   '/settings': () => import('../pages/Settings'),
   '/login': () => import('../pages/auth/LoginPage'),

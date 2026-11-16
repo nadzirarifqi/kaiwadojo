@@ -27,3 +27,6 @@ backups/
 *.njsproj
 *.sln
 *.sw?
+
+# Konfigurasi server (kunci rahasia) — jangan di-commit
+api/config.local.php

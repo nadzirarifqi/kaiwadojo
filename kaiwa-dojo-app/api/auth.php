@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/jwt.php';
 require_once __DIR__ . '/lib/auth_guard.php';
 require_once __DIR__ . '/lib/subscriptions.php';
+require_once __DIR__ . '/lib/attendance.php';
 
 header('Content-Type: application/json');
 
@@ -49,10 +50,14 @@ function handleSignIn(PDO $db, array $input): void {
         return;
     }
 
-    // Khusus fallback master password admin jika diperlukan
-    if ($login === 'kaiwahiroshima' && $password === 'inaconnextkaiwa6') {
-        $adminId = '00000000-0000-0000-0000-000000000099';
-        issueTokenForUser($db, $adminId);
+    // Admin utama: username & hash password diatur di config.local.php (tidak ada password di kode)
+    if (AuthGuard::isMasterAdminEnabled() && strcasecmp($login, MASTER_ADMIN_USERNAME) === 0) {
+        if (!password_verify($password, MASTER_ADMIN_PASSWORD_HASH)) {
+            http_response_code(400);
+            echo json_encode(['data' => null, 'error' => ['message' => 'Invalid login credentials']]);
+            return;
+        }
+        issueTokenForUser($db, AuthGuard::MASTER_ADMIN_ID);
         return;
     }
 
@@ -81,6 +86,7 @@ function handleSignIn(PDO $db, array $input): void {
 
     // Update last_sign_in_at
     $db->prepare("UPDATE users SET last_sign_in_at = CURRENT_TIMESTAMP(3) WHERE id = ?")->execute([$user['id']]);
+    Attendance::record($db, $user['id'], true);
 
     issueTokenForUser($db, $user['id']);
 }
@@ -91,14 +97,14 @@ function issueTokenForUser(PDO $db, string $userId): void {
     $profile = $stmt->fetch();
 
     if (!$profile) {
-        if ($userId === '00000000-0000-0000-0000-000000000099') {
+        if ($userId === AuthGuard::MASTER_ADMIN_ID && AuthGuard::isMasterAdminEnabled()) {
             $profile = [
                 'id' => $userId,
                 'email' => 'admin@kaiwadojo.com',
                 'auth_email' => 'admin@kaiwadojo.com',
                 'full_name' => 'Admin Hiroshima',
-                'username' => 'kaiwahiroshima',
-                'phone_number' => '087875018001',
+                'username' => MASTER_ADMIN_USERNAME,
+                'phone_number' => ADMIN_WA_NUMBER,
                 'institution' => 'Admin Dojo',
                 'role' => 'admin',
                 'status' => 'approved'
@@ -311,6 +317,8 @@ function handleGetSession(PDO $db): void {
         echo json_encode(['data' => ['session' => null], 'error' => null]);
         return;
     }
+    // Sesi dipulihkan saat aplikasi dibuka = pelajar hadir hari ini
+    Attendance::record($db, $user['id'], false);
     issueTokenForUser($db, $user['id']);
 }
 
