@@ -1,7 +1,9 @@
 <?php
 // api/lib/attendance.php - Pencatatan & rekap kehadiran pelajar berdasarkan login / aktivitas harian
 //
-// Satu baris per pengguna per hari di `student_daily_logins`:
+// Kehadiran = pada tanggal itu pelajar login ATAU meninggalkan jejak aktivitas
+// (setoran kotoba, kuis, reservasi, rencana harian, menonton video).
+// Satu baris per pengguna per hari dicatat langsung di `student_daily_logins`:
 //   first_seen_at : pertama kali login / membuka aplikasi hari itu  → dipakai sebagai "jam hadir"
 //   last_seen_at  : terakhir terlihat aktif hari itu
 //   sign_in_count : berapa kali login dengan password hari itu
@@ -42,6 +44,90 @@ class Attendance {
         } catch (Throwable $e) {
             // abaikan: rekap kehadiran bukan bagian kritis dari login
         }
+    }
+
+    /**
+     * Sumber jejak aktivitas pelajar yang sudah tersimpan di database.
+     * 'db'  = diisi otomatis CURRENT_TIMESTAMP (zona waktu sesi MySQL)
+     * 'utc' = ditulis aplikasi lewat query_builder (selalu UTC)
+     */
+    private const ACTIVITY_SOURCES = [
+        ['auth_sessions',           'user_id',    'created_at',      'db'],  // login / pulihkan sesi
+        ['users',                   'id',         'last_sign_in_at', 'db'],  // login terakhir
+        ['profiles',                'id',         'last_active_at',  'utc'], // aktif terakhir
+        ['user_kotoba_submissions', 'user_id',    'created_at',      'db'],  // setoran kotoba
+        ['quiz_attempts',           'student_id', 'attempted_at',    'db'],  // kuis
+        ['class_reservations',      'user_id',    'created_at',      'db'],  // reservasi kelas
+        ['daily_missions',          'student_id', 'created_at',      'db'],  // membuat rencana harian
+        ['daily_missions',          'student_id', 'updated_at',      'utc'], // mengubah rencana harian
+        ['lesson_progress',         'student_id', 'last_watched_at', 'utc'], // menonton video materi
+    ];
+
+    /** Offset "+07:00" dari zona waktu */
+    private static function offset(DateTimeZone $tz): string {
+        return (new DateTime('now', $tz))->format('P');
+    }
+
+    /** Offset zona waktu sesi MySQL (untuk kolom DEFAULT CURRENT_TIMESTAMP) */
+    private static function dbOffset(PDO $db): string {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+        try {
+            $sec = (int)$db->query("SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW())")->fetchColumn();
+            $sec = (int)(round($sec / 900) * 900); // bulatkan ke 15 menit
+            $cache = sprintf('%s%02d:%02d', $sec < 0 ? '-' : '+', intdiv(abs($sec), 3600), intdiv(abs($sec) % 3600, 60));
+        } catch (Throwable $e) {
+            $cache = '+00:00';
+        }
+        return $cache;
+    }
+
+    /** Tanggal mulai pencatatan langsung = tanggal tabel student_daily_logins dibuat (null = tak diketahui) */
+    private static function trackingStartDate(PDO $db): ?string {
+        try {
+            $created = $db->query("
+                SELECT CREATE_TIME FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_daily_logins'
+            ")->fetchColumn();
+            if (!$created) return null;
+            $dt = new DateTime((string)$created, new DateTimeZone(self::dbOffset($db)));
+            return $dt->setTimezone(self::tz())->format('Y-m-d');
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Jejak aktivitas per pelajar per tanggal lokal, dari semua sumber.
+     * @return array<array{user_id:string,d:string,first_at:string,last_at:string}>
+     */
+    private static function activityRows(PDO $db, DateTime $start, DateTime $end): array {
+        $local = self::offset(self::tz());
+        $rangeStart = (clone $start)->setTime(0, 0, 0);
+        $rangeEnd = (clone $end)->setTime(0, 0, 0)->modify('+1 day');
+        $out = [];
+        foreach (self::ACTIVITY_SOURCES as [$table, $userCol, $timeCol, $origin]) {
+            $src = $origin === 'utc' ? '+00:00' : self::dbOffset($db);
+            $srcTz = new DateTimeZone($src);
+            $from = (clone $rangeStart)->setTimezone($srcTz)->format('Y-m-d H:i:s');
+            $to = (clone $rangeEnd)->setTimezone($srcTz)->format('Y-m-d H:i:s');
+            $conv = "CONVERT_TZ(`$timeCol`, '$src', '$local')";
+            try {
+                $stmt = $db->prepare("
+                    SELECT `$userCol` AS user_id, DATE($conv) AS d, MIN($conv) AS first_at, MAX($conv) AS last_at
+                    FROM `$table`
+                    WHERE `$timeCol` IS NOT NULL AND `$timeCol` >= ? AND `$timeCol` < ? AND `$userCol` IS NOT NULL
+                    GROUP BY `$userCol`, DATE($conv)
+                ");
+                $stmt->execute([$from, $to]);
+                foreach ($stmt->fetchAll() as $row) {
+                    $out[] = $row;
+                }
+            } catch (Throwable $e) {
+                // tabel/kolom tidak ada di server ini → lewati sumber ini
+            }
+        }
+        return $out;
     }
 
     /** Kategori keaktifan berdasarkan persentase hadir (sama dengan istilah di sheet absensi). */
@@ -109,18 +195,43 @@ class Attendance {
         $stmt->execute($params);
         $students = $stmt->fetchAll();
 
-        // Log harian dalam rentang
+        // Kehadiran per siswa per tanggal: [user_id][Y-m-d] => ['first' => 'Y-m-d H:i:s', 'last' => ...] (waktu lokal)
         $byUser = [];
         if ($students) {
+            $ids = array_flip(array_column($students, 'id'));
+            $merge = function (string $uid, string $date, ?string $first, ?string $last) use (&$byUser, $ids) {
+                if (!isset($ids[$uid]) || !$first) return;
+                $cur = $byUser[$uid][$date] ?? null;
+                $last = $last ?: $first;
+                $byUser[$uid][$date] = [
+                    'first' => $cur && $cur['first'] < $first ? $cur['first'] : $first,
+                    'last'  => $cur && $cur['last'] > $last ? $cur['last'] : $last,
+                ];
+            };
+
+            // 1. Log harian yang dicatat langsung (sudah dalam waktu lokal).
+            //    Baris sebelum tabel dibuat adalah hasil backfill lama → diganti sumber aktivitas di bawah.
+            $trackingStart = self::trackingStartDate($db);
             $stmt = $db->prepare("
-                SELECT l.user_id, l.login_date, l.first_seen_at, l.last_seen_at, l.sign_in_count
-                FROM student_daily_logins l
-                JOIN profiles p ON p.id = l.user_id AND p.role = 'pelajar'
-                WHERE l.login_date BETWEEN ? AND ?
+                SELECT user_id, login_date, first_seen_at, last_seen_at
+                FROM student_daily_logins
+                WHERE login_date BETWEEN ? AND ?
             ");
-            $stmt->execute([$dates[0], $dates[$totalDays - 1]]);
+            // Hari tabel dibuat ikut dilewati: bisa berisi baris backfill lama (zona waktu keliru),
+            // dan hari itu sudah tercakup oleh sumber aktivitas.
+            $fromDate = $dates[0];
+            if ($trackingStart !== null) {
+                $afterStart = (new DateTime($trackingStart))->modify('+1 day')->format('Y-m-d');
+                $fromDate = max($fromDate, $afterStart);
+            }
+            $stmt->execute([$fromDate, $dates[$totalDays - 1]]);
             foreach ($stmt->fetchAll() as $row) {
-                $byUser[$row['user_id']][$row['login_date']] = $row;
+                $merge($row['user_id'], (string)$row['login_date'], (string)$row['first_seen_at'], (string)$row['last_seen_at']);
+            }
+
+            // 2. Jejak aktivitas lain (login, setoran kotoba, kuis, reservasi, rencana harian, video)
+            foreach (self::activityRows($db, $start, $end) as $row) {
+                $merge($row['user_id'], (string)$row['d'], (string)$row['first_at'], (string)$row['last_at']);
             }
         }
 
@@ -133,12 +244,11 @@ class Attendance {
             $lastSeen = null;
             foreach ($dates as $d) {
                 if (isset($logs[$d])) {
-                    $first = $logs[$d]['first_seen_at'];
-                    $days[$d] = substr((string)$first, 11, 5); // HH:MM
+                    $days[$d] = substr($logs[$d]['first'], 11, 5); // HH:MM
                     $present++;
                     $presentPerDate[$d]++;
-                    if ($lastSeen === null || $logs[$d]['last_seen_at'] > $lastSeen) {
-                        $lastSeen = $logs[$d]['last_seen_at'];
+                    if ($lastSeen === null || $logs[$d]['last'] > $lastSeen) {
+                        $lastSeen = $logs[$d]['last'];
                     }
                 } else {
                     $days[$d] = null;
@@ -193,7 +303,7 @@ class Attendance {
      */
     public static function toSheetPayload(array $report, string $groupLabel): array {
         $now = new DateTime('now', self::tz());
-        $title = 'REKAP KEHADIRAN SISWA (BERDASARKAN LOGIN) — '
+        $title = 'REKAP KEHADIRAN SISWA (BERDASARKAN LOGIN & AKTIVITAS) — '
             . strtoupper(self::longDate($report['start'])) . ' s/d ' . strtoupper(self::longDate($report['end']));
 
         $fixedHeader = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Kategori', 'Terakhir Aktif'];
@@ -202,7 +312,7 @@ class Attendance {
         $values = [
             [$title],
             ['Periode:', self::longDate($report['start']) . ' – ' . self::longDate($report['end']), 'Jumlah hari:', $report['total_days'], 'Grup:', $groupLabel],
-            ['Dibuat:', $now->format('d-m-Y H:i') . ' (' . $report['timezone'] . ')', 'Jumlah siswa:', count($report['students']), 'Isi sel tanggal:', 'jam masuk pertama hari itu; kosong = tidak hadir'],
+            ['Dibuat:', $now->format('d-m-Y H:i') . ' (' . $report['timezone'] . ')', 'Jumlah siswa:', count($report['students']), 'Isi sel tanggal:', 'jam pertama aktif hari itu (login/aktivitas); kosong = tidak hadir'],
             [],
             $header,
         ];

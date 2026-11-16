@@ -5,14 +5,25 @@ berdasarkan login, lalu bisa mengirim hasilnya ke tab **Compile Absence** di spr
 
 ## Cara kehadiran dihitung
 
-- Pelajar dihitung **hadir** pada suatu tanggal jika hari itu ia login, memulihkan sesi saat membuka aplikasi,
-  atau aktif di aplikasi (heartbeat, maks. 1x per 10 menit).
-- Tercatat di tabel `student_daily_logins` (1 baris per pelajar per hari): jam pertama masuk, terakhir aktif,
-  jumlah login dengan password. Tanggal memakai zona `ATTENDANCE_TIMEZONE` (default `Asia/Jakarta`).
-- Tabel dibuat otomatis oleh server saat request pertama. Saat dibuat, riwayat lama diisi dari
-  `auth_sessions`, `users.last_sign_in_at`, dan `profiles.last_active_at` — hanya sebagian, karena sebelumnya
-  aplikasi tidak menyimpan riwayat login. Rekap yang lengkap berlaku sejak fitur ini di-deploy.
-  Jika user DB tidak punya hak `CREATE`, jalankan `database/attendance.sql` manual.
+Pelajar dihitung **hadir** pada suatu tanggal jika hari itu ia melakukan salah satu dari:
+
+| Sumber | Tabel | Catatan |
+|---|---|---|
+| Login, buka aplikasi, aktif (heartbeat maks. 1x/10 menit) | `student_daily_logins` | dicatat langsung sejak fitur ini aktif |
+| Login / pulihkan sesi | `auth_sessions.created_at`, `users.last_sign_in_at` | sesi terhapus saat logout; login terakhir saja |
+| Terakhir aktif | `profiles.last_active_at` | hanya waktu terakhir |
+| Setor kotoba | `user_kotoba_submissions.created_at` | |
+| Kuis | `quiz_attempts.attempted_at` | |
+| Reservasi kelas | `class_reservations.created_at` | |
+| Membuat / mengubah rencana harian | `daily_missions.created_at`, `updated_at` | waktu dibuat, bukan tanggal rencananya |
+| Menonton video materi | `lesson_progress.last_watched_at` | hanya tontonan terakhir per video |
+
+- Jam di sel = **jam pertama aktif** hari itu, dalam zona `ATTENDANCE_TIMEZONE` (default `Asia/Jakarta`).
+  Jam di database (UTC / zona MySQL) dikonversi otomatis, jadi aktivitas 00:00–07:00 WIB masuk tanggal yang benar.
+- Riwayat **sebelum** fitur ini aktif hanya selengkap jejak aktivitas di atas. Pelajar yang hanya membuka aplikasi
+  tanpa setor/kuis/rencana/video pada hari itu baru terdeteksi sejak fitur ini di-deploy.
+- Tabel `student_daily_logins` dibuat otomatis oleh server. Jika user DB tidak punya hak `CREATE`,
+  jalankan `database/attendance.sql` manual.
 - Kategori: **Sangat Aktif** ≥ 80%, **Aktif** 60–79%, **Kurang Aktif** 40–59%, **Pasif** < 40%
   (ubah di `Attendance::category()` di `api/lib/attendance.php`).
 - Yang direkap: akun `pelajar` berstatus `approved` (opsi di halaman untuk menyertakan akun belum diverifikasi).

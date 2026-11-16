@@ -17,7 +17,7 @@ import {
 } from '../components/admin/AdminUI'
 
 /* ── Halaman Admin: Rekap Kehadiran ───────────────
-   Kehadiran = pelajar login / membuka aplikasi pada hari itu.
+   Kehadiran = pelajar login / membuka aplikasi / beraktivitas pada hari itu.
    Admin memilih rentang tanggal, melihat matriks per hari,
    lalu mengirim hasilnya ke tab "Compile Absence" di Google Sheets.
    ─────────────────────────────────────────────── */
@@ -212,7 +212,7 @@ export default function AttendanceReportPage() {
       <PageHeader
         eyebrow="Admin · Aktivitas"
         title="Rekap Kehadiran"
-        description="Pelajar dihitung hadir pada hari ia login atau membuka aplikasi. Pilih rentang tanggal, periksa hasilnya, lalu kirim ke Google Sheets."
+        description="Pelajar dihitung hadir pada hari ia login, membuka aplikasi, atau beraktivitas (setor kotoba, kuis, reservasi kelas, rencana harian, menonton video). Pilih rentang tanggal, periksa hasilnya, lalu kirim ke Google Sheets."
         actions={
           <>
             <button type="button" onClick={downloadCsv} disabled={!report || rows.length === 0} className={BTN_SECONDARY}>
@@ -324,7 +324,7 @@ export default function AttendanceReportPage() {
       {/* ── Tabel kehadiran ── */}
       <Panel
         title="Kehadiran per hari"
-        description={report ? `${formatLong(report.start)} – ${formatLong(report.end)} · jam = pertama kali masuk hari itu (${report.timezone})` : undefined}
+        description={report ? `${formatLong(report.start)} – ${formatLong(report.end)} · jam = pertama kali aktif hari itu (${report.timezone})` : undefined}
         actions={report && (
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <input

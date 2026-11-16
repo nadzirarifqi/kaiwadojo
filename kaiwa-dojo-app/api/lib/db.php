@@ -93,8 +93,8 @@ class DB {
 
     /**
      * Tabel log kehadiran harian (rekap kehadiran berdasarkan login).
-     * Saat pertama dibuat, riwayat lama diisi dari auth_sessions, users.last_sign_in_at,
-     * dan profiles.last_active_at agar rekap tidak mulai dari nol.
+     * Riwayat sebelum tabel ini ada dibaca langsung dari jejak aktivitas lain saat rekap
+     * (lihat Attendance::activityRows), jadi tidak perlu backfill.
      * Lihat juga database/attendance.sql untuk menjalankan manual.
      */
     public static function ensureAttendanceSchema(): void {
@@ -121,26 +121,6 @@ class DB {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
 
-            $isEmpty = !self::$instance->query("SELECT 1 FROM `student_daily_logins` LIMIT 1")->fetchColumn();
-            if ($isEmpty) {
-                $upsert = " ON DUPLICATE KEY UPDATE
-                    first_seen_at = LEAST(first_seen_at, VALUES(first_seen_at)),
-                    last_seen_at = GREATEST(last_seen_at, VALUES(last_seen_at))";
-                self::$instance->exec("
-                    INSERT INTO student_daily_logins (user_id, login_date, first_seen_at, last_seen_at, sign_in_count)
-                    SELECT s.user_id, DATE(s.created_at), MIN(s.created_at), MAX(s.created_at), 0
-                    FROM auth_sessions s JOIN users u ON u.id = s.user_id
-                    GROUP BY s.user_id, DATE(s.created_at)" . $upsert);
-                self::$instance->exec("
-                    INSERT INTO student_daily_logins (user_id, login_date, first_seen_at, last_seen_at, sign_in_count)
-                    SELECT id, DATE(last_sign_in_at), last_sign_in_at, last_sign_in_at, 1
-                    FROM users WHERE last_sign_in_at IS NOT NULL" . $upsert);
-                self::$instance->exec("
-                    INSERT INTO student_daily_logins (user_id, login_date, first_seen_at, last_seen_at, sign_in_count)
-                    SELECT p.id, DATE(p.last_active_at), p.last_active_at, p.last_active_at, 0
-                    FROM profiles p JOIN users u ON u.id = p.id
-                    WHERE p.last_active_at IS NOT NULL" . $upsert);
-            }
             @file_put_contents($flagFile, '1');
         } catch (Throwable $e) {
             // Jika user DB tidak punya hak CREATE, jalankan database/attendance.sql secara manual
