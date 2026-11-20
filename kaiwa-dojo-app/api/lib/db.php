@@ -102,7 +102,7 @@ class DB {
         if ($checked || self::$instance === null) return;
         $checked = true;
 
-        $flagFile = sys_get_temp_dir() . '/kaiwa_attendance_schema_v1.ok';
+        $flagFile = sys_get_temp_dir() . '/kaiwa_attendance_schema_v2.ok';
         if (file_exists($flagFile)) {
             return;
         }
@@ -115,11 +115,22 @@ class DB {
                   `first_seen_at` DATETIME(3) NOT NULL,
                   `last_seen_at` DATETIME(3) NOT NULL,
                   `sign_in_count` INT NOT NULL DEFAULT 0,
+                  `active_minutes` INT NOT NULL DEFAULT 0,
                   PRIMARY KEY (`user_id`, `login_date`),
                   KEY `idx_daily_logins_date` (`login_date`),
                   CONSTRAINT `student_daily_logins_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
+
+            // Tambah kolom active_minutes jika tabel sudah ada sebelumnya tanpa kolom ini
+            try {
+                self::$instance->exec("
+                    ALTER TABLE `student_daily_logins`
+                    ADD COLUMN `active_minutes` INT NOT NULL DEFAULT 0 AFTER `sign_in_count`
+                ");
+            } catch (Throwable $e) {
+                // kolom sudah ada → abaikan
+            }
 
             @file_put_contents($flagFile, '1');
         } catch (Throwable $e) {

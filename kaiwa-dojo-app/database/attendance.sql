@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `student_daily_logins` (
   `first_seen_at` DATETIME(3) NOT NULL,       -- pertama login / membuka aplikasi hari itu = jam hadir
   `last_seen_at` DATETIME(3) NOT NULL,        -- terakhir terlihat aktif hari itu
   `sign_in_count` INT NOT NULL DEFAULT 0,     -- jumlah login dengan password hari itu
+  `active_minutes` INT NOT NULL DEFAULT 0,    -- total menit aktif hari itu (diakumulasi setiap heartbeat ~10 menit)
   PRIMARY KEY (`user_id`, `login_date`),
   KEY `idx_daily_logins_date` (`login_date`),
   CONSTRAINT `student_daily_logins_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE

@@ -31,7 +31,8 @@ switch ($fn) {
         break;
     case 'touch_attendance':
         $u = AuthGuard::requireUser();
-        Attendance::record($db, $u['id'], false);
+        $addMinutes = max(0, (int)($args['add_minutes'] ?? 0));
+        Attendance::record($db, $u['id'], false, $addMinutes);
         echo json_encode(['data' => true, 'error' => null]);
         break;
     case 'admin_compile_attendance':

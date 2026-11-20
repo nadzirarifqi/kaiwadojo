@@ -8,6 +8,9 @@ import {
   pushAttendanceToSheet,
   attendanceToCsv,
   toDateKey,
+  formatActiveDuration,
+  getDayTime,
+  getDayMins,
   type AttendanceReport,
   type AttendanceCategory,
 } from '../lib/attendanceService'
@@ -161,7 +164,9 @@ export default function AttendanceReportPage() {
     const list = report?.students || []
     const avg = list.length ? list.reduce((n, s) => n + s.percentage, 0) / list.length : 0
     const count = (c: AttendanceCategory) => list.filter(s => s.category === c).length
-    return { avg, veryActive: count('Sangat Aktif'), passive: count('Pasif'), total: list.length }
+    const totalMins = list.reduce((n, s) => n + (s.total_active_minutes || 0), 0)
+    const avgMins = list.length ? Math.round(totalMins / list.length) : 0
+    return { avg, avgMins, veryActive: count('Sangat Aktif'), passive: count('Pasif'), total: list.length }
   }, [report])
 
   function downloadCsv() {
@@ -315,6 +320,7 @@ export default function AttendanceReportPage() {
           items={[
             { label: 'Jumlah siswa', value: stats.total, hint: `${report.total_days} hari dalam periode` },
             { label: 'Rata-rata kehadiran', value: `${stats.avg.toFixed(0)}%`, tone: 'info' },
+            { label: 'Rata-rata durasi aktif', value: formatActiveDuration(stats.avgMins), tone: 'info', hint: 'per siswa selama periode' },
             { label: 'Sangat aktif', value: stats.veryActive, tone: 'success', hint: 'hadir ≥ 80%' },
             { label: 'Pasif', value: stats.passive, tone: 'danger', hint: 'hadir < 40%' },
           ]}
@@ -362,6 +368,7 @@ export default function AttendanceReportPage() {
                 <tr className="text-left text-xs text-slate-500 dark:text-slate-400">
                   <th scope="col" className="sticky top-0 left-0 z-30 bg-slate-50 dark:bg-slate-800 px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700 min-w-[200px]">Siswa</th>
                   <th scope="col" className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800 px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700 text-center">Hadir</th>
+                  <th scope="col" className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800 px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700 text-center">Durasi</th>
                   <th scope="col" className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800 px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Kategori</th>
                   {dates.map(d => {
                     const dt = parseKey(d)
@@ -393,15 +400,20 @@ export default function AttendanceReportPage() {
                       <span className="text-xs text-slate-400"> / {report.total_days}</span>
                       <span className="block text-xs text-slate-500 tabular-nums">{Math.round(s.percentage)}%</span>
                     </td>
+                    <td className="px-3 py-2 text-center border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/60 whitespace-nowrap">
+                      <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">{formatActiveDuration(s.total_active_minutes)}</span>
+                    </td>
                     <td className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/60 whitespace-nowrap">
                       <Badge tone={CATEGORY_TONE[s.category]}>{s.category}</Badge>
                     </td>
                     {dates.map(d => {
-                      const time = s.days[d]
+                      const time = getDayTime(s.days[d])
+                      const mins = getDayMins(s.days[d])
+                      const durationHint = mins > 0 ? `, aktif ~${formatActiveDuration(mins)}` : ''
                       return (
                         <td key={d} className="px-1 py-1.5 text-center border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/60">
                           {time ? (
-                            <span className="inline-block min-w-[3rem] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold tabular-nums" title={`Hadir ${formatLong(d)}, masuk ${time}`}>
+                            <span className="inline-block min-w-[3rem] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold tabular-nums" title={`Hadir ${formatLong(d)}, masuk ${time}${durationHint}`}>
                               {time}
                             </span>
                           ) : (
@@ -419,6 +431,7 @@ export default function AttendanceReportPage() {
               <tfoot>
                 <tr className="text-xs">
                   <th scope="row" className="sticky left-0 bottom-0 z-10 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">Total hadir</th>
+                  <td className="sticky bottom-0 bg-slate-50 dark:bg-slate-800" />
                   <td className="sticky bottom-0 bg-slate-50 dark:bg-slate-800" />
                   <td className="sticky bottom-0 bg-slate-50 dark:bg-slate-800" />
                   {dates.map(d => (

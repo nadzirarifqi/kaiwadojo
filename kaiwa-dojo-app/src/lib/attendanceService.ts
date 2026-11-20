@@ -20,8 +20,10 @@ export interface AttendanceStudent {
   percentage: number
   category: AttendanceCategory
   last_seen_at: string | null
-  /** tanggal (YYYY-MM-DD) → jam masuk pertama "HH:MM", atau null bila tidak hadir */
-  days: Record<string, string | null>
+  /** Total menit aktif selama periode (akumulasi heartbeat ~10 menit) */
+  total_active_minutes: number
+  /** tanggal (YYYY-MM-DD) → { time: "HH:MM", mins: number } jika hadir, atau null */
+  days: Record<string, { time: string; mins: number } | null>
 }
 
 export interface AttendanceReport {
@@ -64,20 +66,24 @@ const TOUCH_INTERVAL_MS = 10 * 60 * 1000
 /**
  * Tandai pengguna "hadir hari ini". Dipanggil dari heartbeat aktivitas;
  * dibatasi 1x per 10 menit (atau segera saat tanggal berganti).
+ * Setiap panggilan menambahkan ~10 menit ke kolom active_minutes.
  */
 export async function touchAttendance(userId: string): Promise<void> {
   if (!userId) return
   const now = Date.now()
   const today = toDateKey(new Date())
+  let isFirstTouch = false
   try {
     const [lastUser, lastDate, lastTs] = (localStorage.getItem(TOUCH_KEY) || '').split('|')
     if (lastUser === userId && lastDate === today && now - Number(lastTs || 0) < TOUCH_INTERVAL_MS) return
+    isFirstTouch = lastUser !== userId || lastDate !== today
     localStorage.setItem(TOUCH_KEY, `${userId}|${today}|${now}`)
   } catch {
     // storage tidak tersedia → tetap kirim
   }
   try {
-    await supabase.rpc('touch_attendance', {})
+    // Touch pertama hari itu = 0 menit (baru login), berikutnya +10 menit per interval
+    await supabase.rpc('touch_attendance', { add_minutes: isFirstTouch ? 0 : 10 })
   } catch {}
 }
 
@@ -88,12 +94,34 @@ export function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
+/** Format menit → "2j 30m", atau "-" jika 0 */
+export function formatActiveDuration(totalMinutes: number): string {
+  if (!totalMinutes || totalMinutes <= 0) return '-'
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h === 0) return `${m}m`
+  return m > 0 ? `${h}j ${m}m` : `${h}j`
+}
+
+/** Ambil jam masuk dari data day (backward-compatible: string lama atau objek baru) */
+export function getDayTime(day: { time: string; mins: number } | string | null | undefined): string | null {
+  if (!day) return null
+  if (typeof day === 'string') return day
+  return day.time || null
+}
+
+/** Ambil menit aktif dari data day */
+export function getDayMins(day: { time: string; mins: number } | string | null | undefined): number {
+  if (!day || typeof day === 'string') return 0
+  return day.mins || 0
+}
+
 export function attendanceToCsv(report: AttendanceReport, rows: AttendanceStudent[] = report.students): string {
   const cell = (v: unknown) => {
     const s = v === null || v === undefined ? '' : String(v)
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
-  const header = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Kategori', 'Terakhir Aktif', ...report.dates]
+  const header = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Durasi Aktif', 'Kategori', 'Terakhir Aktif', ...report.dates]
   const lines = rows.map((s, i) => [
     i + 1,
     s.full_name,
@@ -101,9 +129,10 @@ export function attendanceToCsv(report: AttendanceReport, rows: AttendanceStuden
     s.group_name || 'Siswa Biasa',
     s.present_days,
     `${s.percentage}%`,
+    formatActiveDuration(s.total_active_minutes),
     s.category,
     s.last_seen_at || '',
-    ...report.dates.map(d => s.days[d] || ''),
+    ...report.dates.map(d => getDayTime(s.days[d]) || ''),
   ])
   return '﻿' + [header, ...lines].map(r => r.map(cell).join(',')).join('\n')
 }

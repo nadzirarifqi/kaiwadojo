@@ -27,20 +27,24 @@ class Attendance {
     /**
      * Catat kehadiran hari ini. Aman dipanggil berkali-kali (upsert).
      * Kegagalan tidak boleh mengganggu login, jadi semua error ditelan.
+     *
+     * @param int $addMinutes  menit aktif yang ditambahkan (default 0 untuk sign-in biasa;
+     *                         heartbeat klien mengirim interval ~10 menit)
      */
-    public static function record(PDO $db, string $userId, bool $isSignIn = false): void {
+    public static function record(PDO $db, string $userId, bool $isSignIn = false, int $addMinutes = 0): void {
         if ($userId === '') return;
         try {
             $now = new DateTime('now', self::tz());
             $date = $now->format('Y-m-d');
             $ts = $now->format('Y-m-d H:i:s.v');
             $db->prepare("
-                INSERT INTO student_daily_logins (user_id, login_date, first_seen_at, last_seen_at, sign_in_count)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO student_daily_logins (user_id, login_date, first_seen_at, last_seen_at, sign_in_count, active_minutes)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                   last_seen_at = GREATEST(last_seen_at, VALUES(last_seen_at)),
-                  sign_in_count = sign_in_count + VALUES(sign_in_count)
-            ")->execute([$userId, $date, $ts, $ts, $isSignIn ? 1 : 0]);
+                  sign_in_count = sign_in_count + VALUES(sign_in_count),
+                  active_minutes = active_minutes + VALUES(active_minutes)
+            ")->execute([$userId, $date, $ts, $ts, $isSignIn ? 1 : 0, max(0, $addMinutes)]);
         } catch (Throwable $e) {
             // abaikan: rekap kehadiran bukan bagian kritis dari login
         }
@@ -197,6 +201,8 @@ class Attendance {
 
         // Kehadiran per siswa per tanggal: [user_id][Y-m-d] => ['first' => 'Y-m-d H:i:s', 'last' => ...] (waktu lokal)
         $byUser = [];
+        // Menit aktif per siswa per tanggal dari log harian
+        $minutesByUser = [];
         if ($students) {
             $ids = array_flip(array_column($students, 'id'));
             $merge = function (string $uid, string $date, ?string $first, ?string $last) use (&$byUser, $ids) {
@@ -213,7 +219,7 @@ class Attendance {
             //    Baris sebelum tabel dibuat adalah hasil backfill lama → diganti sumber aktivitas di bawah.
             $trackingStart = self::trackingStartDate($db);
             $stmt = $db->prepare("
-                SELECT user_id, login_date, first_seen_at, last_seen_at
+                SELECT user_id, login_date, first_seen_at, last_seen_at, active_minutes
                 FROM student_daily_logins
                 WHERE login_date BETWEEN ? AND ?
             ");
@@ -227,6 +233,10 @@ class Attendance {
             $stmt->execute([$fromDate, $dates[$totalDays - 1]]);
             foreach ($stmt->fetchAll() as $row) {
                 $merge($row['user_id'], (string)$row['login_date'], (string)$row['first_seen_at'], (string)$row['last_seen_at']);
+                $mins = (int)($row['active_minutes'] ?? 0);
+                if ($mins > 0) {
+                    $minutesByUser[$row['user_id']][(string)$row['login_date']] = $mins;
+                }
             }
 
             // 2. Jejak aktivitas lain (login, setoran kotoba, kuis, reservasi, rencana harian, video)
@@ -239,12 +249,19 @@ class Attendance {
         $presentPerDate = array_fill_keys($dates, 0);
         foreach ($students as $s) {
             $logs = $byUser[$s['id']] ?? [];
+            $userMins = $minutesByUser[$s['id']] ?? [];
             $days = [];
             $present = 0;
             $lastSeen = null;
+            $totalMins = 0;
             foreach ($dates as $d) {
                 if (isset($logs[$d])) {
-                    $days[$d] = substr($logs[$d]['first'], 11, 5); // HH:MM
+                    $dayMins = $userMins[$d] ?? 0;
+                    $days[$d] = [
+                        'time' => substr($logs[$d]['first'], 11, 5), // HH:MM
+                        'mins' => $dayMins,
+                    ];
+                    $totalMins += $dayMins;
                     $present++;
                     $presentPerDate[$d]++;
                     if ($lastSeen === null || $logs[$d]['last'] > $lastSeen) {
@@ -256,19 +273,20 @@ class Attendance {
             }
             $pct = $totalDays > 0 ? round($present / $totalDays * 100, 1) : 0;
             $rows[] = [
-                'id'           => $s['id'],
-                'full_name'    => $s['full_name'],
-                'username'     => $s['username'],
-                'email'        => $s['email'],
-                'phone_number' => $s['phone_number'],
-                'group_name'   => $s['group_name'],
-                'institution'  => $s['institution'],
-                'status'       => $s['status'],
-                'present_days' => $present,
-                'percentage'   => $pct,
-                'category'     => self::category($pct),
-                'last_seen_at' => $lastSeen ? substr((string)$lastSeen, 0, 16) : null,
-                'days'         => $days,
+                'id'                   => $s['id'],
+                'full_name'            => $s['full_name'],
+                'username'             => $s['username'],
+                'email'                => $s['email'],
+                'phone_number'         => $s['phone_number'],
+                'group_name'           => $s['group_name'],
+                'institution'          => $s['institution'],
+                'status'               => $s['status'],
+                'present_days'         => $present,
+                'percentage'           => $pct,
+                'category'             => self::category($pct),
+                'last_seen_at'         => $lastSeen ? substr((string)$lastSeen, 0, 16) : null,
+                'total_active_minutes' => $totalMins,
+                'days'                 => $days,
             ];
         }
 
@@ -306,7 +324,7 @@ class Attendance {
         $title = 'REKAP KEHADIRAN SISWA (BERDASARKAN LOGIN & AKTIVITAS) — '
             . strtoupper(self::longDate($report['start'])) . ' s/d ' . strtoupper(self::longDate($report['end']));
 
-        $fixedHeader = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Kategori', 'Terakhir Aktif'];
+        $fixedHeader = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Durasi Aktif', 'Kategori', 'Terakhir Aktif'];
         $header = array_merge($fixedHeader, array_map([self::class, 'dayLabel'], $report['dates']));
 
         $values = [
@@ -319,6 +337,8 @@ class Attendance {
 
         $no = 1;
         foreach ($report['students'] as $s) {
+            $totalMins = $s['total_active_minutes'] ?? 0;
+            $durasi = $totalMins > 0 ? intdiv($totalMins, 60) . 'j ' . ($totalMins % 60) . 'm' : '-';
             $row = [
                 $no++,
                 $s['full_name'],
@@ -326,17 +346,19 @@ class Attendance {
                 $s['group_name'] ?: 'Siswa Biasa',
                 $s['present_days'],
                 $s['percentage'] / 100,
+                $durasi,
                 $s['category'],
                 $s['last_seen_at'] ? str_replace('T', ' ', $s['last_seen_at']) : '',
             ];
             foreach ($report['dates'] as $d) {
-                $row[] = $s['days'][$d] ?? '';
+                $day = $s['days'][$d] ?? null;
+                $row[] = is_array($day) ? ($day['time'] ?? '') : ($day ?? '');
             }
             $values[] = $row;
         }
 
         // Baris total hadir per tanggal
-        $totalRow = ['', 'TOTAL HADIR PER HARI', '', '', '', '', '', ''];
+        $totalRow = ['', 'TOTAL HADIR PER HARI', '', '', '', '', '', '', ''];
         foreach ($report['dates'] as $d) {
             $totalRow[] = $report['present_per_date'][$d];
         }
