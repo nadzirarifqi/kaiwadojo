@@ -22,8 +22,20 @@ export interface AttendanceStudent {
   last_seen_at: string | null
   /** Total menit aktif selama periode (akumulasi heartbeat ~10 menit) */
   total_active_minutes: number
-  /** tanggal (YYYY-MM-DD) → { time: "HH:MM", mins: number } jika hadir, atau null */
-  days: Record<string, { time: string; mins: number } | null>
+  /** Jumlah hari istirahat "Tidak Ada Rencana" (cap biru) dalam periode */
+  rest_days?: number
+  /**
+   * tanggal (YYYY-MM-DD) → data hari itu, atau null jika tidak hadir.
+   * time null + rest true = libur (cap biru) tanpa aktivitas.
+   */
+  days: Record<string, AttendanceDay | null>
+}
+
+export interface AttendanceDay {
+  time: string | null
+  mins: number
+  /** Hari istirahat "Tidak Ada Rencana" (cap biru) */
+  rest?: boolean
 }
 
 export interface AttendanceReport {
@@ -104,14 +116,26 @@ export function formatActiveDuration(totalMinutes: number): string {
 }
 
 /** Ambil jam masuk dari data day (backward-compatible: string lama atau objek baru) */
-export function getDayTime(day: { time: string; mins: number } | string | null | undefined): string | null {
+export function getDayTime(day: AttendanceDay | string | null | undefined): string | null {
   if (!day) return null
   if (typeof day === 'string') return day
   return day.time || null
 }
 
+/** Apakah hari itu ditandai libur / "Tidak Ada Rencana" (cap biru) */
+export function isRestDay(day: AttendanceDay | string | null | undefined): boolean {
+  return !!day && typeof day !== 'string' && !!day.rest
+}
+
+/** Isi sel ekspor (sama dengan sheet): "07:42", "LIBUR", "LIBUR 07:42", atau kosong */
+export function dayCellText(day: AttendanceDay | string | null | undefined): string {
+  const time = getDayTime(day) || ''
+  if (isRestDay(day)) return time ? `LIBUR ${time}` : 'LIBUR'
+  return time
+}
+
 /** Ambil menit aktif dari data day */
-export function getDayMins(day: { time: string; mins: number } | string | null | undefined): number {
+export function getDayMins(day: AttendanceDay | string | null | undefined): number {
   if (!day || typeof day === 'string') return 0
   return day.mins || 0
 }
@@ -121,7 +145,7 @@ export function attendanceToCsv(report: AttendanceReport, rows: AttendanceStuden
     const s = v === null || v === undefined ? '' : String(v)
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
-  const header = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Durasi Aktif', 'Kategori', 'Terakhir Aktif', ...report.dates]
+  const header = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Kategori', 'Durasi Aktif', 'Libur (hari)', 'Terakhir Aktif', ...report.dates]
   const lines = rows.map((s, i) => [
     i + 1,
     s.full_name,
@@ -129,10 +153,11 @@ export function attendanceToCsv(report: AttendanceReport, rows: AttendanceStuden
     s.group_name || 'Siswa Biasa',
     s.present_days,
     `${s.percentage}%`,
-    formatActiveDuration(s.total_active_minutes),
     s.category,
+    formatActiveDuration(s.total_active_minutes),
+    s.rest_days ?? 0,
     s.last_seen_at || '',
-    ...report.dates.map(d => getDayTime(s.days[d]) || ''),
+    ...report.dates.map(d => dayCellText(s.days[d])),
   ])
   return '﻿' + [header, ...lines].map(r => r.map(cell).join(',')).join('\n')
 }

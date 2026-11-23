@@ -134,6 +134,30 @@ class Attendance {
         return $out;
     }
 
+    /**
+     * Tanggal yang ditandai pelajar sebagai "Tidak Ada Rencana" / hari istirahat (cap biru):
+     * rencana harian tanpa target video, kuis, maupun kotoba (sama dengan isNoPlanMission di frontend).
+     * @return array<array{student_id:string,date:string}>
+     */
+    private static function restDays(PDO $db, string $from, string $to): array {
+        try {
+            $stmt = $db->prepare("
+                SELECT student_id, `date`
+                FROM daily_missions
+                WHERE `date` BETWEEN ? AND ?
+                  AND COALESCE(target_quiz_count, 0) <= 0
+                  AND COALESCE(target_kotoba_count, 0) <= 0
+                  AND (COALESCE(target_replay_count, 0) <= 0
+                       OR selected_videos IS NULL
+                       OR TRIM(selected_videos) IN ('', '[]', 'null'))
+            ");
+            $stmt->execute([$from, $to]);
+            return $stmt->fetchAll();
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
     /** Kategori keaktifan berdasarkan persentase hadir (sama dengan istilah di sheet absensi). */
     public static function category(float $pct): string {
         if ($pct >= 80) return 'Sangat Aktif';
@@ -203,6 +227,7 @@ class Attendance {
         $byUser = [];
         // Menit aktif per siswa per tanggal dari log harian
         $minutesByUser = [];
+        $restByUser = [];
         if ($students) {
             $ids = array_flip(array_column($students, 'id'));
             $merge = function (string $uid, string $date, ?string $first, ?string $last) use (&$byUser, $ids) {
@@ -218,11 +243,6 @@ class Attendance {
             // 1. Log harian yang dicatat langsung (sudah dalam waktu lokal).
             //    Baris sebelum tabel dibuat adalah hasil backfill lama → diganti sumber aktivitas di bawah.
             $trackingStart = self::trackingStartDate($db);
-            $stmt = $db->prepare("
-                SELECT user_id, login_date, first_seen_at, last_seen_at, active_minutes
-                FROM student_daily_logins
-                WHERE login_date BETWEEN ? AND ?
-            ");
             // Hari tabel dibuat ikut dilewati: bisa berisi baris backfill lama (zona waktu keliru),
             // dan hari itu sudah tercakup oleh sumber aktivitas.
             $fromDate = $dates[0];
@@ -230,7 +250,22 @@ class Attendance {
                 $afterStart = (new DateTime($trackingStart))->modify('+1 day')->format('Y-m-d');
                 $fromDate = max($fromDate, $afterStart);
             }
-            $stmt->execute([$fromDate, $dates[$totalDays - 1]]);
+            try {
+                $stmt = $db->prepare("
+                    SELECT user_id, login_date, first_seen_at, last_seen_at, active_minutes
+                    FROM student_daily_logins
+                    WHERE login_date BETWEEN ? AND ?
+                ");
+                $stmt->execute([$fromDate, $dates[$totalDays - 1]]);
+            } catch (Throwable $e) {
+                // Kolom active_minutes belum ada (mis. user DB tanpa hak ALTER) → rekap tetap jalan tanpa durasi
+                $stmt = $db->prepare("
+                    SELECT user_id, login_date, first_seen_at, last_seen_at, 0 AS active_minutes
+                    FROM student_daily_logins
+                    WHERE login_date BETWEEN ? AND ?
+                ");
+                $stmt->execute([$fromDate, $dates[$totalDays - 1]]);
+            }
             foreach ($stmt->fetchAll() as $row) {
                 $merge($row['user_id'], (string)$row['login_date'], (string)$row['first_seen_at'], (string)$row['last_seen_at']);
                 $mins = (int)($row['active_minutes'] ?? 0);
@@ -243,6 +278,13 @@ class Attendance {
             foreach (self::activityRows($db, $start, $end) as $row) {
                 $merge($row['user_id'], (string)$row['d'], (string)$row['first_at'], (string)$row['last_at']);
             }
+
+            // 3. Hari istirahat "Tidak Ada Rencana" (cap biru) — hanya penanda, tidak menambah hitungan hadir
+            foreach (self::restDays($db, $dates[0], $dates[$totalDays - 1]) as $row) {
+                if (isset($ids[$row['student_id']])) {
+                    $restByUser[$row['student_id']][substr((string)$row['date'], 0, 10)] = true;
+                }
+            }
         }
 
         $rows = [];
@@ -250,16 +292,21 @@ class Attendance {
         foreach ($students as $s) {
             $logs = $byUser[$s['id']] ?? [];
             $userMins = $minutesByUser[$s['id']] ?? [];
+            $userRest = $restByUser[$s['id']] ?? [];
             $days = [];
             $present = 0;
+            $restCount = 0;
             $lastSeen = null;
             $totalMins = 0;
             foreach ($dates as $d) {
+                $isRest = isset($userRest[$d]);
+                if ($isRest) $restCount++;
                 if (isset($logs[$d])) {
                     $dayMins = $userMins[$d] ?? 0;
                     $days[$d] = [
                         'time' => substr($logs[$d]['first'], 11, 5), // HH:MM
                         'mins' => $dayMins,
+                        'rest' => $isRest,
                     ];
                     $totalMins += $dayMins;
                     $present++;
@@ -267,6 +314,9 @@ class Attendance {
                     if ($lastSeen === null || $logs[$d]['last'] > $lastSeen) {
                         $lastSeen = $logs[$d]['last'];
                     }
+                } elseif ($isRest) {
+                    // Libur (cap biru) tanpa aktivitas: tidak hadir, tapi ditandai berbeda
+                    $days[$d] = ['time' => null, 'mins' => 0, 'rest' => true];
                 } else {
                     $days[$d] = null;
                 }
@@ -286,6 +336,7 @@ class Attendance {
                 'category'             => self::category($pct),
                 'last_seen_at'         => $lastSeen ? substr((string)$lastSeen, 0, 16) : null,
                 'total_active_minutes' => $totalMins,
+                'rest_days'            => $restCount,
                 'days'                 => $days,
             ];
         }
@@ -317,20 +368,21 @@ class Attendance {
 
     /**
      * Susun hasil rekap menjadi tabel 2D untuk tab "Compile Absence".
-     * Sel tanggal berisi jam masuk pertama (HH:MM) atau kosong bila tidak hadir.
+     * Sel tanggal: "07:42" hadir, "LIBUR" hari istirahat (cap biru), "LIBUR 07:42" libur tapi aktif, kosong = tidak hadir.
      */
     public static function toSheetPayload(array $report, string $groupLabel): array {
         $now = new DateTime('now', self::tz());
         $title = 'REKAP KEHADIRAN SISWA (BERDASARKAN LOGIN & AKTIVITAS) — '
             . strtoupper(self::longDate($report['start'])) . ' s/d ' . strtoupper(self::longDate($report['end']));
 
-        $fixedHeader = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Durasi Aktif', 'Kategori', 'Terakhir Aktif'];
+        // Kategori harus tetap kolom ke-7: Apps Script mewarnai kolom itu (docs/apps-script/compile-absence.gs)
+        $fixedHeader = ['No', 'Nama Siswa', 'Username', 'Grup', 'Hadir (hari)', '% Hadir', 'Kategori', 'Durasi Aktif', 'Libur (hari)', 'Terakhir Aktif'];
         $header = array_merge($fixedHeader, array_map([self::class, 'dayLabel'], $report['dates']));
 
         $values = [
             [$title],
             ['Periode:', self::longDate($report['start']) . ' – ' . self::longDate($report['end']), 'Jumlah hari:', $report['total_days'], 'Grup:', $groupLabel],
-            ['Dibuat:', $now->format('d-m-Y H:i') . ' (' . $report['timezone'] . ')', 'Jumlah siswa:', count($report['students']), 'Isi sel tanggal:', 'jam pertama aktif hari itu (login/aktivitas); kosong = tidak hadir'],
+            ['Dibuat:', $now->format('d-m-Y H:i') . ' (' . $report['timezone'] . ')', 'Jumlah siswa:', count($report['students']), 'Keterangan sel:', '07:42 = hadir (jam pertama aktif) · LIBUR = hari istirahat / cap biru · LIBUR 07:42 = libur tapi tetap aktif · kosong = tidak hadir'],
             [],
             $header,
         ];
@@ -346,19 +398,19 @@ class Attendance {
                 $s['group_name'] ?: 'Siswa Biasa',
                 $s['present_days'],
                 $s['percentage'] / 100,
-                $durasi,
                 $s['category'],
+                $durasi,
+                $s['rest_days'] ?? 0,
                 $s['last_seen_at'] ? str_replace('T', ' ', $s['last_seen_at']) : '',
             ];
             foreach ($report['dates'] as $d) {
-                $day = $s['days'][$d] ?? null;
-                $row[] = is_array($day) ? ($day['time'] ?? '') : ($day ?? '');
+                $row[] = self::sheetCell($s['days'][$d] ?? null);
             }
             $values[] = $row;
         }
 
         // Baris total hadir per tanggal
-        $totalRow = ['', 'TOTAL HADIR PER HARI', '', '', '', '', '', '', ''];
+        $totalRow = array_merge(['', 'TOTAL HADIR PER HARI'], array_fill(0, count($fixedHeader) - 2, ''));
         foreach ($report['dates'] as $d) {
             $totalRow[] = $report['present_per_date'][$d];
         }
@@ -372,7 +424,17 @@ class Attendance {
             'date_count'       => count($report['dates']),
             'student_count'    => count($report['students']),
             'percent_col'      => 6,
+            'category_col'     => 7,
+            'rest_label'       => 'LIBUR',
         ];
+    }
+
+    /** Isi sel tanggal di sheet: "07:42", "LIBUR", "LIBUR 07:42", atau kosong. */
+    public static function sheetCell($day): string {
+        if (!is_array($day)) return is_string($day) ? $day : '';
+        $time = (string)($day['time'] ?? '');
+        if (!empty($day['rest'])) return $time !== '' ? "LIBUR $time" : 'LIBUR';
+        return $time;
     }
 
     /** Kirim payload ke Google Apps Script web app yang terpasang di spreadsheet. */

@@ -5,7 +5,8 @@
  * Setup lengkap ada di docs/REKAP_KEHADIRAN.md.
  *
  * Server Kaiwa Dojo mengirim POST JSON:
- *   { secret, sheet_name, values[][], header_row, first_date_col, date_count, student_count, percent_col }
+ *   { secret, sheet_name, values[][], header_row, first_date_col, date_count, student_count,
+ *     percent_col, category_col, rest_label }
  * Tab tujuan dikosongkan lalu ditulis ulang setiap kali admin menekan "Kirim ke Google Sheets".
  */
 
@@ -96,24 +97,36 @@ function writeReport_(sheet, body) {
   if (studentCount > 0) {
     sheet.getRange(firstDataRow, body.percent_col, studentCount, 1).setNumberFormat('0%');
     sheet.getRange(firstDataRow, 1, studentCount, 1).setHorizontalAlignment('center');
-    sheet.getRange(firstDataRow, 5, studentCount, 3).setHorizontalAlignment('center');
+    // Kolom ringkasan (Hadir s/d sebelum Terakhir Aktif) rata tengah
+    sheet.getRange(firstDataRow, 5, studentCount, Math.max(1, firstDateCol - 1 - 5)).setHorizontalAlignment('center');
     if (dateCount > 0) {
       sheet.getRange(firstDataRow, firstDateCol, studentCount + 1, dateCount).setHorizontalAlignment('center');
     }
   }
   sheet.getRange(totalRow, 1, 1, width).setFontWeight('bold').setBackground('#f1f5f9');
 
-  // Warna: hari hadir hijau, kategori berwarna
+  // Warna sel tanggal (aturan pertama yang cocok yang dipakai):
+  //   LIBUR / LIBUR 07:42 → biru (hari istirahat / cap biru)
+  //   07:42               → hijau (hadir)
+  //   kosong              → merah muda (tidak hadir)
   var rules = [];
   if (studentCount > 0 && dateCount > 0) {
+    var dateRange = sheet.getRange(firstDataRow, firstDateCol, studentCount, dateCount);
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextStartsWith(body.rest_label || 'LIBUR')
+      .setBackground('#dbeafe').setFontColor('#1e40af').setBold(true)
+      .setRanges([dateRange]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule()
       .whenCellNotEmpty()
       .setBackground('#d1fae5').setFontColor('#065f46')
-      .setRanges([sheet.getRange(firstDataRow, firstDateCol, studentCount, dateCount)])
-      .build());
+      .setRanges([dateRange]).build());
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenCellEmpty()
+      .setBackground('#fef2f2')
+      .setRanges([dateRange]).build());
   }
   if (studentCount > 0) {
-    var catRange = sheet.getRange(firstDataRow, 7, studentCount, 1);
+    var catRange = sheet.getRange(firstDataRow, body.category_col || 7, studentCount, 1);
     [['Sangat Aktif', '#bbf7d0', '#14532d'], ['Aktif', '#dbeafe', '#1e3a8a'], ['Kurang Aktif', '#fef3c7', '#78350f'], ['Pasif', '#fee2e2', '#7f1d1d']]
       .forEach(function (c) {
         rules.push(SpreadsheetApp.newConditionalFormatRule()
@@ -128,9 +141,9 @@ function writeReport_(sheet, body) {
   sheet.setColumnWidth(2, 220);
   sheet.setColumnWidth(3, 130);
   sheet.setColumnWidth(4, 150);
-  sheet.setColumnWidths(5, 3, 90);
-  sheet.setColumnWidth(8, 130);
-  if (dateCount > 0) sheet.setColumnWidths(firstDateCol, dateCount, 64);
+  sheet.setColumnWidths(5, Math.max(1, firstDateCol - 1 - 5), 90);
+  sheet.setColumnWidth(firstDateCol - 1, 130); // Terakhir Aktif
+  if (dateCount > 0) sheet.setColumnWidths(firstDateCol, dateCount, 84);
 }
 
 function json_(obj) {

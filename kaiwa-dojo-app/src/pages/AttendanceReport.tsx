@@ -11,6 +11,7 @@ import {
   formatActiveDuration,
   getDayTime,
   getDayMins,
+  isRestDay,
   type AttendanceReport,
   type AttendanceCategory,
 } from '../lib/attendanceService'
@@ -330,7 +331,16 @@ export default function AttendanceReportPage() {
       {/* ── Tabel kehadiran ── */}
       <Panel
         title="Kehadiran per hari"
-        description={report ? `${formatLong(report.start)} – ${formatLong(report.end)} · jam = pertama kali aktif hari itu (${report.timezone})` : undefined}
+        description={report ? (
+          <>
+            <span className="block">{formatLong(report.start)} – {formatLong(report.end)} · jam = pertama kali aktif hari itu ({report.timezone})</span>
+            <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" aria-label="Keterangan warna">
+              <span className="inline-flex items-center gap-1"><span className="px-1.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold">07:42</span> hadir</span>
+              <span className="inline-flex items-center gap-1"><span className="px-1.5 rounded bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 font-bold">LIBUR</span> tidak ada rencana (cap biru)</span>
+              <span className="inline-flex items-center gap-1"><span className="px-1.5 text-slate-400">·</span> tidak hadir</span>
+            </span>
+          </>
+        ) : undefined}
         actions={report && (
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <input
@@ -410,9 +420,18 @@ export default function AttendanceReportPage() {
                       const time = getDayTime(s.days[d])
                       const mins = getDayMins(s.days[d])
                       const durationHint = mins > 0 ? `, aktif ~${formatActiveDuration(mins)}` : ''
+                      const rest = isRestDay(s.days[d])
                       return (
                         <td key={d} className="px-1 py-1.5 text-center border-b border-slate-100 dark:border-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/60">
-                          {time ? (
+                          {rest ? (
+                            <span
+                              className="inline-flex flex-col items-center min-w-[3rem] px-1.5 py-0.5 rounded-md bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 text-[0.65rem] font-bold leading-tight"
+                              title={time ? `Libur (Tidak Ada Rencana) ${formatLong(d)}, tetap aktif pukul ${time}${durationHint}` : `Libur (Tidak Ada Rencana) ${formatLong(d)}`}
+                            >
+                              LIBUR
+                              {time && <span className="font-semibold tabular-nums">{time}</span>}
+                            </span>
+                          ) : time ? (
                             <span className="inline-block min-w-[3rem] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold tabular-nums" title={`Hadir ${formatLong(d)}, masuk ${time}${durationHint}`}>
                               {time}
                             </span>
